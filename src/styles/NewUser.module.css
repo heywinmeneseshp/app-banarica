@@ -1,0 +1,9 @@
+.formulario{
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.grupo {
+    margin-right: 10px;
+    width: 200px;
+}

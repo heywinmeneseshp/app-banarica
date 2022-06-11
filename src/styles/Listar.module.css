@@ -1,0 +1,15 @@
+.cajaBotones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 10px 0 10px 0;
+}
+
+.botones {
+    margin-right: 5px;
+}
+
+.buscar {
+    margin-right: 5px;
+    width: 40%;
+}
