@@ -1,7 +1,7 @@
 import React from 'react';
 
 //Components
-import NewUser from '@assets/NewUser';
+
 
 
 //CSS
@@ -80,8 +80,6 @@ const Users = () => {
                     </tr>
                 </tbody>
             </table>
-
-        <NewUser/>
         </div>
     )
 }

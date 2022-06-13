@@ -10,7 +10,7 @@ const CardExportacion = (color) => {
                 <div className={styles.headerExportaciones}>
                     Exportación
                 </div>
-                <div className="card" style={{ width: "18rem;" }}>
+                <div className="card" style={{ width: "16rem" }}>
                     <ul className="list-group list-group-flush">
                         <li className="list-group-item">Junio</li>
                         <li className="list-group-item">Mayo</li>

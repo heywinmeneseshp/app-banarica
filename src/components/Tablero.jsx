@@ -1,6 +1,6 @@
 import React from 'react';
 import styles from '../styles/Tablero.module.css';
-
+import Link from 'next/link';
 
 const Tablero = () => {
 
@@ -16,7 +16,7 @@ const Tablero = () => {
                                 <li>Categoria</li>
                                 <li>Producto</li>
                                 <li>Proveedor</li>
-                                                                <li>Bodega</li>
+                                <li>Bodega</li>
                                 <li>Transportador</li>
                             </ul>
                             <div>

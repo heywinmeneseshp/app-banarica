@@ -18,6 +18,7 @@
     margin-left: 10px;
     margin-bottom: 0px;
     box-shadow: 0 0 8px rgb(210, 210, 210), inset 0 0.5px #b2b2b280;
+    width:16rem;
 }
 
 
@@ -25,7 +26,7 @@
     padding: 0.5rem 1rem;
     margin-bottom: 0;
     border-bottom: 1px solid rgba(0,0,0,.125);
-    width: 18rem;
+    width:16rem;
     --bs-bg-opacity: 1;
     background-color: rgba(var(--bs-warning-rgb),var(--bs-bg-opacity))!important;
     --bs-text-opacity: 1;
@@ -38,20 +39,20 @@
     padding: 0.5rem 1rem;
     margin-bottom: 0;
     border-bottom: 1px solid rgba(0,0,0,.125);
-    width: 18rem;
     --bs-bg-opacity: 1;
     background-color: rgba(var(--bs-danger-rgb),var(--bs-bg-opacity))!important;
     --bs-text-opacity: 1;
     color: rgba(var(--bs-white-rgb),var(--bs-text-opacity))!important;
     font-weight: 700;
     text-align: center; 
+    width:16rem;
 }
 
 .headerDevoiluciones {
     padding: 0.5rem 1rem;
     margin-bottom: 0;
     border-bottom: 1px solid rgba(0,0,0,.125);
-    width: 18rem;
+    width:16rem;
     --bs-bg-opacity: 1;
     background-color: rgba(var(--bs-success-rgb),var(--bs-bg-opacity))!important;
     --bs-text-opacity: 1;
@@ -64,7 +65,7 @@
     padding: 0.5rem 1rem;
     margin-bottom: 0;
     border-bottom: 1px solid rgba(0,0,0,.125);
-    width: 18rem;
+    width:16rem;
     --bs-bg-opacity: 1;
     background-color: rgba(var(--bs-info-rgb),var(--bs-bg-opacity))!important;
     --bs-text-opacity: 1;
