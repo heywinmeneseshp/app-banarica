@@ -2,5 +2,11 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    height: 100vh;
 }
 
+.hijo {
+    background-color: aliceblue;
+    padding: 40px;
+    border-radius: 30px;
+}

@@ -1,0 +1,78 @@
+.superContenedor {
+    margin-top: 20px;
+}
+
+.contenedor {
+    display: gid;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 20px 10px 20px;
+    box-shadow: 0 0 8px rgb(210, 210, 210), inset 0 0.5px #b2b2b280;
+}
+
+.formulario {
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: 1fr 1fr 1fr;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 20px 0 20px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.formulario2 {
+    display: grid;
+    grid-template-columns: 3fr;
+    justify-content: center;
+    align-items: center;
+    padding: 0 20px 0 20px;
+}
+
+.formulario3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    justify-content: center;
+    align-items: center;
+    padding: 0 20px 0 20px;
+    margin: 5px 0px;
+}
+
+.formulario4 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    justify-content: center;
+    align-items: center;
+    padding: 0 20px 0 20px;
+    margin: 0px 0px 0px 0px;
+}
+
+.formulario5 {
+    display: grid;
+    grid-template-columns: 3fr;
+    justify-content: center;
+    align-items: center;
+    padding: 0 20px 0 20px;
+    margin-top: 30px;
+}
+
+.formulario6 {
+    display: grid;
+    grid-template-columns: 3fr;
+    justify-content: center;
+    align-items: center;
+    padding: 0 20px 0 20px;
+    margin: 30px 0 30px 0 ;
+}
+
+
+.grupo {
+    margin-bottom: 10px;
+}
+
+.boton {
+    display: grid;
+    justify-content: center;
+    align-items: center;
+    width: 80px;
+}

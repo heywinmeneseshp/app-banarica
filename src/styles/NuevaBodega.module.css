@@ -6,6 +6,14 @@
     padding: 40px 20px 40px 20px;
 }
 
+.formularioCategoria{
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 20px 40px 20px;
+}
+
 .grupo {
     margin-right: 20px;
     width: 200px;

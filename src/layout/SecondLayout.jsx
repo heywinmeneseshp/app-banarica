@@ -1,15 +1,16 @@
 import Header from '@containers/Header';
-
+import styles from '@styles/SecondLayout.module.css';
 
 export default function SecondLayout({ children }) {
   return (
     <>
-      <div>
+      <div className={styles.header}>
         <Header />
-        <main>
-          <div>{children}</div>
-        </main>
       </div>
+
+      <main>
+        <div className={styles.ancho}>{children}</div>
+      </main>
     </>
   );
 }
