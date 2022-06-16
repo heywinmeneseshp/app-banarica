@@ -37,6 +37,7 @@ const Header = () => {
             <DropdownButton className={styles.itemMenu} id="dropdown-basic-button" title="Informes">
               <Dropdown.Item href="/informes/movimientos">Movimientos</Dropdown.Item>
               <Dropdown.Item href="/informes/stock">Stock</Dropdown.Item>
+              <Dropdown.Item href="/informes/traslados">Traslados</Dropdown.Item>
             </DropdownButton>
 
           </Nav>

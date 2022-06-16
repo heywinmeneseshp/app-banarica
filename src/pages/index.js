@@ -1,9 +1,9 @@
 import Head from 'next/head'
 
 //Components
-import Tablero from '../components/Tablero';
-import Cards from '../components/Cards';
+import Inicio from '@containers/Inicio';
 import SecondLayout from 'layout/SecondLayout';
+
 
 //CSS
 
@@ -17,12 +17,9 @@ export default function Home() {
       </Head>
 
       <SecondLayout>
-        <Tablero />
-        <Cards></Cards>
+        <Inicio />
       </SecondLayout>
 
-      <footer >
-      </footer>
     </div>
   )
 }

@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 
 //CSS
-import styles from '../styles/Listar.module.css';
+import styles from '@styles/Listar.module.css';
 
 
 const Users = () => {

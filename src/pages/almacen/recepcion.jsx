@@ -16,7 +16,7 @@ export default function recepcion() {
       <SecondLayout>
         <Container className={styles.contenedorPadre}>
 
-          <h2>+ Recepción</h2>
+          <h2>+ Recepción de artículos</h2>
           <div className={styles.contenedor1}>
 
             <InputGroup size="sm" className="mb-3">

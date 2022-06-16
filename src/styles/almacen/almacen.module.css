@@ -2,7 +2,11 @@
     margin-top: 40px;
 }
 
-
+.contenedor0{
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    grid-gap: 20px;
+}
 
 .contenedor1{
     display: grid;

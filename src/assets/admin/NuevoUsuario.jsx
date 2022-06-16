@@ -68,9 +68,6 @@ export default function NuevoUsuario() {
                 </div>
 
             </form>
-
-
-
         </div>
     )
 }

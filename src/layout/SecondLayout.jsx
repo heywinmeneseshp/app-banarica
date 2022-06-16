@@ -1,4 +1,7 @@
 import Header from '@containers/Header';
+
+import Footer from '@containers/Footer';
+
 import styles from '@styles/SecondLayout.module.css';
 
 export default function SecondLayout({ children }) {
@@ -11,6 +14,7 @@ export default function SecondLayout({ children }) {
       <main>
         <div className={styles.ancho}>{children}</div>
       </main>
+
     </>
   );
 }

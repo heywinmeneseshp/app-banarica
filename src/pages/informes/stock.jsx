@@ -11,7 +11,7 @@ import SecondLayout from "@layout/SecondLayout";
 //CSS
 import styles from '@styles/informes/informes.module.css';
 import { Container } from "react-bootstrap";
-
+import { Pagination } from "react-bootstrap";
 
 export default function traslado() {
   return (
@@ -19,42 +19,43 @@ export default function traslado() {
       <SecondLayout>
         <Container className={styles.contenedor} >
 
-         
+          <div className={styles.contenedor1}>
 
-            <div className={styles.contenedor1}>
-
-              <InputGroup size="sm" className="mb-3">
-                <InputGroup.Text id="inputGroup-sizing-sm">Almacen</InputGroup.Text>
-                <Form.Control
-                  aria-label="Small"
-                  aria-describedby="inputGroup-sizing-sm"
-                />
-              </InputGroup>
-
-              <InputGroup size="sm" className="mb-3">
-                <InputGroup.Text id="inputGroup-sizing-sm">Categoría</InputGroup.Text>
-                <Form.Control
-                  aria-label="Small"
-                  aria-describedby="inputGroup-sizing-sm"
-                />
-              </InputGroup>
-
-              <InputGroup size="sm" className="mb-3">
-                <InputGroup.Text id="inputGroup-sizing-sm">Producto</InputGroup.Text>
-                <Form.Control
-                  aria-label="Small"
-                  aria-describedby="inputGroup-sizing-sm"
-                  className={styles.fecha}
-                />
-              </InputGroup>
-
+            <div className={styles.grupo}>
+              <label for="Username">Almacen</label>
+              <div>
+                <select className="form-select form-select-sm">
+                  <option>All</option>
+                  <option>Macondo</option>
+                  <option>Maria Luisa</option>
+                  <option>Lucia</option>
+                  <option>Florida</option>
+                </select>
+              </div>
             </div>
 
-         
-   
+            <div className={styles.grupo}>
+              <label for="Username">Categoría</label>
+              <div>
+                <select className="form-select form-select-sm">
+                  <option>All</option>
+                  <option>Cartón</option>
+                  <option>Insumos</option>
+                  <option>Papelería</option>
+                </select>
+              </div>
+            </div>
 
+            <div className={styles.grupo}>
+              <label for="Username">Artículo</label>
+              <div>
+                <input type="text" className="form-control form-control-sm" id="contraseña"></input>
+              </div>
+            </div>
 
-          <Table striped bordered hover size="sm">
+          </div>
+
+          <Table className={styles.tabla} striped bordered hover size="sm">
             <thead>
               <tr>
                 <th>Almacen</th>
@@ -88,6 +89,27 @@ export default function traslado() {
               </tr>
             </tbody>
           </Table>
+
+          <div className={styles.pagination}>
+            <Pagination>
+              <Pagination.First />
+              <Pagination.Prev />
+              <Pagination.Item>{1}</Pagination.Item>
+              <Pagination.Ellipsis />
+
+              <Pagination.Item>{4}</Pagination.Item>
+              <Pagination.Item>{5}</Pagination.Item>
+              <Pagination.Item active>{6}</Pagination.Item>
+              <Pagination.Item>{7}</Pagination.Item>
+              <Pagination.Item disabled>{8}</Pagination.Item>
+
+              <Pagination.Ellipsis />
+              <Pagination.Item>{10}</Pagination.Item>
+              <Pagination.Next />
+              <Pagination.Last />
+            </Pagination>
+          </div>
+
         </Container>
       </SecondLayout>
     </>
