@@ -8,7 +8,7 @@ import { Dropdown } from 'react-bootstrap';
 //Assets
 
 //CSS
-
+import styles from '@styles/header.module.css';
 
 const Header = () => {
 
@@ -19,18 +19,26 @@ const Header = () => {
         <Container>
           <Navbar.Brand href="/">Banarica</Navbar.Brand>
           <Nav className="me-auto">
-            <DropdownButton id="dropdown-basic-button" title="Administrador">
+            <DropdownButton className={styles.itemMenu} id="dropdown-basic-button" title="Administrador">
               <Dropdown.Item href="/admin/usuarios">Usuarios</Dropdown.Item>
               <Dropdown.Item href="/admin/productos">Productos</Dropdown.Item>
               <Dropdown.Item href="/admin/categorias">Categorias</Dropdown.Item>
+              <Dropdown.Item href="/admin/proveedores">Proveedores</Dropdown.Item>
               <Dropdown.Item href="/admin/bodegas">Bodegas</Dropdown.Item>
               <Dropdown.Item href="/admin/transporte">Transporte</Dropdown.Item>
             </DropdownButton>
-            <DropdownButton id="dropdown-basic-button" title="Almacen">
-              <Dropdown.Item href="/users">Recepción</Dropdown.Item>
-              <Dropdown.Item href="#/action-2">Traslados</Dropdown.Item>
-              <Dropdown.Item href="#/action-3">Movimientos</Dropdown.Item>
+
+            <DropdownButton className={styles.itemMenu} id="dropdown-basic-button" title="Almacen">
+              <Dropdown.Item href="/almacen/recepcion">Recepción</Dropdown.Item>
+              <Dropdown.Item href="/almacen/traslado">Traslados</Dropdown.Item>
+              <Dropdown.Item href="/almacen/movimientos">Movimientos</Dropdown.Item>
             </DropdownButton>
+
+            <DropdownButton className={styles.itemMenu} id="dropdown-basic-button" title="Informes">
+              <Dropdown.Item href="/informes/movimientos">Movimientos</Dropdown.Item>
+              <Dropdown.Item href="/informes/stock">Stock</Dropdown.Item>
+            </DropdownButton>
+
           </Nav>
         </Container>
       </Navbar>

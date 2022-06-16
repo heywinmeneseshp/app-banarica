@@ -40,7 +40,6 @@ const Conductor = () => {
                             <th scope="col">Código</th>
                             <th scope="col">Conductor</th>
                             <th scope="col">Razón social</th>
-                            <th scope="col">Vehículo</th>
                             <th scope="col">Correo</th>
                             <th scope="col">Telefono</th>
                             <th scope="col"></th>
@@ -53,7 +52,6 @@ const Conductor = () => {
                             <td>001</td>
                             <td>Ramiro Perez</td>
                             <td>Hurgo Conductor SAS</td>
-                            <td>UUJ210</td>
                             <td>hurgo@Conductor.com.co</td>
                             <td>322 6737763</td>
                             <td>
@@ -61,7 +59,6 @@ const Conductor = () => {
                             </td>
                             <td>
                                 <button type="button" className="btn btn-danger btn-sm w-80">Activar</button>
-
                             </td>
                         </tr>
 
@@ -70,7 +67,6 @@ const Conductor = () => {
                             <td>001</td>
                             <td>Ramiro Perez</td>
                             <td>Hurgo Conductor SAS</td>
-                            <td>UUJ210</td>
                             <td>hurgo@Conductor.com.co</td>
                             <td>322 6737763</td>
                             <td>
@@ -78,7 +74,6 @@ const Conductor = () => {
                             </td>
                             <td>
                                 <button type="button" className="btn btn-danger btn-sm w-80">Activar</button>
-
                             </td>
                         </tr>
 
@@ -87,7 +82,6 @@ const Conductor = () => {
                             <td>001</td>
                             <td>Ramiro Perez</td>
                             <td>Hurgo Conductor SAS</td>
-                            <td>UUJ210</td>
                             <td>hurgo@Conductor.com.co</td>
                             <td>322 6737763</td>
                             <td>
@@ -95,7 +89,6 @@ const Conductor = () => {
                             </td>
                             <td>
                                 <button type="button" className="btn btn-danger btn-sm w-80">Activar</button>
-
                             </td>
                         </tr>
                     </tbody>

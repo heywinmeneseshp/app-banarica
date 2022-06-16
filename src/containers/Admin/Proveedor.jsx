@@ -5,14 +5,14 @@ import Link from 'next/link';
 
 
 //CSS
-import styles from '../styles/Listar.module.css';
+import styles from '@styles/Listar.module.css';
 
 
-const Transporte = () => {
+const Proveedor = () => {
     return (
         <>
                 <div>
-                <h3>Transportadoras</h3>
+                <h3>Proveedores</h3>
                 <div className={styles.cajaBotones}>
                     <div className={styles.botones}>
                         <Link href="/admin/proveedores/crearProveedor">
@@ -102,4 +102,4 @@ const Transporte = () => {
     )
 }
 
-export default Transporte;
+export default Proveedor;
