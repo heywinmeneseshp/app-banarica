@@ -4,11 +4,10 @@ import Button from 'react-bootstrap/Button';
 
 
 //Components
-import SecondLayout from "layout/SecondLayout";
-import Ajuste from "@containers/almacen/Ajuste";
-import Liquidacion from "@containers/almacen/Liquidacion";
-import Exportacion from "@containers/almacen/Exportacion";
-import Devolucion from "@containers/almacen/Devolucion";
+import Ajuste from "@components/almacen/Ajuste";
+import Liquidacion from "@components/almacen/Liquidacion";
+import Exportacion from "@components/almacen/Exportacion";
+import Devolucion from "@components/almacen/Devolucion";
 
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
@@ -52,7 +51,6 @@ export default function Movimientos() {
     
     return (
         <>
-            <SecondLayout>
                 <Container>
                     <div className={styles.contenedorBotones}>
                         <Button onClick={handleClickAjuste} variant="danger">Ajustes</Button>
@@ -62,13 +60,11 @@ export default function Movimientos() {
                     </div>
                 </Container>
 
-
                 { toggleAjuste && <Ajuste /> }
                 { toggleDevolucion && <Devolucion /> }
                 { toggleLiquidacion && <Liquidacion />}
                 { toggleExportacion && <Exportacion />}
 
-            </SecondLayout>
         </>
     );
 }

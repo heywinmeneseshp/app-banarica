@@ -24,7 +24,6 @@ export default function Recepcion() {
 
   return (
     <>
-      <SecondLayout>
         <Container className={styles.contenedorPadre}>
 
           <Alert className={styles.alert} key="warning" variant="warning">
@@ -123,7 +122,6 @@ export default function Recepcion() {
 
           </div>
         </Container>
-      </SecondLayout>
     </>
   );
 }

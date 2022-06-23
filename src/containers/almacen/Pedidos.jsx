@@ -9,8 +9,7 @@ import Button from 'react-bootstrap/Button';
 
 
 //Components
-import SecondLayout from "layout/SecondLayout";
-import NuevoAlmacenPedido from "@containers/almacen/NuevoAlmacenPedido";
+import NuevoAlmacenPedido from "@components/almacen/NuevoAlmacenPedido.jsx";
 
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
@@ -26,7 +25,6 @@ export default function Pedidos() {
 
   return (
     <>
-      <SecondLayout>
         <Container className={styles.contenedorPadre}>
 
           <h2>+ Crear pedido</h2>
@@ -72,7 +70,6 @@ export default function Pedidos() {
 
           </div>
         </Container>
-      </SecondLayout>
     </>
   );
 }

@@ -19,8 +19,8 @@ export default function AlertaTraslado() {
   return (
     <>
       <Alert className={styles.alert} key="warning" variant="warning">
-        <p>Traslado 001 emitido por almacen Villa Grande pendente por recibir</p>
-        <button onClick={handleRecibirTraslado} type="button" className="btn btn-success btn-sm">Recibir</button>
+        <div classNeme={styles.alertText} >Traslado No. <b>001028</b> pendiente por recibir</div>
+        <button type="button" className="btn btn-success btn-sm">Ver traslado</button>
       </Alert>
     </>
   )

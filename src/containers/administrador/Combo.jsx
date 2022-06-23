@@ -15,11 +15,11 @@ const Combo = () => {
             <div className={styles.cajaBotones}>
                 <div className={styles.botones}>
                     <Link href="/admin/combos/crearCombo">
-                        <button type="button" className="btn btn-success btn-sm">Nuevo</button>
+                        <button type="button" className="btn btn-success btn-sm w-100">Nuevo</button>
                     </Link>
                 </div>
                 <div className={styles.botones}>
-                    <button type="button" className="btn btn-danger btn-sm">Eliminar</button>
+                    <button type="button" className="btn btn-danger btn-sm w-100">Eliminar</button>
                 </div>
                 <div className={styles.buscar}>
                     <input className="form-control form-control-sm" type="text" placeholder="Buscar"></input>

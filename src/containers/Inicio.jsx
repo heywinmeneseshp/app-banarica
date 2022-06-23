@@ -1,8 +1,8 @@
 import React from 'react';
 
 //Components
-import Tablero from '@components/Tablero';
-import Cards from '@components/Cards';
+import Tablero from '@components/inicio/Tablero';
+import Cards from '@components/inicio/Cards';
 
 //CSS
 

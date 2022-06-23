@@ -3,7 +3,6 @@ import AppContext from "@context/AppContext";
 import { useContext } from "react";
 
 //Components
-import SecondLayout from "layout/SecondLayout";
 import RecibirTraslado from "@components/almacen/RecibirTraslado";
 import RealizarTraslado from "@components/almacen/RealizarTraslado";
 import AlertaTraslado from "@assets/almacen/AlertaTraslado";
@@ -17,7 +16,6 @@ export default function Traslado() {
 
   return (
     <>
-      <SecondLayout>
         <div className={styles.contenedorPadre}>
 
           <AlertaTraslado />
@@ -25,7 +23,6 @@ export default function Traslado() {
           {state.recibirTraslado && <RecibirTraslado />}
 
         </div>
-      </SecondLayout>
     </>
   );
 }

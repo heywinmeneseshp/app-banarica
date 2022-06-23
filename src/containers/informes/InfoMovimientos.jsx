@@ -12,16 +12,15 @@ import styles from '@styles/informes/informes.module.css';
 import { Container } from "react-bootstrap";
 
 
-export default function movimientos() {
+export default function InfoMovimientos() {
   return (
     <>
-      <SecondLayout>
-        <Container className={styles.contenedor} >
+        <Container >
           <div>
-            <div className={styles.contenedor3}>
+            <div className={styles.contenedor1}>
 
               <div className={styles.grupo}>
-                <label htmlFor="Username">Origen</label>
+                <label htmlFor="Username">Almacen</label>
                 <div>
                   <select className="form-select form-select-sm">
                     <option>All</option>
@@ -34,55 +33,59 @@ export default function movimientos() {
               </div>
 
               <div className={styles.grupo}>
-                <label htmlFor="Username">Destino</label>
+                <label htmlFor="Username">Categoría</label>
                 <div>
                   <select className="form-select form-select-sm">
                     <option>All</option>
-                    <option>Macondo</option>
-                    <option>Maria Luisa</option>
-                    <option>Lucia</option>
-                    <option>Florida</option>
+                    <option>Cartón</option>
+                    <option>Insumos</option>
+                    <option>Papelería</option>
                   </select>
                 </div>
               </div>
 
               <div className={styles.grupo}>
-                <label htmlFor="Username">Fecha inicial</label>
-                <div>
-                  <input type="date" className="form-control form-control-sm" id="contraseña"></input>
-                </div>
-              </div>
-
-              <div className={styles.grupo}>
-                <label htmlFor="Username">Fecha final</label>
-                <div>
-                  <input type="date" className="form-control form-control-sm" id="contraseña"></input>
-                </div>
-              </div>
-
-              <Button className={styles.button} variant="primary" size="sm">
-                Buscar
-              </Button>
-
-            </div>
-
-            <div className={styles.contenedor3}>
-
-              <div className={styles.grupo}>
-                <label htmlFor="Username">Consecutivo</label>
+                <label htmlFor="Username">Artículo</label>
                 <div>
                   <input type="text" className="form-control form-control-sm" id="contraseña"></input>
                 </div>
               </div>
 
-              <Button className={styles.button} variant="warning" size="sm">
-                Editar documento
-              </Button>
+            </div>
 
-              <Button className={styles.button} variant="success" size="sm">
-                Descargar documento
-              </Button>
+            <div className={styles.contenedor2}>
 
+              <div className={styles.grupo}>
+                <label htmlFor="Username">Movimiento</label>
+                <div>
+                  <select className="form-select form-select-sm">
+                    <option>All</option>
+                    <option>Ajuste</option>
+                    <option>Devolución</option>
+                    <option>Liquidación</option>
+                    <option>Exportación</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className={styles.grupo}>
+                <label htmlFor="Username">Fecha Inicial</label>
+                <div>
+                  <input type="date" className="form-control form-control-sm" id="contraseña"></input>
+                </div>
+              </div>
+
+              <div className={styles.grupo}>
+                <label htmlFor="Username">Fecha Final</label>
+                <div>
+                  <input type="date" className="form-control form-control-sm" id="contraseña"></input>
+                </div>
+              </div>
+
+
+              <Button className={styles.button} variant="primary" size="sm">
+                Descargar
+              </Button>
             </div>
           </div>
 
@@ -90,23 +93,25 @@ export default function movimientos() {
           <Table className={styles.tabla} striped bordered hover size="sm">
             <thead>
               <tr>
-                <th>Cons.</th>
-                <th>Origen</th>
-                <th>Destino</th>
+                <th>Cons</th>
+                <th>Almacen</th>
+                <th>Cod</th>
                 <th>Artículo</th>
                 <th>Categoría</th>
+                <th>Movimiento</th>
                 <th>Und</th>
                 <th>Usernama</th>
                 <th>Fecha</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
+            <tr>
                 <td>0123</td>
                 <td>504</td>
                 <td>001</td>
                 <td>Tapa OT 18KG</td>
                 <td>Cartón</td>
+                <td>Liquidación</td>
                 <td>1116</td>
                 <td>heywin</td>
                 <td>25-10-2021</td>
@@ -117,6 +122,7 @@ export default function movimientos() {
                 <td>001</td>
                 <td>Tapa OT 18KG</td>
                 <td>Cartón</td>
+                <td>Liquidación</td>
                 <td>1116</td>
                 <td>heywin</td>
                 <td>25-10-2021</td>
@@ -127,6 +133,7 @@ export default function movimientos() {
                 <td>001</td>
                 <td>Tapa OT 18KG</td>
                 <td>Cartón</td>
+                <td>Liquidación</td>
                 <td>1116</td>
                 <td>heywin</td>
                 <td>25-10-2021</td>
@@ -155,7 +162,6 @@ export default function movimientos() {
           </div>
 
         </Container>
-      </SecondLayout>
     </>
   );
 }

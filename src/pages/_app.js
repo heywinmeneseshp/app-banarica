@@ -1,12 +1,12 @@
 import React from 'react';
 import Head from 'next/head';
-import AppContext from '../context/AppContext';
+import AppContext from '@context/AppContext';
 
 import useInitialState from '@hooks/useInitialState';
 import MainLayout from '@layout/MainLayout';
 
 //CSS
-import '../styles/globals.css';
+import '@styles/globals.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 

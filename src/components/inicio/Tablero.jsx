@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from '../styles/Tablero.module.css';
 
+import styles from '@styles/Tablero.module.css';
 
 const Tablero = () => {
 

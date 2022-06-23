@@ -1,11 +1,10 @@
 import React from 'react';
 import Link from 'next/link';
+
 //Components
 
-
-
 //CSS
-import styles from '../styles/Listar.module.css';
+import styles from '@styles/Listar.module.css';
 
 
 const Conductor = () => {
