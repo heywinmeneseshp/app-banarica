@@ -1,20 +1,22 @@
-import Header from '@containers/Header';
+import React from 'react';
 
-import Footer from '@containers/Footer';
+//Component
+import Header from "@containers/Header";
+import Footer from "@containers/Footer";
 
+//CSS
 import styles from '@styles/SecondLayout.module.css';
+
+
 
 export default function SecondLayout({ children }) {
   return (
     <>
-      <div className={styles.header}>
-        <Header />
-      </div>
-
+      <Header />
       <main>
         <div className={styles.ancho}>{children}</div>
       </main>
-
+      <Footer />
     </>
   );
 }

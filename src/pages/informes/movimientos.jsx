@@ -1,7 +1,7 @@
 import React from "react";
 import Table from 'react-bootstrap/Table';
 import Button from 'react-bootstrap/Button';
-import { Pagination, TabContainer } from "react-bootstrap";
+import { Pagination } from "react-bootstrap";
 
 //Components
 import SecondLayout from "@layout/SecondLayout";
@@ -21,7 +21,7 @@ export default function movimientos() {
             <div className={styles.contenedor1}>
 
               <div className={styles.grupo}>
-                <label for="Username">Almacen</label>
+                <label htmlFor="Username">Almacen</label>
                 <div>
                   <select className="form-select form-select-sm">
                     <option>All</option>
@@ -34,7 +34,7 @@ export default function movimientos() {
               </div>
 
               <div className={styles.grupo}>
-                <label for="Username">Categoría</label>
+                <label htmlFor="Username">Categoría</label>
                 <div>
                   <select className="form-select form-select-sm">
                     <option>All</option>
@@ -46,7 +46,7 @@ export default function movimientos() {
               </div>
 
               <div className={styles.grupo}>
-                <label for="Username">Artículo</label>
+                <label htmlFor="Username">Artículo</label>
                 <div>
                   <input type="text" className="form-control form-control-sm" id="contraseña"></input>
                 </div>
@@ -57,7 +57,7 @@ export default function movimientos() {
             <div className={styles.contenedor2}>
 
               <div className={styles.grupo}>
-                <label for="Username">Movimiento</label>
+                <label htmlFor="Username">Movimiento</label>
                 <div>
                   <select className="form-select form-select-sm">
                     <option>All</option>
@@ -70,14 +70,14 @@ export default function movimientos() {
               </div>
 
               <div className={styles.grupo}>
-                <label for="Username">Fecha Inicial</label>
+                <label htmlFor="Username">Fecha Inicial</label>
                 <div>
                   <input type="date" className="form-control form-control-sm" id="contraseña"></input>
                 </div>
               </div>
 
               <div className={styles.grupo}>
-                <label for="Username">Fecha Final</label>
+                <label htmlFor="Username">Fecha Final</label>
                 <div>
                   <input type="date" className="form-control form-control-sm" id="contraseña"></input>
                 </div>
@@ -165,6 +165,6 @@ export default function movimientos() {
         </Container>
       </SecondLayout>
     </>
-  )
+  );
 }
 

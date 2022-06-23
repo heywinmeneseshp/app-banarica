@@ -1,21 +1,19 @@
 import React from 'react';
-import SecondLayout from 'layout/SecondLayout';
-
 import styles from '@styles/crearUsuario.module.css';
 
 //Components
-import NuevoUsuario from "@assets/admin/NuevoUsuario";
+import NuevaBodega from '@assets/admin/NuevaBodega';
 
 //CSS
 
 
-export default function crearUsuario() {
+export default function crearBodega() {
     return (
         <div>
             <div className={styles.superContenedor}>
-                <h2>+ Nuevo usuario</h2>
+                <h2>+ Nuevo almacén</h2>
                 <div className={styles.contenedor}>
-                    <NuevoUsuario />
+                    <NuevaBodega />
                 </div>
             </div>
         </div>

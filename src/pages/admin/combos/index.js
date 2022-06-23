@@ -3,20 +3,20 @@ import SecondLayout from 'layout/SecondLayout';
 import styles from '@styles/Listar.module.css';
 
 //Components
-import Bodegas from '@containers/Bodegas'
+import Combo from '@containers/Admin/Combo';
 
 
 //CSS
 
 
-export default function Home() {
+export default function productos() {
     return (
         <div>
             <SecondLayout>
                 <div className={styles.contenedor}>
-                    <Bodegas></Bodegas>
+                    <Combo />
                 </div>
             </SecondLayout>
         </div>
-    )
+    );
 }

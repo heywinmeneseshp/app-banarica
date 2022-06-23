@@ -17,5 +17,5 @@ export default function proveedores() {
                 </div>
             </SecondLayout>
         </div>
-    )
+    );
 }

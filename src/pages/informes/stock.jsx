@@ -1,8 +1,5 @@
 import React from "react";
 import Table from 'react-bootstrap/Table';
-import Form from 'react-bootstrap/Form';
-import InputGroup from 'react-bootstrap/InputGroup';
-import Button from 'react-bootstrap/Button';
 
 //Components
 import SecondLayout from "@layout/SecondLayout";
@@ -22,7 +19,7 @@ export default function traslado() {
           <div className={styles.contenedor1}>
 
             <div className={styles.grupo}>
-              <label for="Username">Almacen</label>
+              <label htmlFor="Username">Almacen</label>
               <div>
                 <select className="form-select form-select-sm">
                   <option>All</option>
@@ -35,7 +32,7 @@ export default function traslado() {
             </div>
 
             <div className={styles.grupo}>
-              <label for="Username">Categoría</label>
+              <label htmlFor="Username">Categoría</label>
               <div>
                 <select className="form-select form-select-sm">
                   <option>All</option>
@@ -47,7 +44,7 @@ export default function traslado() {
             </div>
 
             <div className={styles.grupo}>
-              <label for="Username">Artículo</label>
+              <label htmlFor="Username">Artículo</label>
               <div>
                 <input type="text" className="form-control form-control-sm" id="contraseña"></input>
               </div>
@@ -113,6 +110,6 @@ export default function traslado() {
         </Container>
       </SecondLayout>
     </>
-  )
+  );
 }
 

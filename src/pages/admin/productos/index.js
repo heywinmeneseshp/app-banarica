@@ -18,5 +18,5 @@ export default function productos() {
                 </div>
             </SecondLayout>
         </div>
-    )
+    );
 }

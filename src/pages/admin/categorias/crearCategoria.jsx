@@ -3,7 +3,7 @@ import SecondLayout from 'layout/SecondLayout';
 import styles from '@styles/crearUsuario.module.css';
 
 //Components
-import NuevaCategoria from '@assets/admin/NuevaCategoria'
+import NuevaCategoria from '@assets/admin/NuevaCategoria';
 
 //CSS
 
@@ -20,5 +20,5 @@ export default function crearCategoria() {
                 </div>
             </SecondLayout>
         </div>
-    )
+    );
 }

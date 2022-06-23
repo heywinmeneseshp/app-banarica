@@ -8,7 +8,7 @@ import CardDevoluciones from '../assets/CardDevoluciones';
 import CardAjustes from '../assets/CardAjuste';
 
 //CSS
-import styles from '../styles/Card.module.css'
+import styles from '../styles/Card.module.css';
 
 
 const Cards = () => {

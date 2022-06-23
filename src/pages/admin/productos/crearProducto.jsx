@@ -19,5 +19,5 @@ export default function crearProducto() {
                 </div>
             </SecondLayout>
         </div>
-    )
+    );
 }

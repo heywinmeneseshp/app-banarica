@@ -1,25 +1,32 @@
 import React, { Component } from 'react';
+import Link from 'next/link';
+import { useContext } from 'react';
+import AppContext from '@context/AppContext';
+
+//CSS
 import styles from "../styles/Login.module.css";
 
 
-export default class Login extends Component {
-    render() {
+export default function Login () {
+    const { handleLogin } = useContext(AppContext);
         return (
             <>
                 <div className={styles.padre}>
                     <form className={styles.hijo}>
                         
                         <div className="mb-3">
-                            <label>Usuario</label>
+                            <label htmlFor="usuario">Usuario</label>
                             <input
+                                id='usuario'
                                 type="text"
                                 className="form-control"
                                 placeholder="ingresar usuario"
                             />
                         </div>
                         <div className="mb-3">
-                            <label>Contraseña</label>
+                            <label htmlFor="password">Contraseña</label>
                             <input
+                            id='password'
                                 type="password"
                                 className="form-control"
                                 placeholder="Ingresar contraseña"
@@ -32,22 +39,25 @@ export default class Login extends Component {
                                     className="custom-control-input"
                                     id="customCheck1"
                                 />
-                                <label className="custom-control-label" htmlFor="customCheck1">
+                                <div className="custom-control-label" htmlFor="customCheck1">
                                     Recordarme
-                                </label>
+                                </div>
                             </div>
                         </div>
                         <div className="d-grid">
-                            <button type="submit" className="btn btn-primary">
+
+                        <Link href="/">
+                            <button onClick={handleLogin} type="submit" className="btn btn-primary">
                                 Iniciar sesión
                             </button>
+                        </Link>
                         </div>
-                        <p className={styles.olvide + " forgot-password text-right"}>
-                            ¿Olvidaste tu <a href="#">contraseña?</a>
+                        <p className="forgot-password text-right">
+                            ¿Olvidaste tu <Link href="">contraseña?</Link>
                         </p>
                     </form>
                 </div>
             </>
-        )
-    }
+        );
+    
 }

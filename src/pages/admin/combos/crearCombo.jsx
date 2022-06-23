@@ -1,24 +1,23 @@
 import React from 'react';
 import SecondLayout from 'layout/SecondLayout';
-import styles from '@styles/crearUsuario.module.css';
 
 //Components
-import NuevaBodega from '@assets/admin/NuevaBodega'
+import NuevoCombo from '@assets/admin/NuevoCombo';
 
 //CSS
+import styles from '@styles/admin/crearProducto.module.css';
 
-
-export default function crearBodega() {
+export default function crearProducto() {
     return (
         <div>
             <SecondLayout>
                 <div className={styles.superContenedor}>
-                    <h2>+ Nuevo almacén</h2>
+                <h2>+ Nuevo combo</h2>
                     <div className={styles.contenedor}>
-                        <NuevaBodega />
+                        <NuevoCombo />
                     </div>
                 </div>
             </SecondLayout>
         </div>
-    )
+    );
 }

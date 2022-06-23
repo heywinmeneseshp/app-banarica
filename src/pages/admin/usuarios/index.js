@@ -11,12 +11,10 @@ import Users from '@containers/Admin/Users';
 
 export default function usuarios() {
     return (
-        <div>
-            <SecondLayout>
+        <div>  
                 <div className={styles.contenedor}>
                     <Users></Users>
                 </div>
-            </SecondLayout>
         </div>
-    )
+    );
 }

@@ -3,15 +3,14 @@ import { Container } from "react-bootstrap";
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import Button from 'react-bootstrap/Button';
-import Alert from 'react-bootstrap/Alert';
 
 //Components
-import SecondLayout from "layout/SecondLayout";
 
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
 
 export default function RecibirTraslado() {
+
     return (
         <>
             <Container className={styles.contTraslados}>
@@ -141,5 +140,5 @@ export default function RecibirTraslado() {
                 </div>
             </Container>
         </>
-    )
+    );
 }

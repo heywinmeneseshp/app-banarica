@@ -1,4 +1,5 @@
 import React from 'react';
+import { useState } from 'react';
 import SecondLayout from 'layout/SecondLayout';
 import styles from '@styles/Listar.module.css';
 
@@ -10,18 +11,32 @@ import Conductor from '@containers/Conductor';
 
 
 export default function Home() {
+
+    const [  toggleTransportador, setToggleTransportador ] = useState(true);
+    const [ toggleConductor, setToggleConductor ] = useState(false);
+
+    const handleToggleTransportador = () => {
+        setToggleTransportador(true);
+        setToggleConductor(false);
+    };
+
+    const handleToggleConductor = () => {
+        setToggleConductor(true);
+        setToggleTransportador(false);
+    };
+
     return (
         <div>
             <SecondLayout>
                 <div className={styles.contenedor}>
                     <div className={styles.botonesTrans}>
-                        <button type="button" class="btn btn-primary btn-sm disabled">Tranportadoras</button>
-                        <button type="button" class="btn btn-primary btn-sm ">Conductores</button>
+                        <button onClick={handleToggleTransportador} type="button" className="btn btn-primary btn-sm">Tranportadoras</button>
+                        <button onClick={handleToggleConductor} type="button" className="btn btn-primary btn-sm ">Conductores</button>
                     </div>
-                    <Transporte></Transporte>
-                    <Conductor></Conductor>
+                    {toggleTransportador && <Transporte />}
+                    {toggleConductor && <Conductor />}
                 </div>
             </SecondLayout>
         </div>
-    )
+    );
 }

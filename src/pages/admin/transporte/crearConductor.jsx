@@ -21,5 +21,5 @@ export default function crearTransporte() {
                 </div>
             </SecondLayout>
         </div>
-    )
+    );
 }

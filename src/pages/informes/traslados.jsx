@@ -1,7 +1,7 @@
 import React from "react";
 import Table from 'react-bootstrap/Table';
 import Button from 'react-bootstrap/Button';
-import { Pagination, TabContainer } from "react-bootstrap";
+import { Pagination } from "react-bootstrap";
 
 //Components
 import SecondLayout from "@layout/SecondLayout";
@@ -21,7 +21,7 @@ export default function movimientos() {
             <div className={styles.contenedor3}>
 
               <div className={styles.grupo}>
-                <label for="Username">Origen</label>
+                <label htmlFor="Username">Origen</label>
                 <div>
                   <select className="form-select form-select-sm">
                     <option>All</option>
@@ -34,7 +34,7 @@ export default function movimientos() {
               </div>
 
               <div className={styles.grupo}>
-                <label for="Username">Destino</label>
+                <label htmlFor="Username">Destino</label>
                 <div>
                   <select className="form-select form-select-sm">
                     <option>All</option>
@@ -47,14 +47,14 @@ export default function movimientos() {
               </div>
 
               <div className={styles.grupo}>
-                <label for="Username">Fecha inicial</label>
+                <label htmlFor="Username">Fecha inicial</label>
                 <div>
                   <input type="date" className="form-control form-control-sm" id="contraseña"></input>
                 </div>
               </div>
 
               <div className={styles.grupo}>
-                <label for="Username">Fecha final</label>
+                <label htmlFor="Username">Fecha final</label>
                 <div>
                   <input type="date" className="form-control form-control-sm" id="contraseña"></input>
                 </div>
@@ -69,7 +69,7 @@ export default function movimientos() {
             <div className={styles.contenedor3}>
 
               <div className={styles.grupo}>
-                <label for="Username">Consecutivo</label>
+                <label htmlFor="Username">Consecutivo</label>
                 <div>
                   <input type="text" className="form-control form-control-sm" id="contraseña"></input>
                 </div>
@@ -157,6 +157,6 @@ export default function movimientos() {
         </Container>
       </SecondLayout>
     </>
-  )
+  );
 }
 
