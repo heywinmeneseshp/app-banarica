@@ -11,6 +11,16 @@ import { Container } from "react-bootstrap";
 import { Pagination } from "react-bootstrap";
 
 export default function InfoStock() {
+
+  const data = {
+    cod_almacen: "504",
+    cod_producto: "001",
+    producto: "Tapa OT 18KG",
+    categoria: "Carton",
+    cantidad: 1116,
+    costo_unidad: 3400
+  }
+
   return (
     <>
       <Container >
@@ -59,29 +69,37 @@ export default function InfoStock() {
               <th>Artículo</th>
               <th>Categoría</th>
               <th>Unidades</th>
+              <th>Costo unidad</th>
+              <th>Costo total</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>504</td>
-              <td>001</td>
-              <td>Tapa OT 18KG</td>
-              <td>Cartón</td>
-              <td>1116</td>
+              <td>{data.almacen}</td>
+              <td>{data.cod_producto}</td>
+              <td>{data.producto}</td>
+              <td>{data.categoria}</td>
+              <td>{data.cantidad}</td>
+              <td>COP {data.costo_unidad}</td>
+              <td>COP {data.cantidad * data.costo_unidad}</td>
             </tr>
             <tr>
-              <td>504</td>
-              <td>001</td>
-              <td>Tapa OT 18KG</td>
-              <td>Cartón</td>
-              <td>1116</td>
+              <td>{data.cod_almacen}</td>
+              <td>{data.cod_producto}</td>
+              <td>{data.producto}</td>
+              <td>{data.categoria}</td>
+              <td>{data.cantidad}</td>
+              <td>COP {data.costo_unidad}</td>
+              <td>COP {data.cantidad * data.costo_unidad}</td>
             </tr>
             <tr>
-              <td>504</td>
-              <td>001</td>
-              <td>Tapa OT 18KG</td>
-              <td>Cartón</td>
-              <td>1116</td>
+              <td>{data.cod_almacen}</td>
+              <td>{data.cod_producto}</td>
+              <td>{data.producto}</td>
+              <td>{data.categoria}</td>
+              <td>{data.cantidad}</td>
+              <td>COP {data.costo_unidad}</td>
+              <td>COP {data.cantidad * data.costo_unidad}</td>
             </tr>
           </tbody>
         </Table>

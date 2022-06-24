@@ -1,6 +1,4 @@
 import React from 'react';
-import { useContext } from 'react';
-import AppContext from '@context/AppContext';
 
 //Components
 
@@ -12,7 +10,7 @@ export default function Footer() {
   return (
     <>
     <div className="footer">
-      <div classNameName={styles.foot}>
+      <div className={styles.foot}>
 
         <footer className="bg-primary text-center text-white">
 
@@ -25,5 +23,5 @@ export default function Footer() {
       </div>
     </div>
     </>
-  )
+  );
 }

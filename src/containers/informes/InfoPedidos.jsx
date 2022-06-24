@@ -10,29 +10,16 @@ import styles from '@styles/informes/informes.module.css';
 import { Container } from "react-bootstrap";
 
 
-export default function InfoTraslados() {
+export default function InfoPedidos() {
   return (
     <>
 
       <Container>
         <div>
-          <div className={styles.contenedor3}>
+          <div className={styles.contenedor0}>
 
             <div className={styles.grupo}>
               <label htmlFor="Username">Origen</label>
-              <div>
-                <select className="form-select form-select-sm">
-                  <option>All</option>
-                  <option>Macondo</option>
-                  <option>Maria Luisa</option>
-                  <option>Lucia</option>
-                  <option>Florida</option>
-                </select>
-              </div>
-            </div>
-
-            <div className={styles.grupo}>
-              <label htmlFor="Username">Destino</label>
               <div>
                 <select className="form-select form-select-sm">
                   <option>All</option>
@@ -64,7 +51,7 @@ export default function InfoTraslados() {
 
           </div>
 
-          <div className={styles.contenedor3}>
+          <div className={styles.contenedor0}>
 
             <div className={styles.grupo}>
               <label htmlFor="Username">Consecutivo</label>

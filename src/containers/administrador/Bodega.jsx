@@ -58,7 +58,6 @@ const Bodega = () => {
                             </td>
                             <td>
                                 <button type="button" className="btn btn-danger btn-sm w-80">Activar</button>
-
                             </td>
                         </tr>
 

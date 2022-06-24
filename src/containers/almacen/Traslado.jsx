@@ -12,15 +12,15 @@ import styles from "@styles/almacen/almacen.module.css";
 
 export default function Traslado() {
 
-  const { state } = useContext(AppContext);
+  const  {initialState} = useContext(AppContext);
 
   return (
     <>
         <div className={styles.contenedorPadre}>
 
           <AlertaTraslado />
-          {state.realizarTraslado && <RealizarTraslado />}
-          {state.recibirTraslado && <RecibirTraslado />}
+          {initialState.state.realizarTraslado && <RealizarTraslado />}
+          {initialState.state.recibirTraslado && <RecibirTraslado />}
 
         </div>
     </>

@@ -38,13 +38,11 @@ export default function Liquidacion() {
                         />
                     </InputGroup>
 
-                    <InputGroup size="sm" className="mb-3">
-                        <InputGroup.Text id="inputGroup-sizing-sm">Movimiento</InputGroup.Text>
-                        <Form.Control
-                            aria-label="Small"
-                            aria-describedby="inputGroup-sizing-sm"
-                        />
-                    </InputGroup>
+                    <Form.Select className={styles.select} size="sm">
+                        <option>Deterioro</option>
+                        <option>Robo</option>
+                        <option>Siniestro</option>
+                    </Form.Select>
 
                     <InputGroup size="sm" className="mb-3">
                         <InputGroup.Text id="inputGroup-sizing-sm">Consecutivo</InputGroup.Text>

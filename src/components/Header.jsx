@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useContext } from 'react';
 import AppContext from '@context/AppContext';
 
 //Bootstrap
@@ -15,35 +15,37 @@ import styles from '@styles/header.module.css';
 
 const Header = () => {
 
-
+  const { initialMenu, initialAdminMenu, initialAlmacenMenu, initialInfoMenu } = useContext(AppContext);
+  
   return (
     <>
       <div className="header">
         <Navbar bg="primary" variant="dark">
           <Container>
-            <Navbar.Brand href="/">Banarica</Navbar.Brand>
+            <Navbar.Brand onClick={initialMenu.hadleInicio}>Banarica</Navbar.Brand>
             <Nav className="me-auto">
-              <DropdownButton className={styles.itemMenu} id="dropdown-basic-button" title="Administrador">
-                <Dropdown.Item href="/admin/usuarios">Usuarios</Dropdown.Item>
-                <Dropdown.Item href="/admin/productos">Productos</Dropdown.Item>
-                <Dropdown.Item href="/admin/combos">Combos</Dropdown.Item>
-                <Dropdown.Item href="/admin/categorias">Categorias</Dropdown.Item>
-                <Dropdown.Item href="/admin/proveedores">Proveedores</Dropdown.Item>
-                <Dropdown.Item href="/admin/bodegas">Bodegas</Dropdown.Item>
-                <Dropdown.Item href="/admin/transporte">Transporte</Dropdown.Item>
+              <DropdownButton onClick={initialMenu.hadleAdministrador} className={styles.itemMenu} id="dropdown-basic-button" title="Administrador">
+                <Dropdown.Item onClick={initialAdminMenu.handleUsuarios} >Usuarios</Dropdown.Item>
+                <Dropdown.Item onClick={initialAdminMenu.handleProductos}>Productos</Dropdown.Item>
+                <Dropdown.Item onClick={initialAdminMenu.handleCombos}>Combos</Dropdown.Item>
+                <Dropdown.Item onClick={initialAdminMenu.handleCategorias}>Categorias</Dropdown.Item>
+                <Dropdown.Item onClick={initialAdminMenu.handleProveedores}>Proveedores</Dropdown.Item>
+                <Dropdown.Item onClick={initialAdminMenu.handleBodegas}>Bodegas</Dropdown.Item>
+                <Dropdown.Item onClick={initialAdminMenu.handleTransporte}>Transporte</Dropdown.Item>
               </DropdownButton>
 
-              <DropdownButton className={styles.itemMenu} id="dropdown-basic-button" title="Almacen">
-                <Dropdown.Item href="/almacen/recepcion">Recepción</Dropdown.Item>
-                <Dropdown.Item href="/almacen/pedidos">Pedidos</Dropdown.Item>
-                <Dropdown.Item href="/almacen/traslado">Traslados</Dropdown.Item>
-                <Dropdown.Item href="/almacen/movimientos">Movimientos</Dropdown.Item>
+              <DropdownButton onClick={initialMenu.hadleAlmacen} className={styles.itemMenu} id="dropdown-basic-button" title="Almacen">
+                <Dropdown.Item onClick={initialAlmacenMenu.handleRecepcion}>Recepción</Dropdown.Item>
+                <Dropdown.Item onClick={initialAlmacenMenu.handlePedidos}>Pedidos</Dropdown.Item>
+                <Dropdown.Item onClick={initialAlmacenMenu.handleTraslados}>Traslados</Dropdown.Item>
+                <Dropdown.Item onClick={initialAlmacenMenu.handleMovimientos}>Movimientos</Dropdown.Item>
               </DropdownButton>
 
-              <DropdownButton className={styles.itemMenu} id="dropdown-basic-button" title="Informes">
-                <Dropdown.Item href="/informes/movimientos">Movimientos</Dropdown.Item>
-                <Dropdown.Item href="/informes/stock">Stock</Dropdown.Item>
-                <Dropdown.Item href="/informes/traslados">Traslados</Dropdown.Item>
+              <DropdownButton onClick={initialMenu.handleInformes} className={styles.itemMenu} id="dropdown-basic-button" title="Informes">
+                <Dropdown.Item onClick={initialInfoMenu.handleMovimientos}>Movimientos</Dropdown.Item>
+                <Dropdown.Item onClick={initialInfoMenu.handleStock}>Stock</Dropdown.Item>
+                <Dropdown.Item onClick={initialInfoMenu.handleTraslados}>Traslados</Dropdown.Item>
+                <Dropdown.Item onClick={initialInfoMenu.handlePedidos}>Pedidos</Dropdown.Item>
               </DropdownButton>
 
             </Nav>

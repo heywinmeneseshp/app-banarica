@@ -1,5 +1,4 @@
 import React from 'react';
-import SecondLayout from 'layout/SecondLayout';
 
 import styles from '@styles/crearUsuario.module.css';
 

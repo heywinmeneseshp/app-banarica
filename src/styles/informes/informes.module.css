@@ -1,6 +1,10 @@
 .contenedor {
   width: 900px;
-  margin-top: 40px;
+}
+.contenedor0{
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-gap: 10px 20px;
 }
 
 .contenedor1{
