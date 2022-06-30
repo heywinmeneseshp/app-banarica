@@ -25,7 +25,7 @@ export default function Alerta({ data }) {
   return (
     <>
       <Alert className={styles.alert} key="warning" variant="warning">
-        <div classNeme={styles.alertText} >
+        <div className={styles.alertText} >
           <b>| {data.almacen} |</b> {data.movimiento} <b>{data.consecutivo}</b> {data.mensaje}
           </div>
         <div className={styles.cajaBoton}>

@@ -1,7 +1,7 @@
 import React from 'react';
 
 //Bootstrap
-import { Alert } from 'react-bootstrap';
+
 
 import styles from '@styles/Tablero.module.css';
 import Alerta from '@assets/almacen/Alerta';

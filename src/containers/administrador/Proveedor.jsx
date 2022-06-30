@@ -39,7 +39,7 @@ const Proveedor = () => {
                     </div>
                 </div>
 
-                <table class="table">
+                <table className="table">
                     <thead className={styles.letter}>
                         <tr>
                             <th><input type="checkbox" id="topping" name="topping" value="Paneer" /></th>

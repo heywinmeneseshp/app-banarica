@@ -18,16 +18,16 @@ const Header = () => {
   const { initialMenu, initialAdminMenu, initialAlmacenMenu, initialInfoMenu } = useContext(AppContext);
   
   const openWindow = (window) =>{
-    initialAdminMenu.hadleCloseTable()
-    initialAdminMenu.hadleOpenWindows(window)
-  }
+    initialAdminMenu.hadleCloseTable();
+    initialAdminMenu.hadleOpenWindows(window);
+  };
 
   const openMenu = (itemMenu) => {
     if ( itemMenu == "admin" ) initialMenu.handleAdministrador();
     if ( itemMenu == "almacen" ) initialMenu.handleAlmacen();
     if ( itemMenu == "info" ) initialMenu.handleInformes();
 
-  }
+  };
 
   return (
     <>
