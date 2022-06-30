@@ -26,7 +26,7 @@ const Header = () => {
     if ( itemMenu == "admin" ) initialMenu.handleAdministrador();
     if ( itemMenu == "almacen" ) initialMenu.handleAlmacen();
     if ( itemMenu == "info" ) initialMenu.handleInformes();
-
+    if ( itemMenu == "inicio" ) initialMenu.handleInicio();
   };
 
   return (
@@ -34,7 +34,7 @@ const Header = () => {
       <div className="header">
         <Navbar bg="primary" variant="dark">
           <Container>
-            <Navbar.Brand onClick={initialMenu.hadleInicio}>Banarica</Navbar.Brand>
+            <Navbar.Brand onClick={() => openMenu("inicio")}>Banarica</Navbar.Brand>
             <Nav className="me-auto">
               <DropdownButton onClick={() => openMenu("admin")} className={styles.itemMenu} id="dropdown-basic-button" title="Administrador">
                 <Dropdown.Item onClick={() => openWindow("usuarios")} >Usuarios</Dropdown.Item>

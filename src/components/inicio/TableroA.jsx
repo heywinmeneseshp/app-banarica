@@ -18,17 +18,16 @@ const TableroA = () => {
 
     return (
         <>
-
             <div className={styles.superTablero}>
-
                 <div className={styles.tablero}>
-
                     <div className={styles.containerCrear}>
                         <h5 className={styles.plus}>+ Notificaciones</h5>
+                        
                         <Alerta data={datosAlerta}></Alerta>
                         <Alerta data={datosAlerta}></Alerta>
                         <Alerta data={datosAlerta}></Alerta>
                         <Alerta data={datosAlerta}></Alerta>
+
                     </div>
                 </div>
             </div>

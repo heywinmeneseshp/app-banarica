@@ -56,14 +56,7 @@
     padding: 20px 10px 20px 10px;
 } 
 
-.alertText {
-    display: grid;
-    justify-content: center;
-    align-items: center;
-    margin-top: auto;
-    margin-bottom: auto;
-    margin-right: 5px;
-}
+
 .botonesTrans{
     display: grid;
     grid-template-columns: 1fr 1fr;
