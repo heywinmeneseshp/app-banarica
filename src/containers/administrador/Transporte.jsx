@@ -21,17 +21,17 @@ export default function Transporte() {
     const handleToggleTransportador = () => {
         setToggleTransportador(true);
         setToggleConductor(false);
-        initialAdminMenu.hadleOpenTable("transporte")
+        initialAdminMenu.hadleCloseTable()
     };
 
     const handleToggleConductor = () => {
         setToggleConductor(true);
         setToggleTransportador(false);
-        initialAdminMenu.hadleOpenTable("conductor")
+        initialAdminMenu.hadleCloseTable()
     };
 
     return (
-        <div>
+        <div className={styles.contenedorTransporte}>
 
             <div className={styles.botonesTrans}>
                 <button onClick={handleToggleTransportador} type="button" className="btn btn-primary btn-sm">Tranportadoras</button>

@@ -50,6 +50,18 @@
     background-color: white;
     margin-left: 0px;
     margin-right: 0px;
-    box-shadow: 0 0 8px rgb(210, 210, 210), inset 0 0.5px #b2b2b280;
+    box-shadow: 0 0 8px rgb(224, 223, 223), inset 0 0.5px #b2b2b280;
     padding: 20px;
+    position: relative;
+}
+
+.padre{
+    position: fixed;
+    background-color: rgba(0, 0, 0, 0.253);
+    height: 100% !important;
+    width: 100% !important;
+    top: 49px;
+    padding-top: 40px;
+    padding-left: 130px;
+    padding-right: 130px;
 }

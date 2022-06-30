@@ -3,6 +3,7 @@ import { useContext } from 'react';
 import AppContext from '@context/AppContext';
 
 //Bootstrap
+import { Container } from 'react-bootstrap';
 
 //Components
 import Bodega from '@containers/administrador/Bodega';
@@ -35,6 +36,7 @@ export default function Adminsitrador() {
 
   return (
     <>
+
       <div>
         {initialAdminMenu.adminMenu.inicio && <Inicio />}
         {initialAdminMenu.adminMenu.bodegas && <Bodega />}
@@ -45,16 +47,21 @@ export default function Adminsitrador() {
         {initialAdminMenu.adminMenu.transporte && <Transporte />}
         {initialAdminMenu.adminMenu.usuarios && <Users />}
       </div>
-      {initialAdminMenu.tableros.contenedor &&<div className={styles.tableros}>
-        {initialAdminMenu.tableros.bodega && <NuevaBodega />}
-        {initialAdminMenu.tableros.categoria && <NuevaCategoria />}
-        {initialAdminMenu.tableros.combo && <NuevoCombo />}
-        {initialAdminMenu.tableros.conductor && <NuevoConductor />}
-        {initialAdminMenu.tableros.producto && <NuevoProducto />}
-        {initialAdminMenu.tableros.proveedor && <NuevoProveedor />}
-        {initialAdminMenu.tableros.transporte && <NuevoTransporte />}
-        {initialAdminMenu.tableros.usuario && <NuevoUsuario />}
-      </div>}
+
+      {initialAdminMenu.tableros.contenedor &&
+        <div className={styles.padre}>
+          <div className={styles.tableros}>
+            {initialAdminMenu.tableros.bodega && <NuevaBodega />}
+            {initialAdminMenu.tableros.categoria && <NuevaCategoria />}
+            {initialAdminMenu.tableros.combo && <NuevoCombo />}
+            {initialAdminMenu.tableros.conductor && <NuevoConductor />}
+            {initialAdminMenu.tableros.producto && <NuevoProducto />}
+            {initialAdminMenu.tableros.proveedor && <NuevoProveedor />}
+            {initialAdminMenu.tableros.transporte && <NuevoTransporte />}
+            {initialAdminMenu.tableros.usuario && <NuevoUsuario />}
+          </div>
+        </div>}
+
     </>
   );
 }

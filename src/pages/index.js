@@ -17,14 +17,14 @@ export default function Home() {
 
   return (
     <div>
-
-      <SecondLayout>
-        {initialMenu.menu.inicio && <Inicio />}
-        {initialMenu.menu.administrador && <Adminsitrador />}
-        {initialMenu.menu.almacen && <Almacen />}
-        {initialMenu.menu.informes && <Informes />}
-      </SecondLayout>
-
+      <div>
+        <SecondLayout>
+          {initialMenu.menu.inicio && <Inicio />}
+          {initialMenu.menu.administrador && <Adminsitrador />}
+          {initialMenu.menu.almacen && <Almacen />}
+          {initialMenu.menu.informes && <Informes />}
+        </SecondLayout>
+      </div>
     </div>
   );
 }
