@@ -4,42 +4,42 @@ import React from 'react';
 
 
 //CSS
-import styles from '@styles/NewUser.module.css'
+import styles from '@styles/NewUser.module.css';
 
 export default function NuevoTransporte() {
     return (
         <div>
             <form className={styles.formulario}>
                 <div className={styles.grupo}>
-                    <label for="Username">Código</label>
+                    <label htmlFor="Username">Código</label>
                     <div>
                         <input type="text" className="form-control form-control-sm" id="usuario"></input>
                     </div>
                 </div>
 
                 <div className={styles.grupo}>
-                    <label for="Username">Razón social</label>
+                    <label htmlFor="Username">Razón social</label>
                     <div>
                         <input type="text" className="form-control form-control-sm" id="correo"></input>
                     </div>
                 </div>
 
                 <div className={styles.grupo}>
-                    <label for="Username">Dirección</label>
+                    <label htmlFor="Username">Dirección</label>
                     <div>
                         <input type="text" className="form-control form-control-sm" id="contraseña"></input>
                     </div>
                 </div>
 
                 <div className={styles.grupo}>
-                    <label for="Username">Correo</label>
+                    <label htmlFor="Username">Correo</label>
                     <div>
                         <input type="text" className="form-control form-control-sm" id="rcontraseña"></input>
                     </div>
                 </div>
 
                 <div className={styles.grupo}>
-                <label for="Username">Telefono</label>
+                <label htmlFor="Username">Telefono</label>
                     <div>
                         <input type="text" className="form-control form-control-sm" id="rcontraseña"></input>
                     </div>
@@ -57,5 +57,5 @@ export default function NuevoTransporte() {
 
 
         </div>
-    )
+    );
 }

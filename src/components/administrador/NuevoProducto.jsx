@@ -4,7 +4,7 @@ import React from 'react';
 
 
 //CSS
-import styles from '@styles/admin/crearProducto.module.css'
+import styles from '@styles/admin/crearProducto.module.css';
 
 export default function NuevoProducto() {
     return (
@@ -12,14 +12,14 @@ export default function NuevoProducto() {
             <form>
                 <div className={styles.formulario}>
                     <div className={styles.grupo}>
-                        <label for="Username">Código</label>
+                        <label htmlFor="Username">Código</label>
                         <div>
                             <input type="text" className="form-control form-control-sm" id="usuario"></input>
                         </div>
                     </div>
 
                     <div className={styles.grupo}>
-                        <label for="Username">Proveedor</label>
+                        <label htmlFor="Username">Proveedor</label>
                         <div>
                             <select className="form-select form-select-sm">
                                 <option>Maderkit</option>
@@ -30,7 +30,7 @@ export default function NuevoProducto() {
                     </div>
 
                     <div className={styles.grupo}>
-                        <label for="Username">Categoría</label>
+                        <label htmlFor="Username">Categoría</label>
                         <div>
                             <select className="form-select form-select-sm">
                                 <option>Cartón</option>
@@ -44,7 +44,7 @@ export default function NuevoProducto() {
 
                 <div className={styles.formulario2}>
                     <div className={styles.grupo}>
-                        <label for="Username">Descripción del producto</label>
+                        <label htmlFor="Username">Descripción del producto</label>
                         <div>
                             <input type="text" className="form-control form-control-sm" id="contraseña"></input>
                         </div>
@@ -54,14 +54,14 @@ export default function NuevoProducto() {
                 <div className={styles.formulario3}>
                     <div className="form-check">
                         <input className="form-check-input" type="checkbox" value="" id="flexCheckDefault"></input>
-                            <label className="form-check-label" for="flexCheckDefault">
+                            <label className="form-check-label" htmlFor="flexCheckDefault">
                                 Salida sin stock
                             </label>
                     </div>
 
                     <div className="form-check">
                         <input className="form-check-input" type="checkbox" value="" id="flexCheckDefault"></input>
-                            <label className="form-check-label" for="flexCheckDefault">
+                            <label className="form-check-label" htmlFor="flexCheckDefault">
                                 Serial
                             </label>
                     </div>
@@ -75,49 +75,49 @@ export default function NuevoProducto() {
                     
                     <div className="form-check">
                         <input className="form-check-input" type="checkbox" value="" id="flexCheckDefault"></input>
-                            <label className="form-check-label" for="flexCheckDefault">
+                            <label className="form-check-label" htmlFor="flexCheckDefault">
                                 001
                             </label>
                     </div>
 
                     <div className="form-check">
                         <input className="form-check-input" type="checkbox" value="" id="flexCheckDefault"></input>
-                            <label className="form-check-label" for="flexCheckDefault">
+                            <label className="form-check-label" htmlFor="flexCheckDefault">
                                 002
                             </label>
                     </div>
 
                     <div className="form-check">
                         <input className="form-check-input" type="checkbox" value="" id="flexCheckDefault"></input>
-                            <label className="form-check-label" for="flexCheckDefault">
+                            <label className="form-check-label" htmlFor="flexCheckDefault">
                                 003
                             </label>
                     </div>
 
                     <div className="form-check">
                         <input className="form-check-input" type="checkbox" value="" id="flexCheckDefault"></input>
-                            <label className="form-check-label" for="flexCheckDefault">
+                            <label className="form-check-label" htmlFor="flexCheckDefault">
                                 004
                             </label>
                     </div>
 
                     <div className="form-check">
                         <input className="form-check-input" type="checkbox" value="" id="flexCheckDefault"></input>
-                            <label className="form-check-label" for="flexCheckDefault">
+                            <label className="form-check-label" htmlFor="flexCheckDefault">
                                 005
                             </label>
                     </div>
 
                     <div className="form-check">
                         <input className="form-check-input" type="checkbox" value="" id="flexCheckDefault"></input>
-                            <label className="form-check-label" for="flexCheckDefault">
+                            <label className="form-check-label" htmlFor="flexCheckDefault">
                                 006
                             </label>
                     </div>
 
                     <div className="form-check">
                         <input className="form-check-input" type="checkbox" value="" id="flexCheckDefault"></input>
-                            <label className="form-check-label" for="flexCheckDefault">
+                            <label className="form-check-label" htmlFor="flexCheckDefault">
                                 007
                             </label>
                     </div>
@@ -136,5 +136,5 @@ export default function NuevoProducto() {
 
 
         </div>
-    )
+    );
 }

@@ -10,7 +10,7 @@ import { Button } from 'react-bootstrap';
 
 
 //CSS
-import styles from '@styles/NuevoCombo.module.css'
+import styles from '@styles/NuevoCombo.module.css';
 
 export default function NuevoCombo() {
 
@@ -89,5 +89,5 @@ export default function NuevoCombo() {
                 </div>
             </form>
         </div>
-    )
+    );
 }

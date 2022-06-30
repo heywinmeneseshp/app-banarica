@@ -17,7 +17,7 @@ a {
   box-sizing: border-box;
 }
 
-.cuerpo{
+.cuerpo {
   /*padding-top: 40px;
   padding-bottom: 40px;*/
   min-height: auto;
@@ -28,7 +28,7 @@ a {
   justify-content: center;
 }
 
-.header{
+.header {
   display: block;
   margin-bottom: 40px;
 }
@@ -38,3 +38,13 @@ a {
   margin-top: 40px;
 }
 
+.line {
+  height: 2px;
+  background-color: rgba(128, 128, 128, 0.459);
+  margin-bottom: 20px;
+  border-radius: 50px;
+}
+
+ul {
+  list-style: none;
+}

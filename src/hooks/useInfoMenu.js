@@ -2,13 +2,11 @@ import { useState } from "react";
 
 
 const initialInfoMenu = {
-    movimientos: false,
+    movimientos: true,
     stock: false,
     traslados: false,
     pedidos: false
 }
-
-
 
 const useInfoMenu = () => {
     const [infoMenu, setInfoMenu] = useState(initialInfoMenu);

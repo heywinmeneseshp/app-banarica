@@ -5,7 +5,7 @@ import React from 'react';
 
 
 //CSS
-import styles from '@styles/NuevaBodega.module.css'
+import styles from '@styles/NuevaBodega.module.css';
 
 export default function NuevaBodega() {
     return (
@@ -13,35 +13,35 @@ export default function NuevaBodega() {
             <form className={styles.formulario}>
               
                 <div className={styles.grupo}>
-                    <label for="Username">Código</label>
+                    <label htmlFor="Username">Código</label>
                     <div>
                         <input type="text" className="form-control form-control-sm" id="usuario"></input>
                     </div>
                 </div>
 
                 <div className={styles.grupo}>
-                    <label for="Username">Almacén</label>
+                    <label htmlFor="Username">Almacén</label>
                     <div>
                         <input type="text" className="form-control form-control-sm" id="correo"></input>
                     </div>
                 </div>
 
                 <div className={styles.grupo}>
-                    <label for="Username">Razon social</label>
+                    <label htmlFor="Username">Razon social</label>
                     <div>
                         <input type="text" className="form-control form-control-sm w-100" id="contraseña"></input>
                     </div>
                 </div>
 
                 <div className={styles.grupo}>
-                    <label for="Username">Teléfono</label>
+                    <label htmlFor="Username">Teléfono</label>
                     <div>
                         <input type="text" className="form-control form-control-sm" id="rcontraseña"></input>
                     </div>
                 </div>
 
                 <div className={styles.grupo}>
-                    <label for="Username">Dirección</label>
+                    <label htmlFor="Username">Dirección</label>
                     <div>
                         <input type="text" className="form-control form-control-sm" id="rcontraseña"></input>
                     </div>
@@ -59,5 +59,5 @@ export default function NuevaBodega() {
 
 
         </div>
-    )
+    );
 }

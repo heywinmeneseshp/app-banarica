@@ -32,7 +32,9 @@ export default function InfoMovimientos() {
     <>
       <Container >
         <div>
-          <div className={styles.contenedor1}>
+        <h2>Informe de movimientos</h2>
+        <div className="line"></div>
+          <div className={styles.contenedor3}>
 
             <div className={styles.grupo}>
               <label htmlFor="Username">Almacen</label>
@@ -66,9 +68,23 @@ export default function InfoMovimientos() {
               </div>
             </div>
 
+            <div className={styles.grupo}>
+              <label htmlFor="Username">Fecha Inicial</label>
+              <div>
+                <input type="date" className="form-control form-control-sm" id="contraseña"></input>
+              </div>
+            </div>
+
+            <div className={styles.grupo}>
+              <label htmlFor="Username">Fecha Final</label>
+              <div>
+                <input type="date" className="form-control form-control-sm" id="contraseña"></input>
+              </div>
+            </div>
+
           </div>
 
-          <div className={styles.contenedor2}>
+          <div className={styles.contenedor3}>
 
             <div className={styles.grupo}>
               <label htmlFor="Username">Movimiento</label>
@@ -84,22 +100,7 @@ export default function InfoMovimientos() {
               </div>
             </div>
 
-            <div className={styles.grupo}>
-              <label htmlFor="Username">Fecha Inicial</label>
-              <div>
-                <input type="date" className="form-control form-control-sm" id="contraseña"></input>
-              </div>
-            </div>
-
-            <div className={styles.grupo}>
-              <label htmlFor="Username">Fecha Final</label>
-              <div>
-                <input type="date" className="form-control form-control-sm" id="contraseña"></input>
-              </div>
-            </div>
-
-
-            <Button className={styles.button} variant="primary" size="sm">
+            <Button className={styles.button} variant="success" size="sm">
               Descargar
             </Button>
           </div>

@@ -47,9 +47,9 @@ export default function Login () {
                         <div className="d-grid">
 
                         <Link href="/">
-                            <button onClick={handleLogin} type="submit" className="btn btn-primary">
+                            <div onClick={handleLogin} className="btn btn-primary">
                                 Iniciar sesión
-                            </button>
+                            </div>
                         </Link>
                         </div>
                         <p className="forgot-password text-right">

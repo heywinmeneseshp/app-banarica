@@ -1,14 +1,19 @@
 import React from "react";
 import Table from 'react-bootstrap/Table';
 
+
+//Bootstrap
+import { Button } from "react-bootstrap";
+import { Container } from "react-bootstrap";
+import { Pagination } from "react-bootstrap";
+
 //Components
-import SecondLayout from "@layout/SecondLayout";
+
 
 
 //CSS
 import styles from '@styles/informes/informes.module.css';
-import { Container } from "react-bootstrap";
-import { Pagination } from "react-bootstrap";
+
 
 export default function InfoStock() {
 
@@ -24,8 +29,10 @@ export default function InfoStock() {
   return (
     <>
       <Container >
+        <h2>Stock</h2>
+        <div className="line"></div>
 
-        <div className={styles.contenedor1}>
+        <div className={styles.contenedor3}>
 
           <div className={styles.grupo}>
             <label htmlFor="Username">Almacen</label>
@@ -58,6 +65,14 @@ export default function InfoStock() {
               <input type="text" className="form-control form-control-sm" id="contraseña"></input>
             </div>
           </div>
+
+          <Button className={styles.button} variant="primary" size="sm">
+            Buscar
+          </Button>
+
+          <Button className={styles.button} variant="success" size="sm">
+            Descargar documento
+          </Button>
 
         </div>
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import adminMenu from "@hooks/useAdminMenu";
 
 const initialMenu = {
     inicio: true,
@@ -30,6 +30,8 @@ const useMenu = () => {
             almacen: false,
             informes: false
         })
+
+
     }
 
     const hadleAlmacen = () => {

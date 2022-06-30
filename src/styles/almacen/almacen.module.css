@@ -52,8 +52,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 40px;
-    padding: 20px 50px 20px 50px;
+    height: 30px;
+    padding: 20px 10px 20px 10px;
 } 
 
 .alertText {
@@ -62,8 +62,8 @@
     align-items: center;
     margin-top: auto;
     margin-bottom: auto;
+    margin-right: 5px;
 }
-
 .botonesTrans{
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -98,4 +98,8 @@
     background-color: gray;
     margin-bottom: 15px;
     border-radius: 50px;
+}
+
+.cajaBoton{
+    margin-left: 15px;
 }

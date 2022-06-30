@@ -15,11 +15,15 @@ export default function InfoTraslados() {
     <>
 
       <Container>
+
+        <h2>Informe de traslados</h2>
+        <div className="line"></div>
+
         <div>
+
           <div className={styles.contenedor3}>
-
             <div className={styles.grupo}>
-              <label htmlFor="Username">Origen</label>
+              <label htmlFor="Username">Almacen</label>
               <div>
                 <select className="form-select form-select-sm">
                   <option>All</option>
@@ -32,35 +36,37 @@ export default function InfoTraslados() {
             </div>
 
             <div className={styles.grupo}>
-              <label htmlFor="Username">Destino</label>
+              <label htmlFor="Username">Categoría</label>
               <div>
                 <select className="form-select form-select-sm">
                   <option>All</option>
-                  <option>Macondo</option>
-                  <option>Maria Luisa</option>
-                  <option>Lucia</option>
-                  <option>Florida</option>
+                  <option>Cartón</option>
+                  <option>Insumos</option>
+                  <option>Papelería</option>
                 </select>
               </div>
             </div>
 
             <div className={styles.grupo}>
-              <label htmlFor="Username">Fecha inicial</label>
+              <label htmlFor="Username">Artículo</label>
+              <div>
+                <input type="text" className="form-control form-control-sm" id="contraseña"></input>
+              </div>
+            </div>
+
+            <div className={styles.grupo}>
+              <label htmlFor="Username">Fecha Inicial</label>
               <div>
                 <input type="date" className="form-control form-control-sm" id="contraseña"></input>
               </div>
             </div>
 
             <div className={styles.grupo}>
-              <label htmlFor="Username">Fecha final</label>
+              <label htmlFor="Username">Fecha Final</label>
               <div>
                 <input type="date" className="form-control form-control-sm" id="contraseña"></input>
               </div>
             </div>
-
-            <Button className={styles.button} variant="primary" size="sm">
-              Buscar
-            </Button>
 
           </div>
 

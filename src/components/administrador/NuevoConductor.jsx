@@ -4,42 +4,47 @@ import React from 'react';
 
 
 //CSS
-import styles from '@styles/NewUser.module.css'
+import styles from '@styles/NewUser.module.css';
 
-export default function NuevoProveedor () {
+export default function NuevoConductor() {
     return (
         <div>
             <form className={styles.formulario}>
                 <div className={styles.grupo}>
-                    <label for="Username">Código</label>
+                    <label htmlFor="Username">Código</label>
                     <div>
                         <input type="text" className="form-control form-control-sm" id="usuario"></input>
                     </div>
                 </div>
 
                 <div className={styles.grupo}>
-                    <label for="Username">Razón social</label>
+                    <label htmlFor="Username">Conductor</label>
                     <div>
                         <input type="text" className="form-control form-control-sm" id="correo"></input>
                     </div>
                 </div>
 
                 <div className={styles.grupo}>
-                    <label for="Username">Dirección</label>
+                    <label htmlFor="Username">Razón social</label>
                     <div>
-                        <input type="text" className="form-control form-control-sm" id="contraseña"></input>
+                        <select className="form-select form-select-sm">
+                            <option>Hurgo Transporte SAS</option>
+                            <option>Transmonsa SAS</option>
+                            <option>Envia SA</option>
+                        </select>
                     </div>
                 </div>
 
+
                 <div className={styles.grupo}>
-                    <label for="Username">Correo</label>
+                    <label htmlFor="Username">Correo</label>
                     <div>
                         <input type="text" className="form-control form-control-sm" id="rcontraseña"></input>
                     </div>
                 </div>
 
                 <div className={styles.grupo}>
-                <label for="Username">Telefono</label>
+                    <label htmlFor="Username">Télefono</label>
                     <div>
                         <input type="text" className="form-control form-control-sm" id="rcontraseña"></input>
                     </div>
@@ -48,7 +53,7 @@ export default function NuevoProveedor () {
                 <div className={styles.grupo}>
                     <br />
                     <div>
-                        <button type="button" className="btn btn-success btn-sm form-control form-control-sm">Crear usuario</button>
+                        <button type="button" className="btn btn-success btn-sm form-control form-control-sm">Crear conductor</button>
                     </div>
                 </div>
 
@@ -57,5 +62,5 @@ export default function NuevoProveedor () {
 
 
         </div>
-    )
+    );
 }

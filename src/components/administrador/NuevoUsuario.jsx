@@ -4,42 +4,42 @@ import React from 'react';
 
 
 //CSS
-import styles from '@styles/NewUser.module.css'
+import styles from '@styles/NewUser.module.css';
 
 export default function NuevoUsuario() {
     return (
         <div>
             <form className={styles.formulario}>
                 <div className={styles.grupo}>
-                    <label for="Username">Usuario</label>
+                    <label htmlFor="Username">Usuario</label>
                     <div>
                         <input type="text" className="form-control form-control-sm" id="usuario"></input>
                     </div>
                 </div>
 
                 <div className={styles.grupo}>
-                    <label for="Username">Correo</label>
+                    <label htmlFor="Username">Correo</label>
                     <div>
                         <input type="text" className="form-control form-control-sm" id="correo"></input>
                     </div>
                 </div>
 
                 <div className={styles.grupo}>
-                    <label for="Username">Contraseña</label>
+                    <label htmlFor="Username">Contraseña</label>
                     <div>
                         <input type="text" className="form-control form-control-sm" id="contraseña"></input>
                     </div>
                 </div>
 
                 <div className={styles.grupo}>
-                    <label for="Username">Repite la contraseña</label>
+                    <label htmlFor="Username">Repite la contraseña</label>
                     <div>
                         <input type="text" className="form-control form-control-sm" id="rcontraseña"></input>
                     </div>
                 </div>
 
                 <div className={styles.grupo}>
-                    <label for="Username">Rol</label>
+                    <label htmlFor="Username">Rol</label>
                     <div>
                         <select className="form-select form-select-sm">
                             <option>Super administrador</option>
@@ -50,7 +50,7 @@ export default function NuevoUsuario() {
                 </div>
 
                 <div className={styles.grupo}>
-                    <label for="Username">Finca</label>
+                    <label htmlFor="Username">Finca</label>
                     <div>
                         <select className="form-select form-select-sm">
                             <option>Macondo</option>
@@ -69,5 +69,5 @@ export default function NuevoUsuario() {
 
             </form>
         </div>
-    )
+    );
 }

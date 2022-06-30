@@ -2,16 +2,15 @@ import { useState } from "react";
 
 
 const initialAlmacenMenu = {
-    recepcion: true,
+    recepcion: false,
     pedidos: false,
     traslados: false,
-    movimientos: false
+    movimientos: true
 }
-
-
 
 const useAdminMenu = () => {
     const [almacenMenu, setAlmacenMenu] = useState(initialAlmacenMenu);
+ 
 
     const handleRecepcion = () => {
         setAlmacenMenu({
@@ -59,7 +58,7 @@ const useAdminMenu = () => {
         handleRecepcion,
         handlePedidos,
         handleTraslados,
-        handleMovimientos
+        handleMovimientos,
     };
 };
 

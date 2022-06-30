@@ -4,7 +4,7 @@ import React from 'react';
 
 
 //CSS
-import styles from '@styles/NuevaBodega.module.css'
+import styles from '@styles/NuevaBodega.module.css';
 
 export default function NuevaCategoria() {
     return (
@@ -12,14 +12,14 @@ export default function NuevaCategoria() {
             <form className={styles.formularioCategoria}>
               
                 <div className={styles.grupo}>
-                    <label for="Username">Código</label>
+                    <label htmlFor="Username">Código</label>
                     <div>
                         <input type="text" className="form-control form-control-sm" id="usuario"></input>
                     </div>
                 </div>
 
                 <div className={styles.grupo}>
-                    <label for="Username">Categoría</label>
+                    <label htmlFor="Username">Categoría</label>
                     <div>
                         <input type="text" className="form-control form-control-sm" id="correo"></input>
                     </div>
@@ -37,5 +37,5 @@ export default function NuevaCategoria() {
 
 
         </div>
-    )
+    );
 }
