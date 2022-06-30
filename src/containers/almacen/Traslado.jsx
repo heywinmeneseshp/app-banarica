@@ -13,12 +13,19 @@ import styles from "@styles/almacen/almacen.module.css";
 export default function Traslado() {
 
   const  {initialState} = useContext(AppContext);
+   
+  const data = {
+    consecutivo: "20843",
+    almacen: "302",
+    movimiento: "Liquidacion",
+    mensaje: "pendiente por aprobar"
+  }
 
   return (
     <>
         <div className={styles.contenedorPadre}>
 
-          <AlertaTraslado />
+          <AlertaTraslado data={data}/>
           {initialState.state.realizarTraslado && <RealizarTraslado />}
           {initialState.state.recibirTraslado && <RecibirTraslado />}
 

@@ -17,6 +17,18 @@ const Header = () => {
 
   const { initialMenu, initialAdminMenu, initialAlmacenMenu, initialInfoMenu } = useContext(AppContext);
   
+  const openWindow = (window) =>{
+    initialAdminMenu.hadleCloseTable()
+    initialAdminMenu.hadleOpenWindows(window)
+  }
+
+  const openMenu = (itemMenu) => {
+    if ( itemMenu == "admin" ) initialMenu.handleAdministrador();
+    if ( itemMenu == "almacen" ) initialMenu.handleAlmacen();
+    if ( itemMenu == "info" ) initialMenu.handleInformes();
+
+  }
+
   return (
     <>
       <div className="header">
@@ -24,24 +36,24 @@ const Header = () => {
           <Container>
             <Navbar.Brand onClick={initialMenu.hadleInicio}>Banarica</Navbar.Brand>
             <Nav className="me-auto">
-              <DropdownButton onClick={initialMenu.hadleAdministrador} className={styles.itemMenu} id="dropdown-basic-button" title="Administrador">
-                <Dropdown.Item onClick={initialAdminMenu.handleUsuarios} >Usuarios</Dropdown.Item>
-                <Dropdown.Item onClick={initialAdminMenu.handleProductos}>Productos</Dropdown.Item>
-                <Dropdown.Item onClick={initialAdminMenu.handleCombos}>Combos</Dropdown.Item>
-                <Dropdown.Item onClick={initialAdminMenu.handleCategorias}>Categorias</Dropdown.Item>
-                <Dropdown.Item onClick={initialAdminMenu.handleProveedores}>Proveedores</Dropdown.Item>
-                <Dropdown.Item onClick={initialAdminMenu.handleBodegas}>Bodegas</Dropdown.Item>
-                <Dropdown.Item onClick={initialAdminMenu.handleTransporte}>Transporte</Dropdown.Item>
+              <DropdownButton onClick={() => openMenu("admin")} className={styles.itemMenu} id="dropdown-basic-button" title="Administrador">
+                <Dropdown.Item onClick={() => openWindow("usuarios")} >Usuarios</Dropdown.Item>
+                <Dropdown.Item onClick={() => openWindow("productos")}>Productos</Dropdown.Item>
+                <Dropdown.Item onClick={() => openWindow("combos")}>Combos</Dropdown.Item>
+                <Dropdown.Item onClick={() => openWindow("categorias")}>Categorias</Dropdown.Item>
+                <Dropdown.Item onClick={() => openWindow("proveedores")}>Proveedores</Dropdown.Item>
+                <Dropdown.Item onClick={() => openWindow("bodegas")}>Bodegas</Dropdown.Item>
+                <Dropdown.Item onClick={() => openWindow("transporte")}>Transporte</Dropdown.Item>
               </DropdownButton>
 
-              <DropdownButton onClick={initialMenu.hadleAlmacen} className={styles.itemMenu} id="dropdown-basic-button" title="Almacen">
+              <DropdownButton onClick={() => openMenu("almacen")} className={styles.itemMenu} id="dropdown-basic-button" title="Almacen">
                 <Dropdown.Item onClick={initialAlmacenMenu.handleRecepcion}>Recepción</Dropdown.Item>
                 <Dropdown.Item onClick={initialAlmacenMenu.handlePedidos}>Pedidos</Dropdown.Item>
                 <Dropdown.Item onClick={initialAlmacenMenu.handleTraslados}>Traslados</Dropdown.Item>
                 <Dropdown.Item onClick={initialAlmacenMenu.handleMovimientos}>Movimientos</Dropdown.Item>
               </DropdownButton>
 
-              <DropdownButton onClick={initialMenu.handleInformes} className={styles.itemMenu} id="dropdown-basic-button" title="Informes">
+              <DropdownButton onClick={() => openMenu("info")} className={styles.itemMenu} id="dropdown-basic-button" title="Informes">
                 <Dropdown.Item onClick={initialInfoMenu.handleMovimientos}>Movimientos</Dropdown.Item>
                 <Dropdown.Item onClick={initialInfoMenu.handleStock}>Stock</Dropdown.Item>
                 <Dropdown.Item onClick={initialInfoMenu.handleTraslados}>Traslados</Dropdown.Item>

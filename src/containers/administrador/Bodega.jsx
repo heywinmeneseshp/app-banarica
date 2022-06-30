@@ -15,7 +15,7 @@ const Bodega = () => {
 
     const { initialAdminMenu } = useContext(AppContext);
     const handleNuevo = () => {
-        initialAdminMenu.hadleTableros("bodega");
+        initialAdminMenu.hadleOpenTable("bodega");
     };
 
     return (

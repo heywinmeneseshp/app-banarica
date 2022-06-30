@@ -1,5 +1,7 @@
 import React from 'react';
-import Link from 'next/link';
+import { useContext } from 'react';
+import AppContext from "@context/AppContext";
+
 //Components
 
 
@@ -9,14 +11,18 @@ import styles from '@styles/Listar.module.css';
 
 
 const Producto = () => {
+
+    const { initialAdminMenu } = useContext(AppContext);
+    const handleNuevo = () => {
+        initialAdminMenu.hadleOpenTable("producto");
+    };
+
     return (
         <div>
             <h3>Productos</h3>
             <div className={styles.cajaBotones}>
                 <div className={styles.botones}>
-                    <Link href="/admin/productos/crearProducto">
-                        <button type="button" className="btn btn-success btn-sm w-100">Nuevo</button>
-                    </Link>
+                        <button onClick={handleNuevo} type="button" className="btn btn-success btn-sm w-100">Nuevo</button>
                 </div>
                 <div className={styles.botones}>
                     <button type="button" className="btn btn-danger btn-sm w-100">Eliminar</button>

@@ -1,6 +1,8 @@
 import React from 'react';
 import { useState } from 'react';
 import styles from '@styles/Listar.module.css';
+import { useContext } from 'react';
+import AppContext from '@context/AppContext';
 
 //Components
 import Transportadora from '@containers/administrador/transporte/Transportadora';
@@ -14,14 +16,18 @@ export default function Transporte() {
     const [toggleTransportador, setToggleTransportador] = useState(true);
     const [toggleConductor, setToggleConductor] = useState(false);
 
+    const { initialAdminMenu } = useContext(AppContext);
+
     const handleToggleTransportador = () => {
         setToggleTransportador(true);
         setToggleConductor(false);
+        initialAdminMenu.hadleOpenTable("transporte")
     };
 
     const handleToggleConductor = () => {
         setToggleConductor(true);
         setToggleTransportador(false);
+        initialAdminMenu.hadleOpenTable("conductor")
     };
 
     return (

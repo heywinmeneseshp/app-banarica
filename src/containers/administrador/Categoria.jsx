@@ -10,9 +10,10 @@ import styles from '@styles/Listar.module.css';
 
 const Categoria = () => {
 
+ 
     const { initialAdminMenu } = useContext(AppContext);
     const handleNuevo = () => {
-        initialAdminMenu.hadleTableros("categoria");
+        initialAdminMenu.hadleOpenTable("categoria");
     };
 
     return (

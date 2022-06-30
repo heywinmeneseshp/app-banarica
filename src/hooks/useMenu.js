@@ -1,5 +1,5 @@
 import { useState } from "react";
-import adminMenu from "@hooks/useAdminMenu";
+
 
 const initialMenu = {
     inicio: true,
@@ -12,7 +12,7 @@ const useMenu = () => {
 
     const [menu, setMenu] = useState(initialMenu);
 
-    const hadleInicio = () => {
+    const handleInicio = () => {
         setMenu({
             ...menu,
             inicio: true,
@@ -22,7 +22,7 @@ const useMenu = () => {
         })
     }
     
-    const hadleAdministrador = () => {
+    const handleAdministrador = () => {
         setMenu({
             ...menu,
             inicio: false,
@@ -34,7 +34,7 @@ const useMenu = () => {
 
     }
 
-    const hadleAlmacen = () => {
+    const handleAlmacen = () => {
         setMenu({
             ...menu,
             inicio: false,
@@ -54,7 +54,7 @@ const useMenu = () => {
         })
     }
 
-    return { menu, hadleInicio, hadleAdministrador, hadleAlmacen, handleInformes };
+    return { menu, handleInicio, handleAdministrador, handleAlmacen, handleInformes };
 };
 
 export default useMenu;
