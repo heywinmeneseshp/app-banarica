@@ -1,14 +1,12 @@
 import React from 'react';
 import Link from 'next/link';
-import { useContext } from 'react';
-import AppContext from '@context/AppContext';
 
 //CSS
 import styles from "../styles/Login.module.css";
 
 
 export default function Login () {
-    const { handleLogin } = useContext(AppContext);
+
         return (
             <>
                 <div className={styles.padre}>
@@ -47,7 +45,7 @@ export default function Login () {
                         <div className="d-grid">
 
                         <Link href="/">
-                            <div onClick={handleLogin} className="btn btn-primary">
+                            <div className="btn btn-primary">
                                 Iniciar sesión
                             </div>
                         </Link>
