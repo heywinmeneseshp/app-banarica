@@ -9,7 +9,7 @@ const agregarUsuario = async (usuario) => {
         }
     };
     const url = endPoints.usuarios.create;
-    const response = await axios.post(url, usuario, config);
+    const response = await axios.post(url, usuario);
     return response.data;
 }
 
