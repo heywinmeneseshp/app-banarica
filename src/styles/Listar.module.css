@@ -33,5 +33,23 @@
     font-size: 14px;
 }
 
+/**/
+
+.tableros {
+    background-color:rgba(0, 0, 0, 0.253);
+    position:fixed;
+    top:49px;
+    right:0;
+    bottom:0;
+    left:0;  
+}
+
+.padre{
+    background-color:white;
+    width:fit-content;
+    padding: 10px 20px;
+    margin: 80px auto;
+    position: relative;
+}
 
 

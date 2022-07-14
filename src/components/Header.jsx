@@ -18,7 +18,6 @@ const Header = () => {
   const { initialMenu, initialAdminMenu, initialAlmacenMenu, initialInfoMenu } = useContext(AppContext);
   
   const openWindow = (window) =>{
-    initialAdminMenu.hadleCloseTable();
     initialAdminMenu.hadleOpenWindows(window);
   };
 

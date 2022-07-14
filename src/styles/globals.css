@@ -21,16 +21,19 @@ a {
   /*padding-top: 40px;
   padding-bottom: 40px;*/
   min-height: auto;
+  
 }
 
 .contenedor-principal {
   align-items: center;
   justify-content: center;
+
 }
 
 .header {
   display: block;
   margin-bottom: 40px;
+  position: relative;
 }
 
 .footer {
