@@ -13,4 +13,9 @@ const agregarUsuario = async (usuario) => {
     return response.data;
 }
 
-export { agregarUsuario };
+const eliminarProdcuto = async(username) => {
+    const res = await axios.delete(endPoints.usuarios.delete(username));
+    return res.data
+}
+
+export { agregarUsuario, eliminarProdcuto };

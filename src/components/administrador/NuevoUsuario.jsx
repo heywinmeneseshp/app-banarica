@@ -11,9 +11,10 @@ import { agregarUsuario } from '@services/api/usuarios';
 //CSS
 import styles from '@styles/NewUser.module.css';
 
-export default function NuevoUsuario({ data }) {
+export default function NuevoUsuario({ user, setAlert, setOpen }) {
     const { initialAdminMenu } = useContext(AppContext);
     const formRef = useRef(null);
+
     const almacenes = useFetch(endPoints.almacenes.list);
     const [checkState, setCheckState] = useState(new Array(almacenes.length).fill(false));
 
@@ -26,7 +27,7 @@ export default function NuevoUsuario({ data }) {
 
 
     const closeWindow = () => {
-        initialAdminMenu.hadleCloseTable();
+        setOpen(false)
     };
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -41,7 +42,22 @@ export default function NuevoUsuario({ data }) {
             id_rol: formData.get('id_rol'),
             isBlock: true
         };
-        agregarUsuario(data);
+        agregarUsuario(data).then(()=>{
+            setAlert({
+                active: true,
+                mensaje: "El usuario ha sido creado con exito",
+                color: "success",
+                autoClose: false
+            })
+            setOpen(false)
+        }).catch((e)=>{
+            setAlert({
+                active: true,
+                mensaje: "Ha surgido un error al crear el usuario",
+                color: "danger",
+                autoClose: false
+            })
+        })
     }
 
     return (
@@ -49,7 +65,7 @@ export default function NuevoUsuario({ data }) {
             <div className={styles.tableros}>
                 <div className={styles.padre}>
 
-                    <div className={styles.ex}><span onClick={() => closeWindow()} className={styles.x}>X</span></div>
+                    <div className={styles.ex}><span onClick={closeWindow} className={styles.x}>X</span></div>
 
                     <form ref={formRef} onSubmit={handleSubmit}>
                         <span className={styles.formulario}>

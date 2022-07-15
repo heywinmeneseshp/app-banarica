@@ -1,34 +1,47 @@
 import React from 'react';
 import { useContext, useState, useEffect } from 'react';
 import AppContext from "@context/AppContext";
-import useFetch from '@hooks/useFetch';
 import endPoints from '@services/api';
+import axios from 'axios';
 //Components
 import NuevoUsuario from '@components/administrador/NuevoUsuario';
-
+import Alertas from '@assets/almacen/Alertas';
+import useAlert from '@hooks/useAlert';
 
 //CSS
 import styles from '@styles/Listar.module.css';
 
 
 const Users = () => {
-    const { initialAdminMenu } = useContext(AppContext);
     const [user, setUser] = useState(null);
-
-    const usuarios = useFetch(endPoints.usuarios.list);
+    const [usuarios, setUsuarios] = useState([]);
+    const {alert, setAlert, toogleAlert} = useAlert();
+    const [open, setOpen] = useState(false)
+ 
+    useEffect(()=>{
+        async function listarUsurios() {
+            const res = await axios.get(endPoints.usuarios.list);
+            setUsuarios(res.data)
+        }
+        try {
+            listarUsurios()
+        } catch (e) {
+            console.log(e);
+        } 
+    }, [alert])
 
     const handleNuevo = () => {
-        initialAdminMenu.hadleOpenTable('usuario');
-        setUser(null);
+        setOpen(true);
     };
     
     const handleEditar = (usuario) => {
-        initialAdminMenu.hadleOpenTable('usuario');
+        setOpen(true);
         setUser(usuario)
     };
 
     return (
         <div>
+            <Alertas alert={alert} handleClose={toogleAlert}></Alertas>
             <h3>Usuarios</h3>
             <div className={styles.cajaBotones}>
                 <div className={styles.botones}>
@@ -85,7 +98,7 @@ const Users = () => {
                 </tbody>
             </table>
 
-            {initialAdminMenu.tableros.usuario && <NuevoUsuario data={user} />}
+            {open && <NuevoUsuario setOpen={setOpen} setAlert={setAlert} user={user} />}
  
         </div>
     )
