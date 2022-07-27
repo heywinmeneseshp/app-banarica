@@ -1,8 +1,6 @@
-import React from 'react';
 
 import { useRef } from 'react';
 
-;
 
 //CSS
 import styles from "../styles/Login.module.css";

@@ -16,7 +16,7 @@ export default function Alertas({ alert, handleClose }) {
     if (alert && alert?.autoClose) {
         setTimeout(() => {
             handleClose();
-        }, 9000)
+        }, 2000)
     }
 
     return (

@@ -1,43 +1,87 @@
-import React from 'react';
-import { useContext, useState, useEffect } from 'react';
-import AppContext from "@context/AppContext";
-import endPoints from '@services/api';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+//Services
+import { actualizarUsuario, buscarUsuario } from '@services/api/usuarios';
+import endPoints from '@services/api';
 //Components
 import NuevoUsuario from '@components/administrador/NuevoUsuario';
-import Alertas from '@assets/almacen/Alertas';
+import Alertas from '@assets/Alertas';
+import Paginacion from '@components/Paginacion';
+//Hooks
 import useAlert from '@hooks/useAlert';
-
+//Bootstrap
 //CSS
 import styles from '@styles/Listar.module.css';
 
-
 const Users = () => {
+    const buscardorRef = useRef(null);
     const [user, setUser] = useState(null);
     const [usuarios, setUsuarios] = useState([]);
-    const {alert, setAlert, toogleAlert} = useAlert();
+    const { alert, setAlert, toogleAlert } = useAlert();
     const [open, setOpen] = useState(false)
- 
-    useEffect(()=>{
+    const [pagination, setPagination] = useState(1);
+    const [total, setTotal] = useState(0);
+    const limit = 10;
+
+    useEffect(() => {
         async function listarUsurios() {
-            const res = await axios.get(endPoints.usuarios.list);
+            const res = await axios.get(endPoints.usuarios.pagination(pagination, limit));
+            const total = await axios.get(endPoints.usuarios.list);
+            setTotal(total.data.length);
             setUsuarios(res.data)
         }
         try {
             listarUsurios()
         } catch (e) {
             console.log(e);
-        } 
-    }, [alert])
+        }
+    }, [alert, pagination])
 
-    const handleNuevo = () => {
+    const handleNuevo = async () => {
         setOpen(true);
+        setUser(null)
     };
-    
-    const handleEditar = (usuario) => {
+
+    const handleEditar = async (usuario) => {
         setOpen(true);
         setUser(usuario)
     };
+
+    const buscar = async () => {
+        const username = buscardorRef.current.value;
+        const user = await buscarUsuario(username)
+        if (user == null) {
+            setAlert({
+                active: true,
+                mensaje: 'El usuario no existe',
+                color: "danger",
+                autoClose: true
+            })
+        } else {
+            setUsuarios([user])
+            setTotal(1);
+        }
+    }
+
+    const handleActivar = (usuario) => {
+        try {
+            const changes = { isBlock: !usuario.isBlock }
+            actualizarUsuario(usuario.username, changes);
+            setAlert({
+                active: true,
+                mensaje: 'El usuario "' + usuario.username + '" se ha actualizado',
+                color: "danger",
+                autoClose: true
+            })
+        } catch (e) {
+            setAlert({
+                active: true,
+                mensaje: 'Se ha presentado un error',
+                color: "danger",
+                autoClose: true
+            })
+        }
+    }
 
     return (
         <div>
@@ -51,10 +95,10 @@ const Users = () => {
                     <button type="button" className="btn btn-danger btn-sm w-100">Eliminar</button>
                 </div>
                 <div className={styles.buscar}>
-                    <input className="form-control form-control-sm w-80" type="text" placeholder="Buscar"></input>
+                    <input ref={buscardorRef} className="form-control form-control-sm w-80" type="text" placeholder="Buscar"></input>
                 </div>
                 <div className={styles.botones}>
-                    <button type="button" className="btn btn-light btn-sm">Buscar</button>
+                    <button onClick={buscar} type="button" className="btn btn-light btn-sm">Buscar</button>
                 </div>
                 <div className={styles.botones}>
                     <button type="button" className="btn btn-light btn-sm">Ordenar</button>
@@ -67,7 +111,7 @@ const Users = () => {
                         <th><input type="checkbox" id="topping" name="topping" value="Paneer" /></th>
                         <th scope="col">Cod</th>
                         <th scope="col">Nombre</th>
-                        <th scope="col">Usurio</th>
+                        <th scope="col">Usuario</th>
                         <th scope="col">Rol</th>
                         <th scope="col">Tel</th>
                         <th scope="col">email</th>
@@ -76,7 +120,6 @@ const Users = () => {
                     </tr>
                 </thead>
                 <tbody className={styles.letter}>
-
                     {usuarios.map((usuario, index) => (
                         <tr key={index} >
                             <td><input type="checkbox" id="topping" name="topping" value="Paneer" /></td>
@@ -90,16 +133,17 @@ const Users = () => {
                                 <button onClick={() => handleEditar(usuario)} type="button" className="btn btn-warning btn-sm w-80">Editar</button>
                             </td>
                             <td>
-                                <button type="button" className="btn btn-danger btn-sm w-80">Activar</button>
+                                {usuario.isBlock && <button onClick={() => handleActivar(usuario)} type="button" className="btn btn-danger btn-sm w-80">Activar</button>}
+                                {!usuario.isBlock && <button onClick={() => handleActivar(usuario)} type="button" className="btn btn-success btn-sm w-80">Desactivar</button>}
                             </td>
                         </tr>)
                     )}
 
                 </tbody>
             </table>
-
+            <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
             {open && <NuevoUsuario setOpen={setOpen} setAlert={setAlert} user={user} />}
- 
+
         </div>
     )
 }

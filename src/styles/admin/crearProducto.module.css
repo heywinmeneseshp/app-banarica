@@ -12,7 +12,7 @@
     grid-template-columns: 1fr 1fr 1fr;
     justify-content: center;
     align-items: center;
-    padding: 40px 20px 0 20px;
+    padding: 5px 20px 0 20px;
     margin-left: auto;
     margin-right: auto;
 }
@@ -71,4 +71,33 @@
     justify-content: center;
     align-items: center;
     width: 80px;
+}
+.tableros {
+    background-color: rgba(0, 0, 0, 0.253);
+    position: fixed;
+    top: 49px;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+.padre {
+    background-color: white;
+    width: fit-content;
+    padding: 15px 0px 10px 20px;
+    margin: 80px auto;
+    position: relative;
+    
+}
+
+.x{
+    cursor: pointer;
+}
+
+.ex {
+    color: rgba(0, 0, 0, 0.39);
+    text-align: end;
+    font-weight: 700;
+    margin-right: 20px;
+    font-family: sans-serif;
 }

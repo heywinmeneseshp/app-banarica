@@ -3,7 +3,7 @@
     grid-template-columns: 1fr;
     justify-content: center;
     align-items: center;
-    padding: 40px 20px 40px 20px;
+    padding: 0px 35px 40px 20px;
 }
 
 .grupo {
@@ -18,18 +18,16 @@
     width: 80px;
 }
 
-
-
 .contenedor1{
     display: grid;
-    grid-template-columns: 0.5fr 2.08fr;
+    grid-template-columns: 0.52fr 2.08fr;
     grid-gap: 20px;
     margin-top: 20px;
 }
 
 .contenedor2{
     display: grid;
-    grid-template-columns: 0.5fr 1fr 1fr;
+    grid-template-columns: 0.5fr 2fr;
     grid-gap: 20px;
 }
 
@@ -72,4 +70,34 @@
     display: flex;
     justify-content: center;
     height: 31px;
+}
+
+.tableros {
+    background-color: rgba(0, 0, 0, 0.253);
+    position: fixed;
+    top: 49px;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+.padre {
+    background-color: white;
+    width: fit-content;
+    padding: 15px 0px 10px 20px;
+    margin: 80px auto;
+    position: relative;
+    
+}
+
+.x{
+    cursor: pointer;
+}
+
+.ex {
+    color: rgba(0, 0, 0, 0.39);
+    text-align: end;
+    font-weight: 700;
+    margin-right: 20px;
+    font-family: sans-serif;
 }

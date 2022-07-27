@@ -1,34 +1,65 @@
-import React from 'react';
-import { useContext, useRef, useState } from 'react';
-import AppContext from '@context/AppContext';
-import useFetch from '@hooks/useFetch';
+import React, { useEffect, useRef, useState } from 'react';
 import endPoints from '@services/api';
-import { agregarUsuario } from '@services/api/usuarios';
-
+import { actualizarUsuario, agregarUsuario, cargarAlmacenesPorUsuario } from '@services/api/usuarios';
 //Components
-
-
 //CSS
 import styles from '@styles/NewUser.module.css';
+import axios from 'axios';
 
-export default function NuevoUsuario({ user, setAlert, setOpen }) {
-    const { initialAdminMenu } = useContext(AppContext);
+export default function NuevoUsuario({ setAlert, setOpen, user }) {
     const formRef = useRef(null);
+    const [checkedState, setcheckedState] = useState([]);
+    const [almacenes, setAlmacenes] = useState([]);
 
-    const almacenes = useFetch(endPoints.almacenes.list);
-    const [checkState, setCheckState] = useState(new Array(almacenes.length).fill(false));
+    useEffect(() => {
+        async function listarAlmacenes() {
+            const res = await axios.get(endPoints.almacenes.list);
+            if (user) {
+                const resB = await axios.get(endPoints.usuarios.almacenes.findByUsername(user.username));
+                res.data.map(almacen => {
+                    resB.data.map(item => {
+                        let bool = false;
+                        if (item.habilitado === "1") bool = true;
+                        if(almacen.consecutivo === item.id_almacen){
+                            setcheckedState(checkedState => [...checkedState, bool]);
+                        }
+                    });
+                });
+            } else {
+                res.data.map(almacen => {
+                    setcheckedState(checkedState => [...checkedState, false]);
+                });
+            }
+            console.log(checkedState);
+            setAlmacenes(res.data);
+            
+        }
+        try {
+            listarAlmacenes();
+        } catch (e) {
+            console.log(e);
+        }
+
+    }, [user]);
+
+
 
     const handleChange = (position) => {
-        const newCheckState = [...checkState];
-        newCheckState[position] = !newCheckState[position];
-        setCheckState(newCheckState);
-        console.log(almacenes[position].consecutivo,);
-    }
+        console.log(checkedState);
+        const updatedCheckedState = checkedState.map((item, index) =>
+            index === position ? !item : item
+        );
+        setcheckedState(updatedCheckedState);
+    };
 
+
+    let styleBoton = { color: "success", text: "Agregar usuario" };
+    if (user) styleBoton = { color: "warning", text: "Editar usuario" };
 
     const closeWindow = () => {
-        setOpen(false)
+        setOpen(false);
     };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         const formData = new FormData(formRef.current);
@@ -42,23 +73,46 @@ export default function NuevoUsuario({ user, setAlert, setOpen }) {
             id_rol: formData.get('id_rol'),
             isBlock: true
         };
-        agregarUsuario(data).then(()=>{
+        if (user == null) {
+            try {
+                const result = agregarUsuario(data);
+
+                almacenes.map((item, index) => {
+                    cargarAlmacenesPorUsuario(data.username, item.consecutivo, checkedState[index]);
+                });
+                console.log(result);
+                setAlert({
+                    active: true,
+                    mensaje: "El usuario ha sido creado con exito",
+                    color: "success",
+                    autoClose: true
+                });
+                setOpen(false);
+            } catch (e) {
+                setAlert({
+                    active: true,
+                    mensaje: "Se ha producido un error al crear el usuario",
+                    color: "warning",
+                    autoClose: true
+                });
+                setOpen(false);
+            }
+        } else {
+            
+            actualizarUsuario(user.username, data);
+            almacenes.map((item, index) => {
+                cargarAlmacenesPorUsuario(user.username, item.consecutivo, checkedState[index]);  
+            }
+            );
             setAlert({
                 active: true,
-                mensaje: "El usuario ha sido creado con exito",
+                mensaje: 'El usuario se ha actualizado',
                 color: "success",
-                autoClose: false
-            })
-            setOpen(false)
-        }).catch((e)=>{
-            setAlert({
-                active: true,
-                mensaje: "Ha surgido un error al crear el usuario",
-                color: "danger",
-                autoClose: false
-            })
-        })
-    }
+                autoClose: true
+            });
+            setOpen(false);
+        }
+    };
 
     return (
         <div>
@@ -72,57 +126,56 @@ export default function NuevoUsuario({ user, setAlert, setOpen }) {
                             <div className={styles.grupo}>
                                 <label htmlFor="username">Usuario</label>
                                 <div>
-                                    <input id="username" name="username" type="text" className="form-control form-control-sm" ></input>
+                                    <input defaultValue={user?.username} id="username" name="username" type="text" className="form-control form-control-sm" ></input>
                                 </div>
                             </div>
 
                             <div className={styles.grupo}>
                                 <label htmlFor="email">Correo</label>
                                 <div>
-                                    <input id="email" name="email" type="text" className="form-control form-control-sm"></input>
+                                    <input defaultValue={user?.email} id="email" name="email" type="text" className="form-control form-control-sm"></input>
                                 </div>
                             </div>
-
 
                             <div className={styles.grupo}>
                                 <label htmlFor="password">Contraseña</label>
                                 <div>
-                                    <input id="password" name="password" type="text" className="form-control form-control-sm"></input>
+                                    <input defaultValue={user?.password} id="password" name="password" type="text" className="form-control form-control-sm"></input>
                                 </div>
                             </div>
 
                             <div className={styles.grupo}>
                                 <label htmlFor="repassword">Repite la contraseña</label>
                                 <div>
-                                    <input id="repassword" name="repassword" type="text" className="form-control form-control-sm" ></input>
+                                    <input defaultValue={user?.password} id="repassword" name="repassword" type="text" className="form-control form-control-sm" ></input>
                                 </div>
                             </div>
 
                             <div className={styles.grupo}>
                                 <label htmlFor="nombre">Nombre</label>
                                 <div>
-                                    <input id="nombre" name="nombre" type="text" className="form-control form-control-sm"></input>
+                                    <input defaultValue={user?.nombre} id="nombre" name="nombre" type="text" className="form-control form-control-sm"></input>
                                 </div>
                             </div>
 
                             <div className={styles.grupo}>
                                 <label htmlFor="apellido">Apellido</label>
                                 <div>
-                                    <input id="apellido" name="apellido" type="text" className="form-control form-control-sm"></input>
+                                    <input defaultValue={user?.apellido} id="apellido" name="apellido" type="text" className="form-control form-control-sm"></input>
                                 </div>
                             </div>
 
                             <div className={styles.grupo}>
                                 <label htmlFor="tel">Teléfono</label>
                                 <div>
-                                    <input id="tel" name="tel" type="text" className="form-control form-control-sm"></input>
+                                    <input defaultValue={user?.tel} id="tel" name="tel" type="text" className="form-control form-control-sm"></input>
                                 </div>
                             </div>
 
                             <div className={styles.grupo}>
                                 <label htmlFor="id_rol">Rol</label>
                                 <div>
-                                    <select id="id_rol" name="id_rol" className="form-select form-select-sm">
+                                    <select defaultValue={user?.id_rol} id="id_rol" name="id_rol" className="form-select form-select-sm">
                                         <option>Super administrador</option>
                                         <option>Administrador</option>
                                         <option>Oficinista</option>
@@ -130,8 +183,6 @@ export default function NuevoUsuario({ user, setAlert, setOpen }) {
                                     </select>
                                 </div>
                             </div>
-
-
 
                         </span>
                         <span >
@@ -144,7 +195,7 @@ export default function NuevoUsuario({ user, setAlert, setOpen }) {
 
                                 {almacenes.map((almacen, index) => (
                                     <div key={index} className="form-check">
-                                        <input className="form-check-input" type="checkbox" value={almacen.consecutivo} checked={checkState[index]} onChange={() => handleChange(index)} name={almacen.consecutivo} id={almacen.consecutivo}></input>
+                                        <input className="form-check-input" type="checkbox"  checked={checkedState[index]} onChange={() => handleChange(index)} name={almacen.consecutivo} id={almacen.consecutivo}></input>
                                         <label className="form-check-label" htmlFor={almacen.consecutivo}>
                                             {almacen.consecutivo}
                                         </label>
@@ -156,7 +207,7 @@ export default function NuevoUsuario({ user, setAlert, setOpen }) {
                             <div className={styles.formulario6}>
                                 <br />
                                 <div>
-                                    <button type="submit" className="btn btn-success btn-sm form-control form-control-sm">Crear producto</button>
+                                    <button type="submit" className={"btn btn-" + styleBoton.color + " btn-sm form-control form-control-sm"}>{styleBoton.text}</button>
                                 </div>
                             </div>
 
