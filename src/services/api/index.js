@@ -94,6 +94,20 @@ const endPoints = {
         add: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/stock/sumar/${cons_almacen}/${cons_producto}`,
         subtract: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/stock/restar/${cons_almacen}/${cons_producto}`,
         enable: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/stock/habilitar/${cons_almacen}/${cons_producto}`,
+    },
+    pedidos: {
+        list: `${API}/api/${VERSION}/pedidos`,
+        findOneAlmacen: (cons_almacen) => `${API}/api/${VERSION}/pedidos/filter/${cons_almacen}`,
+        findOneProductInAll: (cons_producto) => `${API}/api/${VERSION}/pedidos/filter/product/${cons_producto}`,
+        filterAlmacenAndProduct: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/pedidos/filter/${cons_almacen}/${cons_producto}`,
+        pagination: (page, limit) => `${API}/api/${VERSION}/pedidos/paginar?page=${page}&limit=${limit}`,
+        create: `${API}/api/${VERSION}/pedidos`,
+        createTable: `${API}/api/${VERSION}/pedidos/listar`,
+        update: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/pedidos/${cons_almacen}/${cons_producto}`,
+        delete: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/pedidos/${cons_almacen}/${cons_producto}`,
+        add: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/pedidos/sumar/${cons_almacen}/${cons_producto}`,
+        subtract: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/pedidos/restar/${cons_almacen}/${cons_producto}`,
+        enable: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/pedidos/habilitar/${cons_almacen}/${cons_producto}`,
     }
 }
 

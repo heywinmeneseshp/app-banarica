@@ -7,7 +7,7 @@
 .contenedor1{
     display: grid;
     grid-template-columns: 1fr 1fr  0.9fr 1fr;
-    grid-gap: 20px;
+    grid-gap: 0px 20px;
     margin-top: 20px;
 }
 
@@ -34,9 +34,17 @@
 }
 
 .contenedor6{
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr 1fr 2fr 1fr 1fr;
+    gap: 10px;
     margin-bottom: 14px;
+}
+
+.contenedor7{
+    display: grid;
+    grid-template-columns: 1fr 1fr  1fr 1fr 1fr;
+    grid-gap: 0px 20px;
+    margin-top: 20px;
 }
 
 .contTraslados{
@@ -83,7 +91,7 @@
 }
 
 .button {
-    width: 150px;
+    width: 100%;
 }
 
 .line {

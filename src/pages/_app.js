@@ -9,6 +9,7 @@ import useAlmacenMenu from "@hooks/useAlmacenMenu";
 import useInitialState from '@hooks/useInitialState';
 import useInfoMenu from "@hooks/useInfoMenu";
 import useMenu from '@hooks/useMenu';
+import usePedido from '@hooks/usePedido';
 
 //Componentes
 import MainLayout from '@layout/MainLayout';
@@ -20,6 +21,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 
 
 
+
 function MyApp({ Component, pageProps }) {
 
   
@@ -28,6 +30,7 @@ function MyApp({ Component, pageProps }) {
   const initialAlmacenMenu = useAlmacenMenu();
   const initialInfoMenu = useInfoMenu();
   const initialState = useInitialState();
+  const gestionPedido = usePedido();
 
   return (
     <>
@@ -38,6 +41,7 @@ function MyApp({ Component, pageProps }) {
           initialAdminMenu,
           initialAlmacenMenu,
           initialInfoMenu,
+          gestionPedido
         }}>
 
           <Head>

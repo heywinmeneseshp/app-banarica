@@ -49,7 +49,7 @@ const Combo = () => {
     };
 
     const buscar = async () => {
-        const consecutivo = buscardorRef.current.value; consecutivo
+        const consecutivo = buscardorRef.current.value; 
         const item = await buscarTransportadora(consecutivo)
         if (item == null) {
             setAlert({

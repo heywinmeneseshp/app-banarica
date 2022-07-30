@@ -36,7 +36,7 @@ const listarAlmacenes = async() => {
     try {
         const res = await axios.get(endPoints.almacenes.list);
         return res.data
-    } catch {
+    } catch (e){
         console.log(e)
     }
 }
