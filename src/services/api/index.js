@@ -108,6 +108,22 @@ const endPoints = {
         add: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/pedidos/sumar/${cons_almacen}/${cons_producto}`,
         subtract: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/pedidos/restar/${cons_almacen}/${cons_producto}`,
         enable: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/pedidos/habilitar/${cons_almacen}/${cons_producto}`,
+    },
+    recepcion: {
+        list: `${API}/api/${VERSION}/recepcion`, //Listo
+        findOne: (consecutivo) => `${API}/api/${VERSION}/recepcion/${consecutivo}`,
+        pagination: (page, limit) => `${API}/api/${VERSION}/recepcion/paginar?page=${page}&limit=${limit}`,
+        create: `${API}/api/${VERSION}/recepcion`,
+        update: (id) => `${API}/api/${VERSION}/recepcion/${id}`,
+        delete: (id) => `,${API}/api/${VERSION}/recepcion/${id}`
+    },
+    historial: {
+        list: `${API}/api/${VERSION}/historial-movimientos`, //Listo
+        findOne: (consecutivo) => `${API}/api/${VERSION}/historial-movimientos/${consecutivo}`,
+        pagination: (page, limit) => `${API}/api/${VERSION}/historial-movimientos/paginar?page=${page}&limit=${limit}`,
+        create: `${API}/api/${VERSION}/historial-movimientos`,
+        update: (id) => `${API}/api/${VERSION}/historial-movimientos/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/historial-movimientos/${id}`
     }
 }
 

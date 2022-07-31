@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 //Services
 import { listarProductos } from "@services/api/productos";
+import { sumar } from "@services/api/stock";
 //Hooks
 import useDate from "@hooks/useDate";
 import useAlert from "@hooks/useAlert";
+import useSemana from "@hooks/useSemana";
 //Bootstrap
 import { Container } from "react-bootstrap";
 import Form from 'react-bootstrap/Form';
@@ -14,6 +16,9 @@ import Alertas from "@assets/Alertas";
 //Components
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
+import { agregarRecepcion } from "@services/api/recepcion";
+import { agregarHistorial } from "@services/api/historialMovimientos";
+
 
 
 export default function Recepcion() {
@@ -54,44 +59,62 @@ export default function Recepcion() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        try{
-        const formData = new FormData(formRef.current);
-        const body = {
-            almacen: formData.get("almacen"),
-            remision: formData.get("remision"),
-            pedido: formData.get("pedido"),
-            fecha: formData.get("fecha"),
-            semana: formData.get("semana")
-        }
-        console.log(body);
-        let array = []
-        products.map((product, index) => {
-            const consecutiveProdcut = productos.find(producto => producto.name == formData.get(`producto-${index}`)).consecutivo
-            let data = {
-                cons_producto: consecutiveProdcut,
-                cons_almacen_destino: almacen,
-                cantidad: formData.get("cantidad-" + index)
+        try {
+            const formData = new FormData(formRef.current);
+            const almacen = formData.get("almacen")
+            const pedido = formData.get("pedido");
+            const body = {
+                remision: formData.get("remision"),
+                fecha: formData.get("fecha"),
+                cons_semana: useSemana(formData.get('semana')),
+                observaciones: formData.get("observaciones")
             }
-            array.push(data)
-        })
-        setProductsCons(array)
-        setBool(true)
-        setAlert({
-            active: true,
-            mensaje: "Se han cargado los datos con éxito",
-            color: "success",
-            autoClose: false
-        })
-    } catch (e) {
-        console.log(e);
-        setAlert({
-            active: true,
-            mensaje: "Error al cargar datos",
-            color: "danger",
-            autoClose: false
-        })
+            agregarRecepcion(body).then((res) => {
+                const consMovimiento = res.data.consecutivo;
+                let array = []
+                products.map((product, index) => {
+                    const consecutiveProdcut = productos.find(producto => producto.name == formData.get(`producto-${index}`)).consecutivo
+                    let dataPedido = {
+                        cons_producto: consecutiveProdcut,
+                        cons_almacen_destino: almacen,
+                        cantidad: formData.get("cantidad-" + index)
+                    }
+                    const dataHistorial = {
+                        cons_movimiento: consMovimiento,
+                        cons_producto: consecutiveProdcut,
+                        cons_almacen_gestor: almacen,
+                        cons_almacen_receptor: almacen,
+                        cons_lista_movimientos: "RC",
+                        tipo_movimiento: "entrada",
+                        cantidad: formData.get("cantidad-" + index),
+                        cons_pedido: pedido
+                    }
+                    console.log(dataHistorial)
+                    sumar(almacen, consecutiveProdcut, formData.get("cantidad-" + index));
+                    agregarHistorial(dataHistorial)
+                    array.push(dataPedido)
+                })
+                setProductsCons(array)
+            })
+
+
+            setBool(true)
+            setAlert({
+                active: true,
+                mensaje: "Se han cargado los datos con éxito",
+                color: "success",
+                autoClose: false
+            })
+        } catch (e) {
+            console.log(e);
+            setAlert({
+                active: true,
+                mensaje: "Error al cargar datos",
+                color: "danger",
+                autoClose: false
+            })
+        }
     }
-}
 
     return (
         <>
@@ -171,6 +194,7 @@ export default function Recepcion() {
 
 
                     </div>
+
                     <div className={styles.line}></div>
                     {products.map((item, key) => (
                         <div item={item} key={key}>
@@ -214,7 +238,18 @@ export default function Recepcion() {
                         </div>
                     ))}
 
-
+                    <div>
+                        <InputGroup size="sm" className="mb-3">
+                            <InputGroup.Text id="inputGroup-sizing-sm">Observaciones</InputGroup.Text>
+                            <Form.Control
+                                aria-label="Small"
+                                aria-describedby="inputGroup-sizing-sm"
+                                id="observaciones"
+                                name="observaciones"
+                                disabled={bool}
+                            />
+                        </InputGroup>
+                    </div>
 
                     {!bool &&
                         <div className={styles.contenedor6}>

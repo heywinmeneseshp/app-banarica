@@ -5,6 +5,7 @@ import { agregarPedido, agregarTablePedido } from "@services/api/pedidos";
 //Hooks
 import useDate from "@hooks/useDate";
 import useAlert from "@hooks/useAlert";
+import useSemana from "@hooks/useSemana";
 //Bootstrap
 import { Container } from "react-bootstrap";
 import Form from 'react-bootstrap/Form';
@@ -45,7 +46,7 @@ export default function Pedidos() {
             pendiente: true,
             observaciones: formData.get('fecha'),
             fecha: formData.get('fecha'),
-            cons_semana: "S" + (formData.get('semana')) + "-" + new Date().getFullYear(),
+            cons_semana: useSemana(formData.get('semana')),
             usuario: "UsuarioPrueba"
         }
         console.log(data)
