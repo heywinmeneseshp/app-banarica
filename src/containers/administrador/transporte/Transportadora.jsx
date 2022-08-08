@@ -33,7 +33,7 @@ const Transportadora = () => {
         try {
             listrasItems()
         } catch (e) {
-            console.log(e);
+            alert("Error al cargar los transportadoras", "error")
         }
     }, [alert, pagination])
 

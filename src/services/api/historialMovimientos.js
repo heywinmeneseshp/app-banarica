@@ -46,4 +46,28 @@ const listarHistorial = async () => {
     }
 }
 
-export { agregarHistorial, eliminarHistorial, actualizarHistorial, buscarHistorial, listarHistorial };
+const filterHistorial = async (consMovimiento) => {
+    try {
+        const res = await axios.get(endPoints.historial.filter(consMovimiento));
+        return res.data
+    } catch {
+        console.log(e)
+    }
+}
+
+const listarHistorialMovimientoPaginado = async (page, limit) => {
+    try {
+        const res = await axios.get(endPoints.historial.pagination(page, limit));
+        return res.data
+    } catch {
+        alert("Error al listar Movimientos")
+    }
+}
+
+export { agregarHistorial, 
+    eliminarHistorial, 
+    actualizarHistorial, 
+    buscarHistorial, 
+    listarHistorial, 
+    filterHistorial,
+    listarHistorialMovimientoPaginado };

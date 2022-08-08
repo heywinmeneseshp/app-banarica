@@ -24,12 +24,11 @@ export default function NuevaBodega({ setAlert, setOpen, almacen }) {
             direccion: formData.get('direccion'),
             telefono: formData.get('telefono'),
             email: formData.get('email'),
-            isBlock: true
+            isBlock: false
         };
         if (almacen == null) {
             try {
-                const result = agregarAlmacen(data);
-                console.log(result);
+                agregarAlmacen(data);
                 setAlert({
                     active: true,
                     mensaje: "El usuario ha sido creado con exito",
@@ -63,7 +62,7 @@ export default function NuevaBodega({ setAlert, setOpen, almacen }) {
             <div className={styles.tableros}>
                 <div className={styles.padre}>
 
-                    <div className={styles.ex}><span onClick={closeWindow} className={styles.x}>X</span></div>
+                    <div className={styles.ex}><span role="button" tabIndex={0} onClick={closeWindow} onKeyDown={closeWindow} className={styles.x}>X</span></div>
 
                     <form ref={formRef} onSubmit={handleSubmit} className={styles.formulario}>
 

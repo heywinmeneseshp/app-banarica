@@ -2,33 +2,35 @@ import React, { useState, useEffect, useRef } from "react";
 //Services
 import { listarProductos } from "@services/api/productos";
 import { sumar } from "@services/api/stock";
+import { agregarRecepcion } from "@services/api/recepcion";
+import { agregarHistorial } from "@services/api/historialMovimientos";
+import { agregarNotificaciones } from "@services/api/notificaciones";
 //Hooks
 import useDate from "@hooks/useDate";
 import useAlert from "@hooks/useAlert";
-import useSemana from "@hooks/useSemana";
+import generarSemana from "@hooks/useSemana";
+import { useAuth } from "@hooks/useAuth";
 //Bootstrap
 import { Container } from "react-bootstrap";
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import Button from 'react-bootstrap/Button';
 import { Alert } from "react-bootstrap";
-import Alertas from "@assets/Alertas";
 //Components
+import Alertas from "@assets/Alertas";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
-import { agregarRecepcion } from "@services/api/recepcion";
-import { agregarHistorial } from "@services/api/historialMovimientos";
-
-
 
 export default function Recepcion() {
     const formRef = useRef(null);
+    const { almacenByUser } = useAuth();
     const [products, setProducts] = useState([1]);
     const [productos, setProductos] = useState([]);
     const [bool, setBool] = useState(false);
     const [date, setDate] = useState(null);
     const [prodcuctsCons, setProductsCons] = useState([]);
     const { alert, setAlert, toogleAlert } = useAlert();
+    const [consAlmacen, setConsAlmacen] = useState(null);
 
     let styleBoton = { color: "success", text: "Cargar artículos" };
     if (bool) styleBoton = { color: "warning", text: "Modificar recepción" };
@@ -43,10 +45,9 @@ export default function Recepcion() {
         try {
             listrasItems()
         } catch (e) {
-            console.log(e);
+            alert("Error al cargar los productos");
         }
     }, [bool])
-
 
     function addProduct() {
         setProducts([...products, products.length + 1]);
@@ -63,10 +64,13 @@ export default function Recepcion() {
             const formData = new FormData(formRef.current);
             const almacen = formData.get("almacen")
             const pedido = formData.get("pedido");
+            setConsAlmacen(almacen);
+            const week = formData.get("semana");
+            const semanaR = generarSemana(week);
             const body = {
                 remision: formData.get("remision"),
                 fecha: formData.get("fecha"),
-                cons_semana: useSemana(formData.get('semana')),
+                cons_semana: semanaR,
                 observaciones: formData.get("observaciones")
             }
             agregarRecepcion(body).then((res) => {
@@ -85,19 +89,26 @@ export default function Recepcion() {
                         cons_almacen_gestor: almacen,
                         cons_almacen_receptor: almacen,
                         cons_lista_movimientos: "RC",
-                        tipo_movimiento: "entrada",
+                        tipo_movimiento: "Entrada",
                         cantidad: formData.get("cantidad-" + index),
                         cons_pedido: pedido
                     }
-                    console.log(dataHistorial)
                     sumar(almacen, consecutiveProdcut, formData.get("cantidad-" + index));
                     agregarHistorial(dataHistorial)
                     array.push(dataPedido)
                 })
+                const dataNotificacion = {
+                    almacen_emisor: almacen,
+                    almacen_receptor: "BRC",
+                    cons_movimiento: consMovimiento,
+                    tipo_movimiento: "Recepcion",
+                    descripcion: "realizada",
+                    aprobado: true,
+                    visto: false
+                }
+                agregarNotificaciones(dataNotificacion)
                 setProductsCons(array)
             })
-
-
             setBool(true)
             setAlert({
                 active: true,
@@ -106,7 +117,6 @@ export default function Recepcion() {
                 autoClose: false
             })
         } catch (e) {
-            console.log(e);
             setAlert({
                 active: true,
                 mensaje: "Error al cargar datos",
@@ -115,7 +125,6 @@ export default function Recepcion() {
             })
         }
     }
-
     return (
         <>
             <form ref={formRef} onSubmit={handleSubmit}>
@@ -132,13 +141,16 @@ export default function Recepcion() {
 
                         <InputGroup size="sm" className="mb-3">
                             <InputGroup.Text id="inputGroup-sizing-sm">Almacén</InputGroup.Text>
-                            <Form.Control
-                                aria-label="Small"
-                                aria-describedby="inputGroup-sizing-sm"
+                            <Form.Select
                                 id="almacen"
                                 name="almacen"
-                                disabled={bool}
-                            />
+                                className={styles.select}
+                                size="sm" disabled={bool}>
+                                {!bool && almacenByUser.map((item, index) => (
+                                    <option key={index}>{item.consecutivo}</option>
+                                ))}
+                                {bool && <option>{consAlmacen}</option>}
+                            </Form.Select>
                         </InputGroup>
 
                         <InputGroup size="sm" className="mb-3">
@@ -237,7 +249,6 @@ export default function Recepcion() {
                             </div>
                         </div>
                     ))}
-
                     <div>
                         <InputGroup size="sm" className="mb-3">
                             <InputGroup.Text id="inputGroup-sizing-sm">Observaciones</InputGroup.Text>

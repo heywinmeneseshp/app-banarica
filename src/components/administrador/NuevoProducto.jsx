@@ -3,6 +3,7 @@ import axios from 'axios';
 //Services
 import { actualizarProducto, agregarProducto } from '@services/api/productos';
 import { habilitarProductoEnAlmacen, crearStock } from '@services/api/stock';
+import { listarProveedores } from '@services/api/proveedores';
 import endPoints from '@services/api';
 //Components
 //CSS
@@ -19,7 +20,7 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
     const [salida_sin_stock, setSalida_sin_stock] = useState(false);
     const [permitir_traslados, setPermitir_traslados] = useState(false);
     const [categorias, setCategorias] = useState([]);
-    const [categoria, setCategoria] = useState({});
+    const [proveedores, setProveedores] = useState([]);
 
     useEffect(() => {
         async function listarAlmacenes() {
@@ -42,17 +43,18 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
             listarCategorias().then(res => {
                 setCategorias(res);
             });
-            setCategoria();
+            listarProveedores().then(res => {
+                setProveedores(res);
+            });
         }
         try {
             listarAlmacenes();
         } catch (e) {
-            console.log(e);
+            alert("Se ha producido un error al cargar los almacenes");
         }
     }, [producto]);
 
     const handleChange = (position) => {
-        console.log(checkedState);
         const updatedCheckedState = checkedState.map((item, index) =>
             index === position ? !item : item
         );
@@ -76,11 +78,12 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
     const handleSubmit = (e) => {
         e.preventDefault();
         const formData = new FormData(formRef.current);
-        const {consecutivo} = categorias.find(item => item.nombre === formData.get('categoria'));
+        const categoria = categorias.find(item => item.nombre === formData.get('categoria'));
+        const proveedor = proveedores.find(item => item.razon_social === formData.get('proveedor'));
         const data = {
             name: formData.get('name'),
-            cons_categoria: consecutivo,
-            cons_proveedor: formData.get('proveedor'),
+            cons_categoria: categoria.consecutivo,
+            cons_proveedor: proveedor.consecutivo,
             salida_sin_stock: salida_sin_stock,
             serial: serial,
             permitir_traslados: permitir_traslados,
@@ -95,7 +98,6 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
                         crearStock(almacen.consecutivo, res.consecutivo, checkedState[index]);
                     });
                 });
-                console.log(array);
                 setAlert({
                     active: true,
                     mensaje: "El producto ha sido creado con exito",
@@ -132,7 +134,7 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
 
             <div className={styles.tableros}>
                 <div className={styles.padre}>
-                    <div className={styles.ex}><span onClick={closeWindow} className={styles.x}>X</span></div>
+                    <div className={styles.ex}><span tabIndex={0} role="button" onClick={closeWindow} onKeyDown={closeWindow} className={styles.x}>X</span></div>
 
                     <form ref={formRef} onSubmit={handleSubmit} >
                         <div className={styles.formulario}>
@@ -147,9 +149,9 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
                                 <label htmlFor="proveedor">Proveedor</label>
                                 <div>
                                     <select defaultValue={producto?.cons_proveedor} id="proveedor" name='proveedor' className="form-select form-select-sm">
-                                        <option>Maderkit</option>
-                                        <option>Corbeta</option>
-                                        <option>Meico</option>
+                                        {proveedores.map((proveedor, index) => {
+                                            return <option key={index}>{proveedor.razon_social}</option>;
+                                        })}
                                     </select>
                                 </div>
                             </div>
@@ -160,7 +162,7 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
                                     <select defaultValue={producto?.cons_categoria} id="categoria" name='categoria' className="form-select form-select-sm">
                                         {categorias.map((categoria, index) => {
                                             return <option key={index}>{categoria.nombre}</option>;
-                                         })}
+                                        })}
                                     </select>
                                 </div>
                             </div>

@@ -10,10 +10,10 @@ import styles from '@styles/NewUser.module.css';
 export default function NuevoConductor({ setAlert, setOpen, item }) {
     const formRef = useRef(null);
     const [transportadoras, setTransportadoras] = useState([]);
-   
+
     useEffect(() => {
         async function listar() {
-            const res =  await listarTransportadoras();
+            const res = await listarTransportadoras();
             setTransportadoras(res);
         }
 
@@ -40,8 +40,7 @@ export default function NuevoConductor({ setAlert, setOpen, item }) {
         };
         if (item == null) {
             try {
-                const result = agregarConductor(data);
-                console.log(result);
+                agregarConductor(data);
                 setAlert({
                     active: true,
                     mensaje: "El usuario ha sido creado con exito",
@@ -73,7 +72,7 @@ export default function NuevoConductor({ setAlert, setOpen, item }) {
         <div>
             <div className={styles.tableros}>
                 <div className={styles.padre}>
-                    <div className={styles.ex}><span onClick={closeWindow} className={styles.x}>X</span></div>
+                    <div className={styles.ex}><span tabIndex={0} role="button" onClick={closeWindow} onKeyDown={closeWindow} className={styles.x}>X</span></div>
 
                     <form ref={formRef} onSubmit={handleSubmit} className={styles.formulario}>
 
@@ -84,14 +83,13 @@ export default function NuevoConductor({ setAlert, setOpen, item }) {
                             </div>
                         </div>
 
-                        <div  className={styles.grupo}>
+                        <div className={styles.grupo}>
                             <label htmlFor="transportadora">Transportadora</label>
                             <div>
                                 <select defaultValue={item?.cons_transportadora} id="transportadora" name='transportadora' className="form-select form-select-sm">
 
-                                    {transportadoras.map((item) => (
-
-                                        <option>{item.razon_social}</option>
+                                    {transportadoras.map((item, index) => (
+                                        <option key={index}>{item.razon_social}</option>
                                     ))}
 
                                 </select>
@@ -116,7 +114,7 @@ export default function NuevoConductor({ setAlert, setOpen, item }) {
                         <div className={styles.grupo}>
                             <br />
                             <div>
-                            <button type="submit" className={"btn btn-" + styleBoton.color + " btn-sm form-control form-control-sm"}>{styleBoton.text}</button>
+                                <button type="submit" className={"btn btn-" + styleBoton.color + " btn-sm form-control form-control-sm"}>{styleBoton.text}</button>
                             </div>
                         </div>
 

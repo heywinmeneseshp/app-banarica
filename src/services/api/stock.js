@@ -28,6 +28,7 @@ const eliminarStock = async (cons_almacen, cons_producto) => {
 }
 
 const sumar = async (cons_almacen, cons_producto, cantidad) => {
+    console.log(cons_almacen)
     const res = await axios.patch(endPoints.stock.add(cons_almacen, cons_producto), { cantidad: cantidad })
     return res.data
 }
@@ -37,12 +38,25 @@ const restar = async (cons_almacen, cons_producto, cantidad) => {
     return res.data
 }
 
+const exportCombo = async (body, listaCombo) => {
+    const data = {
+        ...body,
+        comboList: listaCombo
+    }
+    try {
+        const res = await axios.post(endPoints.stock.export, data);
+        return res.data
+    } catch (e) {
+        alert("Se ha presentado un error al exportar")
+    }
+}
+
 const listarUnProductoEnAlmacenes = async (cons_producto) => {
     try {
         const res = await axios.get(endPoints.stock.findOneProductInAll(cons_producto));
         return res.data
     } catch (e) {
-        console.log(e)
+        alert("Se ha presentado un error al listar el producto en todos los almacenes")
     }
 }
 
@@ -51,20 +65,17 @@ const listarProductosEnUnAlmacen = async (cons_almacen) => {
         const res = await axios.get(endPoints.stock.findOneAlmacen(cons_almacen));
         return res.data
     } catch {
-        console.log(e)
+        alert("Se ha presentado un error al listar productos en el almacen")
     }
 }
 
 const habilitarProductoEnAlmacen = async (cons_almacen, cons_producto, bool) => {
-    console.log(cons_almacen, cons_producto)
     try {
         await axios.get(endPoints.stock.filterAlmacenAndProduct(cons_almacen, cons_producto))
-        await axios.patch(endPoints.stock.enable(cons_almacen,cons_producto), {isBlock: bool})
+        await axios.patch(endPoints.stock.enable(cons_almacen, cons_producto), { isBlock: bool })
     } catch (e) {
-        crearStock(cons_almacen, cons_producto, bool)
+        alert("Se ha presentado un error al habilitar el producto en el almacen")
     }
-
-
 }
 
 const filtrarPorProductoYAlmacen = async (cons_almacen, cons_producto) => {
@@ -72,7 +83,7 @@ const filtrarPorProductoYAlmacen = async (cons_almacen, cons_producto) => {
         const res = await axios.get(endPoints.stock.filterAlmacenAndProduct(cons_almacen, cons_producto));
         return res.data
     } catch (e) {
-        console.log("Se ha presentado un error")
+        alert("Se ha presentado un error al filtrar por producto y almacen")
     }
 }
 
@@ -86,6 +97,7 @@ export {
     listarUnProductoEnAlmacenes,
     restar,
     sumar,
+    exportCombo,
     eliminarStock,
     crearStock,
     filtrarPorProductoYAlmacen

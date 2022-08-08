@@ -13,7 +13,7 @@ const TableroB = () => {
 
             <div className={styles.superTablero}>
                 <div className={styles.tablero}>
-                    <div className={styles.containerCrear}>
+                    <div >
                         <h5 className={styles.plus}>+ Avisos</h5>
                         
                         <Alert key={"01"} variant="info"> 

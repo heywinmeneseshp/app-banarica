@@ -1,12 +1,13 @@
 
 import { useRef } from 'react';
-
-
+//Services
+//Hooks
+import { useAuth } from '@hooks/useAuth';
 //CSS
-import styles from "../styles/Login.module.css";
-
+import styles from "@styles/Login.module.css";
 
 export default function Login() {
+    const auth = useAuth();
     const usernameRef = useRef(null);
     const passwordRef = useRef(null);
 
@@ -14,9 +15,8 @@ export default function Login() {
         event.preventDefault();
         const username = usernameRef.current.value;
         const password = passwordRef.current.value;
-        };
-    }
-
+        auth.login(username, password);
+    };
     return (
         <>
             <div className={styles.padre}>
@@ -26,6 +26,7 @@ export default function Login() {
                         <label htmlFor="usuario">Usuario</label>
                         <input
                             id='username'
+                            name='username'
                             type="text"
                             className="form-control"
                             placeholder="ingresar usuario"
@@ -36,6 +37,7 @@ export default function Login() {
                         <label htmlFor="password">Contraseña</label>
                         <input
                             id='password'
+                            name='password'
                             type="password"
                             className="form-control"
                             placeholder="Ingresar contraseña"
@@ -55,12 +57,9 @@ export default function Login() {
                         </div>
                     </div>
                     <div className="d-grid">
-
-                        
-                            <button type='submit' className="btn btn-primary">
-                                Iniciar sesión
-                            </button>
-                 
+                        <button type='submit' className="btn btn-primary">
+                            Iniciar sesión
+                        </button>
                     </div>
                     <p className="forgot-password text-right">
                         ¿Olvidaste tu contraseña?
@@ -69,5 +68,4 @@ export default function Login() {
             </div>
         </>
     );
-
 }

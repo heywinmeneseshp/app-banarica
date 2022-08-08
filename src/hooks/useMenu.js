@@ -9,7 +9,7 @@ const initialMenu = {
 }
 
 const useMenu = () => {
-
+    const [navBar, setNavBar] = useState(true)
     const [menu, setMenu] = useState(initialMenu);
 
     const handleInicio = () => {
@@ -21,7 +21,7 @@ const useMenu = () => {
             informes: false
         })
     }
-    
+
     const handleAdministrador = () => {
         setMenu({
             ...menu,
@@ -43,7 +43,7 @@ const useMenu = () => {
             informes: false
         })
     }
-    
+
     const handleInformes = () => {
         setMenu({
             ...menu,
@@ -54,7 +54,19 @@ const useMenu = () => {
         })
     }
 
-    return { menu, handleInicio, handleAdministrador, handleAlmacen, handleInformes };
+    const toggleNavBar = (bool) => {
+        setNavBar(bool)
+    }
+
+    return {
+        menu, 
+        handleInicio, 
+        handleAdministrador, 
+        handleAlmacen, 
+        handleInformes, 
+        toggleNavBar,
+        navBar
+    };
 };
 
 export default useMenu;

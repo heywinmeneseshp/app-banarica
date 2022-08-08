@@ -1,165 +1,168 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import Table from 'react-bootstrap/Table';
-import Button from 'react-bootstrap/Button';
-import { Pagination } from "react-bootstrap";
-
+//Services
+import endPoints from "@services/api";
+//Hooks
+import { useAuth } from "@hooks/useAuth";
 //Components
-
+import Paginacion from '@components/Paginacion';
+import Button from 'react-bootstrap/Button';
 //CSS
 import styles from '@styles/informes/informes.module.css';
 import { Container } from "react-bootstrap";
 
 
+
 export default function InfoTraslados() {
-  return (
-    <>
+    const { user, almacenByUser } = useAuth();
+    const [traslados, setTraslados] = useState([1]);
+    const [pagination, setPagination] = useState(1);
+    const [total, setTotal] = useState(0);
+    const [productos, setProductos] = useState([1]);
+    const [categorias, setCategorias] = useState([1]);
+    const limit = 20;
 
-      <Container>
+    useEffect(() => {
+        async function listarItems() {
+            const res = await axios.get(endPoints.traslados.pagination(pagination, limit));
+            const total = await axios.get(endPoints.traslados.list);
+            const productos = await axios.get(endPoints.productos.list);
+            const categorias = await axios.get(endPoints.categorias.list);
+            setCategorias(categorias.data);
+            setProductos(productos.data);
+            setTotal(total.data.length);
+            setTraslados(res.data.reverse())
+        }
+        try {
+            listarItems()
+        } catch (e) {
+            alert("Error al cargar los usuarios", "error")
+        }
+    }, [alert, pagination])
+    
+    return (
+        <>
 
-        <h2>Informe de traslados</h2>
-        <div className="line"></div>
+            <Container>
 
-        <div>
+                <h2>Informe de traslados</h2>
+                <div className="line"></div>
 
-          <div className={styles.contenedor3}>
-            <div className={styles.grupo}>
-              <label htmlFor="Username">Almacen</label>
-              <div>
-                <select className="form-select form-select-sm">
-                  <option>All</option>
-                  <option>Macondo</option>
-                  <option>Maria Luisa</option>
-                  <option>Lucia</option>
-                  <option>Florida</option>
-                </select>
-              </div>
-            </div>
+                <div>
 
-            <div className={styles.grupo}>
-              <label htmlFor="Username">Categoría</label>
-              <div>
-                <select className="form-select form-select-sm">
-                  <option>All</option>
-                  <option>Cartón</option>
-                  <option>Insumos</option>
-                  <option>Papelería</option>
-                </select>
-              </div>
-            </div>
+                    <div className={styles.contenedor3}>
+                        <div className={styles.grupo}>
+                            <label htmlFor="Username">Almacen</label>
+                            <div>
+                                <select className="form-select form-select-sm">
+                                    {(user.id_rol === 'Super administrador') && <option>All</option>}
+                                    {almacenByUser.map(almacen => (
+                                        <option key={almacen.id} value={almacen.id}>{almacen.nombre}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
 
-            <div className={styles.grupo}>
-              <label htmlFor="Username">Artículo</label>
-              <div>
-                <input type="text" className="form-control form-control-sm" id="contraseña"></input>
-              </div>
-            </div>
+                        <div className={styles.grupo}>
+                            <label htmlFor="Username">Categoría</label>
+                            <div>
+                                <select className="form-select form-select-sm">
+                                    <option>All</option>
+                                    {categorias.map(producto => (
+                                        <option key={producto.id} value={producto.id}>{producto.nombre}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
 
-            <div className={styles.grupo}>
-              <label htmlFor="Username">Fecha Inicial</label>
-              <div>
-                <input type="date" className="form-control form-control-sm" id="contraseña"></input>
-              </div>
-            </div>
+                        <div className={styles.grupo}>
+                            <label htmlFor="Username">Artículo</label>
+                            <div>
+                                <select className="form-select form-select-sm">
+                                    <option>All</option>
+                                    {productos.map(producto => (
+                                        <option key={producto.id} value={producto.id}>{producto.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
 
-            <div className={styles.grupo}>
-              <label htmlFor="Username">Fecha Final</label>
-              <div>
-                <input type="date" className="form-control form-control-sm" id="contraseña"></input>
-              </div>
-            </div>
+                        <div className={styles.grupo}>
+                            <label htmlFor="Username">Fecha Inicial</label>
+                            <div>
+                                <input type="date" className="form-control form-control-sm" id="contraseña"></input>
+                            </div>
+                        </div>
 
-          </div>
+                        <div className={styles.grupo}>
+                            <label htmlFor="Username">Fecha Final</label>
+                            <div>
+                                <input type="date" className="form-control form-control-sm" id="contraseña"></input>
+                            </div>
+                        </div>
 
-          <div className={styles.contenedor3}>
+                    </div>
 
-            <div className={styles.grupo}>
-              <label htmlFor="Username">Consecutivo</label>
-              <div>
-                <input type="text" className="form-control form-control-sm" id="contraseña"></input>
-              </div>
-            </div>
+                    <div className={styles.contenedor3}>
 
-            <Button className={styles.button} variant="warning" size="sm">
-              Editar documento
-            </Button>
+                        <div className={styles.grupo}>
+                            <label htmlFor="Username">Consecutivo</label>
+                            <div>
+                                <input type="text" className="form-control form-control-sm" id="contraseña"></input>
+                            </div>
+                        </div>
+                        {(user.id_rol === 'Super administrador') &&
+                            <Button className={styles.button} variant="warning" size="sm">
+                                Editar documento
+                            </Button>
+                        }
+                        {(user.id_rol == "Administrador" || "Super administrador") &&
+                            <Button className={styles.button} variant="success" size="sm">
+                                Descargar documento
+                            </Button>
+                        }
+                    </div>
+                </div>
 
-            <Button className={styles.button} variant="success" size="sm">
-              Descargar documento
-            </Button>
 
-          </div>
-        </div>
+                <Table className={styles.tabla} striped bordered hover size="sm">
+                    <thead>
+                        <tr>
+                            <th>Cons.</th>
+                            <th>Origen</th>
+                            <th>Destino</th>
+                            <th>Transportadora</th>
+                            <th>Conductor</th>
+                            <th>Semana</th>
+                            <th>Estado</th>
+                            <th>Salida</th>
+                            <th>Entrada</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {traslados.map((traslado, index) => (
+                            <tr>
+                                <td>{traslado.consecutivo}</td>
+                                <td>{traslado.origen}</td>
+                                <td>{traslado.destino}</td>
+                                <td>{traslado.transportadora}</td>
+                                <td>{traslado.conductor}</td>
+                                <td>{traslado.semana}</td>
+                                <td>{traslado.estado}</td>
+                                <td>{traslado.fecha_salida}</td>
+                                <td>{traslado.fecha_entrada}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </Table>
 
+                <div className={styles.pagination}>
+                    <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
+                </div>
 
-        <Table className={styles.tabla} striped bordered hover size="sm">
-          <thead>
-            <tr>
-              <th>Cons.</th>
-              <th>Origen</th>
-              <th>Destino</th>
-              <th>Artículo</th>
-              <th>Categoría</th>
-              <th>Und</th>
-              <th>Usernama</th>
-              <th>Fecha</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>0123</td>
-              <td>504</td>
-              <td>001</td>
-              <td>Tapa OT 18KG</td>
-              <td>Cartón</td>
-              <td>1116</td>
-              <td>heywin</td>
-              <td>25-10-2021</td>
-            </tr>
-            <tr>
-              <td>0123</td>
-              <td>504</td>
-              <td>001</td>
-              <td>Tapa OT 18KG</td>
-              <td>Cartón</td>
-              <td>1116</td>
-              <td>heywin</td>
-              <td>25-10-2021</td>
-            </tr>
-            <tr>
-              <td>0123</td>
-              <td>504</td>
-              <td>001</td>
-              <td>Tapa OT 18KG</td>
-              <td>Cartón</td>
-              <td>1116</td>
-              <td>heywin</td>
-              <td>25-10-2021</td>
-            </tr>
-          </tbody>
-        </Table>
-
-        <div className={styles.pagination}>
-          <Pagination>
-            <Pagination.First />
-            <Pagination.Prev />
-            <Pagination.Item>{1}</Pagination.Item>
-            <Pagination.Ellipsis />
-
-            <Pagination.Item>{4}</Pagination.Item>
-            <Pagination.Item>{5}</Pagination.Item>
-            <Pagination.Item active>{6}</Pagination.Item>
-            <Pagination.Item>{7}</Pagination.Item>
-            <Pagination.Item disabled>{8}</Pagination.Item>
-
-            <Pagination.Ellipsis />
-            <Pagination.Item>{10}</Pagination.Item>
-            <Pagination.Next />
-            <Pagination.Last />
-          </Pagination>
-        </div>
-
-      </Container>
-    </>
-  );
+            </Container>
+        </>
+    );
 }
 

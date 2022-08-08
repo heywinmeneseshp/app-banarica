@@ -33,7 +33,7 @@ const Bodega = () => {
         try {
             listarAlmacenes()
         } catch (e) {
-            console.log(e);
+            alert("Se ha producido un error al listar los almacenes");
         }
     }, [alert, pagination])
 
@@ -136,8 +136,8 @@ const Bodega = () => {
                                     <button onClick={() => handleEditar(almacen)} type="button" className="btn btn-warning btn-sm w-80">Editar</button>
                                 </td>
                                 <td>
-                                    {!almacen.isBlock && <button onClick={() => handleActivar(almacen)} type="button" className="btn btn-danger btn-sm w-80">Activar</button>}
-                                    {almacen.isBlock && <button onClick={() => handleActivar(almacen)} type="button" className="btn btn-success btn-sm w-80">Desactivar</button>}
+                                    {almacen.isBlock && <button onClick={() => handleActivar(almacen)} type="button" className="btn btn-danger btn-sm w-80">Activar</button>}
+                                    {!almacen.isBlock && <button onClick={() => handleActivar(almacen)} type="button" className="btn btn-success btn-sm w-80">Desactivar</button>}
                                 </td>
                             </tr>)
                         )}

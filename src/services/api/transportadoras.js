@@ -32,7 +32,7 @@ const buscarTransportadora = async (consecutivo) => {
         const res = await axios.get(endPoints.transportadoras.findOne(consecutivo));
         return res.data
     } catch (e) {
-        console.log(e)
+        alert("Error al buscar Transportadora")
     }
 }
 
@@ -41,7 +41,7 @@ const listarTransportadoras = async () => {
         const res = await axios.get(endPoints.transportadoras.list);
         return res.data
     } catch {
-        console.log(e)
+        alert("Error al listar Transportadoras")
     }
 }
 

@@ -1,6 +1,4 @@
 import React from "react";
-import { useContext, useState } from "react";
-import AppContext from "@context/AppContext";
 
 //Bootstrap
 import Alert from 'react-bootstrap/Alert';

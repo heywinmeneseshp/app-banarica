@@ -11,7 +11,6 @@ const agregarCategorias = async (Categorias) => {
     const body = { nombre: Categorias.nombre, isBlock: Categorias.isBlock }
     const url = endPoints.categorias.create;
     const response = await axios.post(url, body, config);
-    console.log(response.data)
     return response.data;
 }
 
@@ -30,7 +29,7 @@ const buscarCategorias = async (consecutivo) => {
         const res = await axios.get(endPoints.categorias.findOne(consecutivo));
         return res.data
     } catch (e) {
-        console.log(e)
+        alert("Error al buscar Categoría")
     }
 }
 
@@ -39,7 +38,7 @@ const listarCategorias = async () => {
         const res = await axios.get(endPoints.categorias.list);
         return res.data
     } catch {
-        console.log(e)
+        alert("Error al listar Categorías")
     }
 }
 

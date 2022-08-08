@@ -33,7 +33,7 @@ const Combo = () => {
         try {
             listrasItems()
         } catch (e) {
-            console.log(e);
+            alert("Error al cargar los combos", "error")
         }
     }, [alert, pagination])
 

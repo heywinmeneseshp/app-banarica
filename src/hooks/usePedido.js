@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { listarAlmacenes } from "@services/api/almacenes";
 import { listarProductos } from "@services/api/productos";
 
 const usePedido = () => {
@@ -9,12 +8,13 @@ const usePedido = () => {
 
     const initialize = () => {
         setListaPedido([]);
-        listarAlmacenes().then((res)=>{
-            setAlmacenes(res)
-        })
         listarProductos().then((res)=>{
             setProductos(res)
         })
+    }
+
+    const ingresarAlmacenes = (almacenes) => {
+        setAlmacenes(almacenes);
     }
 
     const agregar = (data) => {
@@ -33,7 +33,9 @@ const usePedido = () => {
         productos,
         initialize,
         agregar,
-        eliminarAlmacen
+        eliminarAlmacen,
+        ingresarAlmacenes
+
     };
 };
 

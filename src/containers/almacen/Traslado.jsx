@@ -1,35 +1,38 @@
-import React from "react";
+import React, { useEffect, useState, useContext } from "react";
+import { useRouter } from "next/router";
 import AppContext from "@context/AppContext";
-import { useContext } from "react";
-
-//Components
-import RecibirTraslado from "@components/almacen/RecibirTraslado";
+//Services";
 import RealizarTraslado from "@components/almacen/RealizarTraslado";
-import AlertaTraslado from "@assets/almacen/Alerta";
+import Alerta from "@assets/almacen/Alerta";
 
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
+import { Container } from "react-bootstrap";
 
 export default function Traslado() {
+    const router = useRouter()
+    const { gestionNotificacion } = useContext(AppContext);
+    const [notificaciones, setNotificaciones] = useState([]);
 
-  const  {initialState} = useContext(AppContext);
-   
-  const data = {
-    consecutivo: "20843",
-    almacen: "302",
-    movimiento: "Liquidacion",
-    mensaje: "pendiente por aprobar"
-  }
+    useEffect(() => {
+        const result = gestionNotificacion.notificaciones.filter(noti => noti.tipo_movimiento === "Traslado")
+        setNotificaciones(result);
+    }, [])
 
-  return (
-    <>
-        <div className={styles.contenedorPadre}>
+    const nextPage = () => {
+        router.push("/noti/traslado");
+    }
 
-          <AlertaTraslado data={data}/>
-          {initialState.state.realizarTraslado && <RealizarTraslado />}
-          {initialState.state.recibirTraslado && <RecibirTraslado />}
-
-        </div>
-    </>
-  );
+    return (
+        <>
+            <div className={styles.contenedorPadre}>
+                <Container>
+                    {notificaciones.map((data, index) => (
+                        <Alerta key={index} data={data} funcion={nextPage} />
+                    ))}
+                </Container>
+                <RealizarTraslado />
+            </div>
+        </>
+    );
 }

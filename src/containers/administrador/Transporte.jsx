@@ -16,18 +16,14 @@ export default function Transporte() {
     const [toggleTransportador, setToggleTransportador] = useState(true);
     const [toggleConductor, setToggleConductor] = useState(false);
 
-    const { initialAdminMenu } = useContext(AppContext);
-
     const handleToggleTransportador = () => {
         setToggleTransportador(true);
         setToggleConductor(false);
-        initialAdminMenu.hadleCloseTable()
     };
 
     const handleToggleConductor = () => {
         setToggleConductor(true);
         setToggleTransportador(false);
-        initialAdminMenu.hadleCloseTable()
     };
 
     return (

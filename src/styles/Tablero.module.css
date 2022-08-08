@@ -1,13 +1,9 @@
 .contenedorTableros{
     display: grid;
     grid-template-columns: 1fr 1fr;
+    gap: 23px;
 }
 
-.superTablero {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
 
 .tablero {
     display: flex;
@@ -15,13 +11,18 @@
     background-color: white;
     margin-left: 0px;
     margin-right: 0px;
-    width: 420px;
+    width: 480px;
     height: 300px;
     box-shadow: 0 0 8px rgb(210, 210, 210), inset 0 0.5px #b2b2b280;
     padding: 20px;
 }
 
-
+.miniTablero{
+    width: 480px;
+    overflow-y: auto;
+    height: 255px;
+    padding-right: 10px;
+}
 
 .plus {
     font-weight: 750;

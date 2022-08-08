@@ -13,7 +13,7 @@ const useFetch = (endpoint) => {
         try {
             fetchData()
         } catch (error) {
-            console.log(error);
+            alert("Error al cargar los datos con useFetch");
         }
     }, []);
     return data;

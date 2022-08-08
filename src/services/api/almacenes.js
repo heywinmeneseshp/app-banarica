@@ -1,16 +1,19 @@
 import axios from 'axios';
 import endPoints from './index';
-
+const config = {
+    headers: {
+        accept: 'application/json',
+        'Content-Type': 'application/json'
+    }
+};
 const agregarAlmacen = async (almacen) => {
-    const config = {
-        headers: {
-            accept: 'application/json',
-            'Content-Type': 'application/json'
-        }
-    };
+   try {
     const url = endPoints.almacenes.create;
     const response = await axios.post(url, almacen, config);
     return response.data;
+   }catch(e){
+    alert("Error al ingresar datos")
+   }
 }
 
 const eliminarAlmacen = async(consecutivo) => {
@@ -28,7 +31,7 @@ const buscarAlmacen = async(consecutivo) => {
     const res = await axios.get(endPoints.almacenes.findOne(consecutivo));
     return res.data
     } catch (e) {
-        console.log(e)
+        alert("Error al buscar almacen")
     } 
 }
 
@@ -37,7 +40,7 @@ const listarAlmacenes = async() => {
         const res = await axios.get(endPoints.almacenes.list);
         return res.data
     } catch (e){
-        console.log(e)
+        alert("Error al listar almacenes")
     }
 }
 

@@ -33,7 +33,7 @@ const Producto = () => {
         try {
             listrasItems()
         } catch (e) {
-            console.log(e);
+            alert("Error al cargar los productos", "error")
         }
     }, [alert, pagination])
 

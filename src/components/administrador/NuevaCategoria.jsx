@@ -28,8 +28,7 @@ export default function NuevaCategoria({ setAlert, setOpen, item }) {
         };
         if (item == null) {
             try {
-                const result = agregarCategorias(data);
-                console.log(result);
+                agregarCategorias(data);
                 setAlert({
                     active: true,
                     mensaje: "El usuario ha sido creado con exito",
@@ -61,7 +60,7 @@ export default function NuevaCategoria({ setAlert, setOpen, item }) {
         <div>
             <div className={styles.tableros}>
                 <div className={styles.padre}>
-                    <div className={styles.ex}><span onClick={closeWindow} className={styles.x}>X</span></div>
+                    <div className={styles.ex}><span tabIndex={0} role="button" onClick={closeWindow} onKeyDown={closeWindow} className={styles.x}>X</span></div>
                     <form ref={formRef} onSubmit={handleSubmit} className={styles.formularioCategoria}>
 
                         <div className={styles.grupo}>

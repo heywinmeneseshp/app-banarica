@@ -34,7 +34,7 @@ const Categoria = () => {
         try {
             listrasItems()
         } catch (e) {
-            console.log(e);
+            alert("Se ha producido un error al listar las categorías");
         }
     }, [alert, pagination])
 

@@ -27,7 +27,6 @@ export default function NuevoCombo({ setAlert, setOpen, item }) {
                             });
                         });
                         setProducts(res);
-                        console.log(listaDelCombo);
                     });
                 }
             });
@@ -61,7 +60,7 @@ export default function NuevoCombo({ setAlert, setOpen, item }) {
                     products.map((item, index) => {
                         const result = formData.get('producto-' + index);
                         const existe = productos.find((element) => element.name == result);
-                        armarCombo(res.data.consecutivo, existe.consecutivo).then((r) => console.log(r));
+                        armarCombo(res.data.consecutivo, existe.consecutivo);
                     });
                 });
                 setAlert({
@@ -97,7 +96,7 @@ export default function NuevoCombo({ setAlert, setOpen, item }) {
 
             <div className={styles.tableros}>
                 <div className={styles.padre}>
-                    <div className={styles.ex}><span onClick={closeWindow} className={styles.x}>X</span></div>
+                    <div className={styles.ex}><span role="button" tabIndex={0} onClick={closeWindow} onKeyDown={closeWindow} className={styles.x}>X</span></div>
 
                     <form ref={formRef} onSubmit={handleSubmit} className={styles.formulario}>
 
@@ -110,56 +109,56 @@ export default function NuevoCombo({ setAlert, setOpen, item }) {
 
                             <div className="mb-3 input-group input-group-sm">
                                 <label htmlFor="nombre_combo" className="input-group-text" id="inputGroup-sizing-sm">Nombre del Combo</label>
-                                <input defaultValue={item?.nombre} id='nombre_combo' name='nombre_combo' aria-label="Small" aria-describedby="inputGroup-sizing-sm" className="form-control"></input>
+                                <input defaultValue={item?.nombre} id='nombre_combo' name='nombre_combo' aria-label="Small" aria-describedby="inputGroup-sizing-sm" className="form-control" required></input>
                             </div>
                         </div>
-                        
+
                         {item &&
                             products.map((item, key) => (
-                                <div className={styles.contenedor2}>
+                                <div key={key} className={styles.contenedor2}>
 
-                                <div className="mb-3 input-group input-group-sm">
-                                    <label htmlFor='cons_combo' className="input-group-text" id="inputGroup-sizing-sm">Cod</label>
-                                    <input defaultValue={listaDelCombo[key]?.consecutivo} id='cons_combo' name='cons_combo' aria-label="Small" aria-describedby="inputGroup-sizing-sm" className="form-control" disabled></input>
+                                    <div className="mb-3 input-group input-group-sm">
+                                        <label htmlFor='cons_combo' className="input-group-text" id="inputGroup-sizing-sm">Cod</label>
+                                        <input defaultValue={listaDelCombo[key]?.consecutivo} id='cons_combo' name='cons_combo' aria-label="Small" aria-describedby="inputGroup-sizing-sm" className="form-control" disabled></input>
+                                    </div>
+
+                                    <div className="mb-3 input-group input-group-sm">
+                                        <label htmlFor="nombre_combo" className="input-group-text" id="inputGroup-sizing-sm">Producto</label>
+                                        <input defaultValue={listaDelCombo[key]?.name} id='nombre_combo' name='nombre_combo' aria-label="Small" aria-describedby="inputGroup-sizing-sm" className="form-control" disabled></input>
+                                    </div>
                                 </div>
-    
-                                <div className="mb-3 input-group input-group-sm">
-                                    <label htmlFor="nombre_combo" className="input-group-text" id="inputGroup-sizing-sm">Producto</label>
-                                    <input defaultValue={listaDelCombo[key]?.name} id='nombre_combo' name='nombre_combo' aria-label="Small" aria-describedby="inputGroup-sizing-sm" className="form-control" disabled></input>
-                                </div>
-                            </div>
-                                )
+                            )
                             )
                         }
-                        
-                        
+
+
                         {!item &&
                             products.map((item, key) => (
-                                    <div item={item} key={key} className={styles.contenedor2}>
-                                        <div className="mb-3 input-group input-group-sm">
-                                            <label htmlFor={'cons_product-' + key} className="input-group-text" id="inputGroup-sizing-sm">Cod</label>
-                                            <input  id={'cons_product-' + key} name={'cons_product-' + key} aria-label="Small" aria-describedby="inputGroup-sizing-sm" className="form-control" disabled></input>
-                                        </div>
-
-
-                                        <select  id={'producto-' + key} name={'producto-' + key} className="NuevoCombo_select__f6cop form-select form-select-sm">
-                                            {productos.map((item, index) => {
-                                                return <option key={index}>{item.name}</option>;
-                                            })}
-                                        </select>
+                                <div item={item} key={key} className={styles.contenedor2}>
+                                    <div className="mb-3 input-group input-group-sm">
+                                        <label htmlFor={'cons_product-' + key} className="input-group-text" id="inputGroup-sizing-sm">Cod</label>
+                                        <input id={'cons_product-' + key} name={'cons_product-' + key} aria-label="Small" aria-describedby="inputGroup-sizing-sm" className="form-control" disabled></input>
                                     </div>
-                                )
+
+
+                                    <select id={'producto-' + key} name={'producto-' + key} className="NuevoCombo_select__f6cop form-select form-select-sm">
+                                        {productos.map((item, index) => {
+                                            return <option key={index}>{item.name}</option>;
+                                        })}
+                                    </select>
+                                </div>
+                            )
                             )
                         }
-                        
+
 
                         <div className={styles.contenedor3}>
                             <div>
                                 {!item &&
-                                <Button onClick={addProduct} variant="primary" size="sm">
-                                    Añadir artículo
-                                </Button>
-}
+                                    <Button onClick={addProduct} variant="primary" size="sm">
+                                        Añadir artículo
+                                    </Button>
+                                }
                             </div>
 
                             <div>

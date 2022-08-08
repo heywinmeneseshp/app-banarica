@@ -35,10 +35,9 @@ const Proveedor = () => {
         try {
             listrasItems()
         } catch (e) {
-            console.log(e);
+            alert("Error al cargar los proveedores", "error")
         }
     }, [alert, pagination])
-
 
     const handleNuevo = () => {
         setOpen(true);

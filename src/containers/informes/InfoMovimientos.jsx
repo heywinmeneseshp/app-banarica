@@ -1,169 +1,151 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import Table from 'react-bootstrap/Table';
 import Button from 'react-bootstrap/Button';
-import { Pagination } from "react-bootstrap";
-
+//Services 
+import endPoints from '@services/api';
 //Components
-import SecondLayout from "@layout/SecondLayout";
-
-
+import Paginacion from '@components/Paginacion';
 //CSS
 import styles from '@styles/informes/informes.module.css';
 import { Container } from "react-bootstrap";
 
 
+
 export default function InfoMovimientos() {
+    const [historial, setHistorial] = useState([1]);
+    const [pagination, setPagination] = useState(1);
+    const [total, setTotal] = useState(0);
+    const limit = 20;
 
-  const data = {
-    consecutivo: "0001",
-    cod_almacen: "502",
-    cod_producto: "001",
-    producto: "Division",
-    categoria: "Cartón",
-    movimientio: "Liquidación",
-    motivo: "mal estado",
-    cantidad: 10,
-    costo_unidad: 3400,
-    username: "heywin",
-    fecha: "25-01-2022"
-  }
+    useEffect(() => {
+        async function listarItems() {
+            const res = await axios.get(endPoints.historial.pagination(pagination, limit));
+            const total = await axios.get(endPoints.historial.list);
+            setTotal(total.data.length);
+            setHistorial(res.data.reverse())
+        }
+        try {
+            listarItems()
+        } catch (e) {
+            alert("Error al cargar los usuarios", "error")
+        }
+    }, [alert, pagination])
 
-  return (
-    <>
-      <Container >
-        <div>
-        <h2>Informe de movimientos</h2>
-        <div className="line"></div>
-          <div className={styles.contenedor3}>
+    return (
+        <>
+            <Container >
+                <div>
+                    <h2>Informe de movimientos</h2>
+                    <div className="line"></div>
+                    <div className={styles.contenedor3}>
 
-            <div className={styles.grupo}>
-              <label htmlFor="Username">Almacen</label>
-              <div>
-                <select className="form-select form-select-sm">
-                  <option>All</option>
-                  <option>Macondo</option>
-                  <option>Maria Luisa</option>
-                  <option>Lucia</option>
-                  <option>Florida</option>
-                </select>
-              </div>
-            </div>
+                        <div className={styles.grupo}>
+                            <label htmlFor="Username">Almacen</label>
+                            <div>
+                                <select className="form-select form-select-sm">
+                                    <option>All</option>
+                                    <option>Macondo</option>
+                                    <option>Maria Luisa</option>
+                                    <option>Lucia</option>
+                                    <option>Florida</option>
+                                </select>
+                            </div>
+                        </div>
 
-            <div className={styles.grupo}>
-              <label htmlFor="Username">Categoría</label>
-              <div>
-                <select className="form-select form-select-sm">
-                  <option>All</option>
-                  <option>Cartón</option>
-                  <option>Insumos</option>
-                  <option>Papelería</option>
-                </select>
-              </div>
-            </div>
+                        <div className={styles.grupo}>
+                            <label htmlFor="Username">Categoría</label>
+                            <div>
+                                <select className="form-select form-select-sm">
+                                    <option>All</option>
+                                    <option>Cartón</option>
+                                    <option>Insumos</option>
+                                    <option>Papelería</option>
+                                </select>
+                            </div>
+                        </div>
 
-            <div className={styles.grupo}>
-              <label htmlFor="Username">Artículo</label>
-              <div>
-                <input type="text" className="form-control form-control-sm" id="contraseña"></input>
-              </div>
-            </div>
+                        <div className={styles.grupo}>
+                            <label htmlFor="Username">Artículo</label>
+                            <div>
+                                <input type="text" className="form-control form-control-sm" id="contraseña"></input>
+                            </div>
+                        </div>
 
-            <div className={styles.grupo}>
-              <label htmlFor="Username">Fecha Inicial</label>
-              <div>
-                <input type="date" className="form-control form-control-sm" id="contraseña"></input>
-              </div>
-            </div>
+                        <div className={styles.grupo}>
+                            <label htmlFor="Username">Fecha Inicial</label>
+                            <div>
+                                <input type="date" className="form-control form-control-sm" id="contraseña"></input>
+                            </div>
+                        </div>
 
-            <div className={styles.grupo}>
-              <label htmlFor="Username">Fecha Final</label>
-              <div>
-                <input type="date" className="form-control form-control-sm" id="contraseña"></input>
-              </div>
-            </div>
+                        <div className={styles.grupo}>
+                            <label htmlFor="Username">Fecha Final</label>
+                            <div>
+                                <input type="date" className="form-control form-control-sm" id="contraseña"></input>
+                            </div>
+                        </div>
 
-          </div>
+                    </div>
 
-          <div className={styles.contenedor3}>
+                    <div className={styles.contenedor3}>
 
-            <div className={styles.grupo}>
-              <label htmlFor="Username">Movimiento</label>
-              <div>
-                <select className="form-select form-select-sm">
-                  <option>All</option>
-                  <option>Recepción</option>
-                  <option>Ajuste</option>
-                  <option>Devolución</option>
-                  <option>Liquidación</option>
-                  <option>Exportación</option>
-                </select>
-              </div>
-            </div>
+                        <div className={styles.grupo}>
+                            <label htmlFor="Username">Movimiento</label>
+                            <div>
+                                <select className="form-select form-select-sm">
+                                    <option>All</option>
+                                    <option>Recepción</option>
+                                    <option>Ajuste</option>
+                                    <option>Devolución</option>
+                                    <option>Liquidación</option>
+                                    <option>Exportación</option>
+                                </select>
+                            </div>
+                        </div>
 
-            <Button className={styles.button} variant="success" size="sm">
-              Descargar
-            </Button>
-          </div>
-        </div>
+                        <Button className={styles.button} variant="success" size="sm">
+                            Descargar
+                        </Button>
+                    </div>
+                </div>
 
 
-        <Table className={styles.tabla} striped bordered hover size="sm">
-          <thead>
-            <tr>
-              <th>Cons</th>
-              <th>Almacen</th>
-              <th>Cod</th>
-              <th>Artículo</th>
-              <th>Categoría</th>
-              <th>Movimiento</th>
-              <th>Motivo</th>
-              <th>Und</th>
-              <th>Costo und</th>
-              <th>Costo total</th>
-              <th>Usernama</th>
-              <th>Fecha</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>{data.consecutivo}</td>
-              <td>{data.cod_almacen}</td>
-              <td>{data.cod_producto}</td>
-              <td>{data.producto}</td>
-              <td>{data.categoria}</td>
-              <td>{data.movimientio}</td>
-              <td>{data.motivo}</td>
-              <td>{data.cantidad}</td>
-              <td>COP {data.costo_unidad}</td>
-              <td>COP {data.costo_unidad * data.cantidad}</td>
-              <td>{data.username}</td>
-              <td>{data.fecha}</td>
-            </tr>
-          </tbody>
-        </Table>
+                <Table className={styles.tabla} striped bordered hover size="sm">
+                    <thead>
+                        <tr>
+                            <th>Cons</th>
+                            <th>Almacen</th>
+                            <th>Artículo</th>
+                            <th>Unidades</th>
+                            <th>Tipo Movimiento</th>
+                            <th>Movimiento</th>
+                            <th>Motivo</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {historial.map((item, index) => (
+                            <tr key={index}>
+                                <td>{item?.cons_movimiento}</td>
+                                <td>{item?.cons_almacen_gestor}</td>
+                                <td>{item?.cons_producto}</td>
+                                <td>{item?.cantidad}</td>
+                                <td>{item?.cons_lista_movimientos}</td>
+                                <td>{item?.tipo_movimiento}</td>
+                                <td>{item?.razon_movimiento}</td>
+                                <td>{item?.updatedAt}</td>
+                            </tr>)
+                        )}
+                    </tbody>
+                </Table>
 
-        <div className={styles.pagination}>
-          <Pagination>
-            <Pagination.First />
-            <Pagination.Prev />
-            <Pagination.Item>{1}</Pagination.Item>
-            <Pagination.Ellipsis />
+                <div className={styles.pagination}>
+                    <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
+                </div>
 
-            <Pagination.Item>{4}</Pagination.Item>
-            <Pagination.Item>{5}</Pagination.Item>
-            <Pagination.Item active>{6}</Pagination.Item>
-            <Pagination.Item>{7}</Pagination.Item>
-            <Pagination.Item disabled>{8}</Pagination.Item>
-
-            <Pagination.Ellipsis />
-            <Pagination.Item>{10}</Pagination.Item>
-            <Pagination.Next />
-            <Pagination.Last />
-          </Pagination>
-        </div>
-
-      </Container>
-    </>
-  );
+            </Container>
+        </>
+    );
 }
 

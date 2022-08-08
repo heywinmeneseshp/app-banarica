@@ -1,146 +1,124 @@
-import React from "react";
-import Table from 'react-bootstrap/Table';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+//Services
+import endPoints from "@services/api";
 
 
 //Bootstrap
+import Table from 'react-bootstrap/Table';
 import { Button } from "react-bootstrap";
 import { Container } from "react-bootstrap";
-import { Pagination } from "react-bootstrap";
-
 //Components
-
-
-
+import Paginacion from "@components/Paginacion";
 //CSS
 import styles from '@styles/informes/informes.module.css';
-
-
 export default function InfoStock() {
+    const [stock, setStock] = useState([1]);
+    const [pagination, setPagination] = useState(1);
+    const [total, setTotal] = useState(0);
+    const limit = 20;
 
-  const data = {
-    cod_almacen: "504",
-    cod_producto: "001",
-    producto: "Tapa OT 18KG",
-    categoria: "Carton",
-    cantidad: 1116,
-    costo_unidad: 3400
-  }
 
-  return (
-    <>
-      <Container >
-        <h2>Stock</h2>
-        <div className="line"></div>
+    useEffect(() => {
+        async function listarUsurios() {
+            const res = await axios.get(endPoints.stock.pagination(pagination, limit));
+            const total = await axios.get(endPoints.stock.list);
+            setTotal(total.data.length);
+            setStock(res.data.reverse())
+        }
+        try {
+            listarUsurios()
+        } catch (e) {
+            alert("Error al cargar los usuarios", "error")
+        }
+    }, [alert, pagination])
 
-        <div className={styles.contenedor3}>
+    const data = {
+        cod_almacen: "504",
+        cod_producto: "001",
+        producto: "Tapa OT 18KG",
+        categoria: "Carton",
+        cantidad: 1116,
+        costo_unidad: 3400
+    }
 
-          <div className={styles.grupo}>
-            <label htmlFor="Username">Almacen</label>
-            <div>
-              <select className="form-select form-select-sm">
-                <option>All</option>
-                <option>Macondo</option>
-                <option>Maria Luisa</option>
-                <option>Lucia</option>
-                <option>Florida</option>
-              </select>
-            </div>
-          </div>
+    return (
+        <>
+            <Container >
+                <h2>Stock</h2>
+                <div className="line"></div>
 
-          <div className={styles.grupo}>
-            <label htmlFor="Username">Categoría</label>
-            <div>
-              <select className="form-select form-select-sm">
-                <option>All</option>
-                <option>Cartón</option>
-                <option>Insumos</option>
-                <option>Papelería</option>
-              </select>
-            </div>
-          </div>
+                <div className={styles.contenedor3}>
 
-          <div className={styles.grupo}>
-            <label htmlFor="Username">Artículo</label>
-            <div>
-              <input type="text" className="form-control form-control-sm" id="contraseña"></input>
-            </div>
-          </div>
+                    <div className={styles.grupo}>
+                        <label htmlFor="Username">Almacen</label>
+                        <div>
+                            <select className="form-select form-select-sm">
+                                <option>All</option>
+                                <option>Macondo</option>
+                                <option>Maria Luisa</option>
+                                <option>Lucia</option>
+                                <option>Florida</option>
+                            </select>
+                        </div>
+                    </div>
 
-          <Button className={styles.button} variant="primary" size="sm">
-            Buscar
-          </Button>
+                    <div className={styles.grupo}>
+                        <label htmlFor="Username">Categoría</label>
+                        <div>
+                            <select className="form-select form-select-sm">
+                                <option>All</option>
+                                <option>Cartón</option>
+                                <option>Insumos</option>
+                                <option>Papelería</option>
+                            </select>
+                        </div>
+                    </div>
 
-          <Button className={styles.button} variant="success" size="sm">
-            Descargar documento
-          </Button>
+                    <div className={styles.grupo}>
+                        <label htmlFor="Username">Artículo</label>
+                        <div>
+                            <input type="text" className="form-control form-control-sm" id="contraseña"></input>
+                        </div>
+                    </div>
 
-        </div>
+                    <Button className={styles.button} variant="primary" size="sm">
+                        Buscar
+                    </Button>
 
-        <Table className={styles.tabla} striped bordered hover size="sm">
-          <thead>
-            <tr>
-              <th>Almacen</th>
-              <th>Código</th>
-              <th>Artículo</th>
-              <th>Categoría</th>
-              <th>Unidades</th>
-              <th>Costo unidad</th>
-              <th>Costo total</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>{data.almacen}</td>
-              <td>{data.cod_producto}</td>
-              <td>{data.producto}</td>
-              <td>{data.categoria}</td>
-              <td>{data.cantidad}</td>
-              <td>COP {data.costo_unidad}</td>
-              <td>COP {data.cantidad * data.costo_unidad}</td>
-            </tr>
-            <tr>
-              <td>{data.cod_almacen}</td>
-              <td>{data.cod_producto}</td>
-              <td>{data.producto}</td>
-              <td>{data.categoria}</td>
-              <td>{data.cantidad}</td>
-              <td>COP {data.costo_unidad}</td>
-              <td>COP {data.cantidad * data.costo_unidad}</td>
-            </tr>
-            <tr>
-              <td>{data.cod_almacen}</td>
-              <td>{data.cod_producto}</td>
-              <td>{data.producto}</td>
-              <td>{data.categoria}</td>
-              <td>{data.cantidad}</td>
-              <td>COP {data.costo_unidad}</td>
-              <td>COP {data.cantidad * data.costo_unidad}</td>
-            </tr>
-          </tbody>
-        </Table>
+                    <Button className={styles.button} variant="success" size="sm">
+                        Descargar documento
+                    </Button>
 
-        <div className={styles.pagination}>
-          <Pagination>
-            <Pagination.First />
-            <Pagination.Prev />
-            <Pagination.Item>{1}</Pagination.Item>
-            <Pagination.Ellipsis />
+                </div>
 
-            <Pagination.Item>{4}</Pagination.Item>
-            <Pagination.Item>{5}</Pagination.Item>
-            <Pagination.Item active>{6}</Pagination.Item>
-            <Pagination.Item>{7}</Pagination.Item>
-            <Pagination.Item disabled>{8}</Pagination.Item>
+                <Table className={styles.tabla} striped bordered hover size="sm">
+                    <thead>
+                        <tr>
+                            <th>Almacen</th>
+                            <th>Artículo</th>
+                            <th>Cantidad</th>
+            
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {stock.map((item, index) => (
+                        <tr key={index}>
+                            <td>{item.cons_almacen}</td>
+                            <td>{item.cons_producto}</td>
+                            <td>{item.cantidad}</td>
+                 
+                        </tr>
+                        ))}
+                    </tbody>
+                </Table>
 
-            <Pagination.Ellipsis />
-            <Pagination.Item>{10}</Pagination.Item>
-            <Pagination.Next />
-            <Pagination.Last />
-          </Pagination>
-        </div>
+                <div className={styles.pagination}>
+                    <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
+                </div>
 
-      </Container>
-    </>
-  );
+            </Container>
+        </>
+    );
 }
 

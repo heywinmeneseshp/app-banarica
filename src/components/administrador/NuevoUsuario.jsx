@@ -16,28 +16,27 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
             const res = await axios.get(endPoints.almacenes.list);
             if (user) {
                 const resB = await axios.get(endPoints.usuarios.almacenes.findByUsername(user.username));
+                if (resB.data.length == 0) {
+                    const array = new Array(res.data.length).fill(false);
+                    setcheckedState(array);
+                }
                 res.data.map(almacen => {
                     resB.data.map(item => {
-                        let bool = false;
-                        if (item.habilitado === "1") bool = true;
-                        if(almacen.consecutivo === item.id_almacen){
-                            setcheckedState(checkedState => [...checkedState, bool]);
+                        if (almacen.consecutivo == item.id_almacen) {
+                            setcheckedState(checkedState => [...checkedState, item.habilitado]);
                         }
                     });
                 });
             } else {
-                res.data.map(almacen => {
-                    setcheckedState(checkedState => [...checkedState, false]);
-                });
+                const array = new Array(res.data.length).fill(false);
+                setcheckedState(array);
             }
-            console.log(checkedState);
             setAlmacenes(res.data);
-            
         }
         try {
             listarAlmacenes();
         } catch (e) {
-            console.log(e);
+            alert("Se ha presentado un error");
         }
 
     }, [user]);
@@ -45,13 +44,11 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
 
 
     const handleChange = (position) => {
-        console.log(checkedState);
         const updatedCheckedState = checkedState.map((item, index) =>
             index === position ? !item : item
         );
         setcheckedState(updatedCheckedState);
     };
-
 
     let styleBoton = { color: "success", text: "Agregar usuario" };
     if (user) styleBoton = { color: "warning", text: "Editar usuario" };
@@ -71,16 +68,19 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
             password: formData.get('password'),
             tel: formData.get('tel'),
             id_rol: formData.get('id_rol'),
-            isBlock: true
+            isBlock: false
         };
+        const repassword = formData.get('repassword');
+        if (data.password != repassword) {
+            alert("La contraseña debe coincidir");
+            return;
+        }
         if (user == null) {
             try {
-                const result = agregarUsuario(data);
-
+                agregarUsuario(data);
                 almacenes.map((item, index) => {
                     cargarAlmacenesPorUsuario(data.username, item.consecutivo, checkedState[index]);
                 });
-                console.log(result);
                 setAlert({
                     active: true,
                     mensaje: "El usuario ha sido creado con exito",
@@ -98,10 +98,9 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                 setOpen(false);
             }
         } else {
-            
             actualizarUsuario(user.username, data);
             almacenes.map((item, index) => {
-                cargarAlmacenesPorUsuario(user.username, item.consecutivo, checkedState[index]);  
+                cargarAlmacenesPorUsuario(user.username, item.consecutivo, checkedState[index]);
             }
             );
             setAlert({
@@ -119,56 +118,96 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
             <div className={styles.tableros}>
                 <div className={styles.padre}>
 
-                    <div className={styles.ex}><span onClick={closeWindow} className={styles.x}>X</span></div>
+                    <div className={styles.ex}><span tabIndex={0} role="button" onClick={closeWindow} onKeyDown={closeWindow} className={styles.x}>X</span></div>
 
                     <form ref={formRef} onSubmit={handleSubmit}>
                         <span className={styles.formulario}>
                             <div className={styles.grupo}>
                                 <label htmlFor="username">Usuario</label>
                                 <div>
-                                    <input defaultValue={user?.username} id="username" name="username" type="text" className="form-control form-control-sm" ></input>
+                                    <input defaultValue={user?.username}
+                                        id="username"
+                                        name="username"
+                                        type="text"
+                                        className="form-control form-control-sm"
+                                        required
+                                    ></input>
                                 </div>
                             </div>
 
                             <div className={styles.grupo}>
                                 <label htmlFor="email">Correo</label>
                                 <div>
-                                    <input defaultValue={user?.email} id="email" name="email" type="text" className="form-control form-control-sm"></input>
+                                    <input defaultValue={user?.email}
+                                        id="email"
+                                        name="email"
+                                        type="text"
+                                        className="form-control form-control-sm"
+                                        required
+                                    ></input>
                                 </div>
                             </div>
 
                             <div className={styles.grupo}>
                                 <label htmlFor="password">Contraseña</label>
                                 <div>
-                                    <input defaultValue={user?.password} id="password" name="password" type="text" className="form-control form-control-sm"></input>
+                                    <input defaultValue={user?.password}
+                                        id="password"
+                                        name="password"
+                                        type="text"
+                                        className="form-control form-control-sm"
+                                        required
+                                    ></input>
                                 </div>
                             </div>
 
                             <div className={styles.grupo}>
                                 <label htmlFor="repassword">Repite la contraseña</label>
                                 <div>
-                                    <input defaultValue={user?.password} id="repassword" name="repassword" type="text" className="form-control form-control-sm" ></input>
+                                    <input defaultValue={user?.password}
+                                        id="repassword"
+                                        name="repassword"
+                                        type="text"
+                                        className="form-control form-control-sm"
+                                        required
+                                    ></input>
                                 </div>
                             </div>
 
                             <div className={styles.grupo}>
                                 <label htmlFor="nombre">Nombre</label>
                                 <div>
-                                    <input defaultValue={user?.nombre} id="nombre" name="nombre" type="text" className="form-control form-control-sm"></input>
+                                    <input defaultValue={user?.nombre}
+                                        id="nombre"
+                                        name="nombre"
+                                        type="text"
+                                        className="form-control form-control-sm"
+                                        required></input>
                                 </div>
                             </div>
 
                             <div className={styles.grupo}>
                                 <label htmlFor="apellido">Apellido</label>
                                 <div>
-                                    <input defaultValue={user?.apellido} id="apellido" name="apellido" type="text" className="form-control form-control-sm"></input>
+                                    <input defaultValue={user?.apellido}
+                                        id="apellido"
+                                        name="apellido"
+                                        type="text"
+                                        className="form-control form-control-sm"
+                                        required></input>
                                 </div>
                             </div>
 
                             <div className={styles.grupo}>
                                 <label htmlFor="tel">Teléfono</label>
                                 <div>
-                                    <input defaultValue={user?.tel} id="tel" name="tel" type="text" className="form-control form-control-sm"></input>
+                                    <input defaultValue={user?.tel}
+                                        id="tel"
+                                        name="tel"
+                                        type="text"
+                                        className="form-control form-control-sm"
+                                        required
+                                    ></input>
                                 </div>
                             </div>
 
@@ -195,7 +234,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
 
                                 {almacenes.map((almacen, index) => (
                                     <div key={index} className="form-check">
-                                        <input className="form-check-input" type="checkbox"  checked={checkedState[index]} onChange={() => handleChange(index)} name={almacen.consecutivo} id={almacen.consecutivo}></input>
+                                        <input className="form-check-input" type="checkbox" checked={checkedState[index]} onChange={() => handleChange(index)} name={almacen.consecutivo} id={almacen.consecutivo}></input>
                                         <label className="form-check-label" htmlFor={almacen.consecutivo}>
                                             {almacen.consecutivo}
                                         </label>

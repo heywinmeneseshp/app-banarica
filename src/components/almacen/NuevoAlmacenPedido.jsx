@@ -16,53 +16,53 @@ import styles from "@styles/almacen/almacen.module.css";
 export default function NuevoAlmacenPedido({ formRef }) {
     const { gestionPedido } = useContext(AppContext);
     const [products, setProducts] = useState([1]);
-    const [almacen, setAlmacen] = useState(null)
-    const [nameAlmacen, setNameAlmacen] = useState(null)
+    const [almacen, setAlmacen] = useState(null);
+    const [nameAlmacen, setNameAlmacen] = useState(null);
     const almacenRef = useRef(null);
-    const [bool, setBool] = useState(false)
+    const [bool, setBool] = useState(false);
     const { alert, setAlert, toogleAlert } = useAlert();
-    const [consProducts, setConsProduct] = useState([])
+    const [consProducts, setConsProduct] = useState([]);
 
     useEffect(() => {
-    }, [bool])
+        
+    }, [bool]);
 
 
     const cerrar = () => {
 
-        const formData = new FormData(formRef.current)
-        const result = gestionPedido.almacenes.find(item => item.nombre == almacenRef.current.value)
+        const formData = new FormData(formRef.current);
+        const result = gestionPedido.almacenes.find(item => item.nombre == almacenRef.current.value);
         
-        let array = []
+        let array = [];
     
         products.map((item, index) => {
-            const consecutiveProdcut = gestionPedido.productos.find(producto => producto.name == formData.get(`producto-${index}-${almacen}`)).consecutivo
+            const consecutiveProdcut = gestionPedido.productos.find(producto => producto.name == formData.get(`producto-${index}-${almacen}`)).consecutivo;
             let data = {
                 cons_producto: consecutiveProdcut,
                 cons_almacen_destino: result.consecutivo,
                 cantidad: formData.get("cantidad-" + index + "-" + almacen)
-            }
-            array.push(data)
-        })
-        console.log(array)
-        const existe = array.find((item) => item.cantidad == "")
+            };
+            array.push(data);
+        });
+        const existe = array.find((item) => item.cantidad == "");
         if (!existe) {
-            gestionPedido.agregar(array)
-            gestionPedido.eliminarAlmacen(result.consecutivo)
-            setBool(true)
-            setAlert({ active: false })
+            gestionPedido.agregar(array);
+            gestionPedido.eliminarAlmacen(result.consecutivo);
+            setBool(true);
+            setAlert({ active: false });
         } else {
             setAlert({
                 active: true,
                 mensaje: "Existen cantidades vacias",
                 color: "danger",
                 autoClose: false
-            })
+            });
         }
-        setAlmacen(result.consecutivo)
-        setNameAlmacen(result.nombre)
-        setConsProduct(array)
+        setAlmacen(result.consecutivo);
+        setNameAlmacen(result.nombre);
+        setConsProduct(array);
 
-    }
+    };
 
 
     function addProduct() {
@@ -70,7 +70,7 @@ export default function NuevoAlmacenPedido({ formRef }) {
     }
 
     function removeProduct() {
-        const array = products.slice(0, -1)
+        const array = products.slice(0, -1);
         setProducts(array);
     }
 

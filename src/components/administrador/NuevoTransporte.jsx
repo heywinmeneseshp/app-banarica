@@ -27,7 +27,7 @@ export default function NuevoTransporte({ setAlert, setOpen, item }) {
             isBlock: false
         };
         if (item == null) {
-            agregarTransportadora(data).then((res) => {
+            agregarTransportadora(data).then(() => {
                 setAlert({
                     active: true,
                     mensaje: "El usuario ha sido creado con exito",
@@ -35,7 +35,7 @@ export default function NuevoTransporte({ setAlert, setOpen, item }) {
                     autoClose: true
                 });
                 setOpen(false);
-            }).catch((e) => {
+            }).catch(() => {
                 setAlert({
                     active: true,
                     mensaje: "Se ha presentado un error",
@@ -43,7 +43,7 @@ export default function NuevoTransporte({ setAlert, setOpen, item }) {
                     autoClose: true
                 });
                 setOpen(false);
-            })
+            });
         } else {
             actualizarTransportadora(item.id, data);
             setAlert({
@@ -59,7 +59,7 @@ export default function NuevoTransporte({ setAlert, setOpen, item }) {
         <div>
             <div className={styles.tableros}>
                 <div className={styles.padre}>
-                    <div className={styles.ex}><span onClick={closeWindow} className={styles.x}>X</span></div>
+                    <div className={styles.ex}><span tabIndex={0} role="button" onClick={closeWindow} onKeyDown={closeWindow} className={styles.x}>X</span></div>
 
                     <form ref={formRef} onSubmit={handleSubmit} className={styles.formulario}>
 

@@ -1,34 +1,47 @@
 import axios from 'axios';
 import endPoints from './index';
 
+const config = {
+    headers: {
+        accept: '*/*',
+        'Content-Type': 'application/json'
+    }
+};
+
 const agregarUsuario = async (usuario) => {
-    const config = {
-        headers: {
-            accept: 'application/json',
-            'Content-Type': 'application/json'
-        }
-    };
+    try{
     const url = endPoints.usuarios.create;
     const response = await axios.post(url, usuario, config);
     return response.data;
+    } catch (e) {
+        alert("Se ha presentado un error al agregar al usuario")
+    }
 }
 
 const eliminarUsuario = async (username) => {
+    try {
     const res = await axios.delete(endPoints.usuarios.delete(username));
     return res.data
+    } catch(e) {
+        alert("Se ha presentado en erro al eliminar el usuario")
+    }
 }
 
 const actualizarUsuario = async (username, changes) => {
+    try{
     const res = await axios.patch(endPoints.usuarios.update(username), changes)
     return res.data
+    } catch(e) {
+        alert("Se ha presentado un error al actualizar el usuario")
+    }
 }
 
 const buscarUsuario = async (username) => {
     try {
-        const res = await axios.get(endPoints.usuarios.findOne(username));
+        const res = await axios.get(endPoints.usuarios.findOne(username), config);
         return res.data
     } catch (e) {
-        console.log(e)
+        alert("Se ha presentado un error al buscar el usuario")
     }
 }
 
@@ -37,7 +50,7 @@ const listarUsuarios = async () => {
         const res = await axios.get(endPoints.usuarios.list);
         return res.data
     } catch {
-        console.log(e)
+        alert("Se ha presnetado un erro al listar los usuarios")
     }
 }
 
@@ -46,7 +59,7 @@ const listarAlmacenesPorUsuario = async (username) => {
         const res = await axios.get(endPoints.usuarios.almacenes.list(username))
         return res.data
     } catch (e) {
-        console.log(e)
+        alert("Se ha presentado un error al listar almacenes por usuario")
     }
 }
 
@@ -55,15 +68,13 @@ const cargarAlmacenesPorUsuario = async (username, id_almacen, habilitado) => {
     try {
         const existe = await axios.get(endPoints.usuarios.almacenes.findAlmacenByUsername(username, id_almacen))
         if (existe.data == null) {
-            const res = await axios.post(endPoints.usuarios.almacenes.create, data)
-            console.log("item creado")
+            await axios.post(endPoints.usuarios.almacenes.create, data)
         } else {
-            const res = await axios.patch(endPoints.usuarios.almacenes.update, data)
-            console.log("item actualizado")
+            await axios.patch(endPoints.usuarios.almacenes.update, data)
         }
-        } catch (e) {
-            console.log(e)
-        }
+    } catch (e) {
+        alert("Se ha presentado un error al cargar almacenes por usuario")
+    }
 }
 
 export {

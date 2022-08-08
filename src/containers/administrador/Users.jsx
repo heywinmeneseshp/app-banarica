@@ -33,7 +33,7 @@ const Users = () => {
         try {
             listarUsurios()
         } catch (e) {
-            console.log(e);
+            alert("Error al cargar los usuarios", "error")
         }
     }, [alert, pagination])
 
@@ -70,7 +70,7 @@ const Users = () => {
             setAlert({
                 active: true,
                 mensaje: 'El usuario "' + usuario.username + '" se ha actualizado',
-                color: "danger",
+                color: "success",
                 autoClose: true
             })
         } catch (e) {
