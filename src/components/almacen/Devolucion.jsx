@@ -90,7 +90,7 @@ export default function Devolucion() {
         e.preventDefault();
         const formData = new FormData(formRef.current);
         try {
-            if (user.id_rol == "Super administrador" && gestionNotificacion.notificacion) {
+            if (user?.id_rol == "Super administrador" && gestionNotificacion.notificacion) {
                 const consAlmacen = almacenByUser.find((item) => item.nombre == almacen).consecutivo;
                 const changes = { "pendiente": false };
                 actualizarMovimiento(movimientoID, changes);

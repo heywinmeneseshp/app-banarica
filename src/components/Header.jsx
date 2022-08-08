@@ -45,7 +45,7 @@ const Header = () => {
                         <Navbar.Brand onClick={inicio}>Banarica</Navbar.Brand>
                         {initialMenu.navBar &&
                             <Nav className="me-auto">
-                                {(user.id_rol == "Super administrador") &&
+                                {(user?.id_rol == "Super administrador") &&
                                     <DropdownButton onClick={() => openMenu("admin")} className={styles.itemMenu} id="dropdown-basic-button" title="Administrador">
                                         <Dropdown.Item onClick={() => openWindow("usuarios")} >Usuarios</Dropdown.Item>
                                         <Dropdown.Item onClick={() => openWindow("productos")}>Productos</Dropdown.Item>
@@ -59,7 +59,7 @@ const Header = () => {
                                 <DropdownButton onClick={() => openMenu("almacen")} className={styles.itemMenu} id="dropdown-basic-button" title="Almacen">
                                     <Dropdown.Item onClick={initialAlmacenMenu.handleRecepcion}>Recepción</Dropdown.Item>
                                     <Dropdown.Item onClick={initialAlmacenMenu.handleTraslados}>Traslados</Dropdown.Item>
-                                    {(user.id_rol == "Administrador" || "Super Administrador") &&
+                                    {(user?.id_rol == "Administrador" || "Super Administrador") &&
                                         <span>
                                             <Dropdown.Item onClick={initialAlmacenMenu.handlePedidos}>Pedidos</Dropdown.Item>
                                             <Dropdown.Item onClick={initialAlmacenMenu.handleMovimientos}>Movimientos</Dropdown.Item>

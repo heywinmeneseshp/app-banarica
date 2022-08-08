@@ -23,7 +23,7 @@ export default function Alerta({ data }) {
         gestionNotificacion.ingresarNotificacion(data)
         initialMenu.toggleNavBar(false)
         router.push(`/movimiento/${data.tipo_movimiento}`)
-        if (user.id_rol == "Super administrador") actualizarNotificaciones(data.id, {visto: true})
+        if (user?.id_rol == "Super administrador") actualizarNotificaciones(data.id, {visto: true})
     }
 
     useEffect(()=>{
