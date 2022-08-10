@@ -12,7 +12,7 @@ import { agregarHistorial } from "@services/api/historialMovimientos";
 import { useAuth } from "@hooks/useAuth";
 import generarSemana from "@hooks/useSemana";
 import useAlert from "@hooks/useAlert";
-import useDate from "@hooks/useDate";
+import generarFecha from "@hooks/useDate";
 //Bootstrap
 import { Container } from "react-bootstrap";
 import Form from 'react-bootstrap/Form';
@@ -26,8 +26,6 @@ import styles from "@styles/almacen/almacen.module.css";
 export default function RealizarTraslado() {
     const formRef = useRef();
     const { almacenByUser } = useAuth();
-    const { semana } = generarSemana();
-    const { date } = useDate();
     const [products, setProducts] = useState([1]);
     const [productos, setProductos] = useState([]);
     const [prodcuctsCons, setProductsCons] = useState([]);
@@ -50,7 +48,7 @@ export default function RealizarTraslado() {
             listarAlmacenes().then(res => setDestinos(res));
             listarConductores().then(res => setConductores(res));
             listarTransportadoras().then(res => setTransportadoras(res));
-            setDate(date);
+            setDate(generarFecha());
         };
         listar();
     }, []);
@@ -72,7 +70,7 @@ export default function RealizarTraslado() {
         const conductor0 = formData.get("conductor");
         const vehiculo = formData.get("vehiculo");
         const week = formData.get("semana");
-        const semanaR = semana(week);
+        const semanaR = generarSemana(week);
         const origen0 = destinos.find((item) => item.nombre == formData.get("origen")).consecutivo;
         const destino0 = destinos.find((item) => item.nombre == formData.get("destino")).consecutivo;
         if (origen0 == destino0) {

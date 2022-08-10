@@ -23,6 +23,7 @@ const eliminarTransportadora = async (consecutivo) => {
 }
 
 const actualizarTransportadora = async (id, changes) => {
+    console.log(id, changes)
     const res = await axios.patch(endPoints.transportadoras.update(id), changes)
     return res.data
 }

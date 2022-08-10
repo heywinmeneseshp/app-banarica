@@ -129,6 +129,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                                         id="username"
                                         name="username"
                                         type="text"
+                                        minLength="6"
                                         className="form-control form-control-sm"
                                         required
                                     ></input>
@@ -141,7 +142,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                                     <input defaultValue={user?.email}
                                         id="email"
                                         name="email"
-                                        type="text"
+                                        type="email"
                                         className="form-control form-control-sm"
                                         required
                                     ></input>
@@ -155,6 +156,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                                         id="password"
                                         name="password"
                                         type="text"
+                                        minLength="4"
                                         className="form-control form-control-sm"
                                         required
                                     ></input>
@@ -168,6 +170,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                                         id="repassword"
                                         name="repassword"
                                         type="text"
+                                        minLength="4"
                                         className="form-control form-control-sm"
                                         required
                                     ></input>

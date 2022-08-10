@@ -111,7 +111,7 @@ export default function Ajuste() {
         <>
             <Container>
                 <form ref={formRef} onSubmit={handleSubmit}>
-                    <h2>Ajuste</h2>
+                    <h2>Exportación</h2>
                     <div className={styles.contenedor7}>
 
                         <InputGroup size="sm" className="mb-3">

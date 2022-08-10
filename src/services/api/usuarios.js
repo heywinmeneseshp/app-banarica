@@ -67,6 +67,8 @@ const cargarAlmacenesPorUsuario = async (username, id_almacen, habilitado) => {
     let data = { username: username, id_almacen: id_almacen, habilitado: habilitado }
     try {
         const existe = await axios.get(endPoints.usuarios.almacenes.findAlmacenByUsername(username, id_almacen))
+        
+        console.log(data)
         if (existe.data == null) {
             await axios.post(endPoints.usuarios.almacenes.create, data)
         } else {

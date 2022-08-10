@@ -1,7 +1,16 @@
 import axios from 'axios';
 import endPoints from './index';
 
+const config = {
+    headers: {
+        accept: 'application/json',
+        'Content-Type': 'application/json'
+    }
+};
+
 const crearStock = async (cons_almacen, cons_producto, bool) => {
+    try{
+
     const config = {
         headers: {
             accept: 'application/json',
@@ -15,11 +24,13 @@ const crearStock = async (cons_almacen, cons_producto, bool) => {
         cantidad: 0,
         isBlock: bool
     }
+    console.log(body)
     const url = endPoints.stock.create;
-    console.log(url)
     const response = await axios.post(url, body, config);
-    console.log(response.data)
     return response.data;
+} catch (e) {
+    alert('Se ha presentado un error al crear el stock')
+}
 }
 
 const eliminarStock = async (cons_almacen, cons_producto) => {
@@ -28,14 +39,25 @@ const eliminarStock = async (cons_almacen, cons_producto) => {
 }
 
 const sumar = async (cons_almacen, cons_producto, cantidad) => {
-    console.log(cons_almacen)
-    const res = await axios.patch(endPoints.stock.add(cons_almacen, cons_producto), { cantidad: cantidad })
-    return res.data
+    try {
+        const res = await axios.patch(endPoints.stock.add(cons_almacen, cons_producto), { cantidad: cantidad })
+        return res.data
+    } catch {
+        crearStock(cons_almacen, cons_producto, false)
+        const res = await axios.post(endPoints.stock.add(cons_almacen, cons_producto), { cantidad: cantidad })
+        return res.data
+    }
 }
 
 const restar = async (cons_almacen, cons_producto, cantidad) => {
-    const res = await axios.patch(endPoints.stock.subtract(cons_almacen, cons_producto), { cantidad: cantidad })
-    return res.data
+    try {
+        const res = await axios.patch(endPoints.stock.subtract(cons_almacen, cons_producto), { cantidad: cantidad })
+        return res.data
+    } catch {
+        crearStock(cons_almacen, cons_producto, false)
+        const res = await axios.post(endPoints.stock.add(cons_almacen, cons_producto), { cantidad: cantidad })
+        return res.data
+    }
 }
 
 const exportCombo = async (body, listaCombo) => {
@@ -71,10 +93,9 @@ const listarProductosEnUnAlmacen = async (cons_almacen) => {
 
 const habilitarProductoEnAlmacen = async (cons_almacen, cons_producto, bool) => {
     try {
-        await axios.get(endPoints.stock.filterAlmacenAndProduct(cons_almacen, cons_producto))
         await axios.patch(endPoints.stock.enable(cons_almacen, cons_producto), { isBlock: bool })
     } catch (e) {
-        alert("Se ha presentado un error al habilitar el producto en el almacen")
+        crearStock(cons_almacen, cons_producto, bool)
     }
 }
 
@@ -83,7 +104,7 @@ const filtrarPorProductoYAlmacen = async (cons_almacen, cons_producto) => {
         const res = await axios.get(endPoints.stock.filterAlmacenAndProduct(cons_almacen, cons_producto));
         return res.data
     } catch (e) {
-        alert("Se ha presentado un error al filtrar por producto y almacen")
+        alert('No existe artículo para este almacén')
     }
 }
 

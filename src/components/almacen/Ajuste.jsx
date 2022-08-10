@@ -35,7 +35,7 @@ export default function Ajuste({exportacion}) {
     const [semana, setSemana] = useState(null);
     const [observaciones, setObservaciones] = useState(null);
     const { alert, setAlert, toogleAlert } = useAlert();
-    const [titulo, setTitulo] = useState("Ajute");
+    const [titulo, setTitulo] = useState("Ajuste");
     useEffect(() => {
         if(exportacion) setTitulo(exportacion);
         if (!gestionNotificacion.notificacion) {

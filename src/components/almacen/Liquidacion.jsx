@@ -80,7 +80,7 @@ export default function Liquidacion() {
         gestionNotificacion.ingresarNotificacion(null);
         setAlert({
             active: true,
-            mensaje: "Liquidación rechaza",
+            mensaje: "Liquidación rechazada",
             color: "warning",
             autoClose: false
         });

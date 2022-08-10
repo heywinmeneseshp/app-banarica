@@ -24,6 +24,7 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
 
     useEffect(() => {
         async function listarAlmacenes() {
+            console.log(producto)
             const res = await axios.get(endPoints.almacenes.list);
             let array = new Array(res.data.length).fill(false);
             if (producto) {
@@ -58,6 +59,7 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
         const updatedCheckedState = checkedState.map((item, index) =>
             index === position ? !item : item
         );
+        console.log(updatedCheckedState)
         setcheckedState(updatedCheckedState);
     };
 
@@ -95,7 +97,7 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
             try {
                 agregarProducto(data).then((res) => {
                     almacenes.map((almacen, index) => {
-                        crearStock(almacen.consecutivo, res.consecutivo, checkedState[index]);
+                        crearStock(almacen.consecutivo, producto.consecutivo, checkedState[index]);
                     });
                 });
                 setAlert({
@@ -117,7 +119,8 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
         } else {
             actualizarProducto(producto.id, data).then((res) => {
                 almacenes.map((almacen, index) => {
-                    habilitarProductoEnAlmacen(almacen.consecutivo, res.consecutivo, checkedState[index]);
+                    console.log(almacen.consecutivo, producto.consecutivo, checkedState[index])
+                    habilitarProductoEnAlmacen(almacen.consecutivo, producto.consecutivo, checkedState[index]);
                 });
             });
             setAlert({

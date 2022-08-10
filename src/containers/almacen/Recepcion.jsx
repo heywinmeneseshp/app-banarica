@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
+import AppContext from "@context/AppContext";
 //Services
 import { listarProductos } from "@services/api/productos";
 import { sumar } from "@services/api/stock";
@@ -22,6 +23,7 @@ import Alertas from "@assets/Alertas";
 import styles from "@styles/almacen/almacen.module.css";
 
 export default function Recepcion() {
+    const { gestionNotificacion } = useContext(AppContext);
     const formRef = useRef(null);
     const { almacenByUser } = useAuth();
     const [products, setProducts] = useState([1]);
@@ -31,16 +33,22 @@ export default function Recepcion() {
     const [prodcuctsCons, setProductsCons] = useState([]);
     const { alert, setAlert, toogleAlert } = useAlert();
     const [consAlmacen, setConsAlmacen] = useState(null);
+    const [consecutivo, setConsecutivo] = useState(null);
 
     let styleBoton = { color: "success", text: "Cargar artículos" };
     if (bool) styleBoton = { color: "warning", text: "Modificar recepción" };
 
     useEffect(() => {
         async function listrasItems() {
-            listarProductos().then(res => {
-                setProductos(res);
-            })
-            setDate(useDate());
+            if (!gestionNotificacion.notificacion) {
+                listarProductos().then(res => {
+                    setProductos(res);
+                })
+                setDate(useDate());
+            } else {
+                setConsAlmacen(gestionNotificacion.notificacion.almacen_emisor);
+                setConsecutivo(gestionNotificacion.notificacion.cons_movimiento);
+            }
         }
         try {
             listrasItems()
@@ -75,6 +83,7 @@ export default function Recepcion() {
             }
             agregarRecepcion(body).then((res) => {
                 const consMovimiento = res.data.consecutivo;
+                setConsecutivo(consMovimiento)
                 let array = []
                 products.map((product, index) => {
                     const consecutiveProdcut = productos.find(producto => producto.name == formData.get(`producto-${index}`)).consecutivo
@@ -106,7 +115,7 @@ export default function Recepcion() {
                     aprobado: true,
                     visto: false
                 }
-                agregarNotificaciones(dataNotificacion)
+                agregarNotificaciones(dataNotificacion).then(res => console.log(res))
                 setProductsCons(array)
             })
             setBool(true)
@@ -137,7 +146,18 @@ export default function Recepcion() {
 
                     <h2>+ Recepción de artículos</h2>
 
-                    <div className={styles.contenedor7}>
+                    <div className={styles.contenedor8}>
+
+                    <InputGroup size="sm" className="mb-3">
+                            <InputGroup.Text id="inputGroup-sizing-sm">Consecutivo</InputGroup.Text>
+                            <Form.Control
+                                aria-label="Small"
+                                aria-describedby="inputGroup-sizing-sm"
+                                id="consecutivo"
+                                name="consecutivo"
+                                disabled
+                            />
+                        </InputGroup>
 
                         <InputGroup size="sm" className="mb-3">
                             <InputGroup.Text id="inputGroup-sizing-sm">Almacén</InputGroup.Text>

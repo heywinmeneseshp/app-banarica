@@ -32,7 +32,7 @@ export default function NuevoProveedor({ setAlert, setOpen, item }) {
                 agregarProveedor(data);
                 setAlert({
                     active: true,
-                    mensaje: "El usuario ha sido creado con exito",
+                    mensaje: "El item ha sido creado con exito",
                     color: "success",
                     autoClose: true
                 });
@@ -40,7 +40,7 @@ export default function NuevoProveedor({ setAlert, setOpen, item }) {
             } catch (e) {
                 setAlert({
                     active: true,
-                    mensaje: "Se ha producido un error al crear el usuario",
+                    mensaje: "Se ha producido un error al crear el item",
                     color: "warning",
                     autoClose: true
                 });
@@ -50,7 +50,7 @@ export default function NuevoProveedor({ setAlert, setOpen, item }) {
             actualizarProveedor(item.id, data);
             setAlert({
                 active: true,
-                mensaje: 'El usuario se ha actualizado',
+                mensaje: 'El item se ha actualizado',
                 color: "success",
                 autoClose: true
             });
@@ -68,7 +68,7 @@ export default function NuevoProveedor({ setAlert, setOpen, item }) {
                         <div className={styles.grupo}>
                             <label htmlFor="razon_social">Razón social</label>
                             <div>
-                                <input defaultValue={item?.razon_social} type="text" className="form-control form-control-sm" name='razon_social' id="razon_social"></input>
+                                <input defaultValue={item?.razon_social} type="text" minLength="4" className="form-control form-control-sm" name='razon_social' id="razon_social"></input>
                             </div>
                         </div>
 
@@ -82,7 +82,7 @@ export default function NuevoProveedor({ setAlert, setOpen, item }) {
                         <div className={styles.grupo}>
                             <label htmlFor="email">Correo</label>
                             <div>
-                                <input defaultValue={item?.email} type="text" className="form-control form-control-sm" name="email" id="email"></input>
+                                <input defaultValue={item?.email} type="email" className="form-control form-control-sm" name="email" id="email"></input>
                             </div>
                         </div>
 
