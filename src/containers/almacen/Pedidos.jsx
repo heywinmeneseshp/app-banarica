@@ -61,8 +61,7 @@ export default function Pedidos() {
         agregarTablePedido(data).then((res) => {
             setConsPedido(res.data.consecutivo)
             gestionPedido.listaPedido.map((item) => {
-                agregarPedido(res.data.consecutivo, item).then().catch((e) => {
-                })
+                agregarPedido(res.data.consecutivo, item)
             })
             const dataNotificacion = {
                 almacen_receptor: "BRC",

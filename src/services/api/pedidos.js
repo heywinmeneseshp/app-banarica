@@ -52,6 +52,15 @@ const buscarPedido = async (consecutivo) => {
     }
 }
 
+const buscarDocumetoPedido = async (consecutivo) => {
+    try {
+        const res = await axios.get(endPoints.pedidos.findOneDocument(consecutivo));
+        return res.data
+    } catch (e) {
+        alert("Se ha presentado un error al buscar el pedido")
+    }
+}
+
 const listarPedidos = async () => {
     try {
         const res = await axios.get(endPoints.pedidos.list);
@@ -61,4 +70,4 @@ const listarPedidos = async () => {
     }
 }
 
-export { agregarPedido, eliminarPedido, actualizarPedido, buscarPedido, listarPedidos, agregarTablePedido };
+export { agregarPedido, eliminarPedido, actualizarPedido, buscarDocumetoPedido, buscarPedido, listarPedidos, agregarTablePedido };

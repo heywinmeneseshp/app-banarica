@@ -4,7 +4,7 @@ import AppContext from "@context/AppContext";
 import { listarProductos } from "@services/api/productos";
 import { sumar } from "@services/api/stock";
 import { agregarRecepcion } from "@services/api/recepcion";
-import { agregarHistorial } from "@services/api/historialMovimientos";
+import { agregarHistorial, filterHistorial } from "@services/api/historialMovimientos";
 import { agregarNotificaciones } from "@services/api/notificaciones";
 //Hooks
 import useDate from "@hooks/useDate";
@@ -34,6 +34,10 @@ export default function Recepcion() {
     const { alert, setAlert, toogleAlert } = useAlert();
     const [consAlmacen, setConsAlmacen] = useState(null);
     const [consecutivo, setConsecutivo] = useState(null);
+    const [semana, setSemana] = useState(null)
+    const [observaciones, setObservaciones] = useState(null)
+    const [remision, setRemision] = useState(null)
+    const [pedido, setPedido] = useState(null)
 
     let styleBoton = { color: "success", text: "Cargar artículos" };
     if (bool) styleBoton = { color: "warning", text: "Modificar recepción" };
@@ -42,12 +46,27 @@ export default function Recepcion() {
         async function listrasItems() {
             if (!gestionNotificacion.notificacion) {
                 listarProductos().then(res => {
+                    console.log(res)
                     setProductos(res);
                 })
                 setDate(useDate());
             } else {
-                setConsAlmacen(gestionNotificacion.notificacion.almacen_emisor);
-                setConsecutivo(gestionNotificacion.notificacion.cons_movimiento);
+                filterHistorial(gestionNotificacion.notificacion.cons_movimiento).then(res => {
+                    setProducts(res)
+                    console.log(res[0])
+                    const movimiento = res[0].movimiento;
+                    setConsecutivo(movimiento.consecutivo);
+                    setSemana(movimiento.cons_semana);
+                    setObservaciones(movimiento.observaciones);
+                    setRemision(movimiento.remision);
+                    setPedido(res[0].cons_pedido);
+                    setConsAlmacen(res[0].cons_almacen_receptor);
+                    setProductsCons(res);
+                    setDate(movimiento.fecha)
+                })
+
+
+                setBool(true)
             }
         }
         try {
@@ -138,23 +157,24 @@ export default function Recepcion() {
         <>
             <form ref={formRef} onSubmit={handleSubmit}>
                 <Container className={styles.contenedorPadre}>
-
-                    <Alert className={styles.alert} key="warning" variant="warning">
-                        <div className={styles.alertText} >Pedido No. <b>001028</b> pendiente por recibir</div>
-                        <button type="button" className="btn btn-success btn-sm">Ver pedido</button>
-                    </Alert>
+                    {!bool &&
+                        <Alert className={styles.alert} key="warning" variant="warning">
+                            <div className={styles.alertText} >Pedido No. <b>001028</b> pendiente por recibir</div>
+                            <button type="button" className="btn btn-success btn-sm">Ver pedido</button>
+                        </Alert>}
 
                     <h2>+ Recepción de artículos</h2>
 
                     <div className={styles.contenedor8}>
 
-                    <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm" className="mb-3">
                             <InputGroup.Text id="inputGroup-sizing-sm">Consecutivo</InputGroup.Text>
                             <Form.Control
                                 aria-label="Small"
                                 aria-describedby="inputGroup-sizing-sm"
                                 id="consecutivo"
                                 name="consecutivo"
+                                defaultValue={consecutivo}
                                 disabled
                             />
                         </InputGroup>
@@ -181,6 +201,7 @@ export default function Recepcion() {
                                 id="remision"
                                 name="remision"
                                 required
+                                defaultValue={remision}
                                 disabled={bool}
                             />
                         </InputGroup>
@@ -193,6 +214,7 @@ export default function Recepcion() {
                                 id="pedido"
                                 name="pedido"
                                 required
+                                defaultValue={pedido}
                                 disabled={bool}
                             />
                         </InputGroup>
@@ -211,25 +233,44 @@ export default function Recepcion() {
                             />
                         </InputGroup>
 
-                        <InputGroup size="sm" className="mb-3">
-                            <InputGroup.Text id="inputGroup-sizing-sm">Semana</InputGroup.Text>
-                            <Form.Control
-                                aria-label="Small"
-                                aria-describedby="inputGroup-sizing-sm"
-                                id="semana"
-                                name="semana"
-                                type="number"
-                                required
-                                disabled={bool}
-                            />
-                        </InputGroup>
+                        {!bool &&
+                            <InputGroup size="sm" className="mb-3">
+                                <InputGroup.Text id="inputGroup-sizing-sm">Semana</InputGroup.Text>
+                                <Form.Control
+                                    aria-label="Small"
+                                    aria-describedby="inputGroup-sizing-sm"
+                                    id="semana"
+                                    name="semana"
+                                    type="number"
+                                    required
+                                    defaultValue={semana}
+                                    disabled={bool}
+                                />
+                            </InputGroup>
+                        }
+
+                        {bool &&
+                            <InputGroup size="sm" className="mb-3">
+                                <InputGroup.Text id="inputGroup-sizing-sm">Semana</InputGroup.Text>
+                                <Form.Control
+                                    aria-label="Small"
+                                    aria-describedby="inputGroup-sizing-sm"
+                                    id="semana"
+                                    name="semana"
+                                    type="text"
+                                    required
+                                    defaultValue={semana}
+                                    disabled={bool}
+                                />
+                            </InputGroup>
+                        }
 
 
                     </div>
 
                     <div className={styles.line}></div>
-                    {products.map((item, key) => (
-                        <div item={item} key={key}>
+                    {products.map((product, key) => (
+                        <div key={key}>
                             <div className={styles.contenedor2} >
 
                                 <InputGroup size="sm" className="mb-3">
@@ -250,6 +291,7 @@ export default function Recepcion() {
                                         {productos.map((item, index) => {
                                             return <option key={index}>{item.name}</option>
                                         })}
+                                        <option>{product?.Producto?.name}</option>
                                     </Form.Select>
                                 </InputGroup>
 
@@ -262,6 +304,7 @@ export default function Recepcion() {
                                         id={"cantidad-" + key}
                                         name={"cantidad-" + key}
                                         disabled={bool}
+                                        defaultValue={product?.cantidad}
                                         required
                                     />
 
@@ -277,6 +320,7 @@ export default function Recepcion() {
                                 aria-describedby="inputGroup-sizing-sm"
                                 id="observaciones"
                                 name="observaciones"
+                                defaultValue={observaciones}
                                 disabled={bool}
                             />
                         </InputGroup>

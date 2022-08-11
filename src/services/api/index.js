@@ -104,6 +104,7 @@ const endPoints = {
         pagination: (page, limit) => `${API}/api/${VERSION}/pedidos/paginar?page=${page}&limit=${limit}`,
         create: `${API}/api/${VERSION}/pedidos`,
         createTable: `${API}/api/${VERSION}/pedidos/listar`,
+        findOneDocument: (consecutivo) => `${API}/api/${VERSION}/pedidos/listar/${consecutivo}`,
         update: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/pedidos/${cons_almacen}/${cons_producto}`,
         delete: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/pedidos/${cons_almacen}/${cons_producto}`,
         add: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/pedidos/sumar/${cons_almacen}/${cons_producto}`,

@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import AppContext from "@context/AppContext";
-import axios from "axios";
 //Services
 import { actualizarTraslado, buscarTraslado } from "@services/api/traslados";
-import { listarProductos } from "@services/api/productos";
 import { actualizarNotificaciones } from "@services/api/notificaciones";
 //Hooks
 import useAlert from "@hooks/useAlert";
@@ -17,7 +15,6 @@ import Button from 'react-bootstrap/Button';
 import Alertas from "@assets/Alertas";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
-import endPoints from "@services/api";
 import { restar, sumar } from "@services/api/stock";
 
 export default function RecibirTraslado() {
@@ -37,42 +34,21 @@ export default function RecibirTraslado() {
     const [idNotificacion, setIdNotificacion] = useState(null);
 
     useEffect(() => {
-        const movimiento = gestionNotificacion.notificacion.cons_movimiento;
+        buscarTraslado(gestionNotificacion.notificacion.cons_movimiento).then(res => {
+            console.log(res);
+            const traslado = res[0].traslado;
+            setIdTraslado(traslado?.id);
+            setTransportadora(traslado?.transportadora);
+            setConductor(traslado?.conductor);
+            setOrigen(traslado?.origen);
+            setDestino(traslado?.destino);
+            setConsTraslado(traslado?.consecutivo);
+            setSemana(traslado?.semana);
+            setVehiculo(traslado?.vehiculo);
+            setProducts(res);
+        });
         setIdNotificacion(gestionNotificacion.notificacion.id);
-        const cargarDatosProductos = async () => {
-            const { data } = await axios.get(endPoints.historial.filter(movimiento));
-            let array = [];
-            listarProductos().then(res => {
-                res.map((producto) => {
-                    data.map(item => {
-                        if (producto.consecutivo == item.cons_producto) {
-                            const element = {
-                                consecutivo: producto.consecutivo,
-                                nombre: producto.name,
-                                cantidad: item.cantidad
-                            };
-                            array.push(element);
-                        }
-                    });
-                });
-            });
-            setProducts(array);
-            setDate(generarFecha());
-        };
-        const cargarDatosTraslado = () => {
-            buscarTraslado(movimiento).then(res => {
-                setIdTraslado(res.id);
-                setTransportadora(res.transportadora);
-                setOrigen(res.origen);
-                setDestino(res.destino);
-                setConductor(res.conductor);
-                setConsTraslado(movimiento);
-                setSemana(res.semana);
-                setVehiculo(res.vehiculo);
-            });
-        };
-        cargarDatosProductos();
-        cargarDatosTraslado();
+        setDate(generarFecha());
     }, []);
 
     const handleSubmit = (e) => {
@@ -81,8 +57,8 @@ export default function RecibirTraslado() {
             const data = { estado: "Completado", fecha_entrada: date };
             actualizarTraslado(idTraslado, data);
             products.map((product) => {
-                restar(origen, product.consecutivo, product.cantidad);
-                sumar(destino, product.consecutivo, product.cantidad);
+                restar(origen, product.cons_producto, product.cantidad);
+                sumar(destino, product.cons_producto, product.cantidad);
             });
             const dataNotificacion = { descripcion: "Traslado compledado con exito", aprobado: true };
             actualizarNotificaciones(idNotificacion, dataNotificacion);
@@ -224,7 +200,7 @@ export default function RecibirTraslado() {
                                         disabled
                                         id={`cons-producto-${key}`}
                                         name={`cons-producto-${key}`}
-                                        defaultValue={item?.consecutivo}
+                                        defaultValue={item?.cons_producto}
                                     />
                                 </InputGroup>
 
@@ -232,7 +208,7 @@ export default function RecibirTraslado() {
                                     <InputGroup.Text id="inputGroup-sizing-sm">Artículo</InputGroup.Text>
                                     <Form.Select className={styles.select} id={"producto-" + key} name={"producto-" + key} size="sm" disabled>
 
-                                        <option >{item?.nombre}</option>
+                                        <option >{item?.Producto?.name}</option>
 
                                     </Form.Select>
                                 </InputGroup>

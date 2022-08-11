@@ -29,12 +29,9 @@ export default function NuevoAlmacenPedido({ formRef }) {
 
 
     const cerrar = () => {
-
         const formData = new FormData(formRef.current);
         const result = gestionPedido.almacenes.find(item => item.nombre == almacenRef.current.value);
-        
         let array = [];
-    
         products.map((item, index) => {
             const consecutiveProdcut = gestionPedido.productos.find(producto => producto.name == formData.get(`producto-${index}-${almacen}`)).consecutivo;
             let data = {
