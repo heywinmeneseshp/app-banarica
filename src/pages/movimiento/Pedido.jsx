@@ -67,7 +67,6 @@ export default function RPedido() {
                                 />
                             </InputGroup>
 
-
                             <InputGroup size="sm" className="mb-3">
                                 <InputGroup.Text id="inputGroup-sizing-sm">Fecha</InputGroup.Text>
                                 <Form.Control

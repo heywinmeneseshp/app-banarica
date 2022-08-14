@@ -1,5 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
+//Services
+//Hooks
+import { useAuth } from "@hooks/useAuth";
+//Bootstrap
 import Table from 'react-bootstrap/Table';
 import Button from 'react-bootstrap/Button';
 //Services 
@@ -13,24 +17,46 @@ import { Container } from "react-bootstrap";
 
 
 export default function InfoMovimientos() {
+    const { almacenByUser } = useAuth();
+    const almacenRef = useRef();
     const [historial, setHistorial] = useState([1]);
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
     const limit = 20;
 
     useEffect(() => {
-        async function listarItems() {
-            const res = await axios.get(endPoints.historial.pagination(pagination, limit));
-            const total = await axios.get(endPoints.historial.list);
-            setTotal(total.data.length);
-            setHistorial(res.data.reverse())
-        }
+
         try {
             listarItems()
         } catch (e) {
             alert("Error al cargar los usuarios", "error")
         }
     }, [alert, pagination])
+
+    const entradaOrSalida = (item) => {
+        if (item === "Entrada") {
+            return <td className="text-success">{item}</td>
+        } else {
+            return <td className="text-danger">{item}</td>
+        }
+    }
+
+    async function listarItems() {
+        if (almacenRef.current.value === "All") {
+            const res = await axios.post(endPoints.historial.pagination(pagination, limit), { almacenes: almacenByUser });
+            setTotal(res.data.total);
+            setHistorial(res.data.data)
+        } else {
+            const almacenes = almacenByUser.filter(almacen => almacen.nombre === almacenRef.current.value);
+            const res = await axios.post(endPoints.historial.pagination(pagination, limit), { almacenes: almacenes });
+            setTotal(res.data.total);
+            setHistorial(res.data.data)
+        }
+    }
+
+    const onBuscar = () => {
+        listarItems()
+    }
 
     return (
         <>
@@ -41,74 +67,81 @@ export default function InfoMovimientos() {
                     <div className={styles.contenedor3}>
 
                         <div className={styles.grupo}>
-                            <label htmlFor="Username">Almacen</label>
+                            <label htmlFor="almacen">Almacen</label>
                             <div>
-                                <select className="form-select form-select-sm">
+                                <select
+                                    className="form-select form-select-sm"
+                                    ref={almacenRef}
+                                >
                                     <option>All</option>
-                                    <option>Macondo</option>
-                                    <option>Maria Luisa</option>
-                                    <option>Lucia</option>
-                                    <option>Florida</option>
+                                    {almacenByUser.map(almacen => (
+                                        <option key={almacen.consecutivo} >{almacen.nombre}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
-
-                        <div className={styles.grupo}>
-                            <label htmlFor="Username">Categoría</label>
-                            <div>
-                                <select className="form-select form-select-sm">
-                                    <option>All</option>
-                                    <option>Cartón</option>
-                                    <option>Insumos</option>
-                                    <option>Papelería</option>
-                                </select>
+                        {false && <span>
+                            <div className={styles.grupo}>
+                                <label htmlFor="Username">Categoría</label>
+                                <div>
+                                    <select className="form-select form-select-sm" disabled>
+                                        <option>All</option>
+                                    </select>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className={styles.grupo}>
-                            <label htmlFor="Username">Artículo</label>
-                            <div>
-                                <input type="text" className="form-control form-control-sm" id="contraseña"></input>
+                            <div className={styles.grupo}>
+                                <label htmlFor="Username">Movimiento</label>
+                                <div>
+                                    <select
+                                        className="form-select form-select-sm"
+                                        disabled>
+                                        <option>All</option>
+                                        <option>Recepción</option>
+                                        <option>Ajuste</option>
+                                        <option>Devolución</option>
+                                        <option>Liquidación</option>
+                                        <option>Exportación</option>
+                                    </select>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className={styles.grupo}>
-                            <label htmlFor="Username">Fecha Inicial</label>
-                            <div>
-                                <input type="date" className="form-control form-control-sm" id="contraseña"></input>
+
+                            <div className={styles.grupo}>
+                                <label htmlFor="Username">Artículo</label>
+                                <div>
+                                    <input type="text"
+                                        className="form-control form-control-sm"
+                                        id="contraseña"
+                                        disabled></input>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className={styles.grupo}>
-                            <label htmlFor="Username">Fecha Final</label>
-                            <div>
-                                <input type="date" className="form-control form-control-sm" id="contraseña"></input>
+                            <div className={styles.grupo}>
+                                <label htmlFor="Username">Semana</label>
+                                <div>
+                                    <input type="number"
+                                        className="form-control form-control-sm"
+                                        id="contraseña"
+                                        disabled></input>
+                                </div>
                             </div>
-                        </div>
-
-                    </div>
-
-                    <div className={styles.contenedor3}>
-
-                        <div className={styles.grupo}>
-                            <label htmlFor="Username">Movimiento</label>
-                            <div>
-                                <select className="form-select form-select-sm">
-                                    <option>All</option>
-                                    <option>Recepción</option>
-                                    <option>Ajuste</option>
-                                    <option>Devolución</option>
-                                    <option>Liquidación</option>
-                                    <option>Exportación</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <Button className={styles.button} variant="success" size="sm">
-                            Descargar
+                        </span>}
+                        <Button onClick={onBuscar} className={styles.button} variant="primary" size="sm">
+                            Buscar
                         </Button>
                     </div>
                 </div>
+                {false &&
+                    <div className={styles.contenedor3}>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <Button onClick={onBuscar} className={styles.button} variant="primary" size="sm">
+                            Buscar
+                        </Button>
+                    </div>}
 
 
                 <Table className={styles.tabla} striped bordered hover size="sm">
@@ -118,9 +151,10 @@ export default function InfoMovimientos() {
                             <th>Almacen</th>
                             <th>Artículo</th>
                             <th>Unidades</th>
-                            <th>Tipo Movimiento</th>
                             <th>Movimiento</th>
+                            <th>Tipo</th>
                             <th>Motivo</th>
+                            <th>Semana</th>
                             <th>Fecha</th>
                         </tr>
                     </thead>
@@ -129,12 +163,13 @@ export default function InfoMovimientos() {
                             <tr key={index}>
                                 <td>{item?.cons_movimiento}</td>
                                 <td>{item?.cons_almacen_gestor}</td>
-                                <td>{item?.cons_producto}</td>
+                                <td>{item?.Producto?.name}</td>
                                 <td>{item?.cantidad}</td>
                                 <td>{item?.cons_lista_movimientos}</td>
-                                <td>{item?.tipo_movimiento}</td>
+                                {entradaOrSalida(item?.tipo_movimiento)}
                                 <td>{item?.razon_movimiento}</td>
-                                <td>{item?.updatedAt}</td>
+                                <td>{item?.movimiento?.cons_semana}</td>
+                                <td>{item?.movimiento?.fecha}</td>
                             </tr>)
                         )}
                     </tbody>

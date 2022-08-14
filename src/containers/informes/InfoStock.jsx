@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 //Services
 import endPoints from "@services/api";
-
-
+//Hooks
+import { useAuth } from "@hooks/useAuth";
 //Bootstrap
 import Table from 'react-bootstrap/Table';
 import { Button } from "react-bootstrap";
@@ -13,6 +13,8 @@ import Paginacion from "@components/Paginacion";
 //CSS
 import styles from '@styles/informes/informes.module.css';
 export default function InfoStock() {
+    const almacenRef = useRef();
+    const { almacenByUser } = useAuth();
     const [stock, setStock] = useState([1]);
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
@@ -20,26 +22,33 @@ export default function InfoStock() {
 
 
     useEffect(() => {
-        async function listarUsurios() {
-            const res = await axios.get(endPoints.stock.pagination(pagination, limit));
-            const total = await axios.get(endPoints.stock.list);
-            setTotal(total.data.length);
-            setStock(res.data.reverse())
-        }
         try {
-            listarUsurios()
+            listar()
         } catch (e) {
             alert("Error al cargar los usuarios", "error")
         }
     }, [alert, pagination])
 
-    const data = {
-        cod_almacen: "504",
-        cod_producto: "001",
-        producto: "Tapa OT 18KG",
-        categoria: "Carton",
-        cantidad: 1116,
-        costo_unidad: 3400
+    async function listar() {
+        const almacen = almacenRef.current.value;
+        if (almacen === "All") {
+            const res = await axios.post(endPoints.stock.pagination(pagination, limit), { almacenes: almacenByUser });
+            setTotal(res.data.total);
+            setStock(res.data.data);
+        } else {
+            const almacenes = almacenByUser.filter(almacen => almacen.nombre === almacenRef.current.value);
+            const res = await axios.post(endPoints.stock.pagination(pagination, limit), { almacenes: almacenes });
+            setTotal(res.data.total);
+            setStock(res.data.data);
+        }
+    }
+
+    const onBuscar = () => {
+        listar()
+    }
+
+    const onDescargar = () => {
+        alert("Esta opción no esta habilitada")
     }
 
     return (
@@ -51,26 +60,25 @@ export default function InfoStock() {
                 <div className={styles.contenedor3}>
 
                     <div className={styles.grupo}>
-                        <label htmlFor="Username">Almacen</label>
-                        <div>
-                            <select className="form-select form-select-sm">
-                                <option>All</option>
-                                <option>Macondo</option>
-                                <option>Maria Luisa</option>
-                                <option>Lucia</option>
-                                <option>Florida</option>
-                            </select>
-                        </div>
+                        <label htmlFor="alamcen">Almacen</label>
+                        <select
+                            className="form-select form-select-sm"
+                            id="almacen"
+                            name="almacen"
+                            ref={almacenRef}
+                        >
+                            <option>All</option>
+                            {almacenByUser.map((almacen, index) => (
+                                <option key={index} >{almacen.nombre}</option>
+                            ))}
+                        </select>
                     </div>
 
                     <div className={styles.grupo}>
                         <label htmlFor="Username">Categoría</label>
                         <div>
-                            <select className="form-select form-select-sm">
+                            <select className="form-select form-select-sm" disabled>
                                 <option>All</option>
-                                <option>Cartón</option>
-                                <option>Insumos</option>
-                                <option>Papelería</option>
                             </select>
                         </div>
                     </div>
@@ -78,15 +86,18 @@ export default function InfoStock() {
                     <div className={styles.grupo}>
                         <label htmlFor="Username">Artículo</label>
                         <div>
-                            <input type="text" className="form-control form-control-sm" id="contraseña"></input>
+                            <input type="text"
+                                className="form-control form-control-sm"
+                                id="contraseña"
+                                disabled></input>
                         </div>
                     </div>
 
-                    <Button className={styles.button} variant="primary" size="sm">
+                    <Button onClick={onBuscar} className={styles.button} variant="primary" size="sm">
                         Buscar
                     </Button>
 
-                    <Button className={styles.button} variant="success" size="sm">
+                    <Button onClick={onDescargar} className={styles.button} variant="success" size="sm">
                         Descargar documento
                     </Button>
 
@@ -95,20 +106,24 @@ export default function InfoStock() {
                 <Table className={styles.tabla} striped bordered hover size="sm">
                     <thead>
                         <tr>
+                            <th>Cod. Al</th>
                             <th>Almacen</th>
+                            <th>Cod. Cat</th>
+                            <th>Cod. Art</th>
                             <th>Artículo</th>
                             <th>Cantidad</th>
-            
                         </tr>
                     </thead>
                     <tbody>
-                    {stock.map((item, index) => (
-                        <tr key={index}>
-                            <td>{item.cons_almacen}</td>
-                            <td>{item.cons_producto}</td>
-                            <td>{item.cantidad}</td>
-                 
-                        </tr>
+                        {stock.map((item, index) => (
+                            <tr key={index}>
+                                <td>{item?.cons_almacen}</td>
+                                <td>{item?.almacen?.nombre}</td>
+                                <td>{item?.producto?.cons_categoria}</td>
+                                <td>{item?.cons_producto}</td>
+                                <td>{item?.producto?.name}</td>
+                                <td>{item?.cantidad}</td>
+                            </tr>
                         ))}
                     </tbody>
                 </Table>
