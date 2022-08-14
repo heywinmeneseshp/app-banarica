@@ -9,10 +9,10 @@ const config = {
 };
 
 const agregarUsuario = async (usuario) => {
-    try{
-    const url = endPoints.usuarios.create;
-    const response = await axios.post(url, usuario, config);
-    return response.data;
+    try {
+        const url = endPoints.usuarios.create;
+        const response = await axios.post(url, usuario, config);
+        return response.data;
     } catch (e) {
         alert("Se ha presentado un error al agregar al usuario")
     }
@@ -20,18 +20,18 @@ const agregarUsuario = async (usuario) => {
 
 const eliminarUsuario = async (username) => {
     try {
-    const res = await axios.delete(endPoints.usuarios.delete(username));
-    return res.data
-    } catch(e) {
+        const res = await axios.delete(endPoints.usuarios.delete(username));
+        return res.data
+    } catch (e) {
         alert("Se ha presentado en erro al eliminar el usuario")
     }
 }
 
 const actualizarUsuario = async (username, changes) => {
-    try{
-    const res = await axios.patch(endPoints.usuarios.update(username), changes)
-    return res.data
-    } catch(e) {
+    try {
+        const res = await axios.patch(endPoints.usuarios.update(username), changes)
+        return res.data
+    } catch (e) {
         alert("Se ha presentado un error al actualizar el usuario")
     }
 }
@@ -66,14 +66,8 @@ const listarAlmacenesPorUsuario = async (username) => {
 const cargarAlmacenesPorUsuario = async (username, id_almacen, habilitado) => {
     let data = { username: username, id_almacen: id_almacen, habilitado: habilitado }
     try {
-        const existe = await axios.get(endPoints.usuarios.almacenes.findAlmacenByUsername(username, id_almacen))
-        
-        console.log(data)
-        if (existe.data == null) {
-            await axios.post(endPoints.usuarios.almacenes.create, data)
-        } else {
-            await axios.patch(endPoints.usuarios.almacenes.update, data)
-        }
+        const result = await axios.patch(endPoints.usuarios.almacenes.update, data)
+        return result.data
     } catch (e) {
         alert("Se ha presentado un error al cargar almacenes por usuario")
     }

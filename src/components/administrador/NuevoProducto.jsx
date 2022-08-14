@@ -119,7 +119,6 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
         } else {
             actualizarProducto(producto.id, data).then(() => {
                 almacenes.map((almacen, index) => {
-                    console.log(almacen.consecutivo, producto.consecutivo, checkedState[index]);
                     habilitarProductoEnAlmacen(almacen.consecutivo, producto.consecutivo, checkedState[index]);
                 });
             });

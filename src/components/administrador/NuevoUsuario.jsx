@@ -16,17 +16,15 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
             const res = await axios.get(endPoints.almacenes.list);
             if (user) {
                 const resB = await axios.get(endPoints.usuarios.almacenes.findByUsername(user.username));
-                if (resB.data.length == 0) {
-                    const array = new Array(res.data.length).fill(false);
-                    setcheckedState(array);
-                }
-                res.data.map(almacen => {
+                let array = new Array(res.data.length).fill(false); 
+                res.data.map((almacen, index) => {
                     resB.data.map(item => {
-                        if (almacen.consecutivo == item.id_almacen) {
-                            setcheckedState(checkedState => [...checkedState, item.habilitado]);
+                        if (almacen.consecutivo === item.id_almacen) {
+                            array[index] = item.habilitado;
                         }
                     });
                 });
+                setcheckedState(array);
             } else {
                 const array = new Array(res.data.length).fill(false);
                 setcheckedState(array);
@@ -99,6 +97,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
             }
         } else {
             actualizarUsuario(user.username, data);
+            console.log(checkedState);
             almacenes.map((item, index) => {
                 cargarAlmacenesPorUsuario(user.username, item.consecutivo, checkedState[index]);
             }
