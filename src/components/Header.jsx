@@ -28,6 +28,7 @@ const Header = () => {
         if (itemMenu == "almacen") initialMenu.handleAlmacen();
         if (itemMenu == "info") initialMenu.handleInformes();
         if (itemMenu == "inicio") initialMenu.handleInicio();
+      
     };
 
     const inicio = () => {
