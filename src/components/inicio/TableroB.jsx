@@ -1,28 +1,80 @@
-import React from 'react';
-
+import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
+import editarPick from '@public/images/editar.png';
+//Services 
+import { listarAvisos, eliminarAviso } from '@services/api/avisos';
+//Hooks
+import useAlert from '@hooks/useAlert';
+//Components
+import NuevoAviso from './NuevoAviso';
+import Alertas from '@assets/Alertas';
 //Bootstrap
 import { Alert } from 'react-bootstrap';
-
 import styles from '@styles/Tablero.module.css';
 
 
 const TableroB = () => {
+    const { alert, setAlert, toogleAlert } = useAlert();
+    const [avisos, setAvisos] = useState([]);
+    const [open, setOpen] = useState(false);
+    const [item, setItem] = useState(null);
+
+    useEffect(() => {
+        listarAvisos().then(res => {
+            setAvisos(res);
+        });
+    }, [alert]);
+
+    function eliminar(id) {
+        eliminarAviso(id).then(() => {
+        });
+        setAlert({
+            active: true,
+            mensaje: 'El aviso ha sido eliminado',
+            color: "success",
+            autoClose: true
+        });
+    }
+
+    const editar = (item) => {
+        setItem(item);
+        setOpen(true);
+    };
+
+    function nuevoAviso() {
+        setOpen(true);
+        setItem(null);
+    }
+
 
     return (
         <>
 
             <div className={styles.superTablero}>
                 <div className={styles.tablero}>
-                    <div >
-                        <h5 className={styles.plus}>+ Avisos</h5>
-                        
-                        <Alert key={"01"} variant="info"> 
-                            Lorem ipsum dolor, sit amet consectetur adipisicing elit. Similique delectus, ipsa cum cumque incidunt reiciendis blanditiis maxime unde quod quas soluta numquam quae, dolorum repellendus labore tempora mollitia pariatur ducimus?
-                        </Alert>
-
+                    <div className={styles.miniTablero}>
+                        <button onClick={nuevoAviso} className={styles.circulo}>+</button>
+                        <div>
+                            <h5 className={styles.plus}>+ Avisos</h5>
+                        </div>
+                        {avisos.map((aviso, index) => (
+                            <Alert className={styles.alerta} key={index} variant="info">
+                                <span className={styles.eliminarAviso}>
+                                    <button onClick={() => eliminar(aviso.id)} type="button" className="btn-close" aria-label="Close"></button>
+                                </span>
+                                <div className={styles.aviso}>
+                                    {aviso.descripcion}
+                                </div>
+                                <span className={styles.editarAviso}>
+                                    <Image onClick={() => editar(aviso)} className={styles.imagenEditar} width="20" height="20" src={editarPick} alt="editar" />
+                                </span>
+                            </Alert>
+                        ))}
+                        <Alertas alert={alert} handleClose={toogleAlert}></Alertas>
                     </div>
                 </div>
             </div>
+            {open && <NuevoAviso setOpen={setOpen} item={item} setAlert={setAlert} />}
         </>
     );
 };

@@ -154,7 +154,14 @@ const endPoints = {
         create: `${API}/api/${VERSION}/notificaciones`,
         update: (id) => `${API}/api/${VERSION}/notificaciones/${id}`,
         delete: (id) => `${API}/api/${VERSION}/notificaciones/${id}`
-    }
+    },
+    avisos: {
+        list: `${API}/api/${VERSION}/avisos`, //Listo
+        findOne: (consecutivo) => `${API}/api/${VERSION}/avisos/${consecutivo}`,
+        create: `${API}/api/${VERSION}/avisos`,
+        update: (id) => `${API}/api/${VERSION}/avisos/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/avisos/${id}`
+    },
 }
 
 export default endPoints;
