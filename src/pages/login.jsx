@@ -1,10 +1,13 @@
 
 import { useRef } from 'react';
+import Image from 'next/image';
 //Services
 //Hooks
 import { useAuth } from '@hooks/useAuth';
 //CSS
 import styles from "@styles/Login.module.css";
+//Public
+import background from '@public/images/background.jpg';
 
 export default function Login() {
     const auth = useAuth();
@@ -19,7 +22,15 @@ export default function Login() {
     };
     return (
         <>
+            <Image style={
+                {
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                }
+            } layout="fill" src={background}></Image>
             <div className={styles.padre}>
+
                 <form className={styles.hijo} onSubmit={submitHanlder}>
 
                     <div className="mb-3">
@@ -51,9 +62,9 @@ export default function Login() {
                                 className="custom-control-input"
                                 id="customCheck1"
                             />
-                            <div className="custom-control-label" htmlFor="customCheck1">
+                            <label className="custom-control-label" htmlFor="customCheck1">
                                 Recordarme
-                            </div>
+                            </label>
                         </div>
                     </div>
                     <div className="d-grid">

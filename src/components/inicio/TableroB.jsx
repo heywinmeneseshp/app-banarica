@@ -4,6 +4,7 @@ import editarPick from '@public/images/editar.png';
 //Services 
 import { listarAvisos, eliminarAviso } from '@services/api/avisos';
 //Hooks
+import { useAuth } from '@hooks/useAuth';
 import useAlert from '@hooks/useAlert';
 //Components
 import NuevoAviso from './NuevoAviso';
@@ -14,6 +15,7 @@ import styles from '@styles/Tablero.module.css';
 
 
 const TableroB = () => {
+    const { user } = useAuth();
     const { alert, setAlert, toogleAlert } = useAlert();
     const [avisos, setAvisos] = useState([]);
     const [open, setOpen] = useState(false);
@@ -53,20 +55,27 @@ const TableroB = () => {
             <div className={styles.superTablero}>
                 <div className={styles.tablero}>
                     <div className={styles.miniTablero}>
-                        <button onClick={nuevoAviso} className={styles.circulo}>+</button>
+                        {(user.id_rol == "Super administrador") &&
+                            <button onClick={nuevoAviso} className={styles.circulo}>+</button>
+                        }
                         <div>
                             <h5 className={styles.plus}>+ Avisos</h5>
                         </div>
                         {avisos.map((aviso, index) => (
                             <Alert className={styles.alerta} key={index} variant="info">
                                 <span className={styles.eliminarAviso}>
-                                    <button onClick={() => eliminar(aviso.id)} type="button" className="btn-close" aria-label="Close"></button>
+                                    {(user.id_rol == "Super administrador") &&
+                                        <button onClick={() => eliminar(aviso.id)} type="button" className="btn-close" aria-label="Close"></button>
+                                    }
                                 </span>
                                 <div className={styles.aviso}>
                                     {aviso.descripcion}
                                 </div>
+
                                 <span className={styles.editarAviso}>
-                                    <Image onClick={() => editar(aviso)} className={styles.imagenEditar} width="20" height="20" src={editarPick} alt="editar" />
+                                    {(user.id_rol == "Super administrador") &&
+                                        <Image onClick={() => editar(aviso)} className={styles.imagenEditar} width="20" height="20" src={editarPick} alt="editar" />
+                                    }
                                 </span>
                             </Alert>
                         ))}
