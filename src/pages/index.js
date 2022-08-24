@@ -17,9 +17,7 @@ export default function Home() {
     const { initialMenu } = useContext(AppContext);
     const router = useRouter();
     useEffect(() => {
-        if (!user) {
-            router.push('/login');
-        }
+        if (!user) router.push('/login');
     }, [user]);
     if (user) {
         return (

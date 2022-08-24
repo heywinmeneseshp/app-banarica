@@ -89,11 +89,13 @@ export default function Recepcion() {
         e.preventDefault();
         try {
             const formData = new FormData(formRef.current);
-            const almacen = formData.get("almacen")
+            const nombreAlmacen = formData.get("almacen")
+            const almacen = almacenByUser.find((almacen) => almacen.nombre == nombreAlmacen).consecutivo
             const pedido = formData.get("pedido");
-            setConsAlmacen(almacen);
+            setConsAlmacen(nombreAlmacen);
             const week = formData.get("semana");
             const semanaR = generarSemana(week);
+            setSemana(semanaR)
             const body = {
                 remision: formData.get("remision"),
                 fecha: formData.get("fecha"),
@@ -187,7 +189,7 @@ export default function Recepcion() {
                                 className={styles.select}
                                 size="sm" disabled={bool}>
                                 {!bool && almacenByUser.map((item, index) => (
-                                    <option key={index}>{item.consecutivo}</option>
+                                    <option key={index}>{item.nombre}</option>
                                 ))}
                                 {bool && <option>{consAlmacen}</option>}
                             </Form.Select>

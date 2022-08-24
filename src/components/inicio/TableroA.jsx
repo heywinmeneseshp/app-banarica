@@ -9,14 +9,15 @@ import Alerta from '@assets/almacen/Alerta';
 
 const TableroA = () => {
     const { gestionNotificacion } = useContext(AppContext);
-    const { consAlmacenByUser, user } = useAuth();
+    const { almacenByUser, user } = useAuth();
     const [notificaciones, setNotificaciones] = useState([]);
 
     useEffect(() => {
-        let data = {};
+        const consAlmacen = almacenByUser.map(item => item.consecutivo)
+        let data;
         if (user.id_rol == "Super administrador") {
             data = {
-                "array": consAlmacenByUser,
+                "array": consAlmacen,
                 "data": {
                     "aprobado": false,
                     "visto": false
@@ -25,7 +26,7 @@ const TableroA = () => {
             };
         } else {
             data = {
-                "array": consAlmacenByUser,
+                "array": consAlmacen,
                 "data": {
                     "aprobado": false,
                 }
@@ -35,7 +36,7 @@ const TableroA = () => {
             gestionNotificacion.ingresarNotificaciones(res);
             setNotificaciones(res);
         });
-    }, [notificaciones]);
+    }, []);
 
     return (
         <>

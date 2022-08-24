@@ -1,5 +1,7 @@
 import React, { useState, useContext, createContext } from 'react';
-import { buscarUsuario, listarAlmacenesPorUsuario } from '@services/api/usuarios';
+import { listarAlmacenesPorUsuario } from '@services/api/usuarios';
+import axios from 'axios';
+import endPoints from '@services/api';
 import Cookie from 'js-cookie';
 import { useRouter } from 'next/router';
 import { listarAlmacenes } from '@services/api/almacenes';
@@ -18,42 +20,24 @@ export const useAuth = () => {
 function useProviderAuth() {
     const [user, setUser] = useState(null);
     const [almacenByUser, setAlmacenByUser] = useState([])
-    const [consAlmacenByUser, setConsAlmacenByUser] = useState([])
     const router = useRouter();
 
-    const login = (username, password) => {
-        buscarUsuario(username).then((res) => {
-            try {
-                if (res.password === password) {
-                    setUser(res);
-                    router.push('/');
-                } else {
-                    alert('Contraseña incorrecta');
-                }
-            } catch (error) {
-                alert('El usuario no se encuentra registrado');
-            }
-        });
-        let array = [];
-        let otherArray = [];
-        listarAlmacenes().then((res) => {
-            listarAlmacenesPorUsuario(username).then((resB) => {
-                const result = resB.filter((item) => item.habilitado === true);
-                res.map((almacen) => {
-                    result.map((item) => {
-                        if (item.id_almacen === almacen.consecutivo) {
-                            array.push(almacen); //agrega al array los almacenes que tiene el usuario
-                            otherArray.push(almacen.consecutivo)
-                        }
-                    }
-                    )
-                })
-                setAlmacenByUser(array);
-                setConsAlmacenByUser(otherArray);
-            })
-        })
+    const login = async (username, password) => {
+        const { data } = await axios.post(endPoints.auth.login, { username: username, password: password })
+        try {
+          
+            const expire = 1
+            Cookie.set('token', data.token, { expires: expire });
+            axios.defaults.headers.Authorization = 'Bearer ' + data.token
+            const res = await axios.get(endPoints.auth.profile);
+            setUser(res.data.usuario)
+            setAlmacenByUser(res.data.almacenes);
+            router.push('/');
+        } catch (e) {
+            alert('Contraseña o usuario incorrecto');
+        }
 
-        
+
     }
-    return { user, login, almacenByUser, consAlmacenByUser };
+    return { user, login, almacenByUser };
 }
