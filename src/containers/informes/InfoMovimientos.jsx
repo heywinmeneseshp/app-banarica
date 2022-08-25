@@ -18,14 +18,13 @@ import { Container } from "react-bootstrap";
 
 export default function InfoMovimientos() {
     const { almacenByUser } = useAuth();
-    const almacenRef = useRef();
+    const formRef = useRef();
     const [historial, setHistorial] = useState([1]);
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
     const limit = 20;
 
     useEffect(() => {
-
         try {
             listarItems()
         } catch (e) {
@@ -42,20 +41,40 @@ export default function InfoMovimientos() {
     }
 
     async function listarItems() {
-        if (almacenRef.current.value === "All") {
-            const res = await axios.post(endPoints.historial.pagination(pagination, limit), { almacenes: almacenByUser });
-            setTotal(res.data.total);
-            setHistorial(res.data.data)
-        } else {
-            const almacenes = almacenByUser.filter(almacen => almacen.nombre === almacenRef.current.value);
-            const res = await axios.post(endPoints.historial.pagination(pagination, limit), { almacenes: almacenes });
-            setTotal(res.data.total);
-            setHistorial(res.data.data)
-        }
+        const formData = new FormData(formRef.current);
+        const cons_almacen = formData.get('almacen');
+        const cons_movimiento = formData.get('movimiento');
+        const cons_semana = formData.get('semana');
+        let url = `${endPoints.historial.list}/filter`
+        let body = {}
+        const anho = new Date().getFullYear()
+        if (cons_semana) body.movimiento = { cons_semana: `S${cons_semana}-${anho}` }
+        if (cons_almacen != 0) body.historial = { cons_almacen_gestor: cons_almacen };
+        if (cons_movimiento != 0) body.historial = { ...body.historial, cons_lista_movimientos: cons_movimiento };
+        body.pagination = { limit: limit, offset: pagination }
+        const res = await axios.post(url, body)
+        setTotal(res.data.total);
+        setHistorial(res.data.data)
     }
 
-    const onBuscar = () => {
+    const onBuscar = async () => {
+        setPagination(1)
         listarItems()
+    }
+
+    const onDescargar = async () => {
+        const formData = new FormData(formRef.current);
+        const cons_almacen = formData.get('almacen');
+        const cons_movimiento = formData.get('movimiento');
+        const cons_semana = formData.get('semana');
+        let url = `${endPoints.historial.list}/filter`
+        let body = {}
+        const anho = new Date().getFullYear()
+        if (cons_semana) body.movimiento = { cons_semana: `S${cons_semana}-${anho}` }
+        if (cons_almacen != 0) body.historial = { cons_almacen_gestor: cons_almacen };
+        if (cons_movimiento != 0) body.historial = { ...body.historial, cons_lista_movimientos: cons_movimiento };
+        const res = await axios.post(url, body)
+        console.log(res)
     }
 
     return (
@@ -64,73 +83,61 @@ export default function InfoMovimientos() {
                 <div>
                     <h2>Informe de movimientos</h2>
                     <div className="line"></div>
-                    <div className={styles.contenedor3}>
+                    <form ref={formRef} className={styles.contenedor3}>
 
                         <div className={styles.grupo}>
                             <label htmlFor="almacen">Almacen</label>
                             <div>
                                 <select
                                     className="form-select form-select-sm"
-                                    ref={almacenRef}
+                                    id="almacen"
+                                    name="almacen"
                                 >
-                                    <option>All</option>
+                                    <option value={0}>All</option>
                                     {almacenByUser.map(almacen => (
-                                        <option key={almacen.consecutivo} >{almacen.nombre}</option>
+                                        <option key={almacen.consecutivo} value={almacen.consecutivo} >{almacen.nombre}</option>
                                     ))}
                                 </select>
                             </div>
                         </div>
-                        {false && <span>
-                            <div className={styles.grupo}>
-                                <label htmlFor="Username">Categoría</label>
-                                <div>
-                                    <select className="form-select form-select-sm" disabled>
-                                        <option>All</option>
-                                    </select>
-                                </div>
-                            </div>
 
-                            <div className={styles.grupo}>
-                                <label htmlFor="Username">Movimiento</label>
-                                <div>
-                                    <select
-                                        className="form-select form-select-sm"
-                                        disabled>
-                                        <option>All</option>
-                                        <option>Recepción</option>
-                                        <option>Ajuste</option>
-                                        <option>Devolución</option>
-                                        <option>Liquidación</option>
-                                        <option>Exportación</option>
-                                    </select>
-                                </div>
+                        <div className={styles.grupo}>
+                            <label htmlFor="movimiento">Movimiento</label>
+                            <div>
+                                <select
+                                    className="form-select form-select-sm"
+                                    id='movimiento'
+                                    name='movimiento'
+                                >
+                                    <option value={0}>All</option>
+                                    <option value={'RC'}>Recepción</option>
+                                    <option value={'AJ'}>Ajuste</option>
+                                    <option value={'DV'}>Devolución</option>
+                                    <option value={'LQ'}>Liquidación</option>
+                                    <option value={'EX'}>Exportación</option>
+                                </select>
                             </div>
+                        </div>
 
-
-                            <div className={styles.grupo}>
-                                <label htmlFor="Username">Artículo</label>
-                                <div>
-                                    <input type="text"
-                                        className="form-control form-control-sm"
-                                        id="contraseña"
-                                        disabled></input>
-                                </div>
+                        <div className={styles.grupo}>
+                            <label htmlFor="semana">Semana</label>
+                            <div>
+                                <input type="number"
+                                    className="form-control form-control-sm"
+                                    id="semana"
+                                    name='semana'
+                                ></input>
                             </div>
+                        </div>
 
-                            <div className={styles.grupo}>
-                                <label htmlFor="Username">Semana</label>
-                                <div>
-                                    <input type="number"
-                                        className="form-control form-control-sm"
-                                        id="contraseña"
-                                        disabled></input>
-                                </div>
-                            </div>
-                        </span>}
                         <Button onClick={onBuscar} className={styles.button} variant="primary" size="sm">
                             Buscar
                         </Button>
-                    </div>
+
+                        <Button onClick={onDescargar} className={styles.button} variant="success" size="sm">
+                            Descargar
+                        </Button>
+                    </form>
                 </div>
                 {false &&
                     <div className={styles.contenedor3}>
