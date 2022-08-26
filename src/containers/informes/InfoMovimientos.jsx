@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
+import * as XLSX from 'xlsx'
 //Services
 //Hooks
 import { useAuth } from "@hooks/useAuth";
@@ -12,9 +13,7 @@ import endPoints from '@services/api';
 import Paginacion from '@components/Paginacion';
 //CSS
 import styles from '@styles/informes/informes.module.css';
-import { Container } from "react-bootstrap";
-
-
+import { Container, ToastBody } from "react-bootstrap";
 
 export default function InfoMovimientos() {
     const { almacenByUser } = useAuth();
@@ -22,6 +21,7 @@ export default function InfoMovimientos() {
     const [historial, setHistorial] = useState([1]);
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
+    const [excel, setExcel] = useState(null);
     const limit = 20;
 
     useEffect(() => {
@@ -67,14 +67,34 @@ export default function InfoMovimientos() {
         const cons_almacen = formData.get('almacen');
         const cons_movimiento = formData.get('movimiento');
         const cons_semana = formData.get('semana');
+        if (cons_semana == "" || null ) return alert("Debe ingresar la semana")
         let url = `${endPoints.historial.list}/filter`
         let body = {}
         const anho = new Date().getFullYear()
         if (cons_semana) body.movimiento = { cons_semana: `S${cons_semana}-${anho}` }
         if (cons_almacen != 0) body.historial = { cons_almacen_gestor: cons_almacen };
         if (cons_movimiento != 0) body.historial = { ...body.historial, cons_lista_movimientos: cons_movimiento };
-        const res = await axios.post(url, body)
-        console.log(res)
+        const { data } = await axios.post(url, body)
+        const newData = data.map(item => {
+            const body = {
+                "Cons": item.cons_movimiento,
+                "Almacén": item.cons_almacen_gestor,
+                "Artículo": item.Producto.name,
+                "Unidades": item.cantidad,
+                "Movimiento": item.cons_lista_movimientos,
+                "Tipo de movimiento": item.tipo_movimiento,
+                "Razón": item.razon_movimiento,
+                "Observaciones": item.movimiento.observaciones,
+                "Semana": item.movimiento.cons_semana,
+                "Fecha": item.movimiento.fecha
+            }
+            return body
+        })
+        const book = XLSX.utils.book_new();
+        const sheet =  XLSX.utils.json_to_sheet(newData)
+         XLSX.utils.book_append_sheet(book, sheet, "Movimientos")
+         XLSX.writeFile(book, "Historial de movimientos.xlsx")
+
     }
 
     return (
@@ -133,10 +153,11 @@ export default function InfoMovimientos() {
                         <Button onClick={onBuscar} className={styles.button} variant="primary" size="sm">
                             Buscar
                         </Button>
-
                         <Button onClick={onDescargar} className={styles.button} variant="success" size="sm">
                             Descargar
                         </Button>
+                      
+
                     </form>
                 </div>
                 {false &&
