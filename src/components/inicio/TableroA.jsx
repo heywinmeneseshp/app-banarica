@@ -13,7 +13,7 @@ const TableroA = () => {
     const [notificaciones, setNotificaciones] = useState([]);
 
     useEffect(() => {
-        const consAlmacen = almacenByUser.map(item => item.consecutivo)
+        const consAlmacen = almacenByUser.map(item => item.consecutivo);
         let data;
         if (user.id_rol == "Super administrador") {
             data = {
