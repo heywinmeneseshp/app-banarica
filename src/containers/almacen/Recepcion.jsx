@@ -90,6 +90,7 @@ export default function Recepcion() {
         try {
             const formData = new FormData(formRef.current);
             const nombreAlmacen = formData.get("almacen")
+            console.log(nombreAlmacen)
             const almacen = almacenByUser.find((almacen) => almacen.nombre == nombreAlmacen).consecutivo
             const pedido = formData.get("pedido");
             setConsAlmacen(nombreAlmacen);
@@ -123,7 +124,8 @@ export default function Recepcion() {
                         cantidad: formData.get("cantidad-" + index),
                         cons_pedido: pedido
                     }
-                    sumar(almacen, consecutiveProdcut, formData.get("cantidad-" + index));
+                    console.log(almacen, dataHistorial.cons_producto, dataHistorial.cantidad)
+                    sumar(almacen, dataHistorial.cons_producto, dataHistorial.cantidad);
                     agregarHistorial(dataHistorial)
                     array.push(dataPedido)
                 })
@@ -136,7 +138,7 @@ export default function Recepcion() {
                     aprobado: true,
                     visto: false
                 }
-                agregarNotificaciones(dataNotificacion).then(res => console.log(res))
+                agregarNotificaciones(dataNotificacion)
                 setProductsCons(array)
             })
             setBool(true)
