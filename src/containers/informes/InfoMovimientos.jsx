@@ -22,7 +22,6 @@ export default function InfoMovimientos() {
     const [historial, setHistorial] = useState([1]);
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
-    const [excel, setExcel] = useState(null);
     const limit = 20;
 
     useEffect(() => {

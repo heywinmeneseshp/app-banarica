@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import * as XLSX from 'xlsx'
 //Services
 import endPoints from "@services/api";
 //Hooks
@@ -12,43 +13,68 @@ import { Container } from "react-bootstrap";
 import Paginacion from "@components/Paginacion";
 //CSS
 import styles from '@styles/informes/informes.module.css';
+import { listarCategorias } from "@services/api/categorias";
 export default function InfoStock() {
-    const almacenRef = useRef();
+    const formRef = useRef();
     const { almacenByUser } = useAuth();
     const [stock, setStock] = useState([1]);
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
+    const [categorias, setCategorias] = useState([])
     const limit = 20;
 
 
     useEffect(() => {
         try {
             listar()
+            listarCategorias().then((res) => setCategorias(res))
         } catch (e) {
             alert("Error al cargar los usuarios", "error")
         }
     }, [alert, pagination])
 
     async function listar() {
-        const almacen = almacenRef.current.value;
-        if (almacen === "All") {
-            const res = await axios.post(endPoints.stock.pagination(pagination, limit), { almacenes: almacenByUser });
-            setTotal(res.data.total);
-            setStock(res.data.data);
+        const formData = new FormData(formRef.current);
+        const cons_almacen = formData.get('almacen');
+        const cons_categoria = formData.get('categoria');
+        let body = { pagination: { offset: pagination, limit: limit } }
+        if (cons_almacen != 0) {
+            body = { ...body, stock: { cons_almacen: cons_almacen } }
         } else {
-            const almacenes = almacenByUser.filter(almacen => almacen.nombre === almacenRef.current.value);
-            const res = await axios.post(endPoints.stock.pagination(pagination, limit), { almacenes: almacenes });
-            setTotal(res.data.total);
-            setStock(res.data.data);
+            const list = almacenByUser.map((item) => item.consecutivo)
+            console.log(list)
+            body = { ...body, stock: { cons_almacen: list } } 
         }
+        if (cons_categoria != 0) body = { ...body, producto: { cons_categoria: cons_categoria } }
+        console.log(body)
+        const res = await axios.post(endPoints.stock.filter, body);
+        console.log(res.data)
+        setTotal(res.data.total);
+        setStock(res.data.data);
     }
 
     const onBuscar = () => {
+        setPagination(1)
         listar()
     }
 
-    const onDescargar = () => {
-        alert("Esta opción no esta habilitada")
+    const onDescargar = async () => {
+        const formData = new FormData(formRef.current);
+        const cons_almacen = formData.get('almacen');
+        const cons_categoria = formData.get('categoria');
+        let body = {}
+        if (cons_almacen != 0) {
+            body = { ...body, stock: { cons_almacen: cons_almacen } }
+        } else {
+            const list = almacenByUser.map((item) => item.consecutivo)
+            body = { ...body, stock: { cons_almacen: list } } 
+        }
+        if (cons_categoria != 0) body = { ...body, producto: { cons_categoria: cons_categoria } }
+        const res = await axios.post(endPoints.stock.filter, body);
+        const book = XLSX.utils.book_new();
+        const sheet = XLSX.utils.json_to_sheet(res.data)
+        XLSX.utils.book_append_sheet(book, sheet, "Stock")
+        XLSX.writeFile(book, "Stock.xlsx")
     }
 
     return (
@@ -57,7 +83,7 @@ export default function InfoStock() {
                 <h2>Stock</h2>
                 <div className="line"></div>
 
-                <div className={styles.contenedor3}>
+                <form ref={formRef} className={styles.contenedor3}>
 
                     <div className={styles.grupo}>
                         <label htmlFor="alamcen">Almacen</label>
@@ -65,31 +91,26 @@ export default function InfoStock() {
                             className="form-select form-select-sm"
                             id="almacen"
                             name="almacen"
-                            ref={almacenRef}
                         >
-                            <option>All</option>
+                            <option value={0}>All</option>
                             {almacenByUser.map((almacen, index) => (
-                                <option key={index} >{almacen.nombre}</option>
+                                <option key={index} value={almacen.consecutivo}>{almacen.nombre}</option>
                             ))}
                         </select>
                     </div>
 
                     <div className={styles.grupo}>
-                        <label htmlFor="Username">Categoría</label>
+                        <label htmlFor="categoria">Categoría</label>
                         <div>
-                            <select className="form-select form-select-sm" disabled>
-                                <option>All</option>
+                            <select className="form-select form-select-sm"
+                                id="categoria"
+                                name="categoria"
+                            >
+                                <option value={0}>All</option>
+                                {categorias.map(item => (
+                                    <option value={item?.consecutivo}>{item?.nombre}</option>
+                                ))}
                             </select>
-                        </div>
-                    </div>
-
-                    <div className={styles.grupo}>
-                        <label htmlFor="Username">Artículo</label>
-                        <div>
-                            <input type="text"
-                                className="form-control form-control-sm"
-                                id="contraseña"
-                                disabled></input>
                         </div>
                     </div>
 
@@ -101,7 +122,7 @@ export default function InfoStock() {
                         Descargar documento
                     </Button>
 
-                </div>
+                </form>
 
                 <Table className={styles.tabla} striped bordered hover size="sm">
                     <thead>

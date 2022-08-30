@@ -84,6 +84,7 @@ const endPoints = {
     },
     stock: {
         list: `${API}/api/${VERSION}/stock`,
+        filter: `${API}/api/${VERSION}/stock/filter`,
         findOneAlmacen: (cons_almacen) => `${API}/api/${VERSION}/stock/filter/${cons_almacen}`,
         findOneProductInAll: (cons_producto) => `${API}/api/${VERSION}/stock/filter/product/${cons_producto}`,
         filterAlmacenAndProduct: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/stock/filter/${cons_almacen}/${cons_producto}`,
