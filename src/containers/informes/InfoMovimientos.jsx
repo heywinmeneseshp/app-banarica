@@ -49,7 +49,12 @@ export default function InfoMovimientos() {
         let body = {}
         const anho = new Date().getFullYear()
         if (cons_semana) body.movimiento = { cons_semana: `S${cons_semana}-${anho}` }
-        if (cons_almacen != 0) body.historial = { cons_almacen_gestor: cons_almacen };
+        if (cons_almacen != 0) {
+            body.historial = { cons_almacen_gestor: cons_almacen };
+        } else {
+            const list = almacenByUser.map((item) => item.consecutivo)
+            body.historial = { cons_almacen_gestor: list };
+        }
         if (cons_movimiento != 0) body.historial = { ...body.historial, cons_lista_movimientos: cons_movimiento };
         body.pagination = { limit: limit, offset: pagination }
         const res = await axios.post(url, body)
@@ -67,14 +72,17 @@ export default function InfoMovimientos() {
         const cons_almacen = formData.get('almacen');
         const cons_movimiento = formData.get('movimiento');
         const cons_semana = formData.get('semana');
-        if (cons_semana == "" || null) return alert("Debe ingresar la semana")
-        let url = `${endPoints.historial.list}/filter`
-        let body = {}
+        let body = {};
         const anho = new Date().getFullYear()
         if (cons_semana) body.movimiento = { cons_semana: `S${cons_semana}-${anho}` }
-        if (cons_almacen != 0) body.historial = { cons_almacen_gestor: cons_almacen };
+        if (cons_almacen != 0) {
+            body.historial = { cons_almacen_gestor: cons_almacen };
+        } else {
+            const list = almacenByUser.map((item) => item.consecutivo)
+            body.historial = { cons_almacen_gestor: list };
+        }
         if (cons_movimiento != 0) body.historial = { ...body.historial, cons_lista_movimientos: cons_movimiento };
-        const { data } = await axios.post(url, body)
+        const { data } = await axios.post(`${endPoints.historial.list}/filter`, body)
         const newData = data.map(item => {
             const body = {
                 "Cons": item.cons_movimiento,
@@ -96,12 +104,12 @@ export default function InfoMovimientos() {
         XLSX.writeFile(book, "Historial de movimientos.xlsx")
     }
 
-    const onDescargarDocumento = async() => {
+    const onDescargarDocumento = async () => {
         const formData = new FormData(formRef.current)
         const consecutivo = formData.get('documento')
         const documento = await bucarDoumentoMovimiento(consecutivo)
         console.log(documento)
-    } 
+    }
 
     return (
         <>
@@ -164,24 +172,24 @@ export default function InfoMovimientos() {
                             </Button>
                         </div>
                         <div className={styles.contenedor3}>
-                    <div className={styles.grupo}>
-                        <label htmlFor="documento">Consecutivo</label>
-                        <div>
-                            <input type="text"
-                                className="form-control form-control-sm"
-                                id="documento"
-                                name='documento'
-                            ></input>
+                            <div className={styles.grupo}>
+                                <label htmlFor="documento">Consecutivo</label>
+                                <div>
+                                    <input type="text"
+                                        className="form-control form-control-sm"
+                                        id="documento"
+                                        name='documento'
+                                    ></input>
+                                </div>
+                            </div>
+                            <Button onClick={onDescargarDocumento} className={styles.button} variant="warning" size="sm">
+                                Descargar documento
+                            </Button>
                         </div>
-                    </div>
-                    <Button onClick={onDescargarDocumento} className={styles.button} variant="warning" size="sm">
-                        Descargar documento
-                    </Button>
-                </div>
                     </form>
                 </div>
 
-               
+
 
 
                 <Table className={styles.tabla} striped bordered hover size="sm">

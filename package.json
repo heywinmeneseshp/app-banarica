@@ -10,6 +10,7 @@
     "lint:fix": "next lint --fix"
   },
   "dependencies": {
+    "@pdftron/webviewer": "^8.8.0",
     "axios": "^0.26.1",
     "bootstrap": "^5.1.3",
     "eslint-config-prettier": "^8.4.0",

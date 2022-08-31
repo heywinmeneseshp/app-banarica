@@ -23,9 +23,8 @@ function useProviderAuth() {
     const router = useRouter();
 
     const login = async (username, password) => {
-        const { data } = await axios.post(endPoints.auth.login, { username: username, password: password })
         try {
-          
+            const { data } = await axios.post(endPoints.auth.login, { username: username, password: password })
             const expire = 1
             Cookie.set('token', data.token, { expires: expire });
             axios.defaults.headers.Authorization = 'Bearer ' + data.token

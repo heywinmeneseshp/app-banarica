@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import axios from "axios";
 import * as XLSX from 'xlsx'
 //Services
 import endPoints from "@services/api";
+import { listarProductos } from "@services/api/productos";
+import { listarCategorias } from "@services/api/categorias";
 //Hooks
 import { useAuth } from "@hooks/useAuth";
+import useDate from "@hooks/useDate";
 //Bootstrap
 import Table from 'react-bootstrap/Table';
 import { Button } from "react-bootstrap";
@@ -13,7 +17,7 @@ import { Container } from "react-bootstrap";
 import Paginacion from "@components/Paginacion";
 //CSS
 import styles from '@styles/informes/informes.module.css';
-import { listarCategorias } from "@services/api/categorias";
+
 export default function InfoStock() {
     const formRef = useRef();
     const { almacenByUser } = useAuth();
@@ -21,6 +25,7 @@ export default function InfoStock() {
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
     const [categorias, setCategorias] = useState([])
+    const [productos, setProductos] = useState([])
     const limit = 20;
 
 
@@ -28,8 +33,9 @@ export default function InfoStock() {
         try {
             listar()
             listarCategorias().then((res) => setCategorias(res))
+            listarProductos().then((res) => setProductos(res))
         } catch (e) {
-            alert("Error al cargar los usuarios", "error")
+            alert("Error al cargar items", "error")
         }
     }, [alert, pagination])
 
@@ -37,18 +43,18 @@ export default function InfoStock() {
         const formData = new FormData(formRef.current);
         const cons_almacen = formData.get('almacen');
         const cons_categoria = formData.get('categoria');
+        const cons_producto = formData.get('articulo')
         let body = { pagination: { offset: pagination, limit: limit } }
         if (cons_almacen != 0) {
             body = { ...body, stock: { cons_almacen: cons_almacen } }
         } else {
             const list = almacenByUser.map((item) => item.consecutivo)
             console.log(list)
-            body = { ...body, stock: { cons_almacen: list } } 
+            body = { ...body, stock: { cons_almacen: list } }
         }
         if (cons_categoria != 0) body = { ...body, producto: { cons_categoria: cons_categoria } }
-        console.log(body)
+        if (cons_producto != 0) body.stock = { ...body.stock, cons_producto: cons_producto }
         const res = await axios.post(endPoints.stock.filter, body);
-        console.log(res.data)
         setTotal(res.data.total);
         setStock(res.data.data);
     }
@@ -62,19 +68,31 @@ export default function InfoStock() {
         const formData = new FormData(formRef.current);
         const cons_almacen = formData.get('almacen');
         const cons_categoria = formData.get('categoria');
+        const cons_producto = formData.get('articulo')
         let body = {}
         if (cons_almacen != 0) {
             body = { ...body, stock: { cons_almacen: cons_almacen } }
         } else {
             const list = almacenByUser.map((item) => item.consecutivo)
-            body = { ...body, stock: { cons_almacen: list } } 
+            body = { ...body, stock: { cons_almacen: list } }
         }
         if (cons_categoria != 0) body = { ...body, producto: { cons_categoria: cons_categoria } }
-        const res = await axios.post(endPoints.stock.filter, body);
+        if (cons_producto != 0) body.producto = { ...body.producto, consecutivo: cons_producto }
+        const { data } = await axios.post(endPoints.stock.filter, body);
+        const newData = data.map((item) => {
+            return {
+                "Cod almacen": item.cons_almacen,
+                "Almacen": item.almacen?.nombre,
+                "Cod categoria": item.producto.cons_categoria,
+                "Cod artículo": item.cons_producto,
+                "Artículo": item.producto.name,
+                "Cantidad": item.cantidad
+            }
+        })
         const book = XLSX.utils.book_new();
-        const sheet = XLSX.utils.json_to_sheet(res.data)
+        const sheet = XLSX.utils.json_to_sheet(newData)
         XLSX.utils.book_append_sheet(book, sheet, "Stock")
-        XLSX.writeFile(book, "Stock.xlsx")
+        XLSX.writeFile(book, `Stock ${cons_almacen == 0 ? "" : cons_almacen} ${useDate()}.xlsx`)
     }
 
     return (
@@ -114,13 +132,34 @@ export default function InfoStock() {
                         </div>
                     </div>
 
+                    <div className={styles.grupo}>
+                        <label htmlFor="articulo">Artículo</label>
+                        <div>
+                            <select className="form-select form-select-sm"
+                                id="articulo"
+                                name="articulo"
+                            >
+                                <option value={0}>All</option>
+                                {productos.map(item => (
+                                    <option value={item?.consecutivo}>{item?.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
                     <Button onClick={onBuscar} className={styles.button} variant="primary" size="sm">
                         Buscar
                     </Button>
 
                     <Button onClick={onDescargar} className={styles.button} variant="success" size="sm">
-                        Descargar documento
+                        Descargar Exel
                     </Button>
+
+                 {false &&   <Link href="./documentos/StockPDF" className={styles.button} variant="success" size="sm">
+                        <a target="_blank" rel="noopener noreferrer">
+                            Descargar PDF
+                        </a>
+                    </Link>}
 
                 </form>
 

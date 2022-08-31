@@ -83,7 +83,7 @@ export default function NuevaBodega({ setAlert, setOpen, almacen }) {
                         <div className={styles.grupo}>
                             <label htmlFor="razon_social">Razon social</label>
                             <div>
-                                <input defaultValue={almacen?.consecutivo} type="text" className="form-control form-control-sm w-100" name='razon_social' id="razon_social"></input>
+                                <input defaultValue={almacen?.razon_social} type="text" className="form-control form-control-sm w-100" name='razon_social' id="razon_social"></input>
                             </div>
                         </div>
 

@@ -151,7 +151,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                             <div className={styles.grupo}>
                                 <label htmlFor="password">Contraseña</label>
                                 <div>
-                                    <input defaultValue={user?.password}
+                                    <input 
                                         id="password"
                                         name="password"
                                         type="text"
@@ -165,7 +165,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                             <div className={styles.grupo}>
                                 <label htmlFor="repassword">Repite la contraseña</label>
                                 <div>
-                                    <input defaultValue={user?.password}
+                                    <input 
                                         id="repassword"
                                         name="repassword"
                                         type="text"
