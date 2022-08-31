@@ -90,7 +90,6 @@ export default function Recepcion() {
         try {
             const formData = new FormData(formRef.current);
             const nombreAlmacen = formData.get("almacen")
-            console.log(nombreAlmacen)
             const almacen = almacenByUser.find((almacen) => almacen.nombre == nombreAlmacen).consecutivo
             const pedido = formData.get("pedido");
             setConsAlmacen(nombreAlmacen);

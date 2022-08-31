@@ -9,28 +9,27 @@ const config = {
 };
 
 const crearStock = async (cons_almacen, cons_producto, bool) => {
-    try{
+    try {
 
-    const config = {
-        headers: {
-            accept: 'application/json',
-            'Content-Type': 'application/json'
+        const config = {
+            headers: {
+                accept: 'application/json',
+                'Content-Type': 'application/json'
+            }
+        };
+
+        const body = {
+            cons_almacen: cons_almacen,
+            cons_producto: cons_producto,
+            cantidad: 0,
+            isBlock: bool
         }
-    };
-
-    const body = {
-        cons_almacen: cons_almacen,
-        cons_producto: cons_producto,
-        cantidad: 0,
-        isBlock: bool
+        const url = endPoints.stock.create;
+        const response = await axios.post(url, body, config);
+        return response.data;
+    } catch (e) {
+        alert('Se ha presentado un error al crear el stock')
     }
-    console.log(body)
-    const url = endPoints.stock.create;
-    const response = await axios.post(url, body, config);
-    return response.data;
-} catch (e) {
-    alert('Se ha presentado un error al crear el stock')
-}
 }
 
 const eliminarStock = async (cons_almacen, cons_producto) => {
@@ -42,10 +41,8 @@ const sumar = async (cons_almacen, cons_producto, cantidad) => {
     try {
         const res = await axios.patch(endPoints.stock.add(cons_almacen, cons_producto), { cantidad: cantidad })
         return res.data
-    } catch {
-        crearStock(cons_almacen, cons_producto, false)
-        const res = await axios.post(endPoints.stock.add(cons_almacen, cons_producto), { cantidad: cantidad })
-        return res.data
+    } catch (err) {
+        throw err
     }
 }
 
@@ -55,8 +52,6 @@ const restar = async (cons_almacen, cons_producto, cantidad) => {
         return res.data
     } catch {
         crearStock(cons_almacen, cons_producto, false)
-        const res = await axios.post(endPoints.stock.add(cons_almacen, cons_producto), { cantidad: cantidad })
-        return res.data
     }
 }
 
