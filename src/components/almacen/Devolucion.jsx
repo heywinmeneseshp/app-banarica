@@ -335,7 +335,7 @@ export default function Devolucion() {
 
                     </div>
 
-                    {gestionNotificacion.notificacion && <InputGroup size="sm" className="mb-3">
+                    {gestionNotificacion.notificacion && (user.id_rol == "Super administrador") && <InputGroup size="sm" className="mb-3">
                             <InputGroup.Text id="inputGroup-sizing-sm">Respuesta</InputGroup.Text>
                             <Form.Control
                                 id="respuesta"
@@ -369,7 +369,7 @@ export default function Devolucion() {
                             </div>
                         </div>
                     }
-                    {gestionNotificacion.notificacion && !ajutado &&
+                    {gestionNotificacion.notificacion && (user.id_rol == "Super administrador") && !ajutado &&
                         <div className={styles.contenedor6}>
                             <div>
                             </div>

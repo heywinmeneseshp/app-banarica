@@ -331,7 +331,7 @@ export default function Liquidacion() {
                             />
                         </InputGroup>
                     </div>
-                    {gestionNotificacion.notificacion && <InputGroup size="sm" className="mb-3">
+                    {gestionNotificacion.notificacion && (user.id_rol == "Super administrador") && <InputGroup size="sm" className="mb-3">
                             <InputGroup.Text id="inputGroup-sizing-sm">Respuesta</InputGroup.Text>
                             <Form.Control
                                 id="respuesta"
@@ -365,7 +365,7 @@ export default function Liquidacion() {
                             </div>
                         </div>
                     }
-                    {gestionNotificacion.notificacion && !ajutado &&
+                    {gestionNotificacion.notificacion && !ajutado && (user.id_rol == "Super administrador") && 
                         <div className={styles.contenedor6}>
                             <div>
                             </div>
