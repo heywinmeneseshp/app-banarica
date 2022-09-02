@@ -55,10 +55,10 @@ export default function RecibirTraslado() {
     const handleSubmit = (e) => {
         e.preventDefault();
         try {
-            const formData = new FormData(formRef.current)
-            const respuesta = formData.get("observaciones")
+            const formData = new FormData(formRef.current);
+            const respuesta = formData.get("observaciones");
             const data = { estado: "Completado", fecha_entrada: date, observaciones: respuesta};
-            setObservaciones(respuesta)
+            setObservaciones(respuesta);
             actualizarTraslado(idTraslado, data);
             products.map((product) => {
                 restar(origen, product.cons_producto, product.cantidad);
@@ -74,7 +74,7 @@ export default function RecibirTraslado() {
                 autoClose: false
             });
         } catch (e) {
-            console.log(e)
+            console.log(e);
             setAlert({
                 active: true,
                 mensaje: "Error al cargar datos",

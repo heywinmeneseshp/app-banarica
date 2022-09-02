@@ -93,9 +93,9 @@ export default function Liquidacion() {
         try {
             if (user.id_rol == "Super administrador" && gestionNotificacion.notificacion) {
                 const consAlmacen = almacenByUser.find((item) => item.nombre == almacen).consecutivo;
-                const respuesta = formData.get("respuesta")
+                const respuesta = formData.get("respuesta");
                 const changes = { "pendiente": false, "respuesta" : respuesta };
-                setRespuesta(respuesta)
+                setRespuesta(respuesta);
                 actualizarMovimiento(movimientoID, changes);
                 products.forEach(item => {
                     const { cons_producto, cantidad } = item;
