@@ -32,7 +32,7 @@ const buscarProducto = async (consecutivo) => {
         const res = await axios.get(endPoints.productos.findOne(consecutivo));
         return res.data
     } catch (e) {
-        console.log(e)
+        alert("Error al buscar producto")
     }
 }
 
@@ -41,7 +41,7 @@ const listarProductos = async () => {
         const res = await axios.get(endPoints.productos.list);
         return res.data
     } catch (e) {
-        console.log(e)
+        alert("Error al listar productos")
     }
 }
 
@@ -50,7 +50,7 @@ const encontrarProductosPorCategoria = async (categoria) => {
         const res = await axios.get(endPoints.productos.findAllByCategory(categoria));
         return res.data
     } catch (e) {
-        console.log(e)
+        alert("Error al encontrar producto por categoría")
     }
 }
 

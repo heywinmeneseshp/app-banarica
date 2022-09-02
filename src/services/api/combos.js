@@ -9,7 +9,6 @@ const agregarCombos = async (body) => {
         }
     };
     const response = await axios.post(endPoints.combos.create, body, config);
-    console.log(response.data)
     return response.data;
 }
 
@@ -28,7 +27,7 @@ const buscarCombos = async(consecutivo) => {
     const res = await axios.get(endPoints.combos.findOne(consecutivo));
     return res.data
     } catch (e) {
-        console.log(e)
+        alert("Se ha presentado un error al buscar el combo")
     } 
 }
 
@@ -37,7 +36,7 @@ const buscarComboArmado = async(consecutivo) => {
         const res = await axios.get(endPoints.combos.findOneAsembled(consecutivo))
         return res.data
     } catch (e) {
-        console.log(e)
+        alert("Se ha presentado un erro al buscar el combo armado")
     }
 }
 
@@ -46,7 +45,7 @@ const listarCombos = async() => {
         const res = await axios.get(endPoints.combos.list);
         return res.data
     } catch {
-        console.log(e)
+        alert("Se ha presentado un erro al listar los combos")
     }
 }
 

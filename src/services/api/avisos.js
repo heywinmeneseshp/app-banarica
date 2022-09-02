@@ -27,7 +27,7 @@ const actualizarAvisos = async (id, changes) => {
         const res = await axios.patch(endPoints.avisos.update(id), changes)
         return res.data
     } catch (e) {
-        console.log(e)
+        alert("Se ha presentado un error al actualizar")
     }
 }
 

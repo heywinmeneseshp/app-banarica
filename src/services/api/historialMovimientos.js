@@ -33,7 +33,7 @@ const buscarHistorial = async (consecutivo) => {
         const res = await axios.get(endPoints.historial.findOne(consecutivo));
         return res.data
     } catch (e) {
-        console.log(e)
+        alert("Se ha presentado un erro al buscar el historial")
     }
 }
 
@@ -42,7 +42,7 @@ const listarHistorial = async () => {
         const res = await axios.get(endPoints.historial.list);
         return res.data
     } catch {
-        console.log(e)
+        alert("Se ha presentado un error al listar el historial")
     }
 }
 
@@ -51,7 +51,7 @@ const filterHistorial = async (consMovimiento) => {
         const res = await axios.get(endPoints.historial.filter(consMovimiento));
         return res.data
     } catch {
-        console.log(e)
+        alert("Se ha presentado un error al filtrar el historial")
     }
 }
 

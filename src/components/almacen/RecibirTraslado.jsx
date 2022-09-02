@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import AppContext from "@context/AppContext";
 //Services
 import { actualizarTraslado, buscarTraslado } from "@services/api/traslados";
@@ -32,10 +32,11 @@ export default function RecibirTraslado() {
     const [vehiculo, setVehiculo] = useState(null);
     const [idTraslado, setIdTraslado] = useState(null);
     const [idNotificacion, setIdNotificacion] = useState(null);
+    const [observaciones, setObservaciones] = useState(null);
+    const formRef = useRef();
 
     useEffect(() => {
         buscarTraslado(gestionNotificacion.notificacion.cons_movimiento).then(res => {
-            console.log(res);
             const traslado = res[0].traslado;
             setIdTraslado(traslado?.id);
             setTransportadora(traslado?.transportadora);
@@ -54,7 +55,10 @@ export default function RecibirTraslado() {
     const handleSubmit = (e) => {
         e.preventDefault();
         try {
-            const data = { estado: "Completado", fecha_entrada: date };
+            const formData = new FormData(formRef.current)
+            const respuesta = formData.get("observaciones")
+            const data = { estado: "Completado", fecha_entrada: date, observaciones: respuesta};
+            setObservaciones(respuesta)
             actualizarTraslado(idTraslado, data);
             products.map((product) => {
                 restar(origen, product.cons_producto, product.cantidad);
@@ -70,6 +74,7 @@ export default function RecibirTraslado() {
                 autoClose: false
             });
         } catch (e) {
+            console.log(e)
             setAlert({
                 active: true,
                 mensaje: "Error al cargar datos",
@@ -84,7 +89,7 @@ export default function RecibirTraslado() {
     return (
         <>
             <Container className={styles.contTraslados} >
-                <form onSubmit={handleSubmit}>
+                <form ref={formRef} onSubmit={handleSubmit}>
                     <h2>+ Recibir traslado</h2>
                     <div className={styles.contenedor1}>
                         <InputGroup size="sm" className="mb-3">
@@ -227,9 +232,24 @@ export default function RecibirTraslado() {
                                     />
 
                                 </InputGroup>
+
+
                             </div>
                         </div>
                     ))}
+
+                    <InputGroup size="sm" className="mb-3">
+                        <InputGroup.Text id="inputGroup-sizing-sm">Observaciones</InputGroup.Text>
+                        <Form.Control
+                            id="observaciones"
+                            name="observaciones"
+                            aria-label="Small"
+                            aria-describedby="inputGroup-sizing-sm"
+                            defaultValue={observaciones}
+                            required
+                            disabled={bool}
+                        />
+                    </InputGroup>
                     {!bool &&
                         <div className={styles.contenedor6}>
                             <div>

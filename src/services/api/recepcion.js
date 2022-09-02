@@ -13,19 +13,26 @@ const agregarRecepcion = async (data) => {
         const response = await axios.post(endPoints.recepcion.create, data, config);
         return response.data;
     } catch (err) {
-        throw {message: "Se ha presentado un error"}
+        alert("Error al agregar recepción")
     }
 }
 
-
 const eliminarRecepcion = async (id) => {
+    try {
     const res = await axios.delete(endPoints.recepcion.delete(id));
     return res.data
+    } catch {
+        alert("Error al eliminar la recepción")
+    }
 }
 
 const actualizarRecepcion = async (id, changes) => {
+    try {
     const res = await axios.patch(endPoints.recepcion.update(id), changes)
     return res.data
+    } catch {
+        alert("Error al actualizar la recepción")
+    }
 }
 
 const buscarRecepcion = async (consecutivo) => {
@@ -33,7 +40,7 @@ const buscarRecepcion = async (consecutivo) => {
         const res = await axios.get(endPoints.recepcion.findOne(consecutivo));
         return res.data
     } catch (e) {
-        console.log(e)
+        alert("Error al buscar la recepción")
     }
 }
 
@@ -42,7 +49,7 @@ const listarRecepcion = async () => {
         const res = await axios.get(endPoints.recepcion.list);
         return res.data
     } catch {
-        console.log(e)
+        alert("Error al listar la recepción")
     }
 }
 

@@ -15,12 +15,11 @@ const agregarPedido = async (cons_pedido, item) => {
 		cons_almacen_destino: item.cons_almacen_destino,
 		cantidad: item.cantidad
     }    
-    console.log(data)
     try {
         const response = await axios.post(endPoints.pedidos.create, data, config);
         return response.data;
     } catch (err) {
-        throw {message: "Se ha presentado un error"}
+        alert("Error al agregar pedido")
     }
 }
 
@@ -29,7 +28,7 @@ const agregarTablePedido =  async (data) => {
         const response = await axios.post(endPoints.pedidos.createTable, data, config)
         return response.data
     } catch (e) {
-        console.log(e)
+        alert("Error al agregar tabla pedido")
     }
 }
 
@@ -48,7 +47,7 @@ const buscarPedido = async (consecutivo) => {
         const res = await axios.get(endPoints.pedidos.findOne(consecutivo));
         return res.data
     } catch (e) {
-        console.log(e)
+        alert("Error al buscar el pedido")
     }
 }
 
@@ -66,7 +65,7 @@ const listarPedidos = async () => {
         const res = await axios.get(endPoints.pedidos.list);
         return res.data
     } catch {
-        console.log(e)
+        alert("Error al listar pedidos")
     }
 }
 

@@ -27,7 +27,7 @@ const actualizarNotificaciones = async (id, changes) => {
         const res = await axios.patch(endPoints.notificaciones.update(id), changes)
         return res.data
     } catch (e) {
-        console.log(e)
+        alert("Se ha presentado un error al actualizar la notificación")
     }
 }
 
@@ -45,7 +45,7 @@ const listarNotificaciones = async () => {
         const res = await axios.get(endPoints.notificaciones.list);
         return res.data
     } catch {
-        console.log(e)
+        alert("Error al listar las notificaciones")
     }
 }
 

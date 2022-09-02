@@ -10,7 +10,6 @@ const agregarConductor = async (Conductor) => {
     };
     const url = endPoints.conductores.create;
     const response = await axios.post(url, Conductor, config);
-    console.log(response.data)
     return response.data;
 }
 
@@ -29,7 +28,7 @@ const buscarConductor = async(consecutivo) => {
     const res = await axios.get(endPoints.conductores.findOne(consecutivo));
     return res.data
     } catch (e) {
-        console.log(e)
+        alert("Se ha presentado un error al buscar el conductor")
     } 
 }
 
@@ -38,7 +37,7 @@ const listarConductores = async() => {
         const res = await axios.get(endPoints.conductores.list);
         return res.data
     } catch {
-        console.log(e)
+        alert("Se ha presentado un error al listar los conductores")
     }
 }
 

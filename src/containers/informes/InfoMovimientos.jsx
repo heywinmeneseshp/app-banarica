@@ -108,7 +108,6 @@ export default function InfoMovimientos() {
         const formData = new FormData(formRef.current)
         const consecutivo = formData.get('documento')
         const documento = await bucarDoumentoMovimiento(consecutivo)
-        console.log(documento)
     }
 
     return (

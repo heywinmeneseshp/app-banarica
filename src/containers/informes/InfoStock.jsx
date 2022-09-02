@@ -49,7 +49,6 @@ export default function InfoStock() {
             body = { ...body, stock: { cons_almacen: cons_almacen } }
         } else {
             const list = almacenByUser.map((item) => item.consecutivo)
-            console.log(list)
             body = { ...body, stock: { cons_almacen: list } }
         }
         if (cons_categoria != 0) body = { ...body, producto: { cons_categoria: cons_categoria } }

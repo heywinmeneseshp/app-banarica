@@ -39,6 +39,7 @@ export default function Liquidacion() {
     const [razonMovimiento, setRazonMovimiento] = useState(null);
     const [movimientoID, setMovimientoID] = useState(null);
     const [ajutado, setAjustado] = useState(false);
+    const [respuesta, setRespuesta] = useState(null);
 
     useEffect(() => {
         if (!gestionNotificacion.notificacion) {
@@ -92,7 +93,9 @@ export default function Liquidacion() {
         try {
             if (user.id_rol == "Super administrador" && gestionNotificacion.notificacion) {
                 const consAlmacen = almacenByUser.find((item) => item.nombre == almacen).consecutivo;
-                const changes = { "pendiente": false };
+                const respuesta = formData.get("respuesta")
+                const changes = { "pendiente": false, "respuesta" : respuesta };
+                setRespuesta(respuesta)
                 actualizarMovimiento(movimientoID, changes);
                 products.forEach(item => {
                     const { cons_producto, cantidad } = item;
@@ -327,8 +330,20 @@ export default function Liquidacion() {
                                 disabled={bool}
                             />
                         </InputGroup>
-
                     </div>
+                    {gestionNotificacion.notificacion && <InputGroup size="sm" className="mb-3">
+                            <InputGroup.Text id="inputGroup-sizing-sm">Respuesta</InputGroup.Text>
+                            <Form.Control
+                                id="respuesta"
+                                name="respuesta"
+                                aria-label="Small"
+                                aria-describedby="inputGroup-sizing-sm"
+                                defaultValue={respuesta}
+                                required
+                                disabled={respuesta}
+                            />
+                        </InputGroup>}
+
                     {!bool &&
                         <div className={styles.contenedor6}>
                             <div>
@@ -359,7 +374,7 @@ export default function Liquidacion() {
                             <div></div>
                             <div>
                                 <Button className={styles.button} onClick={rechazarAjuste} variant="danger" size="sm">
-                                    Rechazar ajuste
+                                    Rechazar liquidación
                                 </Button>
                             </div>
                             <div>

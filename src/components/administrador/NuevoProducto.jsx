@@ -24,7 +24,6 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
 
     useEffect(() => {
         async function listarAlmacenes() {
-            console.log(producto);
             const res = await axios.get(endPoints.almacenes.list);
             let array = new Array(res.data.length).fill(false);
             if (producto) {
@@ -59,7 +58,6 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
         const updatedCheckedState = checkedState.map((item, index) =>
             index === position ? !item : item
         );
-        console.log(updatedCheckedState);
         setcheckedState(updatedCheckedState);
     };
 

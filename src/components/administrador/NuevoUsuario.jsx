@@ -97,7 +97,6 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
             }
         } else {
             actualizarUsuario(user.username, data);
-            console.log(checkedState);
             almacenes.map((item, index) => {
                 cargarAlmacenesPorUsuario(user.username, item.consecutivo, checkedState[index]);
             }

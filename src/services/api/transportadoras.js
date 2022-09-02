@@ -13,19 +13,26 @@ const agregarTransportadora = async (Transportadora) => {
         const response = await axios.post(url, Transportadora, config);
         return response.data;
     } catch (err) {
-        console.log(err)
+        alert("Error al crear transportadora")
     }
 }
 
 const eliminarTransportadora = async (consecutivo) => {
+    try {
     const res = await axios.delete(endPoints.transportadoras.delete(consecutivo));
     return res.data
+    } catch {
+        alert("Error al eliminar transportadora")
+    }
 }
 
 const actualizarTransportadora = async (id, changes) => {
-    console.log(id, changes)
+    try {
     const res = await axios.patch(endPoints.transportadoras.update(id), changes)
     return res.data
+    } catch {
+        alert("Error al actualizar la transportadora")
+    }
 }
 
 const buscarTransportadora = async (consecutivo) => {

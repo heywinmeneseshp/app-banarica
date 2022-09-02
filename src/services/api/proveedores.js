@@ -8,20 +8,31 @@ const agregarProveedor = async (Proveedor) => {
             'Content-Type': 'application/json'
         }
     };
+    try {
     const url = endPoints.proveedores.create;
     const response = await axios.post(url, Proveedor, config);
-    console.log(response.data)
     return response.data;
+    } catch {
+        alert("Error al crear proveedor")
+    }
 }
 
 const eliminarProveedor = async(consecutivo) => {
+    try{
     const res = await axios.delete(endPoints.proveedores.delete(consecutivo));
     return res.data
+    } catch {
+        alert("Error al eliminar el proveedor")
+    }
 }
 
 const actualizarProveedor = async(id, changes) => {
-    const res = await axios.patch(endPoints.proveedores.update(id), changes)
-    return res.data
+    try{
+        const res = await axios.patch(endPoints.proveedores.update(id), changes)
+        return res.data
+    } catch {
+        alert("Error al actualizar proveedor")
+    }
 }
 
 const buscarProveedor = async(consecutivo) => {
@@ -29,7 +40,7 @@ const buscarProveedor = async(consecutivo) => {
     const res = await axios.get(endPoints.proveedores.findOne(consecutivo));
     return res.data
     } catch (e) {
-        console.log(e)
+        alert("Error al buscar proveedor")
     } 
 }
 
@@ -38,7 +49,7 @@ const listarProveedores = async() => {
         const res = await axios.get(endPoints.proveedores.list);
         return res.data
     } catch {
-        console.log(e)
+        alert("Error al listar proveedores")
     }
 }
 

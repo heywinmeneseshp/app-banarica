@@ -30,30 +30,24 @@ export default function Recepcion() {
     const [productos, setProductos] = useState([]);
     const [bool, setBool] = useState(false);
     const [date, setDate] = useState(null);
-    const [prodcuctsCons, setProductsCons] = useState([]);
     const { alert, setAlert, toogleAlert } = useAlert();
     const [consAlmacen, setConsAlmacen] = useState(null);
     const [consecutivo, setConsecutivo] = useState(null);
     const [semana, setSemana] = useState(null)
     const [observaciones, setObservaciones] = useState(null)
     const [remision, setRemision] = useState(null)
-    const [pedido, setPedido] = useState(null)
-
-    let styleBoton = { color: "success", text: "Cargar artículos" };
-    if (bool) styleBoton = { color: "warning", text: "Modificar recepción" };
+    const [pedido, setPedido] = useState(null);
 
     useEffect(() => {
         async function listrasItems() {
             if (!gestionNotificacion.notificacion) {
                 listarProductos().then(res => {
-                    console.log(res)
                     setProductos(res);
                 })
                 setDate(useDate());
             } else {
                 filterHistorial(gestionNotificacion.notificacion.cons_movimiento).then(res => {
                     setProducts(res)
-                    console.log(res[0])
                     const movimiento = res[0].movimiento;
                     setConsecutivo(movimiento.consecutivo);
                     setSemana(movimiento.cons_semana);
@@ -61,11 +55,8 @@ export default function Recepcion() {
                     setRemision(movimiento.remision);
                     setPedido(res[0].cons_pedido);
                     setConsAlmacen(res[0].cons_almacen_receptor);
-                    setProductsCons(res);
                     setDate(movimiento.fecha)
                 })
-
-
                 setBool(true)
             }
         }
@@ -123,7 +114,6 @@ export default function Recepcion() {
                         cantidad: formData.get("cantidad-" + index),
                         cons_pedido: pedido
                     }
-                    console.log(almacen, dataHistorial.cons_producto, dataHistorial.cantidad)
                     sumar(almacen, dataHistorial.cons_producto, dataHistorial.cantidad);
                     agregarHistorial(dataHistorial)
                     array.push(dataPedido)
@@ -138,7 +128,7 @@ export default function Recepcion() {
                     visto: false
                 }
                 agregarNotificaciones(dataNotificacion)
-                setProductsCons(array)
+                setProducts(array)
             })
             setBool(true)
             setAlert({
@@ -284,7 +274,7 @@ export default function Recepcion() {
                                         disabled
                                         id={`producto-${key}`}
                                         name={`producto-${key}`}
-                                        defaultValue={prodcuctsCons[key]?.cons_producto}
+                                        defaultValue={product?.cons_producto}
                                     />
                                 </InputGroup>
 
@@ -294,7 +284,7 @@ export default function Recepcion() {
                                         {productos.map((item, index) => {
                                             return <option key={index}>{item.name}</option>
                                         })}
-                                        <option>{product?.Producto?.name}</option>
+                                        {bool && <option>{product?.Producto?.name ? product?.Producto?.name : product?.name}</option>}
                                     </Form.Select>
                                 </InputGroup>
 
