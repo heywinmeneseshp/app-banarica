@@ -163,6 +163,9 @@ const endPoints = {
         update: (id) => `${API}/api/${VERSION}/avisos/${id}`,
         delete: (id) => `${API}/api/${VERSION}/avisos/${id}`
     },
+    document: {
+        pedido: `${API}/api/${VERSION}/documentos/pedido`,
+    }
 }
 
 export default endPoints;

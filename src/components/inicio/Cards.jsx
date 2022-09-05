@@ -2,10 +2,10 @@ import React from 'react';
 
 
 //Assets
-import CardLiquidacion from '@assets/CardLiquidacion';
-import CardExportacion from '@assets/CardExportacion';
-import CardDevoluciones from '@assets/CardDevoluciones';
-import CardAjustes from '@assets/CardAjuste';
+import CardLiquidacion from '@components/inicio/CardLiquidacion';
+import CardExportacion from '@components/inicio/CardExportacion';
+import CardDevoluciones from '@components/inicio/CardDevoluciones';
+import CardAjustes from '@components/inicio/CardAjuste';
 
 //CSS
 import styles from '@styles/Card.module.css';

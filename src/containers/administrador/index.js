@@ -10,7 +10,7 @@ import Producto from '@containers/administrador/Producto';
 import Proveedor from '@containers/administrador/Proveedor';
 import Transporte from '@containers/administrador/Transporte';
 import Users from '@containers/administrador/Users';
-import Inicio from "@containers/Inicio";
+import Inicio from "@containers/inicio/Inicio";
 
 export default function Adminsitrador() {
 

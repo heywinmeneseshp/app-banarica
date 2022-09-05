@@ -30,6 +30,7 @@ export default function Pedidos() {
     const [consPedido, setConsPedido] = useState(null);
     const { alert, setAlert, toogleAlert } = useAlert();
     const [bool, setBool] = useState(false)
+    const [observaciones, setObservaciones] = useState(null)
 
     useEffect(() => {
         gestionPedido.initialize()
@@ -49,14 +50,16 @@ export default function Pedidos() {
     const handleSubmit = (e) => {
         e.preventDefault();
         const formData = new FormData(formRef.current)
+        const observaciones = formData.get("observaciones")
         const week = formData.get("semana");
         const semanaR = generarSemana(week);
+        setObservaciones(observaciones)
         const data = {
             pendiente: true,
-            observaciones: formData.get('fecha'),
+            observaciones: observaciones,
             fecha: formData.get('fecha'),
             cons_semana: semanaR,
-            usuario: "UsuarioPrueba"
+            usuario: user.username
         }
         agregarTablePedido(data).then((res) => {
             setConsPedido(res.data.consecutivo)
@@ -139,7 +142,20 @@ export default function Pedidos() {
                             <NuevoAlmacenPedido formRef={formRef} />
                         </span>
                     ))}
+                   
                     <div className={styles.line}></div>
+                    <InputGroup size="sm" className="mb-3">
+                            <InputGroup.Text id="inputGroup-sizing-sm">Observaciones</InputGroup.Text>
+                            <Form.Control
+                                aria-label="Small"
+                                aria-describedby="inputGroup-sizing-sm"
+                                id="observaciones"
+                                name="observaciones"
+                                defaultValue={observaciones}
+                                disabled={bool}
+                            />
+                        </InputGroup>
+                        <div className={styles.line}></div>
                     {!bool &&
                         <div className={styles.contenedor6}>
                             <div>

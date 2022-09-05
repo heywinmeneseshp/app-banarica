@@ -6,7 +6,7 @@ import { useAuth } from '@hooks/useAuth';
 import Footer from "@components/Footer";
 import Header from '@components/Header';
 //CSS
-import styles from '@styles/SecondLayout.module.css';
+import styles from '@styles/Layout.module.css';
 import { useEffect } from 'react';
 
 export default function ThirdLayout({ children }) {
@@ -20,7 +20,7 @@ export default function ThirdLayout({ children }) {
             <>
                 <Header />
                 <main>
-                    <div className={styles.thirdLayout}>{children}</div>
+                    <div className={styles.main}>{children}</div>
                 </main>
                 <Footer />
             </>

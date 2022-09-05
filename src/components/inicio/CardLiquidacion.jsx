@@ -1,14 +1,14 @@
 import React from 'react';
-import styles from '../styles/Card.module.css';
+import styles from '@styles/Card.module.css';
 
 
-const CardExportacion = (color) => {
+const CardLiquidacion = () => {
 
     return (
         <>
             <div className={styles.hijo}>
-                <div className={styles.headerExportaciones}>
-                    Exportación
+                <div className={styles.header}>
+                    Liquidación
                 </div>
                 <div className="card" style={{ width: "16rem" }}>
                     <ul className="list-group list-group-flush">
@@ -22,4 +22,4 @@ const CardExportacion = (color) => {
     );
 };
 
-export default CardExportacion;
+export default CardLiquidacion;

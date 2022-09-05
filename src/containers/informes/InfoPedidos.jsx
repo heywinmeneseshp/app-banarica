@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
+import { saveAs } from "file-saver";
 //Services
 import endPoints from "@services/api";
 //Hooks
@@ -15,6 +16,7 @@ import { Container } from "react-bootstrap";
 
 
 export default function InfoPedidos() {
+    const formRef = useRef();
     const { user, almacenByUser } = useAuth();
     const [pedidos, setPedidos] = useState([1]);
     const [pagination, setPagination] = useState(1);
@@ -35,13 +37,25 @@ export default function InfoPedidos() {
         }
     }, [alert, pagination])
 
+    const onDescargar = async () => {
+        const formData = new FormData(formRef.current)
+        const consecutivo = formData.get("consecutivo")
+        axios.post(endPoints.document.pedido, { consecutivo: consecutivo })
+            .then(() => axios.get(endPoints.document.pedido, { responseType: 'blob' }))
+            .then((res) => {
+                const pdfBlob = new Blob([res.data], { type: 'application/pdf' });
+
+                saveAs(pdfBlob, `Pedido ${consecutivo}.pdf`);
+            })
+    }
+
     return (
         <>
 
             <Container>
                 <h2>Informe de pedidos</h2>
                 <div className="line"></div>
-                <div>
+                <form ref={formRef}>
 
                     <div className={styles.contenedor3}>
 
@@ -91,9 +105,14 @@ export default function InfoPedidos() {
                     <div className={styles.contenedor3}>
 
                         <div className={styles.grupo}>
-                            <label htmlFor="Username">Consecutivo</label>
+                            <label htmlFor="consecutivo">Consecutivo</label>
                             <div>
-                                <input type="text" className="form-control form-control-sm" id="contraseña"></input>
+                                <input
+                                    type="text"
+                                    className="form-control form-control-sm"
+                                    id="consecutivo"
+                                    name="consecutivo"
+                                ></input>
                             </div>
                         </div>
                         {(user.id_rol == "Super administrador") &&
@@ -101,13 +120,13 @@ export default function InfoPedidos() {
                                 Editar documento
                             </Button>
                         }
-                        {(user.id_rol == "Administrador" || "Super administrador") &&
-                            <Button className={styles.button} variant="success" size="sm">
-                                Descargar documento
-                            </Button>
-                        }
+
+                        <Button onClick={onDescargar} className={styles.button} variant="success" size="sm">
+                            Descargar documento
+                        </Button>
+
                     </div>
-                </div>
+                </form>
 
                 <Table className={styles.tabla} striped bordered hover size="sm">
                     <thead>
@@ -140,4 +159,5 @@ export default function InfoPedidos() {
         </>
     );
 }
+
 

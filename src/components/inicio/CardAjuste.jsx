@@ -1,8 +1,8 @@
 import React from 'react';
-import styles from '../styles/Card.module.css';
+import styles from '@styles/Card.module.css';
 
 
-const CardAjustes = (color) => {
+const CardAjustes = () => {
 
     return (
         <>

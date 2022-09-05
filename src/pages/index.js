@@ -4,13 +4,13 @@ import AppContext from '@context/AppContext';
 //Hooks
 import { useAuth } from '@hooks/useAuth';
 //Components
-import Inicio from '@containers/Inicio';
-import SecondLayout from 'layout/SecondLayout';
+import Inicio from '@containers/inicio/Inicio';
+import SecondLayout from '@layout/SecondLayout';
 import Adminsitrador from '@containers/administrador';
 import Almacen from '@containers/almacen';
 import Informes from '@containers/informes';
 //CSS
-import styles from '@styles/SecondLayout.module.css';
+import styles from '@styles/Layout.module.css';
 
 export default function Home() {
     const { user } = useAuth();

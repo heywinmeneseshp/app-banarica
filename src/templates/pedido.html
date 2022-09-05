@@ -1,0 +1,214 @@
+<!doctype html>
+<html>
+
+<head>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"
+  integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<title>Pedido</title>
+  <style>
+    .invoice-box {
+      max-width: 800px;
+      margin: auto;
+      padding: 30px;
+      border: 1px solid #eee;
+      box-shadow: 0 0 10px rgba(0, 0, 0, .15);
+      font-size: 14px;
+      line-height: 24px;
+      font-family: 'Helvetica Neue', 'Helvetica';
+      color: #555;
+    }
+    dl {
+      margin: 0px;
+      padding: 0px;
+      text-align: center;
+    }
+    .imagen {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .auth {
+      text-align: center;
+      width: 420px;
+    }
+    .autorizado {
+      text-align: end;
+    }
+    .margin-top {
+      margin-top: 40px;
+    }
+    .margin-top2 {
+      margin-top: 20px;
+    }
+    .descripcion{
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    .info, .imagen {
+      width: 50%;
+    }
+    .info-containter{
+      display: flex;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="invoice-box">
+    <div>
+      <div class="info-containter">
+        <div class="imagen">
+          <img class="imagen" src="../images/banarica.png" />
+          <dl>
+            <dt>
+              Comercializadora Internacional Bana Rica S.A
+            </dt>
+            <p>
+              Cra 43a 16a Sur 38 IN 1008, Medellin, Antioquia
+              <br />
+              Tel: (604) 480 5034 - (604) 4805022
+              <br />
+              www.banarica.com - facturacion@banarica.com
+            </p>
+          </dl>
+        </div>
+        <div class="info">
+          <table class="table table-sm">
+            <tbody class="table">
+              <tr>
+                <td class="col-6">
+                  <b>Proveedor</b>
+                </td>
+                <td class="col-6">
+                  {{proveedor}}
+                </td>
+              </tr>
+            </tbody>
+            <tbody class="table">
+              <tr>
+                <td class="col-6">
+                  <b>Fecha</b>
+                </td>
+                <td class="col-6">
+                  {{fecha}}
+                </td>
+              </tr>
+            </tbody>
+            <tbody class="table">
+              <tr>
+                <td class="col-6">
+                  <b>Comercializadora</b>
+                </td>
+                <td class="col-6">
+                  {{comercializadora}}
+                </td>
+              </tr>
+            </tbody>
+            <tbody class="table">
+              <tr>
+                <td class="col-6">
+                  <b>Finca</b>
+                </td>
+                <td class="col-6">
+                  {{finca}}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <table class="table">
+
+            <tbody class="table-active">
+              <tr>
+                <td class="col-6">
+                  <b>Semana</b>
+                </td>
+                <td class="col-6">
+                  {{semana}}
+                </td>
+              </tr>
+              <tr>
+                <td class="col-6">
+                  <b>Pedido</b>
+                </td>
+                <td class="col-6">
+                  {{pedido}}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <table class="table table-hover table-sm">
+            <thead>
+              <tr>
+                <th class="col-1">
+                  Cod
+                </th>
+                <th class="col-8">
+                  Producto
+                </th>
+                <th class="col-3 autorizado">
+                  Cantidad
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+            {{productos}}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="row margin-top2">
+        <div class="col-md-5 autorizado">
+          AUTORIZADO POR:
+        </div>
+        <div class="col-md-7 auth border">
+          {{usuario}}
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12 margin-top">
+          <div class="row">
+            <div class="col-md-12 descripcion">
+              Por medio de la presente autorizo al siguiente conductor a retirar el anterior pedido de
+              Cartón:
+            </div>
+          </div>
+          <table class="table table-sm">
+            <tbody>
+              <tr>
+                <td>
+                  Nombre:
+                </td>
+                <td>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  CC:
+                </td>
+                <td>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Vehiculo:
+                </td>
+                <td>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

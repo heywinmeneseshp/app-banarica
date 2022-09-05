@@ -1,7 +1,7 @@
-.ancho {
+.main {
     display: grid;
     justify-content: center;
-    align-items: center;
+    min-height: 70vh;
     
 }
 
@@ -12,12 +12,9 @@
 	z-index: 1071;
 }
 
-.thirdLayout{
-
-    min-height: 470px;
+.footer {
+    padding: 2px;
+    min-height: 20vh;
 }
 
-.alto{
-    min-height: 470px;
-}
 

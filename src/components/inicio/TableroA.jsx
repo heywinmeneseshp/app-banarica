@@ -3,9 +3,11 @@ import AppContext from '@context/AppContext';
 //Hooks
 import { filtrarNotificacionesPorAlmacen } from '@services/api/notificaciones';
 import { useAuth } from '@hooks/useAuth';
+//Components
+import Alerta from '@assets/Alerta';
 //Bootstrap
 import styles from '@styles/Tablero.module.css';
-import Alerta from '@assets/almacen/Alerta';
+
 
 const TableroA = () => {
     const { gestionNotificacion } = useContext(AppContext);

@@ -1,10 +1,9 @@
 import React, { useState, useContext, createContext } from 'react';
-import { listarAlmacenesPorUsuario } from '@services/api/usuarios';
 import axios from 'axios';
 import endPoints from '@services/api';
 import Cookie from 'js-cookie';
 import { useRouter } from 'next/router';
-import { listarAlmacenes } from '@services/api/almacenes';
+
 
 const AuthContext = createContext();
 

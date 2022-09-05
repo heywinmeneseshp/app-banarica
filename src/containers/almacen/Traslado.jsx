@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import AppContext from "@context/AppContext";
 //Services";
 import RealizarTraslado from "@components/almacen/RealizarTraslado";
-import Alerta from "@assets/almacen/Alerta";
+import Alerta from "@assets/Alerta";
 
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
