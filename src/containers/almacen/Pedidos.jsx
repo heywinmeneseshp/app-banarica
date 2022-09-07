@@ -35,8 +35,7 @@ export default function Pedidos() {
     const [observaciones, setObservaciones] = useState(null);
 
     useEffect(() => {
-        gestionPedido.initialize()
-        gestionPedido.ingresarAlmacenes(almacenByUser)
+        gestionPedido.initialize(almacenByUser)
         setDate(generarFecha)
     }, [])
 

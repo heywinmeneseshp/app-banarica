@@ -43,7 +43,14 @@ export default function Liquidacion() {
 
     useEffect(() => {
         if (!gestionNotificacion.notificacion) {
-            listarProductos().then(res => setProductos(res));
+            const listar = async () => {
+                const almacenes = almacenByUser.map(item => item.consecutivo)
+                const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } }
+                const productlist = await filtradoGeneralStock(data)
+                const productRes = productlist.map(item => item.producto)
+                setProductos(productRes);
+            }
+            listar()
         } else {
             const { cons_movimiento } = gestionNotificacion.notificacion;
             bucarDoumentoMovimiento(cons_movimiento).then(res => {

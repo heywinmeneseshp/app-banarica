@@ -38,13 +38,21 @@ const eliminarPedido = async (consecutivo) => {
 }
 
 const actualizarItemPedido = async (id, changes) => {
-    const res = await axios.patch(endPoints.pedidos.update(id), changes)
-    return res.data
+    try {
+        const res = await axios.patch(endPoints.pedidos.update(id), changes)
+        return res.data
+    } catch {
+        alert("Error al actualizar el item del pedido")
+    }
 }
 
 const actualizarPedido = async (consecutivo, changes) => {
-    const res = await axios.patch(endPoints.pedidos.updatePedido(consecutivo), changes)
-    return res.data
+    try{
+        const res = await axios.patch(endPoints.pedidos.updatePedido(consecutivo), changes)
+        return res.data
+    } catch {
+        alert("Erro al actualizar el pedido")
+    }
 }
 
 const buscarPedido = async (consecutivo) => {

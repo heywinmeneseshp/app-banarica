@@ -103,6 +103,15 @@ const filtrarPorProductoYAlmacen = async (cons_almacen, cons_producto) => {
     }
 }
 
+const filtradoGeneralStock = async (body) => {
+    try {
+        const res = await axios.post(endPoints.stock.filter, body);
+        return res.data
+    } catch {
+        alert("Error en el filtrado general del stock")
+    }
+}
+
 
 
 
@@ -116,5 +125,6 @@ export {
     exportCombo,
     eliminarStock,
     crearStock,
-    filtrarPorProductoYAlmacen
+    filtrarPorProductoYAlmacen,
+    filtradoGeneralStock
 };

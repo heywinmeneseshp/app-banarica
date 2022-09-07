@@ -6,6 +6,7 @@ import * as XLSX from 'xlsx'
 import endPoints from "@services/api";
 import { listarProductos } from "@services/api/productos";
 import { listarCategorias } from "@services/api/categorias";
+import { filtradoGeneralStock } from "@services/api/stock";
 //Hooks
 import { useAuth } from "@hooks/useAuth";
 import useDate from "@hooks/useDate";
@@ -17,6 +18,7 @@ import { Container } from "react-bootstrap";
 import Paginacion from "@components/Paginacion";
 //CSS
 import styles from '@styles/informes/informes.module.css';
+
 
 export default function InfoStock() {
     const formRef = useRef();
@@ -53,9 +55,9 @@ export default function InfoStock() {
         }
         if (cons_categoria != 0) body = { ...body, producto: { cons_categoria: cons_categoria } }
         if (cons_producto != 0) body.stock = { ...body.stock, cons_producto: cons_producto }
-        const res = await axios.post(endPoints.stock.filter, body);
-        setTotal(res.data.total);
-        setStock(res.data.data);
+        const res = await filtradoGeneralStock(body)
+        setTotal(res.total);
+        setStock(res.data);
     }
 
     const onBuscar = () => {

@@ -43,8 +43,12 @@ export default function RealizarTraslado() {
 
 
     useEffect(() => {
-        const listar = () => {
-            listarProductos().then(res => setProductos(res));
+        const listar = async () => {
+            const almacenes = almacenByUser.map(item => item.consecutivo)
+            const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } }
+            const productlist = await filtradoGeneralStock(data)
+            const productRes = productlist.map(item => item.producto)
+            setProductos(productRes);
             listarAlmacenes().then(res => setDestinos(res));
             listarConductores().then(res => setConductores(res));
             listarTransportadoras().then(res => setTransportadoras(res));
@@ -79,7 +83,7 @@ export default function RealizarTraslado() {
                 mensaje: "El almacén de origen y destino no puede ser el mismo",
                 color: "danger",
                 autoClose: true
-            });  
+            });
         } else {
             try {
                 setTransportadora(transportadora0);

@@ -5,7 +5,7 @@ import { listarProductos } from "@services/api/productos";
 import { agregarMovimiento, bucarDoumentoMovimiento } from "@services/api/movimientos";
 import { agregarNotificaciones } from "@services/api/notificaciones";
 import { agregarHistorial } from "@services/api/historialMovimientos";
-import { restar, sumar } from "@services/api/stock";
+import { filtradoGeneralStock, restar, sumar } from "@services/api/stock";
 //Hooks
 import { useAuth } from "@hooks/useAuth";
 import useAlert from "@hooks/useAlert";
@@ -21,7 +21,7 @@ import Alertas from "@assets/Alertas";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
 
-export default function Ajuste({exportacion}) {
+export default function Ajuste({ exportacion }) {
     const { gestionNotificacion } = useContext(AppContext);
     const formRef = useRef();
     const { almacenByUser } = useAuth();
@@ -37,9 +37,16 @@ export default function Ajuste({exportacion}) {
     const { alert, setAlert, toogleAlert } = useAlert();
     const [titulo, setTitulo] = useState("Ajuste");
     useEffect(() => {
-        if(exportacion) setTitulo(exportacion);
+        if (exportacion) setTitulo(exportacion);
         if (!gestionNotificacion.notificacion) {
-            listarProductos().then(res => setProductos(res));
+            const listar = async () => {
+                const almacenes = almacenByUser.map(item => item.consecutivo)
+                const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } }
+                const productlist = await filtradoGeneralStock(data)
+                const productRes = productlist.map(item => item.producto)
+                setProductos(productRes);
+            }
+            listar()
         } else {
             const { cons_movimiento } = gestionNotificacion.notificacion;
             bucarDoumentoMovimiento(cons_movimiento).then(res => {

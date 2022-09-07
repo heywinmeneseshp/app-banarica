@@ -31,7 +31,7 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
                 res.data.map((almacen, index) => {
                     resB.data.map((item) => {
                         if (almacen.consecutivo === item.cons_almacen) {
-                            array[index] = item.isBlock;
+                            array[index] = !item.isBlock;
                         }
                     });
                 });
@@ -106,20 +106,16 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
                 });
                 setOpen(false);
             } catch (e) {
-                setAlert({
-                    active: true,
-                    mensaje: "Se ha producido un error al crear el usuario",
-                    color: "warning",
-                    autoClose: true
-                });
-                setOpen(false);
+              alert("Se ha presentado un error al crear el producto")
             }
         } else {
-            actualizarProducto(producto.id, data).then(() => {
+            actualizarProducto(producto.id, data).then((res) => {
+                console.log(almacenes)
                 almacenes.map((almacen, index) => {
-                    habilitarProductoEnAlmacen(almacen.consecutivo, producto.consecutivo, checkedState[index]);
+                    habilitarProductoEnAlmacen(almacen.consecutivo, producto.consecutivo, !checkedState[index]);
                 });
             });
+            console.log(almacenes)
             setAlert({
                 active: true,
                 mensaje: 'El producto se ha actualizado',

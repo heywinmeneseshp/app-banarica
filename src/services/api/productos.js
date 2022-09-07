@@ -23,8 +23,12 @@ const eliminarProducto = async (consecutivo) => {
 }
 
 const actualizarProducto = async (id, changes) => {
-    const res = await axios.patch(endPoints.productos.update(id), changes)
-    return res.data.data
+    try {
+        const res = await axios.patch(endPoints.productos.update(id), changes)
+        return res.data.data
+    } catch {
+        alert("Se ha presentado un error al actualizar el producto")
+    }
 }
 
 const buscarProducto = async (consecutivo) => {
