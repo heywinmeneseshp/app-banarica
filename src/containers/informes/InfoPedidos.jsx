@@ -26,9 +26,9 @@ export default function InfoPedidos() {
     useEffect(() => {
         async function listarItems() {
             const res = await axios.get(endPoints.pedidos.pagination(pagination, limit));
-            const total = await axios.get(endPoints.pedidos.list);
-            setTotal(total.data.length);
-            setPedidos(total.data.reverse());
+            setTotal(res.data.total);
+            console.log(res.data.data)
+            setPedidos(res.data.data);
         }
         try {
             listarItems()
@@ -44,7 +44,6 @@ export default function InfoPedidos() {
             .then(() => axios.get(endPoints.document.pedido, { responseType: 'blob' }))
             .then((res) => {
                 const pdfBlob = new Blob([res.data], { type: 'application/pdf' });
-
                 saveAs(pdfBlob, `Pedido ${consecutivo}.pdf`);
             })
     }
@@ -60,15 +59,42 @@ export default function InfoPedidos() {
                     <div className={styles.contenedor3}>
 
                         <div className={styles.grupo}>
-                            <label htmlFor="Username">Almacen</label>
+                            <label htmlFor="almacen">Almacen</label>
                             <div>
-                                <select className="form-select form-select-sm">
+                                <select 
+                                className="form-select form-select-sm"
+                                id="almacen"
+                                name="almacen">
                                     <option>All</option>
-                                    {almacenByUser.map(almacen => (
-                                        <option>{almacen.nombre}</option>
+                                    {almacenByUser.map((almacen, index) => (
+                                        <option key={index}>{almacen.nombre}</option>
                                     ))}
 
                                 </select>
+                            </div>
+                        </div>
+
+                        <div className={styles.grupo}>
+                            <label htmlFor="categoria">Categoría</label>
+                            <div>
+                                <input
+                                    type="text"
+                                    className="form-control form-control-sm"
+                                    id="categoria"
+                                    name="categoria"
+                                    ></input>
+                            </div>
+                        </div>
+
+                        <div className={styles.grupo}>
+                            <label htmlFor="articulo">Artículo</label>
+                            <div>
+                                <input
+                                    type="text"
+                                    className="form-control form-control-sm"
+                                    id="articulo"
+                                    name="articulo"
+                                    ></input>
                             </div>
                         </div>
 
@@ -78,22 +104,6 @@ export default function InfoPedidos() {
                                 <input type="number" className="form-control form-control-sm" id="contraseña"></input>
                             </div>
                         </div>
-
-
-                        <div className={styles.grupo}>
-                            <label htmlFor="Username">Fecha Inicial</label>
-                            <div>
-                                <input type="date" className="form-control form-control-sm" id="contraseña"></input>
-                            </div>
-                        </div>
-
-                        <div className={styles.grupo}>
-                            <label htmlFor="Username">Fecha Final</label>
-                            <div>
-                                <input type="date" className="form-control form-control-sm" id="contraseña"></input>
-                            </div>
-                        </div>
-
 
                         <Button className={styles.button} variant="primary" size="sm">
                             Buscar
@@ -117,12 +127,12 @@ export default function InfoPedidos() {
                         </div>
                         {(user.id_rol == "Super administrador") &&
                             <Button className={styles.button} variant="warning" size="sm">
-                                Editar documento
+                                Editar pedido
                             </Button>
                         }
 
                         <Button onClick={onDescargar} className={styles.button} variant="success" size="sm">
-                            Descargar documento
+                            Descargar pedido
                         </Button>
 
                     </div>
@@ -132,20 +142,24 @@ export default function InfoPedidos() {
                     <thead>
                         <tr>
                             <th>Cons.</th>
+                            <th>Cod</th>
                             <th>Artículo</th>
                             <th>Cantidad</th>
                             <th>Destino</th>
+                            <th>Semana</th>
                             <th>Fecha</th>
                         </tr>
                     </thead>
                     <tbody>
                         {pedidos.map((pedido, index) => (
                             <tr key={index}>
-                                <td>{pedido.cons_pedido}</td>
-                                <td>{pedido.cons_producto}</td>
-                                <td>{pedido.cantidad}</td>
-                                <td>{pedido.cons_almacen_destino}</td>
-                                <td>{pedido.updatedAt}</td>
+                                <td>{pedido?.cons_pedido}</td>
+                                <td>{pedido?.cons_producto}</td>
+                                <td>{pedido?.producto?.name}</td>
+                                <td>{pedido?.cantidad}</td>
+                                <td>{pedido?.almacen?.nombre}</td>
+                                <td>{pedido?.tabla?.cons_semana}</td>
+                                <td>{pedido?.tabla?.fecha}</td>
                             </tr>
                         ))}
                     </tbody>

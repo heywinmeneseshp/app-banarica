@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef, useContext } from "react";
+import axios from "axios";
 import AppContext from "@context/AppContext";
 //Services
 import { agregarPedido, agregarTablePedido } from "@services/api/pedidos";
-import { agregarNotificaciones } from "@services/api/notificaciones";
+import endPoints from "@services/api";
 //Hooks
 import generarFecha from "@hooks/useDate";
 import useAlert from "@hooks/useAlert";
@@ -21,6 +22,7 @@ import NuevoAlmacenPedido from "@components/almacen/NuevoAlmacenPedido.jsx";
 import styles from "@styles/almacen/almacen.module.css";
 import Alertas from "@assets/Alertas";
 
+
 export default function Pedidos() {
     const { almacenByUser, user } = useAuth();
     const { gestionPedido } = useContext(AppContext);
@@ -30,7 +32,7 @@ export default function Pedidos() {
     const [consPedido, setConsPedido] = useState(null);
     const { alert, setAlert, toogleAlert } = useAlert();
     const [bool, setBool] = useState(false)
-    const [observaciones, setObservaciones] = useState(null)
+    const [observaciones, setObservaciones] = useState(null);
 
     useEffect(() => {
         gestionPedido.initialize()
@@ -47,7 +49,7 @@ export default function Pedidos() {
         setDeposits(array);
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const formData = new FormData(formRef.current)
         const observaciones = formData.get("observaciones")
@@ -61,22 +63,28 @@ export default function Pedidos() {
             cons_semana: semanaR,
             usuario: user.username
         }
-        agregarTablePedido(data).then((res) => {
-            setConsPedido(res.data.consecutivo)
-            gestionPedido.listaPedido.map((item) => {
-                agregarPedido(res.data.consecutivo, item)
-            })
+        let almacenes = []
+        const res = await agregarTablePedido(data)
+        setConsPedido(res.data.consecutivo)
+        const cons_pedido = res.data.consecutivo
+        gestionPedido.listaPedido.map((item, index) => {
+            const existe = almacenes.find(element => element == item.cons_almacen_destino)
+            if (existe == null) almacenes = [...almacenes, item.cons_almacen_destino]
+            agregarPedido(res.data.consecutivo, item)
+        })
+        almacenes.map(async (cons_alamcen) => {
+            console.log(cons_alamcen)
             const dataNotificacion = {
-                almacen_receptor: "BRC",
-                cons_movimiento: res.data.consecutivo,
+                almacen_emisor: cons_alamcen,
+                almacen_receptor: cons_alamcen,
+                cons_movimiento: cons_pedido,
                 tipo_movimiento: "Pedido",
                 descripcion: "realizado",
-                aprobado: true,
+                aprobado: false,
                 visto: false
             }
-            agregarNotificaciones(dataNotificacion)
+            const res = await axios.post(endPoints.notificaciones.create, dataNotificacion);
         })
-
         setAlert({
             active: true,
             mensaje: "Se ha cargado el pedido con éxito",
@@ -84,7 +92,6 @@ export default function Pedidos() {
             autoClose: false
         })
         setBool(true)
-
     }
 
     return (
@@ -142,20 +149,20 @@ export default function Pedidos() {
                             <NuevoAlmacenPedido formRef={formRef} />
                         </span>
                     ))}
-                   
+
                     <div className={styles.line}></div>
                     <InputGroup size="sm" className="mb-3">
-                            <InputGroup.Text id="inputGroup-sizing-sm">Observaciones</InputGroup.Text>
-                            <Form.Control
-                                aria-label="Small"
-                                aria-describedby="inputGroup-sizing-sm"
-                                id="observaciones"
-                                name="observaciones"
-                                defaultValue={observaciones}
-                                disabled={bool}
-                            />
-                        </InputGroup>
-                        <div className={styles.line}></div>
+                        <InputGroup.Text id="inputGroup-sizing-sm">Observaciones</InputGroup.Text>
+                        <Form.Control
+                            aria-label="Small"
+                            aria-describedby="inputGroup-sizing-sm"
+                            id="observaciones"
+                            name="observaciones"
+                            defaultValue={observaciones}
+                            disabled={bool}
+                        />
+                    </InputGroup>
+                    <div className={styles.line}></div>
                     {!bool &&
                         <div className={styles.contenedor6}>
                             <div>

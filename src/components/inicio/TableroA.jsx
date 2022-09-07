@@ -19,19 +19,14 @@ const TableroA = () => {
         let data;
         if (user.id_rol == "Super administrador") {
             data = {
-                "array": consAlmacen,
-                "data": {
-                    "aprobado": false,
-                    "visto": false
-                },
-                "operador": "or"
-            };
+                "almacen_receptor": consAlmacen,
+                "aprobado": false,
+                "visto": false
+            }
         } else {
             data = {
-                "array": consAlmacen,
-                "data": {
-                    "aprobado": false,
-                }
+                "almacen_receptor": consAlmacen,
+                "aprobado": false
             };
         }
         filtrarNotificacionesPorAlmacen(data).then(res => {
@@ -44,17 +39,17 @@ const TableroA = () => {
         <>
             <div className={styles.superTablero}>
                 <div className={styles.tablero}>
-                <div className={styles.miniTablero}>
+                    <div className={styles.miniTablero}>
                         <h5 className={styles.plus}>+ Notificaciones</h5>
-                        
 
-                            {notificaciones.map((noti, index) => (
-                                <Alerta key={index} data={noti} />
-                            ))}
-                        </div>
+
+                        {notificaciones.map((noti, index) => (
+                            <Alerta key={index} data={noti} />
+                        ))}
                     </div>
                 </div>
-           
+            </div>
+
         </>
     );
 };

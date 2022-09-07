@@ -24,7 +24,7 @@ export default function NuevoAlmacenPedido({ formRef }) {
     const [consProducts, setConsProduct] = useState([]);
 
     useEffect(() => {
-        
+        setBools([...bools, bool])
     }, [bool]);
 
 
@@ -58,7 +58,6 @@ export default function NuevoAlmacenPedido({ formRef }) {
         setAlmacen(result.consecutivo);
         setNameAlmacen(result.nombre);
         setConsProduct(array);
-
     };
 
 

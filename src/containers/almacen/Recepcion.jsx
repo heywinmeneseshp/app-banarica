@@ -16,9 +16,9 @@ import { Container } from "react-bootstrap";
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import Button from 'react-bootstrap/Button';
-import { Alert } from "react-bootstrap";
 //Components
 import Alertas from "@assets/Alertas";
+import AlertaPedido from "@assets/AlertaPedido";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
 
@@ -37,9 +37,12 @@ export default function Recepcion() {
     const [observaciones, setObservaciones] = useState(null)
     const [remision, setRemision] = useState(null)
     const [pedido, setPedido] = useState(null);
+    const [notificaciones, setNotificaciones] = useState([])
 
     useEffect(() => {
         async function listrasItems() {
+            const result = gestionNotificacion.notificaciones.filter(noti => noti.tipo_movimiento === "Pedido")
+            setNotificaciones(result);
             if (!gestionNotificacion.notificacion) {
                 listarProductos().then(res => {
                     setProductos(res);
@@ -150,12 +153,9 @@ export default function Recepcion() {
         <>
             <form ref={formRef} onSubmit={handleSubmit}>
                 <Container className={styles.contenedorPadre}>
-                    {!bool &&
-                        <Alert className={styles.alert} key="warning" variant="warning">
-                            <div className={styles.alertText} >Pedido No. <b>001028</b> pendiente por recibir</div>
-                            <button type="button" className="btn btn-success btn-sm">Ver pedido</button>
-                        </Alert>}
-
+                    {!bool && notificaciones.map((noti, index) => (
+                        <AlertaPedido key={index} data={noti} ></AlertaPedido>
+                    ))}
                     <h2>+ Recepción de artículos</h2>
 
                     <div className={styles.contenedor8}>
