@@ -22,7 +22,7 @@ const TableroA = () => {
                 "almacen_receptor": consAlmacen,
                 "aprobado": false,
                 "visto": false
-            }
+            };
         } else {
             data = {
                 "almacen_receptor": consAlmacen,

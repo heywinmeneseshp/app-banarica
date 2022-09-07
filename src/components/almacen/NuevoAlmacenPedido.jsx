@@ -24,7 +24,6 @@ export default function NuevoAlmacenPedido({ formRef }) {
     const [consProducts, setConsProduct] = useState([]);
 
     useEffect(() => {
-        setBools([...bools, bool])
     }, [bool]);
 
 
