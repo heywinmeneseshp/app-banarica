@@ -106,6 +106,7 @@ const endPoints = {
         create: `${API}/api/${VERSION}/pedidos`,
         createTable: `${API}/api/${VERSION}/pedidos/listar`,
         findOneDocument: (consecutivo) => `${API}/api/${VERSION}/pedidos/listar/${consecutivo}`,
+        updatePedido: (consecutivo) => `${API}/api/${VERSION}/pedidos/listar/${consecutivo}`,
         update: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/pedidos/${cons_almacen}/${cons_producto}`,
         delete: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/pedidos/${cons_almacen}/${cons_producto}`,
         add: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/pedidos/sumar/${cons_almacen}/${cons_producto}`,

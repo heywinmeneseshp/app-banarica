@@ -73,13 +73,12 @@ export default function Pedidos() {
             agregarPedido(res.data.consecutivo, item)
         })
         almacenes.map(async (cons_alamcen) => {
-            console.log(cons_alamcen)
             const dataNotificacion = {
                 almacen_emisor: cons_alamcen,
                 almacen_receptor: cons_alamcen,
                 cons_movimiento: cons_pedido,
                 tipo_movimiento: "Pedido",
-                descripcion: "realizado",
+                descripcion: "pendiente por recibir",
                 aprobado: false,
                 visto: false
             }

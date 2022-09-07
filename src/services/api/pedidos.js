@@ -37,8 +37,13 @@ const eliminarPedido = async (consecutivo) => {
     return res.data
 }
 
-const actualizarPedido = async (id, changes) => {
+const actualizarItemPedido = async (id, changes) => {
     const res = await axios.patch(endPoints.pedidos.update(id), changes)
+    return res.data
+}
+
+const actualizarPedido = async (consecutivo, changes) => {
+    const res = await axios.patch(endPoints.pedidos.updatePedido(consecutivo), changes)
     return res.data
 }
 
@@ -69,4 +74,4 @@ const listarPedidos = async () => {
     }
 }
 
-export { agregarPedido, eliminarPedido, actualizarPedido, buscarDocumetoPedido, buscarPedido, listarPedidos, agregarTablePedido };
+export { agregarPedido, eliminarPedido, actualizarPedido, actualizarItemPedido, buscarDocumetoPedido, buscarPedido, listarPedidos, agregarTablePedido };

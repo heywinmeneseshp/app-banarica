@@ -38,6 +38,7 @@ export default function Recepcion() {
     const [remision, setRemision] = useState(null)
     const [pedido, setPedido] = useState(null);
     const [notificaciones, setNotificaciones] = useState([])
+    const [change, setChange] = useState(false)
 
     useEffect(() => {
         async function listrasItems() {
@@ -47,7 +48,6 @@ export default function Recepcion() {
                 "tipo_movimiento": "Pedido",
                 "aprobado": false
             }
-            console.log(notiData)
             const result = await filtrarNotificacionesPorAlmacen(notiData)
             setNotificaciones(result);
             if (!gestionNotificacion.notificacion) {
@@ -75,7 +75,7 @@ export default function Recepcion() {
         } catch (e) {
             alert("Error al cargar los productos");
         }
-    }, [bool])
+    }, [bool, change])
 
     function addProduct() {
         setProducts([...products, products.length + 1]);
@@ -161,7 +161,7 @@ export default function Recepcion() {
             <form ref={formRef} onSubmit={handleSubmit}>
                 <Container className={styles.contenedorPadre}>
                     {!bool && notificaciones.map((noti, index) => (
-                        <AlertaPedido key={index} data={noti} ></AlertaPedido>
+                        <AlertaPedido key={index} data={noti} setChange={setChange} change={change}></AlertaPedido>
                     ))}
                     <h2>+ Recepción de artículos</h2>
 
