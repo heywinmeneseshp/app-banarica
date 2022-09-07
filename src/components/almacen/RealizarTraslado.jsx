@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useRef } from "react";
 //Services
-import { listarProductos } from "@services/api/productos";
+import { filtradoGeneralStock } from "@services/api/stock";
 import { listarAlmacenes } from "@services/api/almacenes";
 import { listarConductores } from "@services/api/conductores";
 import { listarTransportadoras } from "@services/api/transportadoras";
@@ -44,10 +44,10 @@ export default function RealizarTraslado() {
 
     useEffect(() => {
         const listar = async () => {
-            const almacenes = almacenByUser.map(item => item.consecutivo)
-            const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } }
-            const productlist = await filtradoGeneralStock(data)
-            const productRes = productlist.map(item => item.producto)
+            const almacenes = almacenByUser.map(item => item.consecutivo);
+            const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
+            const productlist = await filtradoGeneralStock(data);
+            const productRes = productlist.map(item => item.producto);
             setProductos(productRes);
             listarAlmacenes().then(res => setDestinos(res));
             listarConductores().then(res => setConductores(res));

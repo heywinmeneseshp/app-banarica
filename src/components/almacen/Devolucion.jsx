@@ -2,11 +2,10 @@ import React, { useRef, useState, useEffect, useContext } from "react";
 import axios from "axios";
 import AppContext from "@context/AppContext";
 //Serviec
-import { listarProductos } from "@services/api/productos";
 import { agregarMovimiento, actualizarMovimiento, bucarDoumentoMovimiento } from "@services/api/movimientos";
 import { actualizarNotificaciones, agregarNotificaciones } from "@services/api/notificaciones";
 import { actualizarHistorial, agregarHistorial } from "@services/api/historialMovimientos";
-import { restar } from "@services/api/stock";
+import { filtradoGeneralStock, restar } from "@services/api/stock";
 import endPoints from "@services/api";
 //Hooks
 import { useAuth } from "@hooks/useAuth";
@@ -44,13 +43,13 @@ export default function Devolucion() {
     useEffect(() => {
         if (!gestionNotificacion.notificacion) {
             const listar = async () => {
-                const almacenes = almacenByUser.map(item => item.consecutivo)
-                const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } }
-                const productlist = await filtradoGeneralStock(data)
-                const productRes = productlist.map(item => item.producto)
+                const almacenes = almacenByUser.map(item => item.consecutivo);
+                const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
+                const productlist = await filtradoGeneralStock(data);
+                const productRes = productlist.map(item => item.producto);
                 setProductos(productRes);
-            }
-            listar()
+            };
+            listar();
         } else {
             const { cons_movimiento } = gestionNotificacion.notificacion;
             bucarDoumentoMovimiento(cons_movimiento).then(res => {

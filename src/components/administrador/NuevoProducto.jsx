@@ -106,16 +106,14 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
                 });
                 setOpen(false);
             } catch (e) {
-              alert("Se ha presentado un error al crear el producto")
+              alert("Se ha presentado un error al crear el producto");
             }
         } else {
-            actualizarProducto(producto.id, data).then((res) => {
-                console.log(almacenes)
+            actualizarProducto(producto.id, data).then(() => {
                 almacenes.map((almacen, index) => {
                     habilitarProductoEnAlmacen(almacen.consecutivo, producto.consecutivo, !checkedState[index]);
                 });
             });
-            console.log(almacenes)
             setAlert({
                 active: true,
                 mensaje: 'El producto se ha actualizado',

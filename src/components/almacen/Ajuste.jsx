@@ -1,7 +1,6 @@
 import React, { useRef, useState, useEffect, useContext } from "react";
 import AppContext from "@context/AppContext";
 //Serviec
-import { listarProductos } from "@services/api/productos";
 import { agregarMovimiento, bucarDoumentoMovimiento } from "@services/api/movimientos";
 import { agregarNotificaciones } from "@services/api/notificaciones";
 import { agregarHistorial } from "@services/api/historialMovimientos";
@@ -40,13 +39,13 @@ export default function Ajuste({ exportacion }) {
         if (exportacion) setTitulo(exportacion);
         if (!gestionNotificacion.notificacion) {
             const listar = async () => {
-                const almacenes = almacenByUser.map(item => item.consecutivo)
-                const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } }
-                const productlist = await filtradoGeneralStock(data)
-                const productRes = productlist.map(item => item.producto)
+                const almacenes = almacenByUser.map(item => item.consecutivo);
+                const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
+                const productlist = await filtradoGeneralStock(data);
+                const productRes = productlist.map(item => item.producto);
                 setProductos(productRes);
-            }
-            listar()
+            };
+            listar();
         } else {
             const { cons_movimiento } = gestionNotificacion.notificacion;
             bucarDoumentoMovimiento(cons_movimiento).then(res => {
