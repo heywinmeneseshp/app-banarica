@@ -5,7 +5,7 @@ import { listarProductos } from "@services/api/productos";
 import { sumar } from "@services/api/stock";
 import { agregarRecepcion } from "@services/api/recepcion";
 import { agregarHistorial, filterHistorial } from "@services/api/historialMovimientos";
-import { agregarNotificaciones } from "@services/api/notificaciones";
+import { agregarNotificaciones, filtrarNotificaciones, filtrarNotificacionesPorAlmacen } from "@services/api/notificaciones";
 //Hooks
 import useDate from "@hooks/useDate";
 import useAlert from "@hooks/useAlert";
@@ -41,7 +41,14 @@ export default function Recepcion() {
 
     useEffect(() => {
         async function listrasItems() {
-            const result = gestionNotificacion.notificaciones.filter(noti => noti.tipo_movimiento === "Pedido")
+            const almacenes = almacenByUser.map(item => item.consecutivo)
+            const notiData = {
+                "almacen_receptor": almacenes,
+                "tipo_movimiento": "Pedido",
+                "aprobado": false
+            }
+            console.log(notiData)
+            const result = await filtrarNotificacionesPorAlmacen(notiData)
             setNotificaciones(result);
             if (!gestionNotificacion.notificacion) {
                 listarProductos().then(res => {
