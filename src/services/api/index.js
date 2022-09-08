@@ -167,6 +167,7 @@ const endPoints = {
     },
     document: {
         pedido: `${API}/api/${VERSION}/documentos/pedido`,
+        stock: `${API}/api/${VERSION}/documentos/stock`
     }
 }
 

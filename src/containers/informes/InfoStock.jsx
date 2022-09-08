@@ -4,7 +4,6 @@ import axios from "axios";
 import * as XLSX from 'xlsx'
 //Services
 import endPoints from "@services/api";
-import { listarProductos } from "@services/api/productos";
 import { listarCategorias } from "@services/api/categorias";
 import { filtradoGeneralStock } from "@services/api/stock";
 //Hooks
@@ -27,7 +26,6 @@ export default function InfoStock() {
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
     const [categorias, setCategorias] = useState([])
-    const [productos, setProductos] = useState([])
     const limit = 20;
 
 
@@ -35,7 +33,6 @@ export default function InfoStock() {
         try {
             listar()
             listarCategorias().then((res) => setCategorias(res))
-            listarProductos().then((res) => setProductos(res))
         } catch (e) {
             alert("Error al cargar items", "error")
         }
@@ -45,16 +42,21 @@ export default function InfoStock() {
         const formData = new FormData(formRef.current);
         const cons_almacen = formData.get('almacen');
         const cons_categoria = formData.get('categoria');
-        const cons_producto = formData.get('articulo')
-        let body = { pagination: { offset: pagination, limit: limit } }
-        if (cons_almacen != 0) {
-            body = { ...body, stock: { cons_almacen: cons_almacen } }
-        } else {
-            const list = almacenByUser.map((item) => item.consecutivo)
-            body = { ...body, stock: { cons_almacen: list } }
+        const product_name = formData.get('articulo')
+        let body = {
+            "producto": {
+                "name": product_name || "",
+                "cons_categoria": cons_categoria
+            },
+            "almacen": {
+                "consecutivo": cons_almacen
+            },
+            "pagination": {
+                "offset": pagination,
+                "limit": limit
+            }
         }
-        if (cons_categoria != 0) body = { ...body, producto: { cons_categoria: cons_categoria } }
-        if (cons_producto != 0) body.stock = { ...body.stock, cons_producto: cons_producto }
+        if (cons_almacen == 0) body.almacen.consecutivo = almacenByUser.map(item => item.consecutivo)
         const res = await filtradoGeneralStock(body)
         setTotal(res.total);
         setStock(res.data);
@@ -65,20 +67,50 @@ export default function InfoStock() {
         listar()
     }
 
-    const onDescargar = async () => {
+    const onDescargarPDF = async () => {
+        const formData = new FormData(formRef.current);
+        const cons_almacen = formData.get('almacen');
+        const cons_categoria = formData.get('categoria');
+        const product_name = formData.get('articulo')
+        let body = {
+            "stock": {
+                "isBlock": false
+            },
+            "producto": {
+                "name": product_name,
+                "cons_categoria": cons_categoria
+            },
+            "almacen": {
+                "consecutivo": cons_almacen
+            }
+        }
+        if (cons_almacen == 0) return alert("Por favor, seleccione un almacen")
+        if (cons_categoria == "") return alert("Por favor, seleccione una categoria")
+        axios.post(endPoints.document.stock, body)
+            .then(() => axios.get(endPoints.document.pedido, { responseType: 'blob' }))
+            .then((res) => {
+                const pdfBlob = new Blob([res.data], { type: 'application/pdf' });
+                saveAs(pdfBlob, `Stock ${body.almacen}.pdf`);
+            })
+
+    }
+
+    const onDescargarExcel = async () => {
         const formData = new FormData(formRef.current);
         const cons_almacen = formData.get('almacen');
         const cons_categoria = formData.get('categoria');
         const cons_producto = formData.get('articulo')
-        let body = {}
-        if (cons_almacen != 0) {
-            body = { ...body, stock: { cons_almacen: cons_almacen } }
-        } else {
-            const list = almacenByUser.map((item) => item.consecutivo)
-            body = { ...body, stock: { cons_almacen: list } }
+        let body = {
+            "producto": {
+                "name": cons_producto,
+                "cons_categoria": cons_categoria
+            },
+            "almacen": {
+                "consecutivo": cons_almacen
+            }
         }
-        if (cons_categoria != 0) body = { ...body, producto: { cons_categoria: cons_categoria } }
-        if (cons_producto != 0) body.producto = { ...body.producto, consecutivo: cons_producto }
+        if (cons_almacen == 0) body.almacen.consecutivo = almacenByUser.map(item => item.consecutivo)
+        console.log(body)
         const { data } = await axios.post(endPoints.stock.filter, body);
         const newData = data.map((item) => {
             return {
@@ -110,6 +142,7 @@ export default function InfoStock() {
                             className="form-select form-select-sm"
                             id="almacen"
                             name="almacen"
+                            onClick={onBuscar}
                         >
                             <option value={0}>All</option>
                             {almacenByUser.map((almacen, index) => (
@@ -124,8 +157,9 @@ export default function InfoStock() {
                             <select className="form-select form-select-sm"
                                 id="categoria"
                                 name="categoria"
+                                onClick={onBuscar}
                             >
-                                <option value={0}>All</option>
+                                <option value={""}>All</option>
                                 {categorias.map(item => (
                                     <option value={item?.consecutivo}>{item?.nombre}</option>
                                 ))}
@@ -136,27 +170,23 @@ export default function InfoStock() {
                     <div className={styles.grupo}>
                         <label htmlFor="articulo">Artículo</label>
                         <div>
-                            <select className="form-select form-select-sm"
+                            <input onChange={onBuscar} type="text"
+                                className="form-control form-control-sm"
                                 id="articulo"
-                                name="articulo"
-                            >
-                                <option value={0}>All</option>
-                                {productos.map(item => (
-                                    <option value={item?.consecutivo}>{item?.name}</option>
-                                ))}
-                            </select>
+                                name='articulo'
+                            ></input>
                         </div>
                     </div>
 
-                    <Button onClick={onBuscar} className={styles.button} variant="primary" size="sm">
-                        Buscar
+                    <Button onClick={onDescargarPDF} className={styles.button} variant="warning" size="sm">
+                        Descargar PDF
                     </Button>
 
-                    <Button onClick={onDescargar} className={styles.button} variant="success" size="sm">
-                        Descargar Exel
+                    <Button onClick={onDescargarExcel} className={styles.button} variant="success" size="sm">
+                        Descargar Excel
                     </Button>
 
-                 {false &&   <Link href="./documentos/StockPDF" className={styles.button} variant="success" size="sm">
+                    {false && <Link href="./documentos/StockPDF" className={styles.button} variant="success" size="sm">
                         <a target="_blank" rel="noopener noreferrer">
                             Descargar PDF
                         </a>
