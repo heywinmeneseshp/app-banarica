@@ -5,7 +5,7 @@
 
 .cajaBotones {
     display: grid;
-    grid-template-columns: 1fr 1fr 8fr 1fr 1fr;
+    grid-template-columns: 1fr 1.5fr 8fr 1fr 1fr;
     justify-content: center;
     margin: 20px 0 10px 0;
 }

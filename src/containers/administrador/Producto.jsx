@@ -1,8 +1,8 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 //Services
 import endPoints from '@services/api';
-import { actualizarProducto, buscarProducto } from '@services/api/productos';
+import { actualizarProducto } from '@services/api/productos';
 //Hooks
 import useAlert from '@hooks/useAlert';
 //Components
@@ -14,21 +14,25 @@ import styles from '@styles/Listar.module.css';
 
 
 const Producto = () => {
-    const buscardorRef = useRef(null);
+
+
     const [producto, setProducto] = useState(null);
     const [items, setItems] = useState([]);
     const { alert, setAlert, toogleAlert } = useAlert();
     const [open, setOpen] = useState(false)
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
+    const [changeAll, setChangeAll ] = useState(false)
+    const [checkbox, setCheckbox] = useState(new Array(10).fill(false))
     const limit = 10;
+
 
     useEffect(() => {
         async function listrasItems() {
-            const res = await axios.get(endPoints.productos.pagination(pagination, limit)); //Debo crearlo
-            const total = await axios.get(endPoints.productos.list);
-            setTotal(total.data.length);
-            setItems(res.data)
+            let name = "";
+            const res = await axios.get(endPoints.productos.pagination(pagination, limit, name)); //Debo crearlo
+            setTotal(res.data.total);
+            setItems(res.data.data)           
         }
         try {
             listrasItems()
@@ -42,26 +46,35 @@ const Producto = () => {
         setOpen(true);
         setProducto(null)
     };
+    
+    const handleEnable = () => {
+        console.log("Aja")
+    };
 
     const handleEditar = (item) => {
         setOpen(true);
         setProducto(item)
     };
 
-    const buscar = async () => {
-        const consecutivo = buscardorRef.current.value; consecutivo
-        const item = await buscarProducto(consecutivo)
-        if (item == null) {
-            setAlert({
-                active: true,
-                mensaje: 'El almacen no existe',
-                color: "danger",
-                autoClose: true
-            })
-        } else {
-            setItems([item])
-            setTotal(1);
-        }
+    const handleChangeBuscardor = async (e) => {
+        const name = e.target.value;
+        const res = await axios.get(endPoints.productos.pagination(pagination, limit, name)); //Debo crearlo
+        setTotal(res.data.total);
+        setItems(res.data.data)
+    
+    }
+
+    const onChangeAll = () => {
+        setChangeAll(!changeAll)
+        setCheckbox(new Array(checkbox.length).fill(!changeAll))
+        
+    }
+
+    const onChangeCheckBox = (position) => {
+        const updatedCheckedState = checkbox.map((item, index) =>
+            index === position ? !item : item
+        );
+        setCheckbox(updatedCheckedState);
     }
 
     const handleActivar = (item) => {
@@ -86,20 +99,29 @@ const Producto = () => {
 
     return (
         <div>
-           <Alertas alert={alert} handleClose={toogleAlert} />
+            <Alertas alert={alert} handleClose={toogleAlert} />
             <h3>Productos</h3>
             <div className={styles.cajaBotones}>
                 <div className={styles.botones}>
                     <button onClick={handleNuevo} type="button" className="btn btn-success btn-sm w-100">Nuevo</button>
                 </div>
                 <div className={styles.botones}>
-                    <button type="button" className="btn btn-danger btn-sm w-100">Eliminar</button>
+                    <button 
+                    type="button" 
+                    className="btn btn-danger btn-sm w-100"
+                    onClick={handleEnable}
+                    >Desactivar</button>
                 </div>
                 <div className={styles.buscar}>
-                    <input ref={buscardorRef} className="form-control form-control-sm" type="text" placeholder="Buscar"></input>
+                    <input
+                        className="form-control form-control-sm"
+                        type="text"
+                        placeholder="Buscar"
+                        onChange={handleChangeBuscardor}
+                    ></input>
                 </div>
                 <div className={styles.botones}>
-                    <button onClick={buscar} type="button" className="btn btn-light btn-sm">Buscar</button>
+                    <button type="button" className="btn btn-light btn-sm">Buscar</button>
                 </div>
                 <div className={styles.botones}>
                     <button type="button" className="btn btn-light btn-sm">Ordenar</button>
@@ -109,7 +131,7 @@ const Producto = () => {
             <table className="table">
                 <thead className={styles.letter}>
                     <tr>
-                        <th><input type="checkbox" id="topping" name="topping" value="Paneer" /></th>
+                        <th><input onChange={onChangeAll} type="checkbox" id="topping" name="topping" checked={changeAll}/></th>
                         <th scope="col">Cod</th>
                         <th scope="col">Nombre</th>
                         <th scope="col">Categoría</th>
@@ -123,7 +145,7 @@ const Producto = () => {
                 <tbody className={styles.letter}>
                     {items.map((item, index) => (
                         <tr key={index}>
-                            <td><input type="checkbox" id="topping" name="topping" value="Paneer" /></td>
+                            <td><input onChange={() => onChangeCheckBox(index)} type="checkbox" id={`box-${index}`} name="topping" checked={checkbox[index]} /></td>
                             <td>{item.consecutivo}</td>
                             <td>{item.name}</td>
                             <td>{item.cons_categoria}</td>
@@ -131,7 +153,7 @@ const Producto = () => {
                             <td>{item.serial}</td>
                             <td>{item.salida_sin_stock}</td>
                             <td>
-                                <button onClick={()=>handleEditar(item)} type="button" className="btn btn-warning btn-sm w-80">Editar</button>
+                                <button onClick={() => handleEditar(item)} type="button" className="btn btn-warning btn-sm w-80">Editar</button>
                             </td>
                             <td>
                                 {item.isBlock && <button onClick={() => handleActivar(item)} type="button" className="btn btn-danger btn-sm w-80">Activar</button>}
