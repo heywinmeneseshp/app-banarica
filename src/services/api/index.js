@@ -25,6 +25,7 @@ const endPoints = {
     productos: { 
         list: `${API}/api/${VERSION}/productos`,
         findOne: (id) => `${API}/api/${VERSION}/productos/${id}`,
+        filter: `${API}/api/${VERSION}/productos/filter`,
         findAllByCategory: (category) => `${API}/api/${VERSION}/productos/categoria/${category}`,
         create: `${API}/api/${VERSION}/productos`,
         pagination: (page, limit) => `${API}/api/${VERSION}/productos/paginar?page=${page}&limit=${limit}`,

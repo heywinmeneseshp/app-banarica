@@ -2,10 +2,11 @@ import React, { useRef, useState, useEffect, useContext } from "react";
 import axios from "axios";
 import AppContext from "@context/AppContext";
 //Serviec
-import { filtradoGeneralStock, restar } from "@services/api/stock";
+import { restar } from "@services/api/stock";
 import { agregarMovimiento, actualizarMovimiento, bucarDoumentoMovimiento } from "@services/api/movimientos";
 import { actualizarNotificaciones, agregarNotificaciones } from "@services/api/notificaciones";
 import { actualizarHistorial, agregarHistorial } from "@services/api/historialMovimientos";
+import { filtrarProductos } from "@services/api/productos";
 import endPoints from "@services/api";
 //Hooks
 import { useAuth } from "@hooks/useAuth";
@@ -21,6 +22,7 @@ import Button from 'react-bootstrap/Button';
 import Alertas from "@assets/Alertas";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
+
 
 export default function Liquidacion() {
     const formRef = useRef();
@@ -45,9 +47,8 @@ export default function Liquidacion() {
             const listar = async () => {
                 const almacenes = almacenByUser.map(item => item.consecutivo);
                 const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
-                const productlist = await filtradoGeneralStock(data);
-                const productRes = productlist.map(item => item.producto);
-                setProductos(productRes);
+                const productlist = await filtrarProductos(data);
+                setProductos(productlist);
             };
             listar();
         } else {

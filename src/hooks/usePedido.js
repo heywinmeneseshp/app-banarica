@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { filtradoGeneralStock } from "@services/api/stock";
+import { filtrarProductos } from "@services/api/productos";
 
 const usePedido = () => {
     const [listaPedido, setListaPedido] = useState([]);
@@ -8,11 +8,10 @@ const usePedido = () => {
 
     const initialize = async (almacenByUser) => {
         setListaPedido([]);
-        const almacenes = almacenByUser.map(item => item.consecutivo)
-        const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } }
-        const productlist = await filtradoGeneralStock(data)
-        const productRes = productlist.map(item => item.producto)
-        setProductos(productRes);
+        const almacenes = almacenByUser.map(item => item.consecutivo);
+        const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
+        const productlist = await filtrarProductos(data)
+        setProductos(productlist);
         setAlmacenes(almacenByUser);
     }
 
@@ -34,7 +33,7 @@ const usePedido = () => {
         initialize,
         agregar,
         eliminarAlmacen,
-        };
+    };
 };
 
 export default usePedido;

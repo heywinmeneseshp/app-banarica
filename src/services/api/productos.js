@@ -40,6 +40,15 @@ const buscarProducto = async (consecutivo) => {
     }
 }
 
+const filtrarProductos = async (body) => {
+    try {
+        const res = await axios.post(endPoints.productos.filter, body);
+        return res.data
+    } catch (e) {
+        alert("Error al filtrar productos")
+    }
+}
+
 const listarProductos = async () => {
     try {
         const res = await axios.get(endPoints.productos.list);
@@ -58,4 +67,11 @@ const encontrarProductosPorCategoria = async (categoria) => {
     }
 }
 
-export { agregarProducto, eliminarProducto, actualizarProducto, buscarProducto, listarProductos, encontrarProductosPorCategoria };
+export {
+    agregarProducto, eliminarProducto,
+    actualizarProducto, 
+    buscarProducto, 
+    listarProductos,
+    encontrarProductosPorCategoria,
+    filtrarProductos
+};

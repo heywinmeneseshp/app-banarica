@@ -4,7 +4,8 @@ import AppContext from "@context/AppContext";
 import { agregarMovimiento, bucarDoumentoMovimiento } from "@services/api/movimientos";
 import { agregarNotificaciones } from "@services/api/notificaciones";
 import { agregarHistorial } from "@services/api/historialMovimientos";
-import { filtradoGeneralStock, restar, sumar } from "@services/api/stock";
+import { restar, sumar } from "@services/api/stock";
+import { filtrarProductos } from "@services/api/productos";
 //Hooks
 import { useAuth } from "@hooks/useAuth";
 import useAlert from "@hooks/useAlert";
@@ -19,6 +20,7 @@ import Button from 'react-bootstrap/Button';
 import Alertas from "@assets/Alertas";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
+
 
 export default function Ajuste({ exportacion }) {
     const { gestionNotificacion } = useContext(AppContext);
@@ -41,9 +43,8 @@ export default function Ajuste({ exportacion }) {
             const listar = async () => {
                 const almacenes = almacenByUser.map(item => item.consecutivo);
                 const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
-                const productlist = await filtradoGeneralStock(data);
-                const productRes = productlist.map(item => item.producto);
-                setProductos(productRes);
+                const productlist = await filtrarProductos(data);
+                setProductos(productlist);
             };
             listar();
         } else {

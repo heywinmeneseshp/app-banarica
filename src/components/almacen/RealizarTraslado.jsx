@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useRef } from "react";
 //Services
-import { filtradoGeneralStock } from "@services/api/stock";
+import { filtrarProductos } from "@services/api/productos";
 import { listarAlmacenes } from "@services/api/almacenes";
 import { listarConductores } from "@services/api/conductores";
 import { listarTransportadoras } from "@services/api/transportadoras";
@@ -23,6 +23,7 @@ import Alertas from "@assets/Alertas";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
 
+
 export default function RealizarTraslado() {
     const formRef = useRef();
     const { almacenByUser } = useAuth();
@@ -41,14 +42,12 @@ export default function RealizarTraslado() {
     const { alert, setAlert, toogleAlert } = useAlert();
     const [consTraslado, setConsTraslado] = useState(null);
 
-
     useEffect(() => {
         const listar = async () => {
             const almacenes = almacenByUser.map(item => item.consecutivo);
             const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
-            const productlist = await filtradoGeneralStock(data);
-            const productRes = productlist.map(item => item.producto);
-            setProductos(productRes);
+            const productlist = await filtrarProductos(data);
+            setProductos(productlist);
             listarAlmacenes().then(res => setDestinos(res));
             listarConductores().then(res => setConductores(res));
             listarTransportadoras().then(res => setTransportadoras(res));
