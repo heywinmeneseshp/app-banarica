@@ -93,6 +93,7 @@ export default function InfoMovimientos() {
                 "Tipo de movimiento": item.tipo_movimiento,
                 "Razón": item.razon_movimiento,
                 "Observaciones": item.movimiento.observaciones,
+                "Remisión": item.movimiento.remision,
                 "Semana": item.movimiento.cons_semana,
                 "Fecha": item.movimiento.fecha
             }
