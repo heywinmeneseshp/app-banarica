@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
 import AppContext from "@context/AppContext";
 //Services
-import { filtradoGeneralStock, sumar } from "@services/api/stock";
+import { filtrarProductos } from "@services/api/productos";
+import { sumar } from "@services/api/stock";
 import { agregarRecepcion } from "@services/api/recepcion";
 import { agregarHistorial, filterHistorial } from "@services/api/historialMovimientos";
 import { agregarNotificaciones, filtrarNotificacionesPorAlmacen } from "@services/api/notificaciones";
@@ -50,10 +51,9 @@ export default function Recepcion() {
             const result = await filtrarNotificacionesPorAlmacen(notiData)
             setNotificaciones(result);
             if (!gestionNotificacion.notificacion) {
-                const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } }
-                const productlist = await filtradoGeneralStock(data)
-                const productRes = productlist.map(item => item.producto)
-                setProductos(productRes)
+                const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
+                const productlist = await filtrarProductos(data);
+                setProductos(productlist);
                 setDate(useDate());
             } else {
                 filterHistorial(gestionNotificacion.notificacion.cons_movimiento).then(res => {
