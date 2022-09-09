@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useAuth } from "@hooks/useAuth";
 import { useRouter } from "next/router";
+import endPoints from "@services/api";
 import AppContext from "@context/AppContext";
 
 //Bootstrap
@@ -22,11 +23,15 @@ export default function Alerta({ data }) {
     const onButton = () => {
         gestionNotificacion.ingresarNotificacion(data)
         initialMenu.toggleNavBar(false)
-        router.push(`/movimiento/${data.tipo_movimiento}`)
-        if (user?.id_rol == "Super administrador") actualizarNotificaciones(data.id, {visto: true})
+        if (data.tipo_movimiento == "Pedido") {
+            window.open(endPoints.document.pedido + "/" + data.cons_movimiento)
+        } else {
+            router.push(`/movimiento/${data.tipo_movimiento}`)
+        }
+        if (user?.id_rol == "Super administrador") actualizarNotificaciones(data.id, { visto: true })
     }
 
-    useEffect(()=>{
+    useEffect(() => {
         if (data.aprobado == true) {
             setColor("success")
         } else {
