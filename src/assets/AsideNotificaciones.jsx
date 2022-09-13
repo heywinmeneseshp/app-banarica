@@ -18,7 +18,6 @@ const AsideNotificaciones = ({ notificaciones }) => {
 
     const abrirNoti = (data) => {
         gestionNotificacion.ingresarNotificacion(data)
-        initialMenu.toggleNavBar(false)
         if (data.tipo_movimiento == "Pedido") {
             window.open(endPoints.document.pedido + "/" + data.cons_movimiento)
         } else {
