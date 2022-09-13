@@ -36,6 +36,7 @@
     align-items: center;
     height: 30px;
     padding: 20px 10px 20px 10px;
+    z-index: 0;
 } 
 
 .alerta{
@@ -78,6 +79,7 @@
 
 .imagenEditar:hover{
     opacity: 0.8;
+    cursor: pointer;
 }
 .circulo{
     width: 20px;

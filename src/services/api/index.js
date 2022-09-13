@@ -16,7 +16,7 @@ const endPoints = {
         almacenes: {
             list: (username) => `${API}/api/${VERSION}/usuarios/almacen/${username}`,
             findByUsername: (username) => `${API}/api/${VERSION}/usuarios/almacen/${username}`,
-            findAlmacenByUsername: (username, almacen) => `${API}/api/${VERSION}/usuarios/almacen/${username}/${almacen}`,
+            findUsersByAlamcen: (almacen) => `${API}/api/${VERSION}/usuarios/almacen/cons/${almacen}`,
             create: `${API}/api/${VERSION}/usuarios/almacen`,
             update: `${API}/api/${VERSION}/usuarios/almacen/actualizar`,
             delete: (username, almacen) => `${API}/api/${VERSION}/usuarios/almacen/${username}/${almacen}`
@@ -153,6 +153,7 @@ const endPoints = {
         findOne: (consecutivo) => `${API}/api/${VERSION}/notificaciones/${consecutivo}`,
         filter: (url) => `${API}/api/${VERSION}/notificaciones/filter?${url}`,
         filterPost: `${API}/api/${VERSION}/notificaciones/filter`,
+        generalFilter: `${API}/api/${VERSION}/notificaciones/filter/usuarios`,
         pagination: (page, limit) => `${API}/api/${VERSION}/notificaciones/paginar?page=${page}&limit=${limit}`,
         create: `${API}/api/${VERSION}/notificaciones`,
         update: (id) => `${API}/api/${VERSION}/notificaciones/${id}`,
@@ -167,7 +168,8 @@ const endPoints = {
     },
     document: {
         pedido: `${API}/api/${VERSION}/documentos/pedido`,
-        stock: `${API}/api/${VERSION}/documentos/stock`
+        stock: `${API}/api/${VERSION}/documentos/stock`,
+        movimientos: (consecutivo, tipo_movimiento) => `${API}/api/${VERSION}/documentos/movimiento/${consecutivo}/${tipo_movimiento}`
     }
 }
 

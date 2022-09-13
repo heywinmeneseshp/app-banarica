@@ -19,8 +19,8 @@ export default function ThirdLayout({ children }) {
         return (
             <>
                 <Header />
-                <main>
-                    <div className={styles.main}>{children}</div>
+                <main className={styles.main}>
+                    <div >{children}</div>
                 </main>
                 <Footer />
             </>

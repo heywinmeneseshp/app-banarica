@@ -40,7 +40,7 @@ const TableroA = () => {
             <div className={styles.superTablero}>
                 <div className={styles.tablero}>
                     <div className={styles.miniTablero}>
-                        <h5 className={styles.plus}>+ Notificaciones</h5>
+                        <h5 className={styles.plus}>+ Pendientes</h5>
 
 
                         {notificaciones.map((noti, index) => (

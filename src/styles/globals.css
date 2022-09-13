@@ -35,7 +35,9 @@ a {
 .header {
     display: block;
     margin-bottom: 40px;
-    position: relative;
+    position: fixed;
+    width: 100%;
+    z-index: 2;
 }
 
 .footer {

@@ -32,11 +32,9 @@ export default function Alerta({ data }) {
     }
 
     useEffect(() => {
-        if (data.aprobado == true) {
-            setColor("success")
-        } else {
-            setColor("warning")
-        }
+        setColor("warning")
+        if (data.tipo_movimiento == "Pedido") setColor("success")
+        if (data.tipo_movimiento == "Liquidacion") setColor("danger")
     })
 
     return (

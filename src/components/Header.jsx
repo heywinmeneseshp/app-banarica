@@ -1,23 +1,47 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 import AppContext from '@context/AppContext';
-import { useAuth } from '@hooks/useAuth';
 import { useRouter } from 'next/router';
+import { useAuth } from '@hooks/useAuth';
 //Bootstrap
 import { Navbar } from 'react-bootstrap';
 import { Nav } from 'react-bootstrap';
 import { Container } from 'react-bootstrap';
 import { DropdownButton } from 'react-bootstrap';
-import { Dropdown } from 'react-bootstrap';
+import { Dropdown, Button, ButtonGroup } from 'react-bootstrap';
+
 
 //Assets
 
 //CSS
 import styles from '@styles/header.module.css';
+import endPoints from '@services/api';
+import AsideNotificaciones from '@assets/AsideNotificaciones';
 
 const Header = () => {
     const router = useRouter();
     const { user } = useAuth();
     const { initialMenu, initialAdminMenu, initialAlmacenMenu, initialInfoMenu, gestionNotificacion } = useContext(AppContext);
+    const [notiNumber, setNotiNumber] = useState("");
+    const [notificaciones, setNotificaciones] = useState([]);
+    const [openNoti, setOpenNoti] = useState(false);
+
+    useEffect(() => {
+        const listar = async () => {
+            const body = {
+                "almacen_receptor": user.username,
+                "visto": false
+            };
+            const res = await axios.post(endPoints.notificaciones.generalFilter, body);
+            setNotiNumber(res.data.length);
+            setNotificaciones(res.data);
+        };
+        listar();
+    }, [openNoti, initialMenu, initialAdminMenu, initialAlmacenMenu, initialInfoMenu, gestionNotificacion]);
+
+    const hadleNoti = () => {
+        setOpenNoti(!openNoti);
+    };
 
     const openWindow = (window) => {
         initialAdminMenu.hadleOpenWindows(window);
@@ -28,7 +52,7 @@ const Header = () => {
         if (itemMenu == "almacen") initialMenu.handleAlmacen();
         if (itemMenu == "info") initialMenu.handleInformes();
         if (itemMenu == "inicio") initialMenu.handleInicio();
-      
+
     };
 
     const inicio = () => {
@@ -77,9 +101,20 @@ const Header = () => {
 
                             </Nav>
                         }
+                        <ButtonGroup size="sm">
+                            <div onClick={hadleNoti} className={styles.circulo}><h2 className={styles.number}>{notiNumber}</h2></div>
+                            <div className={styles.noti}>
+
+                            </div>
+                            <Button>Perfil</Button>
+                        </ButtonGroup>
+
                     </Container>
+
                 </Navbar>
+                {openNoti && <AsideNotificaciones notificaciones={notificaciones} />}
             </div>
+
         </>
     );
 };

@@ -10,8 +10,33 @@ const config = {
 
 const agregarNotificaciones = async (data) => {
     try {
-        const response = await axios.post(endPoints.notificaciones.create, data, config);
-        return response.data;
+        if (data.tipo_movimiento == "Traslado" || data.tipo_movimiento == "Devolucion" || data.tipo_movimiento == "Liquidacion" || data.tipo_movimiento == "Pedido") {
+            const response = await axios.post(endPoints.notificaciones.create, data, config);
+            const usuarios = await axios.get(endPoints.usuarios.almacenes.findUsersByAlamcen(data.almacen_receptor));
+            if (usuarios.data.length != 0) {
+                usuarios.data.map(async (item) => {
+                    let newData = data
+                    newData.descripcion = "sin revisar"
+                    newData.aprobado = true
+                    newData.almacen_receptor = item.username
+                    newData.visto = false
+                    await axios.post(endPoints.notificaciones.create, newData, config);
+                })
+            }
+            return response.data;
+        } else {
+            const usuarios = await axios.get(endPoints.usuarios.almacenes.findUsersByAlamcen(data.almacen_receptor));
+            if (usuarios.data.length != 0) {
+                usuarios.data.map(async (item) => {
+                    let newData = data
+                    newData.descripcion = "sin revisar"
+                    newData.aprobado = true
+                    newData.almacen_receptor = item.username
+                    newData.visto = false
+                    await axios.post(endPoints.notificaciones.create, newData, config);
+                })
+            } 
+        }
     } catch (err) {
         alert("Error al crear la notificacion")
     }
