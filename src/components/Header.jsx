@@ -102,7 +102,7 @@ const Header = () => {
                             </Nav>
                         }
                         <ButtonGroup size="sm">
-                            <div onClick={hadleNoti} className={styles.circulo}><h2 className={styles.number}>{notiNumber}</h2></div>
+                            <div tabIndex={0} role="button" onKeyDown={hadleNoti}  onClick={hadleNoti} className={styles.circulo}><h2 className={styles.number}>{notiNumber}</h2></div>
                             <div className={styles.noti}>
 
                             </div>
