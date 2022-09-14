@@ -322,6 +322,7 @@ export default function Recepcion() {
                                 name="observaciones"
                                 defaultValue={observaciones}
                                 disabled={bool}
+                                required
                             />
                         </InputGroup>
                     </div>

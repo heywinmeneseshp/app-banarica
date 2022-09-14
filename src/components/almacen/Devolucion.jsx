@@ -172,9 +172,11 @@ export default function Devolucion() {
 
             }
             setBool(true);
+            let message = "Devolucion cargada, pendiente por aprobación";
+            if (user?.id_rol == "Super administrador" && gestionNotificacion.notificacion) message = "Devolución aprobada";
             setAlert({
                 active: true,
-                mensaje: "Devolucion cargada, pendiente por aprobación",
+                mensaje: message,
                 color: "success",
                 autoClose: false
             });

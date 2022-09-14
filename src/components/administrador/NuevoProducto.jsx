@@ -82,6 +82,7 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
         const proveedor = proveedores.find(item => item.razon_social === formData.get('proveedor'));
         const data = {
             name: formData.get('name'),
+            bulto: formData.get('bulto'),
             cons_categoria: categoria.consecutivo,
             cons_proveedor: proveedor.consecutivo,
             salida_sin_stock: salida_sin_stock,
@@ -167,6 +168,12 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
                                 <label htmlFor="name">Descripción del producto</label>
                                 <div>
                                     <input defaultValue={producto?.name} type="text" className="form-control form-control-sm" name='name' id="name"></input>
+                                </div>
+                            </div>
+                            <div className={styles.grupo}>
+                                <label htmlFor="bulto">Unidades por bulto</label>
+                                <div>
+                                    <input defaultValue={producto?.bulto} type="text" className="form-control form-control-sm" name='bulto' id="bulto"></input>
                                 </div>
                             </div>
                         </div>

@@ -106,9 +106,16 @@ export default function InfoMovimientos() {
     }
 
     const onDescargarDocumento = async () => {
-        const formData = new FormData(formRef.current)
-        const consecutivo = formData.get('documento')
-        const documento = await bucarDoumentoMovimiento(consecutivo)
+        const formData = new FormData(formRef.current);
+        let documento = formData.get(`documento`)
+        let movimiento;
+        if (documento.substr(0,2) == "RC") movimiento = "Recepción"
+        if (documento.substr(0,2) == "LQ") movimiento = "Liquidación"
+        if (documento.substr(0,2) == "DV") movimiento = "Devolución"
+        if (documento.substr(0,2) == "AJ") movimiento = "Ajueste"
+        if (documento.substr(0,2) == "EX") movimiento = "Exportación"
+        console.log(documento.substr(0,2))
+        window.open(endPoints.document.movimientos(documento,movimiento))
     }
 
     return (
