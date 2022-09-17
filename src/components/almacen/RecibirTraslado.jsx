@@ -17,7 +17,7 @@ import Alertas from "@assets/Alertas";
 import styles from "@styles/almacen/almacen.module.css";
 import { restar, sumar } from "@services/api/stock";
 
-export default function RecibirTraslado() {
+export default function RecibirTraslado({ movimiento }) {
     const { gestionNotificacion } = useContext(AppContext);
     const [products, setProducts] = useState([]);
     const [bool, setBool] = useState(false);
@@ -31,12 +31,11 @@ export default function RecibirTraslado() {
     const [semana, setSemana] = useState(null);
     const [vehiculo, setVehiculo] = useState(null);
     const [idTraslado, setIdTraslado] = useState(null);
-    const [idNotificacion, setIdNotificacion] = useState(null);
     const [observaciones, setObservaciones] = useState(null);
     const formRef = useRef();
 
     useEffect(() => {
-        buscarTraslado(gestionNotificacion.notificacion.cons_movimiento).then(res => {
+        buscarTraslado(movimiento.consecutivo).then(res => {
             const traslado = res[0].traslado;
             setIdTraslado(traslado?.id);
             setTransportadora(traslado?.transportadora);
@@ -48,16 +47,15 @@ export default function RecibirTraslado() {
             setVehiculo(traslado?.vehiculo);
             setProducts(res);
         });
-        setIdNotificacion(gestionNotificacion.notificacion.id);
         setDate(generarFecha());
-    }, []);
+    }, [movimiento?.consecutivo]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
         try {
             const formData = new FormData(formRef.current);
             const respuesta = formData.get("observaciones");
-            const data = { estado: "Completado", fecha_entrada: date, observaciones: respuesta};
+            const data = { estado: "Completado", fecha_entrada: date, observaciones: respuesta };
             setObservaciones(respuesta);
             actualizarTraslado(idTraslado, data);
             products.map((product) => {
@@ -65,7 +63,7 @@ export default function RecibirTraslado() {
                 sumar(destino, product.cons_producto, product.cantidad);
             });
             const dataNotificacion = { descripcion: "Traslado compledado con exito", aprobado: true };
-            actualizarNotificaciones(idNotificacion, dataNotificacion);
+            actualizarNotificaciones(gestionNotificacion.notificacion.id, dataNotificacion);
             setBool(true);
             setAlert({
                 active: true,

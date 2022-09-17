@@ -22,7 +22,7 @@ import AlertaPedido from "@assets/AlertaPedido";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
 
-export default function Recepcion() {
+export default function Recepcion({movimiento}) {
     const { gestionNotificacion } = useContext(AppContext);
     const formRef = useRef(null);
     const { almacenByUser } = useAuth();
@@ -50,13 +50,13 @@ export default function Recepcion() {
             }
             const result = await filtrarNotificacionesPorAlmacen(notiData)
             setNotificaciones(result);
-            if (!gestionNotificacion.notificacion) {
+            if (!movimiento) {
                 const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
                 const productlist = await filtrarProductos(data);
                 setProductos(productlist);
                 setDate(useDate());
             } else {
-                filterHistorial(gestionNotificacion.notificacion.cons_movimiento).then(res => {
+                filterHistorial(movimiento.consecutivo).then(res => {
                     setProducts(res)
                     const movimiento = res[0].movimiento;
                     setConsecutivo(movimiento.consecutivo);
@@ -66,8 +66,8 @@ export default function Recepcion() {
                     setPedido(res[0].cons_pedido);
                     setConsAlmacen(res[0].cons_almacen_receptor);
                     setDate(movimiento.fecha)
+                    setBool(true)
                 })
-                setBool(true)
             }
         }
         try {
@@ -75,7 +75,7 @@ export default function Recepcion() {
         } catch (e) {
             alert("Error al cargar los productos");
         }
-    }, [bool, change])
+    }, [bool, change, movimiento?.consecutivo])
 
     function addProduct() {
         setProducts([...products, products.length + 1]);

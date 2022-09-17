@@ -20,8 +20,7 @@ const TableroA = () => {
         if (user.id_rol == "Super administrador") {
             data = {
                 "almacen_receptor": consAlmacen,
-                "aprobado": false,
-                "visto": false
+                "aprobado": false
             };
         } else {
             data = {

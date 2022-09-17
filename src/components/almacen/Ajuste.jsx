@@ -22,8 +22,7 @@ import Alertas from "@assets/Alertas";
 import styles from "@styles/almacen/almacen.module.css";
 
 
-export default function Ajuste({ exportacion }) {
-    const { gestionNotificacion } = useContext(AppContext);
+export default function Ajuste({ exportacion, movimiento }) {
     const formRef = useRef();
     const { almacenByUser } = useAuth();
     const [productos, setProductos] = useState([]);
@@ -39,7 +38,7 @@ export default function Ajuste({ exportacion }) {
     const [titulo, setTitulo] = useState("Ajuste");
     useEffect(() => {
         if (exportacion) setTitulo(exportacion);
-        if (!gestionNotificacion.notificacion) {
+        if (!movimiento) {
             const listar = async () => {
                 const almacenes = almacenByUser.map(item => item.consecutivo);
                 const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
@@ -48,8 +47,7 @@ export default function Ajuste({ exportacion }) {
             };
             listar();
         } else {
-            const { cons_movimiento } = gestionNotificacion.notificacion;
-            bucarDoumentoMovimiento(cons_movimiento).then(res => {
+            bucarDoumentoMovimiento(movimiento.consecutivo).then(res => {
                 setConsMovimiento(res.movimiento.consecutivo);//Listo
                 setAlmacen(res.almacen);//Listo
                 setTipoMovimiento(res.razon_movimiento);//Listo
@@ -58,11 +56,10 @@ export default function Ajuste({ exportacion }) {
                 setProducts(res.lista);//Listo
                 setProductsCons(res.lista);//Listo
                 setObservaciones(res.movimiento.observaciones); //Listo
-
             });
             setBool(true);
         }
-    }, []);
+    }, [movimiento?.consecutivo]);
 
 
     const [products, setProducts] = useState([1]);
@@ -320,7 +317,7 @@ export default function Ajuste({ exportacion }) {
                             <div></div>
                             <div></div>
                             <div>
-                                <Button type="submit" className={styles.button} variant="success" size="sm">
+                                <Button type="submit" className={styles.button} variant="danger" size="sm">
                                     Ajustar
                                 </Button>
                             </div>

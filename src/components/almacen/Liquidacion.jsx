@@ -24,7 +24,7 @@ import Alertas from "@assets/Alertas";
 import styles from "@styles/almacen/almacen.module.css";
 
 
-export default function Liquidacion() {
+export default function Liquidacion({ movimiento }) {
     const formRef = useRef();
     const { gestionNotificacion } = useContext(AppContext);
     const { almacenByUser, user } = useAuth();
@@ -41,9 +41,10 @@ export default function Liquidacion() {
     const [movimientoID, setMovimientoID] = useState(null);
     const [ajutado, setAjustado] = useState(false);
     const [respuesta, setRespuesta] = useState(null);
+    const [pendiente, setPendiente] = useState(null)
 
     useEffect(() => {
-        if (!gestionNotificacion.notificacion) {
+        if (!movimiento) {
             const listar = async () => {
                 const almacenes = almacenByUser.map(item => item.consecutivo);
                 const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
@@ -52,8 +53,8 @@ export default function Liquidacion() {
             };
             listar();
         } else {
-            const { cons_movimiento } = gestionNotificacion.notificacion;
-            bucarDoumentoMovimiento(cons_movimiento).then(res => {
+            bucarDoumentoMovimiento(movimiento.consecutivo).then(res => {
+                console.log(res)
                 setMovimientoID(res.movimiento.id);
                 setConsMovimiento(res.movimiento.consecutivo);
                 setAlmacen(res.almacen);
@@ -62,10 +63,11 @@ export default function Liquidacion() {
                 setSemana(res.movimiento.cons_semana);
                 setProducts(res.lista);
                 setObservaciones(res.movimiento.observaciones);
+                setPendiente(res.movimiento.pendiente)
             });
             setBool(true);
         }
-    }, []);
+    }, [movimiento?.consecutivo]);
 
     function addProduct() {
         setProducts([...products, products.length + 1]);
@@ -101,7 +103,7 @@ export default function Liquidacion() {
             if (user.id_rol == "Super administrador" && gestionNotificacion.notificacion) {
                 const consAlmacen = almacenByUser.find((item) => item.nombre == almacen).consecutivo;
                 const respuesta = formData.get("respuesta");
-                const changes = { "pendiente": false, "respuesta" : respuesta };
+                const changes = { "pendiente": false, "respuesta": respuesta };
                 setRespuesta(respuesta);
                 actualizarMovimiento(movimientoID, changes);
                 products.forEach(item => {
@@ -144,7 +146,7 @@ export default function Liquidacion() {
                         tipo_movimiento: "Liquidacion",
                         descripcion: "pendiente por aprobación",
                         aprobado: false,
-                        visto: false
+                        visto: true
                     };
                     agregarNotificaciones(dataNotificacion);
                     let array = [];
@@ -338,18 +340,18 @@ export default function Liquidacion() {
                             />
                         </InputGroup>
                     </div>
-                    {gestionNotificacion.notificacion && (user.id_rol == "Super administrador") && <InputGroup size="sm" className="mb-3">
-                            <InputGroup.Text id="inputGroup-sizing-sm">Respuesta</InputGroup.Text>
-                            <Form.Control
-                                id="respuesta"
-                                name="respuesta"
-                                aria-label="Small"
-                                aria-describedby="inputGroup-sizing-sm"
-                                defaultValue={respuesta}
-                                required
-                                disabled={respuesta}
-                            />
-                        </InputGroup>}
+                    {pendiente && (user.id_rol == "Super administrador") && <InputGroup size="sm" className="mb-3">
+                        <InputGroup.Text id="inputGroup-sizing-sm">Respuesta</InputGroup.Text>
+                        <Form.Control
+                            id="respuesta"
+                            name="respuesta"
+                            aria-label="Small"
+                            aria-describedby="inputGroup-sizing-sm"
+                            defaultValue={respuesta}
+                            required
+                            disabled={respuesta}
+                        />
+                    </InputGroup>}
 
                     {!bool &&
                         <div className={styles.contenedor6}>
@@ -366,13 +368,13 @@ export default function Liquidacion() {
                             <div></div>
                             <div></div>
                             <div>
-                                <Button type="submit" className={styles.button} variant="success" size="sm">
-                                    Ajustar
+                                <Button type="submit" className={styles.button} variant="warning" size="sm">
+                                    Enviar Liquidación
                                 </Button>
                             </div>
                         </div>
                     }
-                    {gestionNotificacion.notificacion && !ajutado && (user.id_rol == "Super administrador") && 
+                    {pendiente && !ajutado && (user.id_rol == "Super administrador") &&
                         <div className={styles.contenedor6}>
                             <div>
                             </div>
