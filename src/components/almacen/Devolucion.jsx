@@ -62,7 +62,6 @@ export default function Devolucion({movimiento}) {
                 setProducts(res.lista);
                 setObservaciones(res.movimiento.observaciones);
                 setRespuesta(res.movimiento.respuesta);
-                console.log(res.movimiento.respuesta);
             });
             setBool(true);
         }
@@ -379,7 +378,7 @@ export default function Devolucion({movimiento}) {
                             </div>
                         </div>
                     }
-                    {movimiento && (user.id_rol == "Super administrador") && !ajutado &&
+                    {respuesta && (user.id_rol == "Super administrador") && !ajutado &&
                         <div className={styles.contenedor6}>
                             <div>
                             </div>
