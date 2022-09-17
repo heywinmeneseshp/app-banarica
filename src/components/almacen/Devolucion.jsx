@@ -41,6 +41,7 @@ export default function Devolucion({movimiento}) {
     const [movimientoID, setMovimientoID] = useState(null);
     const [ajutado, setAjustado] = useState(false);
     const [respuesta, setRespuesta] = useState(null);
+    const [pendiente, setPendiente] = useState(null)
 
     useEffect(() => {
         if (!movimiento) {
@@ -62,6 +63,7 @@ export default function Devolucion({movimiento}) {
                 setProducts(res.lista);
                 setObservaciones(res.movimiento.observaciones);
                 setRespuesta(res.movimiento.respuesta);
+                setPendiente(res.movimiento.pendiente);
             });
             setBool(true);
         }
@@ -378,7 +380,7 @@ export default function Devolucion({movimiento}) {
                             </div>
                         </div>
                     }
-                    {respuesta && (user.id_rol == "Super administrador") && !ajutado &&
+                    {pendiente && (user.id_rol == "Super administrador") && !ajutado &&
                         <div className={styles.contenedor6}>
                             <div>
                             </div>
