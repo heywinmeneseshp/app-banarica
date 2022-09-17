@@ -121,10 +121,9 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                 setOpen(false);
             }
         } else {
-            console.log(data);
-            if(data.password == ("" || null) ) delete data.password;
-            if (data.username == null ) delete data.username;
-            if (data.id_rol == null ) delete data.id_rol;
+            if (data.password == null || data.password == "") delete data.password
+            if (data.username == null) delete data.username;
+            if (data.id_rol == null) delete data.id_rol;
             delete data.isBlock;
             actualizarUsuario(user.username, data);
             almacenes.map((item, index) => {

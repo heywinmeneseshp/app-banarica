@@ -44,7 +44,7 @@ const Header = () => {
             buscarUsuario(user.username).then(res => setUser(res));
         };
         listar();
-    }, [openNoti, initialMenu, initialAdminMenu, initialAlmacenMenu, initialInfoMenu, gestionNotificacion]);
+    }, [openNoti, openProfile, initialMenu, initialAdminMenu, initialAlmacenMenu, initialInfoMenu, gestionNotificacion]);
 
     const hadleNoti = () => {
         setOpenNoti(!openNoti);
