@@ -148,7 +148,7 @@ export default function Ajuste() {
                                 name="tipo-movimiento"
                                 aria-label="Small"
                                 aria-describedby="inputGroup-sizing-sm"
-                                defaultValue="Exportacion"
+                                defaultValue="Exportación"
                                 disabled={true}
                             />
                         </InputGroup>
