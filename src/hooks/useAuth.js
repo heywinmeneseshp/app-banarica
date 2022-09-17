@@ -37,5 +37,5 @@ function useProviderAuth() {
 
 
     }
-    return { user, login, almacenByUser };
+    return { user, login, almacenByUser, setUser };
 }

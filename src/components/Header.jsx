@@ -2,29 +2,34 @@ import React, { useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import AppContext from '@context/AppContext';
 import { useRouter } from 'next/router';
+//Hooks
 import { useAuth } from '@hooks/useAuth';
+import useAlert from '@hooks/useAlert';
 //Bootstrap
 import { Navbar } from 'react-bootstrap';
 import { Nav } from 'react-bootstrap';
 import { Container } from 'react-bootstrap';
 import { DropdownButton } from 'react-bootstrap';
 import { Dropdown, Button, ButtonGroup } from 'react-bootstrap';
-
-
+//Components
+import NuevoUsuario from './administrador/NuevoUsuario';
 //Assets
 
 //CSS
 import styles from '@styles/header.module.css';
 import endPoints from '@services/api';
 import AsideNotificaciones from '@assets/AsideNotificaciones';
+import { buscarUsuario } from '@services/api/usuarios';
 
 const Header = () => {
     const router = useRouter();
-    const { user } = useAuth();
+    const { setAlert } = useAlert();
+    const { user, setUser } = useAuth();
     const { initialMenu, initialAdminMenu, initialAlmacenMenu, initialInfoMenu, gestionNotificacion } = useContext(AppContext);
     const [notiNumber, setNotiNumber] = useState("");
     const [notificaciones, setNotificaciones] = useState([]);
     const [openNoti, setOpenNoti] = useState(false);
+    const [openProfile, setOpenProfile] = useState(false);
 
     useEffect(() => {
         const listar = async () => {
@@ -36,12 +41,17 @@ const Header = () => {
             const res = await axios.post(endPoints.notificaciones.generalFilter, body);
             setNotiNumber(res.data.length);
             setNotificaciones(res.data);
+            buscarUsuario(user.username).then(res => setUser(res));
         };
         listar();
     }, [openNoti, initialMenu, initialAdminMenu, initialAlmacenMenu, initialInfoMenu, gestionNotificacion]);
 
     const hadleNoti = () => {
         setOpenNoti(!openNoti);
+    };
+
+    const handleProfile = () => {
+        setOpenProfile(!openProfile);
     };
 
     const openWindow = (window) => {
@@ -106,15 +116,16 @@ const Header = () => {
                             <div className={styles.noti}>
 
                             </div>
-                            <Button>Perfil</Button>
+                            <Button onClick={handleProfile}>{user.nombre} {user.apellido}</Button>
                         </ButtonGroup>
 
                     </Container>
 
                 </Navbar>
                 {openNoti && <AsideNotificaciones notificaciones={notificaciones} />}
+                {openProfile && <NuevoUsuario setOpen={setOpenProfile} setAlert={setAlert} user={user} profile={true} />}
             </div>
-
+            
         </>
     );
 };
