@@ -30,7 +30,8 @@ const Header = () => {
         const listar = async () => {
             const body = {
                 "almacen_receptor": user.username,
-                "visto": false
+                "visto": false,
+                "aprobado": true
             };
             const res = await axios.post(endPoints.notificaciones.generalFilter, body);
             setNotiNumber(res.data.length);
@@ -48,6 +49,7 @@ const Header = () => {
     };
 
     const openMenu = (itemMenu) => {
+        router.push("/");
         if (itemMenu == "admin") initialMenu.handleAdministrador();
         if (itemMenu == "almacen") initialMenu.handleAlmacen();
         if (itemMenu == "info") initialMenu.handleInformes();
@@ -57,9 +59,7 @@ const Header = () => {
 
     const inicio = () => {
         router.push("/");
-        initialMenu.toggleNavBar(true);
         openMenu("inicio");
-        gestionNotificacion.ingresarNotificacion(null);
     };
 
     return (

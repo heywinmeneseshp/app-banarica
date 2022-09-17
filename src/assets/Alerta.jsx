@@ -17,18 +17,16 @@ import { actualizarNotificaciones } from "@services/api/notificaciones";
 export default function Alerta({ data }) {
     const { user } = useAuth()
     const router = useRouter();
-    const { gestionNotificacion, initialMenu } = useContext(AppContext);
+    const { gestionNotificacion } = useContext(AppContext);
     const [color, setColor] = useState(null);
 
     const onButton = () => {
         gestionNotificacion.ingresarNotificacion(data)
-        initialMenu.toggleNavBar(false)
         if (data.tipo_movimiento == "Pedido") {
             window.open(endPoints.document.pedido + "/" + data.cons_movimiento)
         } else {
-            router.push(`/movimiento/${data.tipo_movimiento}`)
+            router.push(`/Movimiento/${data.tipo_movimiento}/${data.cons_movimiento}`)
         }
-        if (user?.id_rol == "Super administrador") actualizarNotificaciones(data.id, { visto: true })
     }
 
     useEffect(() => {

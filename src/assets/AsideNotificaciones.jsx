@@ -14,16 +14,16 @@ import { actualizarNotificaciones } from '@services/api/notificaciones';
 
 const AsideNotificaciones = ({ notificaciones }) => {
     const router = useRouter()
-    const { gestionNotificacion, initialMenu } = useContext(AppContext);
+    const { gestionNotificacion } = useContext(AppContext);
 
     const abrirNoti = (data) => {
         gestionNotificacion.ingresarNotificacion(data)
         if (data.tipo_movimiento == "Pedido") {
             window.open(endPoints.document.pedido + "/" + data.cons_movimiento)
         } else {
-            router.push(`/movimiento/${data.tipo_movimiento}`)
-        }  
-        actualizarNotificaciones(data.id, { visto: true })  
+            router.push(`/Movimiento/${data.tipo_movimiento}/${data.cons_movimiento}`)
+        }
+        actualizarNotificaciones(data.id, { visto: true })
     }
 
 

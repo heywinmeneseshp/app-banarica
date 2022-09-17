@@ -24,10 +24,10 @@ import Alertas from "@assets/Alertas";
 import styles from "@styles/almacen/almacen.module.css";
 
 
-export default function Devolucion() {
+export default function Devolucion({movimiento}) {
     const formRef = useRef();
-    const { gestionNotificacion } = useContext(AppContext);
     const { almacenByUser, user } = useAuth();
+    const { gestionNotificacion } = useContext(AppContext);
     const [productos, setProductos] = useState([]);
     const [bool, setBool] = useState(false);
     const [date, setDate] = useState(useDate());
@@ -43,7 +43,7 @@ export default function Devolucion() {
     const [respuesta, setRespuesta] = useState(null);
 
     useEffect(() => {
-        if (!gestionNotificacion.notificacion) {
+        if (!movimiento) {
             const listar = async () => {
                 const almacenes = almacenByUser.map(item => item.consecutivo);
                 const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
@@ -52,8 +52,7 @@ export default function Devolucion() {
             };
             listar();
         } else {
-            const { cons_movimiento } = gestionNotificacion.notificacion;
-            bucarDoumentoMovimiento(cons_movimiento).then(res => {
+            bucarDoumentoMovimiento(movimiento.consecutivo).then(res => {
                 setMovimientoID(res.movimiento.id);
                 setConsMovimiento(res.movimiento.consecutivo);
                 setAlmacen(res.almacen);
@@ -62,10 +61,12 @@ export default function Devolucion() {
                 setSemana(res.movimiento.cons_semana);
                 setProducts(res.lista);
                 setObservaciones(res.movimiento.observaciones);
+                setRespuesta(res.movimiento.respuesta)
+                console.log(res.movimiento.respuesta)
             });
             setBool(true);
         }
-    }, []);
+    }, [movimiento?.consecutivo]);
 
     function addProduct() {
         setProducts([...products, products.length + 1]);
@@ -98,7 +99,7 @@ export default function Devolucion() {
         e.preventDefault();
         const formData = new FormData(formRef.current);
         try {
-            if (user?.id_rol == "Super administrador" && gestionNotificacion.notificacion) {
+            if (user?.id_rol == "Super administrador" && movimiento) {
                 const consAlmacen = almacenByUser.find((item) => item.nombre == almacen).consecutivo;
                 const respuesta = formData.get("respuesta");
                 const changes = { "pendiente": false, "respuesta" : respuesta };
@@ -144,7 +145,7 @@ export default function Devolucion() {
                         tipo_movimiento: "Devolucion",
                         descripcion: "pendiente por aprobación",
                         aprobado: false,
-                        visto: false
+                        visto: true
                     };
                     agregarNotificaciones(dataNotificacion);
                     let array = [];
@@ -344,7 +345,7 @@ export default function Devolucion() {
 
                     </div>
 
-                    {gestionNotificacion.notificacion && (user.id_rol == "Super administrador") && <InputGroup size="sm" className="mb-3">
+                    {movimiento && (user.id_rol == "Super administrador") && <InputGroup size="sm" className="mb-3">
                             <InputGroup.Text id="inputGroup-sizing-sm">Respuesta</InputGroup.Text>
                             <Form.Control
                                 id="respuesta"
@@ -378,7 +379,7 @@ export default function Devolucion() {
                             </div>
                         </div>
                     }
-                    {gestionNotificacion.notificacion && (user.id_rol == "Super administrador") && !ajutado &&
+                    {movimiento && (user.id_rol == "Super administrador") && !ajutado &&
                         <div className={styles.contenedor6}>
                             <div>
                             </div>
