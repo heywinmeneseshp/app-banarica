@@ -41,7 +41,7 @@ export default function Devolucion({movimiento}) {
     const [movimientoID, setMovimientoID] = useState(null);
     const [ajutado, setAjustado] = useState(false);
     const [respuesta, setRespuesta] = useState(null);
-    const [pendiente, setPendiente] = useState(null)
+    const [pendiente, setPendiente] = useState(null);
 
     useEffect(() => {
         if (!movimiento) {
