@@ -121,7 +121,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                 setOpen(false);
             }
         } else {
-            if (data.password == null || data.password == "") delete data.password
+            if (data.password == null || data.password == "") delete data.password;
             if (data.username == null) delete data.username;
             if (data.id_rol == null) delete data.id_rol;
             delete data.isBlock;
