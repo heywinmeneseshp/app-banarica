@@ -4,10 +4,10 @@ import Ajuste from "@components/almacen/Ajuste";
 import ThirdLayout from 'layout/ThirdLayout';
 
 export default function RAjuste() {
-    const router = useRouter()
+    const router = useRouter();
 
     useEffect(() => {
-    }, [router?.isReady])
+    }, [router?.isReady]);
     return (
         <ThirdLayout>
             <Ajuste movimiento={router.query} exportacion={"Exportacion"} />

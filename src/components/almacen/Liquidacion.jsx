@@ -41,7 +41,7 @@ export default function Liquidacion({ movimiento }) {
     const [movimientoID, setMovimientoID] = useState(null);
     const [ajutado, setAjustado] = useState(false);
     const [respuesta, setRespuesta] = useState(null);
-    const [pendiente, setPendiente] = useState(null)
+    const [pendiente, setPendiente] = useState(null);
 
     useEffect(() => {
         if (!movimiento) {
@@ -54,7 +54,7 @@ export default function Liquidacion({ movimiento }) {
             listar();
         } else {
             bucarDoumentoMovimiento(movimiento.consecutivo).then(res => {
-                console.log(res)
+                console.log(res);
                 setMovimientoID(res.movimiento.id);
                 setConsMovimiento(res.movimiento.consecutivo);
                 setAlmacen(res.almacen);
@@ -63,7 +63,7 @@ export default function Liquidacion({ movimiento }) {
                 setSemana(res.movimiento.cons_semana);
                 setProducts(res.lista);
                 setObservaciones(res.movimiento.observaciones);
-                setPendiente(res.movimiento.pendiente)
+                setPendiente(res.movimiento.pendiente);
             });
             setBool(true);
         }

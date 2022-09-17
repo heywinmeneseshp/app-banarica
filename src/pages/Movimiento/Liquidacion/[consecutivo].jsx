@@ -4,10 +4,10 @@ import Liquidacion from "@components/almacen/Liquidacion";
 import ThirdLayout from 'layout/ThirdLayout';
 
 export default function RLiquidacion() {
-    const router = useRouter()
+    const router = useRouter();
 
     useEffect(() => {
-    }, [router?.isReady])
+    }, [router?.isReady]);
     return (
         <ThirdLayout>
             <Liquidacion movimiento={router.query} />

@@ -4,10 +4,10 @@ import Recepcion from "@containers/almacen/Recepcion";
 import ThirdLayout from 'layout/ThirdLayout';
 
 export default function RLiquidacion() {
-    const router = useRouter()
+    const router = useRouter();
 
     useEffect(() => {
-    }, [router?.isReady])
+    }, [router?.isReady]);
     return (
         <ThirdLayout>
             <Recepcion movimiento={router.query} />

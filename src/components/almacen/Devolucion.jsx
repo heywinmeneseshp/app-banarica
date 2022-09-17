@@ -61,8 +61,8 @@ export default function Devolucion({movimiento}) {
                 setSemana(res.movimiento.cons_semana);
                 setProducts(res.lista);
                 setObservaciones(res.movimiento.observaciones);
-                setRespuesta(res.movimiento.respuesta)
-                console.log(res.movimiento.respuesta)
+                setRespuesta(res.movimiento.respuesta);
+                console.log(res.movimiento.respuesta);
             });
             setBool(true);
         }

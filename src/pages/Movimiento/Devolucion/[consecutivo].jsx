@@ -4,10 +4,10 @@ import Devolucion from "@components/almacen/Devolucion";
 import ThirdLayout from 'layout/ThirdLayout';
 
 export default function RDevolucion() {
-    const router = useRouter()
+    const router = useRouter();
 
     useEffect(() => {
-    }, [router?.isReady])
+    }, [router?.isReady]);
     return (
         <ThirdLayout>
             <Devolucion movimiento={router.query} />
