@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx'
 //Services
 //Hooks
 import { useAuth } from "@hooks/useAuth";
+import useDate from "@hooks/useDate";
 //Bootstrap
 import Table from 'react-bootstrap/Table';
 import Button from 'react-bootstrap/Button';
@@ -14,7 +15,7 @@ import Paginacion from '@components/Paginacion';
 //CSS
 import styles from '@styles/informes/informes.module.css';
 import { Container } from "react-bootstrap";
-import { bucarDoumentoMovimiento } from "@services/api/movimientos";
+import { buscarMovimiento } from "@services/api/movimientos";
 
 export default function InfoMovimientos() {
     const { almacenByUser } = useAuth();
@@ -45,6 +46,7 @@ export default function InfoMovimientos() {
         const cons_almacen = formData.get('almacen');
         const cons_movimiento = formData.get('movimiento');
         const cons_semana = formData.get('semana');
+        const producto = formData.get('articulo');
         let url = `${endPoints.historial.list}/filter`
         let body = {}
         const anho = new Date().getFullYear()
@@ -57,7 +59,7 @@ export default function InfoMovimientos() {
         }
         if (cons_movimiento != 0) body.historial = { ...body.historial, cons_lista_movimientos: cons_movimiento };
         body.pagination = { limit: limit, offset: pagination }
-        const res = await axios.post(url, body)
+        const res = await axios.post(url, { ...body, producto: { name: producto } })
         setTotal(res.data.total);
         setHistorial(res.data.data)
     }
@@ -92,30 +94,33 @@ export default function InfoMovimientos() {
                 "Movimiento": item.cons_lista_movimientos,
                 "Tipo de movimiento": item.tipo_movimiento,
                 "Razón": item.razon_movimiento,
-                "Observaciones": item.movimiento.observaciones,
-                "Remisión": item.movimiento.remision,
-                "Semana": item.movimiento.cons_semana,
-                "Fecha": item.movimiento.fecha
+                "Observaciones": item.movimiento?.observaciones,
+                "Respuesta": item.movimiento?.respuesta,
+                "Remisión": item.movimiento?.remision,
+                "Semana": item.movimiento?.cons_semana,
+                "Fecha": item.movimiento?.fecha
             }
             return body
         })
         const book = XLSX.utils.book_new();
         const sheet = XLSX.utils.json_to_sheet(newData)
         XLSX.utils.book_append_sheet(book, sheet, "Movimientos")
-        XLSX.writeFile(book, "Historial de movimientos.xlsx")
+        XLSX.writeFile(book, `Historial de movimientos ${useDate()}.xlsx`)
     }
 
     const onDescargarDocumento = async () => {
         const formData = new FormData(formRef.current);
-        let documento = formData.get(`documento`)
+        let documento = formData.get(`documento`).toUpperCase()
+        if (!documento) return alert("Por favor, introduzca un consecutivo")
+        const res = await buscarMovimiento(documento)
+        if (!res) return
         let movimiento;
-        if (documento.substr(0,2) == "RC") movimiento = "Recepción"
-        if (documento.substr(0,2) == "LQ") movimiento = "Liquidación"
-        if (documento.substr(0,2) == "DV") movimiento = "Devolución"
-        if (documento.substr(0,2) == "AJ") movimiento = "Ajueste"
-        if (documento.substr(0,2) == "EX") movimiento = "Exportación"
-        console.log(documento.substr(0,2))
-        window.open(endPoints.document.movimientos(documento,movimiento))
+        if (documento.substr(0, 2) == "RC") movimiento = "Recepción"
+        if (documento.substr(0, 2) == "LQ") movimiento = "Liquidación"
+        if (documento.substr(0, 2) == "DV") movimiento = "Devolución"
+        if (documento.substr(0, 2) == "AJ") movimiento = "Ajuste"
+        if (documento.substr(0, 2) == "EX") movimiento = "Exportación"
+        window.open(endPoints.document.movimientos(documento, movimiento))
     }
 
     return (
@@ -133,6 +138,7 @@ export default function InfoMovimientos() {
                                         className="form-select form-select-sm"
                                         id="almacen"
                                         name="almacen"
+                                        onChange={onBuscar}
                                     >
                                         <option value={0}>All</option>
                                         {almacenByUser.map(almacen => (
@@ -149,6 +155,7 @@ export default function InfoMovimientos() {
                                         className="form-select form-select-sm"
                                         id='movimiento'
                                         name='movimiento'
+                                        onChange={onBuscar}
                                     >
                                         <option value={0}>All</option>
                                         <option value={'RC'}>Recepción</option>
@@ -167,15 +174,26 @@ export default function InfoMovimientos() {
                                         className="form-control form-control-sm"
                                         id="semana"
                                         name='semana'
+                                        onChange={onBuscar}
                                     ></input>
                                 </div>
                             </div>
 
-                            <Button onClick={onBuscar} className={styles.button} variant="primary" size="sm">
-                                Buscar
-                            </Button>
+                            <div className={styles.grupo}>
+                                <label htmlFor="articulo">Artículo</label>
+                                <div>
+                                    <input type="text"
+                                        className="form-control form-control-sm"
+                                        id="articulo"
+                                        name='articulo'
+                                        onChange={onBuscar}
+                                    ></input>
+                                </div>
+                            </div>
+
+
                             <Button onClick={onDescargar} className={styles.button} variant="success" size="sm">
-                                Descargar
+                                Descargar Excel
                             </Button>
                         </div>
                         <div className={styles.contenedor3}>
@@ -190,8 +208,9 @@ export default function InfoMovimientos() {
                                 </div>
                             </div>
                             <Button onClick={onDescargarDocumento} className={styles.button} variant="warning" size="sm">
-                                Descargar documento
+                                Ver PDF
                             </Button>
+
                         </div>
                     </form>
                 </div>

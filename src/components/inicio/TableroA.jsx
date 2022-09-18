@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import AppContext from '@context/AppContext';
 //Hooks
-import { filtrarNotificacionesPorAlmacen } from '@services/api/notificaciones';
+import { filtrarNotificaciones } from '@services/api/notificaciones';
 import { useAuth } from '@hooks/useAuth';
 //Components
 import Alerta from '@assets/Alerta';
@@ -28,7 +28,7 @@ const TableroA = () => {
                 "aprobado": false
             };
         }
-        filtrarNotificacionesPorAlmacen(data).then(res => {
+        filtrarNotificaciones(data).then(res => {
             gestionNotificacion.ingresarNotificaciones(res);
             setNotificaciones(res);
         });

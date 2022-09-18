@@ -151,9 +151,7 @@ const endPoints = {
     notificaciones: {
         list: `${API}/api/${VERSION}/notificaciones`, //Listo
         findOne: (consecutivo) => `${API}/api/${VERSION}/notificaciones/${consecutivo}`,
-        filter: (url) => `${API}/api/${VERSION}/notificaciones/filter?${url}`,
-        filterPost: `${API}/api/${VERSION}/notificaciones/filter`,
-        generalFilter: `${API}/api/${VERSION}/notificaciones/filter/usuarios`,
+        filter: `${API}/api/${VERSION}/notificaciones/filter`,
         pagination: (page, limit) => `${API}/api/${VERSION}/notificaciones/paginar?page=${page}&limit=${limit}`,
         create: `${API}/api/${VERSION}/notificaciones`,
         update: (id) => `${API}/api/${VERSION}/notificaciones/${id}`,

@@ -5,7 +5,7 @@ import { filtrarProductos } from "@services/api/productos";
 import { sumar } from "@services/api/stock";
 import { agregarRecepcion } from "@services/api/recepcion";
 import { agregarHistorial, filterHistorial } from "@services/api/historialMovimientos";
-import { agregarNotificaciones, filtrarNotificacionesPorAlmacen } from "@services/api/notificaciones";
+import { agregarNotificaciones, filtrarNotificaciones } from "@services/api/notificaciones";
 //Hooks
 import useDate from "@hooks/useDate";
 import useAlert from "@hooks/useAlert";
@@ -48,7 +48,7 @@ export default function Recepcion({movimiento}) {
                 "tipo_movimiento": "Pedido",
                 "aprobado": false
             }
-            const result = await filtrarNotificacionesPorAlmacen(notiData)
+            const result = await filtrarNotificaciones(notiData)
             setNotificaciones(result);
             if (!movimiento) {
                 const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };

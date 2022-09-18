@@ -90,7 +90,7 @@ export default function InfoStock() {
             .then(() => axios.get(endPoints.document.pedido, { responseType: 'blob' }))
             .then((res) => {
                 const pdfBlob = new Blob([res.data], { type: 'application/pdf' });
-                saveAs(pdfBlob, `Stock ${body.almacen}.pdf`);
+                saveAs(pdfBlob, `Stock ${cons_almacen} ${useDate()}.pdf`);
             })
 
     }

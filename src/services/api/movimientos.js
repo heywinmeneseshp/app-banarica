@@ -32,7 +32,7 @@ const buscarMovimiento = async (consecutivo) => {
         const res = await axios.get(endPoints.movimientos.findOne(consecutivo));
         return res.data
     } catch (e) {
-        alert("El Movimiento no existe")
+        alert(`El Movimiento ${consecutivo} no existe`)
     }
 }
 
@@ -41,7 +41,7 @@ const bucarDoumentoMovimiento = async (consecutivo) => {
         const res = await axios.post(endPoints.movimientos.document, { consecutivo: consecutivo });
         return res.data
     } catch (e) {
-        alert("El Movimiento no existe")
+        alert(`El Movimiento ${consecutivo} no existe`)
     }
 }
 

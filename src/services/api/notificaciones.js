@@ -64,23 +64,16 @@ const listarNotificaciones = async () => {
 }
 
 
-const filtrarNotificaciones = async (url) => {
+const filtrarNotificaciones = async (data) => {
     try {
-        const res = await axios.get(endPoints.notificaciones.filter(url))
+        const res = await axios.post(endPoints.notificaciones.filter, data)
+        console.log(res.data)
         return res.data
     } catch (e) {
-        alert("No se han encontrado notificaciones para el almacen")
-    }
-}
-
-const filtrarNotificacionesPorAlmacen = async (data) => {
-    try {
-        const res = await axios.post(endPoints.notificaciones.filterPost, data)
-        return res.data
-    } catch (e) {
-        alert("No se han encontrado notificaciones para el almacen")
+        alert("No se han encontrado notificaciones")
     }
 }
 
 
-export { agregarNotificaciones, eliminarNotificaciones, actualizarNotificaciones, buscarNotificaciones, listarNotificaciones, filtrarNotificaciones, filtrarNotificacionesPorAlmacen };
+
+export { agregarNotificaciones, eliminarNotificaciones, actualizarNotificaciones, buscarNotificaciones, listarNotificaciones, filtrarNotificaciones };

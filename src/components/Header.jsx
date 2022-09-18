@@ -38,7 +38,7 @@ const Header = () => {
                 "visto": false,
                 "aprobado": true
             };
-            const res = await axios.post(endPoints.notificaciones.generalFilter, body);
+            const res = await axios.post(endPoints.notificaciones.filter, body);
             setNotiNumber(res.data.length);
             setNotificaciones(res.data);
             buscarUsuario(user.username).then(res => setUser(res));
@@ -87,11 +87,11 @@ const Header = () => {
                                         <Dropdown.Item onClick={() => openWindow("combos")}>Combos</Dropdown.Item>
                                         <Dropdown.Item onClick={() => openWindow("categorias")}>Categorias</Dropdown.Item>
                                         <Dropdown.Item onClick={() => openWindow("proveedores")}>Proveedores</Dropdown.Item>
-                                        <Dropdown.Item onClick={() => openWindow("bodegas")}>Bodegas</Dropdown.Item>
+                                        <Dropdown.Item onClick={() => openWindow("bodegas")}>Almacenes</Dropdown.Item>
                                         <Dropdown.Item onClick={() => openWindow("transporte")}>Transporte</Dropdown.Item>
                                     </DropdownButton>}
 
-                                <DropdownButton onClick={() => openMenu("almacen")} className={styles.itemMenu} id="dropdown-basic-button" title="Almacen">
+                                <DropdownButton onClick={() => openMenu("almacen")} className={styles.itemMenu} id="dropdown-basic-button" title="Almacén">
                                     <Dropdown.Item onClick={initialAlmacenMenu.handleRecepcion}>Recepción</Dropdown.Item>
                                     <Dropdown.Item onClick={initialAlmacenMenu.handleTraslados}>Traslados</Dropdown.Item>
                                     {(user?.id_rol == "Administrador" || "Super Administrador") &&
