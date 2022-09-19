@@ -12,7 +12,7 @@ import styles3 from '@styles/Tablero.module.css';
 import endPoints from '@services/api';
 import { actualizarNotificaciones } from '@services/api/notificaciones';
 
-const AsideNotificaciones = ({ notificaciones }) => {
+const AsideNotificaciones = ({ notificaciones, setNotificaciones }) => {
     const router = useRouter()
     const { gestionNotificacion } = useContext(AppContext);
 
@@ -28,33 +28,47 @@ const AsideNotificaciones = ({ notificaciones }) => {
 
 
     useEffect(() => {
+    }, [])
 
-    })
+    const marcarTodoComoVisto = () => {
+        notificaciones.map(item => {
+            actualizarNotificaciones(item.id, { visto: true })
+        })
+        setNotificaciones([])
+    }
+
     return (
         <>
             <div className={styles.superTablero}>
                 <div className={styles.tablero}>
-                    <div className={styles3.miniTablero}>
-                        <h5 className={styles3.plus}>+ Notificaciones</h5>
-                        {notificaciones.map((noti, index) => {
-                            let newData = noti
-                            newData.almacen_receptor = noti.almacen_emisor
-                            return (
-                                <div key={index}>
-                                    <div className={styles2.alert} variant="success">
-                                        <div >
-                                            <b>{noti.almacen_emisor} -</b> {noti.tipo_movimiento} <b>{noti.cons_movimiento}</b> {noti.descripcion}
+                    <div className={styles.miniTablero}>
+                        <div>
+                            <h5 className={styles3.plus}>+ Notificaciones</h5>
+                            {notificaciones.map((noti, index) => {
+                                let newData = noti
+                                newData.almacen_receptor = noti.almacen_emisor
+                                return (
+                                    <div key={index}>
+                                        <div className={styles2.alert} variant="success">
+                                            <div >
+                                                <b>{noti.almacen_emisor} -</b> {noti.tipo_movimiento} <b>{noti.cons_movimiento}</b> {noti.descripcion}
+                                            </div>
+                                            <div className={styles2.cajaBoton}>
+                                                <Image onClick={() => abrirNoti(noti)} className={styles3.imagenEditar} width="15" height="15" src={ojo} alt="ver" />
+                                            </div>
                                         </div>
-                                        <div className={styles2.cajaBoton}>
-                                            <Image onClick={() => abrirNoti(noti)} className={styles3.imagenEditar} width="15" height="15" src={ojo} alt="ver" />
-                                        </div>
-                                    </div>
-                                </ div>
+                                    </ div>
 
-                            )
-                        })}
+                                )
+                            })}
+                        </div>
                     </div>
+                    <div className={styles.marcar_leido}>
+                        <h6 onClick={marcarTodoComoVisto}>Marcar todo como visto</h6>                      
+                    </div>
+
                 </div>
+
             </div>
 
         </>

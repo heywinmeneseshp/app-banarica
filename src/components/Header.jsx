@@ -25,7 +25,7 @@ const Header = () => {
     const router = useRouter();
     const { setAlert } = useAlert();
     const { user, setUser } = useAuth();
-    const { initialMenu, initialAdminMenu, initialAlmacenMenu, initialInfoMenu, gestionNotificacion } = useContext(AppContext);
+    const { initialMenu, initialAdminMenu, initialAlmacenMenu, initialInfoMenu } = useContext(AppContext);
     const [notiNumber, setNotiNumber] = useState("");
     const [notificaciones, setNotificaciones] = useState([]);
     const [openNoti, setOpenNoti] = useState(false);
@@ -44,7 +44,7 @@ const Header = () => {
             buscarUsuario(user.username).then(res => setUser(res));
         };
         listar();
-    }, [openNoti, openProfile, initialMenu, initialAdminMenu, initialAlmacenMenu, initialInfoMenu, gestionNotificacion]);
+    }, [openNoti, openProfile, initialMenu, initialAdminMenu, initialAlmacenMenu, initialInfoMenu]);
 
     const hadleNoti = () => {
         setOpenNoti(!openNoti);
@@ -94,12 +94,8 @@ const Header = () => {
                                 <DropdownButton onClick={() => openMenu("almacen")} className={styles.itemMenu} id="dropdown-basic-button" title="Almacén">
                                     <Dropdown.Item onClick={initialAlmacenMenu.handleRecepcion}>Recepción</Dropdown.Item>
                                     <Dropdown.Item onClick={initialAlmacenMenu.handleTraslados}>Traslados</Dropdown.Item>
-                                    {(user?.id_rol == "Administrador" || "Super Administrador") &&
-                                        <span>
-                                            <Dropdown.Item onClick={initialAlmacenMenu.handlePedidos}>Pedidos</Dropdown.Item>
-                                            <Dropdown.Item onClick={initialAlmacenMenu.handleMovimientos}>Movimientos</Dropdown.Item>
-                                        </span>
-                                    }
+                                    <Dropdown.Item onClick={initialAlmacenMenu.handlePedidos}>Pedidos</Dropdown.Item>
+                                    <Dropdown.Item onClick={initialAlmacenMenu.handleMovimientos}>Movimientos</Dropdown.Item>
                                 </DropdownButton>
 
                                 <DropdownButton onClick={() => openMenu("info")} className={styles.itemMenu} id="dropdown-basic-button" title="Informes">
@@ -112,7 +108,7 @@ const Header = () => {
                             </Nav>
                         }
                         <ButtonGroup size="sm">
-                            <div tabIndex={0} role="button" onKeyDown={hadleNoti}  onClick={hadleNoti} className={styles.circulo}><h2 className={styles.number}>{notiNumber}</h2></div>
+                            <div tabIndex={0} role="button" onKeyDown={hadleNoti} onClick={hadleNoti} className={styles.circulo}><h2 className={styles.number}>{notiNumber}</h2></div>
                             <div className={styles.noti}>
 
                             </div>
@@ -122,10 +118,10 @@ const Header = () => {
                     </Container>
 
                 </Navbar>
-                {openNoti && <AsideNotificaciones notificaciones={notificaciones} />}
+                {openNoti && <AsideNotificaciones setNotificaciones={setNotificaciones} notificaciones={notificaciones} />}
                 {openProfile && <NuevoUsuario setOpen={setOpenProfile} setAlert={setAlert} user={user} profile={true} />}
             </div>
-            
+
         </>
     );
 };
