@@ -32,6 +32,7 @@ export default function RecibirTraslado({ movimiento }) {
     const [vehiculo, setVehiculo] = useState(null);
     const [idTraslado, setIdTraslado] = useState(null);
     const [observaciones, setObservaciones] = useState(null);
+    const [traslado, setTraslado] = useState({});
     const formRef = useRef();
 
     useEffect(() => {
@@ -46,6 +47,10 @@ export default function RecibirTraslado({ movimiento }) {
             setSemana(traslado?.semana);
             setVehiculo(traslado?.vehiculo);
             setProducts(res);
+            let title = "+ Recibir traslado";
+            if (traslado.estado == "Completado") title = `+ Traslado`;
+            setTraslado({...traslado, title: title});
+            setObservaciones(traslado.observaciones);
         });
         setDate(generarFecha());
     }, [movimiento?.consecutivo]);
@@ -88,7 +93,7 @@ export default function RecibirTraslado({ movimiento }) {
         <>
             <Container className={styles.contTraslados} >
                 <form ref={formRef} onSubmit={handleSubmit}>
-                    <h2>+ Recibir traslado</h2>
+                    <h2>{traslado.title}</h2>
                     <div className={styles.contenedor1}>
                         <InputGroup size="sm" className="mb-3">
                             <InputGroup.Text id="inputGroup-sizing-sm">Consecutivo</InputGroup.Text>
@@ -245,10 +250,10 @@ export default function RecibirTraslado({ movimiento }) {
                             aria-describedby="inputGroup-sizing-sm"
                             defaultValue={observaciones}
                             required
-                            disabled={bool}
+                            disabled={(traslado?.estado == "Completado") || bool}
                         />
                     </InputGroup>
-                    {!bool &&
+                    {!bool && (traslado?.estado != "Completado") &&
                         <div className={styles.contenedor6}>
                             <div>
                             </div>
@@ -257,9 +262,9 @@ export default function RecibirTraslado({ movimiento }) {
                             <div></div>
                             <div></div>
                             <div>
-                                {!bool && <Button type="submit" className={styles.button} variant="success" size="sm">
+                                <Button type="submit" className={styles.button} variant="success" size="sm">
                                     Recibir traslado
-                                </Button>}
+                                </Button>
                             </div>
 
                         </div>

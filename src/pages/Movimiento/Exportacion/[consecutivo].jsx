@@ -10,7 +10,7 @@ export default function RAjuste() {
     }, [router?.isReady]);
     return (
         <ThirdLayout>
-            <Ajuste movimiento={router.query} exportacion={"Exportacion"} />
+            <Ajuste movimiento={router.query} exportacion={"Exportación"} />
         </ThirdLayout>
     );
 }

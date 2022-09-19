@@ -22,7 +22,7 @@ import AlertaPedido from "@assets/AlertaPedido";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
 
-export default function Recepcion({movimiento}) {
+export default function Recepcion({ movimiento }) {
     const { gestionNotificacion } = useContext(AppContext);
     const formRef = useRef(null);
     const { almacenByUser } = useAuth();
@@ -56,6 +56,7 @@ export default function Recepcion({movimiento}) {
                 setProductos(productlist);
                 setDate(useDate());
             } else {
+                setBool(true)
                 filterHistorial(movimiento.consecutivo).then(res => {
                     setProducts(res)
                     const movimiento = res[0].movimiento;
@@ -66,7 +67,6 @@ export default function Recepcion({movimiento}) {
                     setPedido(res[0].cons_pedido);
                     setConsAlmacen(res[0].cons_almacen_receptor);
                     setDate(movimiento.fecha)
-                    setBool(true)
                 })
             }
         }

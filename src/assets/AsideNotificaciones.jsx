@@ -40,8 +40,8 @@ const AsideNotificaciones = ({ notificaciones }) => {
                             let newData = noti
                             newData.almacen_receptor = noti.almacen_emisor
                             return (
-                                <>
-                                    <div className={styles2.alert} key="success" variant="success">
+                                <div key={index}>
+                                    <div className={styles2.alert} variant="success">
                                         <div >
                                             <b>{noti.almacen_emisor} -</b> {noti.tipo_movimiento} <b>{noti.cons_movimiento}</b> {noti.descripcion}
                                         </div>
@@ -49,7 +49,7 @@ const AsideNotificaciones = ({ notificaciones }) => {
                                             <Image onClick={() => abrirNoti(noti)} className={styles3.imagenEditar} width="15" height="15" src={ojo} alt="ver" />
                                         </div>
                                     </div>
-                                </>
+                                </ div>
 
                             )
                         })}

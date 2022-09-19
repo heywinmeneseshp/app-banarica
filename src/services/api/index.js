@@ -9,7 +9,7 @@ const endPoints = {
     usuarios: { 
         list: `${API}/api/${VERSION}/usuarios`,
         findOne: (username) => `${API}/api/${VERSION}/usuarios/${username}`,
-        pagination: (page, limit) => `${API}/api/${VERSION}/usuarios/paginar?page=${page}&limit=${limit}`,
+        pagination: (page, limit, username) => `${API}/api/${VERSION}/usuarios/paginar?page=${page}&limit=${limit}&username=${username}`,
         create: `${API}/api/${VERSION}/usuarios`,
         update: (username) => `${API}/api/${VERSION}/usuarios/${username}`,
         delete: (username) =>`${API}/api/${VERSION}/usuarios/${username}`,
@@ -134,6 +134,7 @@ const endPoints = {
     traslados: {
         list: `${API}/api/${VERSION}/traslados`, //Listo
         findOne: (consecutivo) => `${API}/api/${VERSION}/traslados/${consecutivo}`,
+        filter: `${API}/api/${VERSION}/traslados/filter`,
         pagination: (page, limit) => `${API}/api/${VERSION}/traslados/paginar?page=${page}&limit=${limit}`,
         create: `${API}/api/${VERSION}/traslados`,
         update: (id) => `${API}/api/${VERSION}/traslados/modificar/${id}`,
@@ -167,7 +168,8 @@ const endPoints = {
     document: {
         pedido: `${API}/api/${VERSION}/documentos/pedido`,
         stock: `${API}/api/${VERSION}/documentos/stock`,
-        movimientos: (consecutivo, tipo_movimiento) => `${API}/api/${VERSION}/documentos/movimiento/${consecutivo}/${tipo_movimiento}`
+        movimientos: (consecutivo, tipo_movimiento) => `${API}/api/${VERSION}/documentos/movimiento/${consecutivo}/${tipo_movimiento}`,
+        traslados: (consecutivo) => `${API}/api/${VERSION}/documentos/traslado/${consecutivo}`
     }
 }
 

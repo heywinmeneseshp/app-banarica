@@ -99,10 +99,7 @@ const Combo = () => {
                     <input ref={buscardorRef} className="form-control form-control-sm" type="text" placeholder="Buscar"></input>
                 </div>
                 <div className={styles.botones}>
-                    <button onClick={buscar} type="button" className="btn btn-light btn-sm">Buscar</button>
-                </div>
-                <div className={styles.botones}>
-                    <button type="button" className="btn btn-light btn-sm">Ordenar</button>
+                    <button onClick={buscar} type="button" className="btn btn-light btn-sm w-100">Descargar lista</button>
                 </div>
             </div>
 

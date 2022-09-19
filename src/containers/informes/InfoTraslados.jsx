@@ -2,24 +2,29 @@ import React, { useEffect, useRef, useState, useContext } from "react";
 import { useRouter } from "next/router";
 import AppContext from "@context/AppContext";
 import axios from "axios";
-import Table from 'react-bootstrap/Table';
+import * as XLSX from 'xlsx'
 //Services
 import endPoints from "@services/api";
+import { filtrarTraslados, buscarTraslado } from "@services/api/traslados";
 //Hooks
 import { useAuth } from "@hooks/useAuth";
+import useDate from "@hooks/useDate";
 //Components
 import Paginacion from '@components/Paginacion';
+//Bootstrap
+import Table from 'react-bootstrap/Table';
 import Button from 'react-bootstrap/Button';
-import RecibirTraslado from '@components/almacen/RecibirTraslado'
+import { Container } from "react-bootstrap";
 //CSS
 import styles from '@styles/informes/informes.module.css';
-import { Container } from "react-bootstrap";
+
+
 
 
 
 export default function InfoTraslados() {
-    const almacenRef = useRef()
     const router = useRouter()
+    const formRef = useRef()
     const movimientoRef = useRef()
     const { gestionNotificacion } = useContext(AppContext);
     const { user, almacenByUser } = useAuth();
@@ -34,41 +39,73 @@ export default function InfoTraslados() {
         async function listar() {
             const productos = await axios.get(endPoints.productos.list);
             const categorias = await axios.get(endPoints.categorias.list);
+            const almacenes = almacenByUser.map(item => item.consecutivo)
+            const items = await axios.post(endPoints.traslados.pagination(pagination, limit), { almacenes: almacenes })
+            setTotal(items.data.total);
+            setTraslados(items.data.data)
             setCategorias(categorias.data);
             setProductos(productos.data);
         }
         try {
             listar()
-            listarItems()
         } catch (e) {
             alert("Error al cargar los usuarios", "error")
         }
     }, [alert, pagination])
 
-    async function listarItems() {
-        if (almacenRef.current.value === "All") {
-            const res = await axios.post(endPoints.traslados.pagination(pagination, limit), { almacenes: almacenByUser });
-            setTotal(res.data.total);
-            setTraslados(res.data.data)
-        } else {
-            const almacenes = almacenByUser.filter(almacen => almacen.nombre === almacenRef.current.value);
-            const res = await axios.post(endPoints.traslados.pagination(pagination, limit), { almacenes: almacenes });
-            setTotal(res.data.total);
-            setTraslados(res.data.data)
-        }
+    const onBuscar = async () => {
+        const formData = new FormData(formRef.current)
+        let almacenes = formData.get("almacen")
+        const semana = formData.get("semana")
+        const producto = formData.get("articulo")
+        const categoria = formData.get("categoria")
+        if (almacenes == 0) almacenes = almacenByUser.map(item => item.consecutivo)
+        if (almacenes != 0) almacenes = [almacenes]
+        const res = await filtrarTraslados(almacenes, semana, producto, categoria, pagination, limit)
+        setTotal(res.total);
+        setTraslados(res.data)
     }
 
-    const onBuscar = () => {
-        listarItems()
+    const onVerPDF = async () => {
+        const formData = new FormData(formRef.current)
+        const traslado = formData.get("movimiento")
+        if (traslado == "") return alert("Por favor, introduzca el consecutivo del traslado")
+        const res  = await buscarTraslado(traslado)
+        if(res.length == 0) return alert("El traslado no existe")
+        window.open(endPoints.document.traslados(traslado))
     }
 
-    const onBuscarDocumento = () => {
-        const cons_movimiento = movimientoRef.current.value
-        alert("Este boton no está habilitado", cons_movimiento)
-    }
-
-    const onDescargarDocumento = () => {
-        alert("Este boton no está habilitado")
+    const onDescargarExcel = async () => {
+        const formData = new FormData(formRef.current)
+        let almacenes = formData.get("almacen")
+        const semana = formData.get("semana")
+        const producto = formData.get("articulo")
+        const categoria = formData.get("categoria")
+        if (almacenes == 0) almacenes = almacenByUser.map(item => item.consecutivo)
+        if (almacenes != 0) almacenes = [almacenes]
+        const res = await filtrarTraslados(almacenes, semana, producto, categoria, null, null)
+        const newData = res.map(item => {
+            return {
+                "Consecutivo": item?.traslado?.consecutivo,
+                "Origen": item?.traslado?.origen,
+                "Destino": item?.traslado?.destino,
+                "Producto": item?.Producto?.name,
+                "Categoria": item?.Producto?.cons_categoria,
+                "Cantidad": item?.cantidad,
+                "Transportadora": item?.traslado?.transportadora,
+                "Conductor": item?.traslado?.conductor,
+                "Vehículo": item?.traslado?.vehiculo,
+                "Observaciones":item?.traslado?.observaciones,
+                "Estado": item?.traslado?.estado,
+                "Semana": item?.traslado?.semana,
+                "Fecha salida": item?.traslado?.fecha_salida,
+                "Fecha entrada": item?.traslado?.fecha_entrada
+            }
+        })
+        const book = XLSX.utils.book_new();
+        const sheet = XLSX.utils.json_to_sheet(newData)
+        XLSX.utils.book_append_sheet(book, sheet, "Traslados")
+        XLSX.writeFile(book, `Historial de traslados ${useDate()}.xlsx`)
     }
 
     return (
@@ -79,7 +116,7 @@ export default function InfoTraslados() {
                 <h2>Informe de traslados</h2>
                 <div className="line"></div>
 
-                <div>
+                <form ref={formRef}>
 
                     <div className={styles.contenedor3}>
                         <div className={styles.grupo}>
@@ -89,79 +126,85 @@ export default function InfoTraslados() {
                                     className="form-select form-select-sm"
                                     id='almacen'
                                     name='almacen'
-                                    ref={almacenRef}>
-                                    {(user.id_rol === 'Super administrador' || "Administrador") && <option>All</option>}
+                                    onChange={onBuscar}>
+                                    <option value={0}>All</option>
                                     {almacenByUser.map(almacen => (
-                                        <option key={almacen.consecutivo}>{almacen.nombre}</option>
+                                        <option value={almacen.consecutivo} key={almacen.consecutivo}>{almacen.nombre}</option>
                                     ))}
                                 </select>
                             </div>
                         </div>
 
                         <div className={styles.grupo}>
-                            <label htmlFor="Username">Categoría</label>
+                            <label htmlFor="categoria">Categoría</label>
                             <div>
-                                <select className="form-select form-select-sm" disabled>
-                                    <option>All</option>
+                                <select
+                                    className="form-select form-select-sm"
+                                    id="categoria"
+                                    name="categoria"
+                                    onChange={onBuscar}
+                                >
+                                    <option value={""}>All</option>
                                     {categorias.map((categoria, index) => (
-                                        <option key={index} >{categoria.nombre}</option>
+                                        <option value={categoria.consecutivo} key={index} >{categoria.nombre}</option>
                                     ))}
                                 </select>
                             </div>
                         </div>
 
                         <div className={styles.grupo}>
-                            <label htmlFor="Username">Artículo</label>
+                            <label htmlFor="articulo">Artículo</label>
                             <div>
-                                <select className="form-select form-select-sm" disabled>
-                                    <option>All</option>
-                                    {productos.map((producto, index) => (
-                                        <option key={index}>{producto.name}</option>
-                                    ))}
-                                </select>
+                                <input type="text"
+                                    className="form-control form-control-sm"
+                                    id="articulo"
+                                    name='articulo'
+                                    onChange={onBuscar}
+                                ></input>
                             </div>
                         </div>
 
                         <div className={styles.grupo}>
-                            <label htmlFor="Username">Semana</label>
+                            <label htmlFor="semana">Semana</label>
                             <div>
                                 <input
                                     type="number"
                                     className="form-control form-control-sm"
-                                    id="contraseña"
-                                    disabled></input>
+                                    id="semana"
+                                    name="semana"
+                                    onChange={onBuscar}
+                                ></input>
                             </div>
                         </div>
 
-                        <Button onClick={onBuscar} className={styles.button} variant="primary" size="sm">
-                            Buscar
+
+                        <Button onClick={onDescargarExcel} className={styles.button} variant="success" size="sm">
+                            Descargar Excel
                         </Button>
                     </div>
 
                     <div className={styles.contenedor3}>
 
                         <div className={styles.grupo}>
-                            <label htmlFor="cons_movimiento">Consecutivo</label>
+                            <label htmlFor="movimiento">Consecutivo</label>
                             <div>
                                 <input
                                     type="text"
                                     className="form-control form-control-sm"
-                                    id="cons_movimiento"
-                                    name="cons_movimiento"
-                                    ref={movimientoRef}>
+                                    id="movimiento"
+                                    name="movimiento"
+                                >
                                 </input>
                             </div>
                         </div>
-                        {(user.id_rol == "Administrador" || "Super administrador") &&
-                            <Button onClick={onDescargarDocumento} className={styles.button} variant="success" size="sm">
-                                Descargar documento
-                            </Button>
-                        }
-                        <Button onClick={onBuscarDocumento} className={styles.button} variant="info" size="sm">
-                            Buscar documento
+
+                        <Button onClick={onVerPDF} className={styles.button} variant="warning" size="sm">
+                            Ver documento
                         </Button>
+
+
                     </div>
-                </div>
+                </form>
 
 
                 <Table className={styles.tabla} striped bordered hover size="sm">

@@ -105,8 +105,8 @@ export default function InfoPedidos() {
                             </div>
                         </div>
 
-                        <Button className={styles.button} variant="primary" size="sm">
-                            Buscar
+                        <Button className={styles.button} variant="success" size="sm">
+                            Descargar Excel
                         </Button>
 
                     </div>
@@ -131,8 +131,8 @@ export default function InfoPedidos() {
                             </Button>
                         }
 
-                        <Button onClick={onDescargar} className={styles.button} variant="success" size="sm">
-                            Descargar pedido
+                        <Button onClick={onDescargar} className={styles.button} variant="warning" size="sm">
+                            Descargar PDF
                         </Button>
 
                     </div>

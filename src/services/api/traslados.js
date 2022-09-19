@@ -23,8 +23,12 @@ const eliminarTraslado = async (consecutivo) => {
 }
 
 const actualizarTraslado = async (id, changes) => {
-    const res = await axios.patch(endPoints.traslados.update(id), changes)
-    return res.data
+    try {
+        const res = await axios.patch(endPoints.traslados.update(id), changes)
+        return res.data
+    } catch {
+        alert("Error al actualizar traslado")
+    }
 }
 
 const buscarTraslado = async (consecutivo) => {
@@ -33,6 +37,28 @@ const buscarTraslado = async (consecutivo) => {
         return res.data
     } catch (e) {
         alert("El traslado no existe")
+    }
+}
+
+const filtrarTraslados = async (almacenes, semana, product_name, cons_categoria, offset, limit) => {
+    let data = {
+        "almacenes": almacenes,
+        "semana": semana,
+        "producto": {
+            "name": product_name,
+            "cons_categoria": cons_categoria
+        },
+        "pagination": {
+            "offset": offset,
+            "limit": limit
+        }
+    }
+    if (!offset || !limit) delete data.pagination
+    try {
+        const res = await axios.post(endPoints.traslados.filter, data);
+        return res.data
+    } catch {
+        alert("Error al filtrar traslados")
     }
 }
 
@@ -45,4 +71,4 @@ const listarTraslados = async () => {
     }
 }
 
-export { agregarTraslado, eliminarTraslado, actualizarTraslado, buscarTraslado, listarTraslados };
+export { agregarTraslado, eliminarTraslado, actualizarTraslado, buscarTraslado, filtrarTraslados, listarTraslados };

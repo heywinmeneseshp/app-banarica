@@ -5,8 +5,9 @@
 
 .cajaBotones {
     display: grid;
-    grid-template-columns: 1fr 1.5fr 8fr 1fr 1fr;
+    grid-template-columns: 1fr 1.5fr 8fr 2fr;
     justify-content: center;
+    min-width: 900px;
     margin: 20px 0 10px 0;
 }
 
@@ -22,7 +23,7 @@
 }
 
 .buscar {
-    margin-right: 5px;
+    margin-right: 8px;
 }
 
 .ancho {

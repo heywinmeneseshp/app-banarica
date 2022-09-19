@@ -168,18 +168,6 @@ export default function InfoMovimientos() {
                             </div>
 
                             <div className={styles.grupo}>
-                                <label htmlFor="semana">Semana</label>
-                                <div>
-                                    <input type="number"
-                                        className="form-control form-control-sm"
-                                        id="semana"
-                                        name='semana'
-                                        onChange={onBuscar}
-                                    ></input>
-                                </div>
-                            </div>
-
-                            <div className={styles.grupo}>
                                 <label htmlFor="articulo">Artículo</label>
                                 <div>
                                     <input type="text"
@@ -191,6 +179,17 @@ export default function InfoMovimientos() {
                                 </div>
                             </div>
 
+                            <div className={styles.grupo}>
+                                <label htmlFor="semana">Semana</label>
+                                <div>
+                                    <input type="number"
+                                        className="form-control form-control-sm"
+                                        id="semana"
+                                        name='semana'
+                                        onChange={onBuscar}
+                                    ></input>
+                                </div>
+                            </div>
 
                             <Button onClick={onDescargar} className={styles.button} variant="success" size="sm">
                                 Descargar Excel
@@ -208,7 +207,7 @@ export default function InfoMovimientos() {
                                 </div>
                             </div>
                             <Button onClick={onDescargarDocumento} className={styles.button} variant="warning" size="sm">
-                                Ver PDF
+                                Ver documento
                             </Button>
 
                         </div>

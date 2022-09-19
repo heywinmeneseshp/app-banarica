@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 //Services
-import { actualizarUsuario, buscarUsuario } from '@services/api/usuarios';
+import { actualizarUsuario } from '@services/api/usuarios';
 import endPoints from '@services/api';
 //Components
 import NuevoUsuario from '@components/administrador/NuevoUsuario';
@@ -9,6 +9,7 @@ import Alertas from '@assets/Alertas';
 import Paginacion from '@components/Paginacion';
 //Hooks
 import useAlert from '@hooks/useAlert';
+import useExcel from "@hooks/useExcel"
 //Bootstrap
 //CSS
 import styles from '@styles/Listar.module.css';
@@ -24,18 +25,19 @@ const Users = () => {
     const limit = 10;
 
     useEffect(() => {
-        async function listarUsurios() {
-            const res = await axios.get(endPoints.usuarios.pagination(pagination, limit));
-            const total = await axios.get(endPoints.usuarios.list);
-            setTotal(total.data.length);
-            setUsuarios(res.data)
-        }
         try {
             listarUsurios()
         } catch (e) {
             alert("Error al cargar los usuarios", "error")
         }
     }, [alert, pagination])
+
+    async function listarUsurios() {
+        const username = buscardorRef.current.value
+        const res = await axios.get(endPoints.usuarios.pagination(pagination, limit, username));
+        setTotal(res.data.total);
+        setUsuarios(res.data.data)
+    }
 
     const handleNuevo = async () => {
         setOpen(true);
@@ -47,20 +49,9 @@ const Users = () => {
         setUser(usuario)
     };
 
-    const buscar = async () => {
-        const username = buscardorRef.current.value;
-        const user = await buscarUsuario(username)
-        if (user == null) {
-            setAlert({
-                active: true,
-                mensaje: 'El usuario no existe',
-                color: "danger",
-                autoClose: true
-            })
-        } else {
-            setUsuarios([user])
-            setTotal(1);
-        }
+    const onDescargar = async () => {
+        const { data } = await axios.get(endPoints.usuarios.list);
+        useExcel(data, "Usuarios", "Usuarios")
     }
 
     const handleActivar = (usuario) => {
@@ -84,7 +75,7 @@ const Users = () => {
     }
 
     return (
-        <div>
+        <div className='container'>
             <Alertas alert={alert} handleClose={toogleAlert}></Alertas>
             <h3>Usuarios</h3>
             <div className={styles.cajaBotones}>
@@ -95,13 +86,10 @@ const Users = () => {
                     <button type="button" className="btn btn-danger btn-sm w-100">Eliminar</button>
                 </div>
                 <div className={styles.buscar}>
-                    <input ref={buscardorRef} className="form-control form-control-sm w-80" type="text" placeholder="Buscar"></input>
+                    <input ref={buscardorRef} onChange={listarUsurios} className="form-control form-control-sm w-90" type="text" placeholder="Buscar"></input>
                 </div>
                 <div className={styles.botones}>
-                    <button onClick={buscar} type="button" className="btn btn-light btn-sm">Buscar</button>
-                </div>
-                <div className={styles.botones}>
-                    <button type="button" className="btn btn-light btn-sm">Ordenar</button>
+                    <button onClick={onDescargar} type="button" className="btn btn-light btn-sm w-100">Descargar lista</button>
                 </div>
             </div>
 

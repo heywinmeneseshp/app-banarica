@@ -164,16 +164,18 @@ export default function Pedidos() {
                     {!bool &&
                         <div className={styles.contenedor6}>
                             <div>
-                                {(user.id_rol == "Super administrador") &&
+                                {(user.id_rol == "Super administrador" || user.id_rol == "Administrador") &&
                                     <Button className={styles.button} onClick={addDeposit} variant="info" size="sm">
                                         Agregar almacén
                                     </Button>
                                 }
                             </div>
                             <div>
-                                <Button className={styles.buttonB} onClick={removeDeposit} size="sm">
-                                    Remover Alamcén
-                                </Button>
+                                {(user.id_rol == "Super administrador" || user.id_rol == "Administrador") &&
+                                    <Button className={styles.buttonB} onClick={removeDeposit} size="sm">
+                                        Remover Alamcén
+                                    </Button>
+                                }
                             </div>
                             <div></div>
                             <div></div>

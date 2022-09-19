@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 //Services
 import endPoints from '@services/api';
-import { actualizarProducto } from '@services/api/productos';
+import { actualizarProducto, listarProductos } from '@services/api/productos';
 //Hooks
 import useAlert from '@hooks/useAlert';
+import useExcel from '@hooks/useExcel';
 //Components
 import Alertas from '@assets/Alertas';
 import Paginacion from '@components/Paginacion';
@@ -56,18 +57,21 @@ const Producto = () => {
         setProducto(item)
     };
 
+    const onDescargar = async ()  => {
+        const data = await listarProductos()
+        useExcel(data, "Productos", "Productos")
+    }
+
     const handleChangeBuscardor = async (e) => {
         const name = e.target.value;
         const res = await axios.get(endPoints.productos.pagination(pagination, limit, name)); //Debo crearlo
         setTotal(res.data.total);
-        setItems(res.data.data)
-    
+        setItems(res.data.data)  
     }
 
     const onChangeAll = () => {
         setChangeAll(!changeAll)
-        setCheckbox(new Array(checkbox.length).fill(!changeAll))
-        
+        setCheckbox(new Array(checkbox.length).fill(!changeAll)) 
     }
 
     const onChangeCheckBox = (position) => {
@@ -114,17 +118,14 @@ const Producto = () => {
                 </div>
                 <div className={styles.buscar}>
                     <input
-                        className="form-control form-control-sm"
+                        className="form-control form-control-sm w-90"
                         type="text"
                         placeholder="Buscar"
                         onChange={handleChangeBuscardor}
                     ></input>
                 </div>
                 <div className={styles.botones}>
-                    <button type="button" className="btn btn-light btn-sm">Buscar</button>
-                </div>
-                <div className={styles.botones}>
-                    <button type="button" className="btn btn-light btn-sm">Ordenar</button>
+                    <button onClick={onDescargar} type="button" className="btn btn-light btn-sm w-100">Descargar lista</button>
                 </div>
             </div>
 
@@ -150,8 +151,8 @@ const Producto = () => {
                             <td>{item.name}</td>
                             <td>{item.cons_categoria}</td>
                             <td>{item.cons_proveedor}</td>
-                            <td>{item.serial}</td>
-                            <td>{item.salida_sin_stock}</td>
+                            <td>{item.serial ? "SI" : "NO"}</td>
+                            <td>{item.salida_sin_stock ? "SI" : "NO"}</td>
                             <td>
                                 <button onClick={() => handleEditar(item)} type="button" className="btn btn-warning btn-sm w-80">Editar</button>
                             </td>
