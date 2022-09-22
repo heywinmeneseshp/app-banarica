@@ -81,7 +81,7 @@ export default function Devolucion({ movimiento }) {
         const formData = new FormData(formRef.current);
         const IdNoti = gestionNotificacion.notificacion.id;
         const cons_movimiento = gestionNotificacion.notificacion.cons_movimiento;
-        const respuesta = formData.get("respuesta")
+        const respuesta = formData.get("respuesta");
         actualizarMovimiento(movimientoID, { pendiente: false, respuesta: respuesta });
         actualizarNotificaciones(IdNoti, { aprobado: true, visto: true });
         const { data } = await axios.get(endPoints.historial.filter(cons_movimiento));
@@ -97,9 +97,9 @@ export default function Devolucion({ movimiento }) {
             aprobado: true,
             visto: false
         };
-        setRespuesta(respuesta)
-        setPendiente(false)
-        agregarNotificaciones(dataNotificacion)
+        setRespuesta(respuesta);
+        setPendiente(false);
+        agregarNotificaciones(dataNotificacion);
         gestionNotificacion.ingresarNotificacion(null);
         setAlert({
             active: true,
@@ -137,9 +137,9 @@ export default function Devolucion({ movimiento }) {
                     aprobado: true,
                     visto: false
                 };
-                agregarNotificaciones(dataNotificacion)
-                setPendiente(false)
-                setRespuesta(formData.get("respuesta"))
+                agregarNotificaciones(dataNotificacion);
+                setPendiente(false);
+                setRespuesta(formData.get("respuesta"));
                 gestionNotificacion.ingresarNotificacion(null);
             } else {
                 const almacenR = formData.get('almacen');

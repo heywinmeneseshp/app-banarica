@@ -62,7 +62,7 @@ export default function Liquidacion({ movimiento }) {
                 setProducts(res.lista);
                 setObservaciones(res.movimiento.observaciones);
                 setPendiente(res.movimiento.pendiente);
-                setRespuesta(res.movimiento.respuesta)
+                setRespuesta(res.movimiento.respuesta);
             });
             setBool(true);
         }
@@ -78,10 +78,10 @@ export default function Liquidacion({ movimiento }) {
     }
 
     async function rechazarAjuste() {
-        const formData = new FormData(formRef.current)
+        const formData = new FormData(formRef.current);
         const IdNoti = gestionNotificacion.notificacion.id;
         const cons_movimiento = gestionNotificacion.notificacion.cons_movimiento;
-        const respuesta = formData.get("respuesta")
+        const respuesta = formData.get("respuesta");
         actualizarMovimiento(movimientoID, { "pendiente": false, "respuesta": respuesta });
         actualizarNotificaciones(IdNoti, { aprobado: true, visto: true });
         const { data } = await axios.get(endPoints.historial.filter(cons_movimiento));
@@ -97,10 +97,10 @@ export default function Liquidacion({ movimiento }) {
             aprobado: true,
             visto: false
         };
-        agregarNotificaciones(dataNotificacion)
+        agregarNotificaciones(dataNotificacion);
         gestionNotificacion.ingresarNotificacion(null);
-        setRespuesta(respuesta)
-        setPendiente(false)
+        setRespuesta(respuesta);
+        setPendiente(false);
         setAlert({
             active: true,
             mensaje: "Liquidación rechazada.",
@@ -116,7 +116,7 @@ export default function Liquidacion({ movimiento }) {
             if (user.id_rol == "Super administrador" && movimiento) {
                 const consAlmacen = almacenByUser.find((item) => item.nombre == almacen).consecutivo;
                 const respuesta = formData.get("respuesta");
-                const changes = { "pendiente": false, "respuesta": respuesta }
+                const changes = { "pendiente": false, "respuesta": respuesta };
                 actualizarMovimiento(movimientoID, changes);
                 products.forEach(item => {
                     const { cons_producto, cantidad } = item;
@@ -136,9 +136,9 @@ export default function Liquidacion({ movimiento }) {
                     aprobado: true,
                     visto: false
                 };
-                agregarNotificaciones(dataNotificacion)
-                setRespuesta(respuesta)
-                setPendiente(false)
+                agregarNotificaciones(dataNotificacion);
+                setRespuesta(respuesta);
+                setPendiente(false);
                 setAlert({
                     active: true,
                     mensaje: "Liquidación aprobada.",
