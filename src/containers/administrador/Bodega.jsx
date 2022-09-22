@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 //Services
 import endPoints from '@services/api';
-import { actualizarAlmacen, buscarAlmacen } from '@services/api/almacenes';
+import { actualizarAlmacen, buscarAlmacen, listarAlmacenes } from '@services/api/almacenes';
 //Components
 import NuevaBodega from '@components/administrador/NuevaBodega';
 import Alertas from '@assets/Alertas';
@@ -12,6 +12,7 @@ import useAlert from '@hooks/useAlert';
 //Bootstrap
 //CSS
 import styles from '@styles/Listar.module.css';
+import useExcel from '@hooks/useExcel';
 
 const Bodega = () => {
     const buscardorRef = useRef(null);
@@ -25,10 +26,10 @@ const Bodega = () => {
 
     useEffect(() => {
         async function listarAlmacenes() {
-            const res = await axios.get(endPoints.almacenes.pagination(pagination, limit)); //Debo crearlo
+            const res = await axios.get(endPoints.almacenes.pagination(pagination, limit, "")); //Debo crearlo
             const total = await axios.get(endPoints.almacenes.list);
-            setTotal(total.data.length);
-            setAlmacenes(res.data)
+            setTotal(total.data.total);
+            setAlmacenes(res.data.data);
         }
         try {
             listarAlmacenes()
@@ -48,20 +49,20 @@ const Bodega = () => {
         setAlmacen(almacen)
     };
 
-    const buscar = async () => {
-        const consecutivo = buscardorRef.current.value; consecutivo
-        const almacen = await buscarAlmacen(consecutivo)
-        if (almacen == null) {
-            setAlert({
-                active: true,
-                mensaje: 'El almacen no existe',
-                color: "danger",
-                autoClose: true
-            })
-        } else {
-            setUsuarios([almacen])
-            setTotal(1);
-        }
+    const handleChangeBuscardor = async () => {
+        const buscador = buscardorRef.current.value
+        const res = await axios.get(endPoints.almacenes.pagination(pagination, limit, buscador))
+        setTotal(res.data.total);
+        setAlmacenes(res.data.data);
+    }
+
+    const onDescargar = async () => {
+        const data = await listarAlmacenes();
+        useExcel(data, "Almacenes", "Almacenes")
+    }
+
+    const handleEnable = async () => {
+        alert("Boton inhabilitado")
     }
 
     const handleActivar = (almacen) => {
@@ -95,16 +96,23 @@ const Bodega = () => {
                         <button onClick={handleNuevo} type="button" className="btn btn-success btn-sm w-100">Nuevo</button>
                     </div>
                     <div className={styles.botones}>
-                        <button type="button" className="btn btn-danger btn-sm w-100">Eliminar</button>
+                        <button
+                            type="button"
+                            className="btn btn-danger btn-sm w-100"
+                            onClick={handleEnable}
+                        >Desactivar</button>
                     </div>
                     <div className={styles.buscar}>
-                        <button onClick={buscar} type="button" className="btn btn-light btn-sm">Buscar</button>
+                        <input
+                            ref={buscardorRef}
+                            className="form-control form-control-sm w-90"
+                            type="text"
+                            placeholder="Buscar"
+                            onChange={handleChangeBuscardor}
+                        ></input>
                     </div>
                     <div className={styles.botones}>
-                        <button type="button" className="btn btn-light btn-sm">Buscar</button>
-                    </div>
-                    <div className={styles.botones}>
-                        <button type="button" className="btn btn-light btn-sm">Ordenar</button>
+                        <button onClick={onDescargar} type="button" className="btn btn-light btn-sm w-100">Descargar lista</button>
                     </div>
                 </div>
 
@@ -125,7 +133,7 @@ const Bodega = () => {
                     <tbody className={styles.letter}>
                         {almacenes.map((almacen, index) => (
                             <tr key={index}>
-                                <td><input type="checkbox" id="topping" name="topping" value="Paneer" /></td>                      
+                                <td><input type="checkbox" id="topping" name="topping" value="Paneer" /></td>
                                 <td scope="row">{almacen.consecutivo}</td>
                                 <td>{almacen.nombre}</td>
                                 <td>{almacen.razon_social}</td>

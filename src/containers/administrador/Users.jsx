@@ -36,7 +36,7 @@ const Users = () => {
         const username = buscardorRef.current.value
         const res = await axios.get(endPoints.usuarios.pagination(pagination, limit, username));
         setTotal(res.data.total);
-        setUsuarios(res.data.data)
+        setUsuarios(res.data.data);
     }
 
     const handleNuevo = async () => {

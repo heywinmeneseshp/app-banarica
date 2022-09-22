@@ -62,7 +62,7 @@ const endPoints = {
     almacenes: { 
         list: `${API}/api/${VERSION}/almacenes`,
         findOne: (id) => `${API}/api/${VERSION}/almacenes/${id}`,
-        pagination: (page, limit) => `${API}/api/${VERSION}/almacenes/paginar?page=${page}&limit=${limit}`,
+        pagination: (page, limit, almacen) => `${API}/api/${VERSION}/almacenes/paginar?page=${page}&limit=${limit}&almacen=${almacen}`,
         create: `${API}/api/${VERSION}/almacenes`,
         update: (id) => `${API}/api/${VERSION}/almacenes/${id}`,
         delete: (id) => `${API}/api/${VERSION}/almacenes/${id}`,

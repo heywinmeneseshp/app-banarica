@@ -30,8 +30,7 @@ const Producto = () => {
 
     useEffect(() => {
         async function listrasItems() {
-            let name = "";
-            const res = await axios.get(endPoints.productos.pagination(pagination, limit, name)); //Debo crearlo
+            const res = await axios.get(endPoints.productos.pagination(pagination, limit, "")); //Debo crearlo
             setTotal(res.data.total);
             setItems(res.data.data)           
         }
