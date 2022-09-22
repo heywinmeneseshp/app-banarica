@@ -27,8 +27,7 @@ const Bodega = () => {
     useEffect(() => {
         async function listarAlmacenes() {
             const res = await axios.get(endPoints.almacenes.pagination(pagination, limit, "")); //Debo crearlo
-            const total = await axios.get(endPoints.almacenes.list);
-            setTotal(total.data.total);
+            setTotal(res.data.total);
             setAlmacenes(res.data.data);
         }
         try {
