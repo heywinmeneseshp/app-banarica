@@ -8,11 +8,9 @@ import AppContext from "@context/AppContext";
 import Alert from 'react-bootstrap/Alert';
 
 //Components
-
-
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
-import { actualizarNotificaciones } from "@services/api/notificaciones";
+
 
 export default function Alerta({ data }) {
     const { user } = useAuth()

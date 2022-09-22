@@ -39,7 +39,6 @@ export default function Liquidacion({ movimiento }) {
     const [consMovimiento, setConsMovimiento] = useState(null);
     const [razonMovimiento, setRazonMovimiento] = useState(null);
     const [movimientoID, setMovimientoID] = useState(null);
-    const [ajutado, setAjustado] = useState(false);
     const [respuesta, setRespuesta] = useState(null);
     const [pendiente, setPendiente] = useState(null);
 
@@ -54,7 +53,6 @@ export default function Liquidacion({ movimiento }) {
             listar();
         } else {
             bucarDoumentoMovimiento(movimiento.consecutivo).then(res => {
-                console.log(res);
                 setMovimientoID(res.movimiento.id);
                 setConsMovimiento(res.movimiento.consecutivo);
                 setAlmacen(res.almacen);
@@ -64,6 +62,7 @@ export default function Liquidacion({ movimiento }) {
                 setProducts(res.lista);
                 setObservaciones(res.movimiento.observaciones);
                 setPendiente(res.movimiento.pendiente);
+                setRespuesta(res.movimiento.respuesta)
             });
             setBool(true);
         }
@@ -79,18 +78,32 @@ export default function Liquidacion({ movimiento }) {
     }
 
     async function rechazarAjuste() {
+        const formData = new FormData(formRef.current)
         const IdNoti = gestionNotificacion.notificacion.id;
         const cons_movimiento = gestionNotificacion.notificacion.cons_movimiento;
-        actualizarMovimiento(movimientoID, { pendiente: false });
+        const respuesta = formData.get("respuesta")
+        actualizarMovimiento(movimientoID, { "pendiente": false, "respuesta": respuesta });
         actualizarNotificaciones(IdNoti, { aprobado: true, visto: true });
         const { data } = await axios.get(endPoints.historial.filter(cons_movimiento));
         data.forEach(element => {
             actualizarHistorial(element.id, { razon_movimiento: "Rechazado" });
         });
+        const dataNotificacion = {
+            almacen_emisor: gestionNotificacion.notificacion.almacen_emisor,
+            almacen_receptor: gestionNotificacion.notificacion.almacen_receptor,
+            cons_movimiento: gestionNotificacion.notificacion.cons_movimiento,
+            tipo_movimiento: "Liquidacion",
+            descripcion: "rechazada",
+            aprobado: true,
+            visto: false
+        };
+        agregarNotificaciones(dataNotificacion)
         gestionNotificacion.ingresarNotificacion(null);
+        setRespuesta(respuesta)
+        setPendiente(false)
         setAlert({
             active: true,
-            mensaje: "Liquidación rechazada",
+            mensaje: "Liquidación rechazada.",
             color: "warning",
             autoClose: false
         });
@@ -100,11 +113,10 @@ export default function Liquidacion({ movimiento }) {
         e.preventDefault();
         const formData = new FormData(formRef.current);
         try {
-            if (user.id_rol == "Super administrador" && gestionNotificacion.notificacion) {
+            if (user.id_rol == "Super administrador" && movimiento) {
                 const consAlmacen = almacenByUser.find((item) => item.nombre == almacen).consecutivo;
                 const respuesta = formData.get("respuesta");
-                const changes = { "pendiente": false, "respuesta": respuesta };
-                setRespuesta(respuesta);
+                const changes = { "pendiente": false, "respuesta": respuesta }
                 actualizarMovimiento(movimientoID, changes);
                 products.forEach(item => {
                     const { cons_producto, cantidad } = item;
@@ -115,7 +127,24 @@ export default function Liquidacion({ movimiento }) {
                     "aprobado": true
                 };
                 actualizarNotificaciones(gestionNotificacion.notificacion.id, notiChange);
-                setAjustado(true);
+                const dataNotificacion = {
+                    almacen_emisor: gestionNotificacion.notificacion.almacen_emisor,
+                    almacen_receptor: gestionNotificacion.notificacion.almacen_receptor,
+                    cons_movimiento: gestionNotificacion.notificacion.cons_movimiento,
+                    tipo_movimiento: "Liquidacion",
+                    descripcion: "aprobada",
+                    aprobado: true,
+                    visto: false
+                };
+                agregarNotificaciones(dataNotificacion)
+                setRespuesta(respuesta)
+                setPendiente(false)
+                setAlert({
+                    active: true,
+                    mensaje: "Liquidación aprobada.",
+                    color: "success",
+                    autoClose: false
+                });
             } else {
                 const almacenR = formData.get('almacen');
                 const tipoDeMovimiento = formData.get('tipo-movimiento');
@@ -171,15 +200,14 @@ export default function Liquidacion({ movimiento }) {
                     });
                     setProducts(array);
                 });
-
+                setBool(true);
+                setAlert({
+                    active: true,
+                    mensaje: "Liquidación cargada, pendiente por aprobación",
+                    color: "success",
+                    autoClose: false
+                });
             }
-            setBool(true);
-            setAlert({
-                active: true,
-                mensaje: "Liquidación cargada, pendiente por aprobación",
-                color: "success",
-                autoClose: false
-            });
         } catch (e) {
             setAlert({
                 active: true,
@@ -188,7 +216,6 @@ export default function Liquidacion({ movimiento }) {
                 autoClose: false
             });
         }
-        setBool(true);
     };
     return (
         <>
@@ -340,7 +367,7 @@ export default function Liquidacion({ movimiento }) {
                             />
                         </InputGroup>
                     </div>
-                    {pendiente && (user.id_rol == "Super administrador") && <InputGroup size="sm" className="mb-3">
+                    {movimiento && (user.id_rol == "Super administrador") && <InputGroup size="sm" className="mb-3">
                         <InputGroup.Text id="inputGroup-sizing-sm">Respuesta</InputGroup.Text>
                         <Form.Control
                             id="respuesta"
@@ -374,7 +401,7 @@ export default function Liquidacion({ movimiento }) {
                             </div>
                         </div>
                     }
-                    {pendiente && !ajutado && (user.id_rol == "Super administrador") &&
+                    {pendiente && (user.id_rol == "Super administrador") &&
                         <div className={styles.contenedor6}>
                             <div>
                             </div>

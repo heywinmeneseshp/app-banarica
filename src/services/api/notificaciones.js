@@ -10,7 +10,7 @@ const config = {
 
 const agregarNotificaciones = async (data) => {
     try {
-        if (data.tipo_movimiento == "Traslado" || data.tipo_movimiento == "Devolucion" || data.tipo_movimiento == "Liquidacion" || data.tipo_movimiento == "Pedido") {
+        if (data.aprobado == false) {
             const response = await axios.post(endPoints.notificaciones.create, data, config);
             return response.data;
         } else {
@@ -19,7 +19,11 @@ const agregarNotificaciones = async (data) => {
                 usuarios.data.map(async (item) => {
                     if (item.habilitado == true) {
                         let newData = data
-                        newData.descripcion = "sin revisar"
+                        if (data.tipo_movimiento == "Devolucion" || data.tipo_movimiento == "Liquidacion") {
+                            newData.descripcion = data.descripcion
+                        } else {
+                            newData.descripcion = "sin revisar"
+                        }
                         newData.aprobado = true
                         newData.almacen_receptor = item.username
                         newData.visto = false
@@ -69,7 +73,6 @@ const listarNotificaciones = async () => {
 const filtrarNotificaciones = async (data) => {
     try {
         const res = await axios.post(endPoints.notificaciones.filter, data)
-        console.log(res.data)
         return res.data
     } catch (e) {
         alert("No se han encontrado notificaciones")

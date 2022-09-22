@@ -24,7 +24,7 @@ import Alertas from "@assets/Alertas";
 import styles from "@styles/almacen/almacen.module.css";
 
 
-export default function Devolucion({movimiento}) {
+export default function Devolucion({ movimiento }) {
     const formRef = useRef();
     const { almacenByUser, user } = useAuth();
     const { gestionNotificacion } = useContext(AppContext);
@@ -39,7 +39,6 @@ export default function Devolucion({movimiento}) {
     const [consMovimiento, setConsMovimiento] = useState(null);
     const [razonMovimiento, setRazonMovimiento] = useState(null);
     const [movimientoID, setMovimientoID] = useState(null);
-    const [ajutado, setAjustado] = useState(false);
     const [respuesta, setRespuesta] = useState(null);
     const [pendiente, setPendiente] = useState(null);
 
@@ -79,18 +78,32 @@ export default function Devolucion({movimiento}) {
     }
 
     async function rechazarAjuste() {
+        const formData = new FormData(formRef.current);
         const IdNoti = gestionNotificacion.notificacion.id;
         const cons_movimiento = gestionNotificacion.notificacion.cons_movimiento;
-        actualizarMovimiento(movimientoID, { pendiente: false });
+        const respuesta = formData.get("respuesta")
+        actualizarMovimiento(movimientoID, { pendiente: false, respuesta: respuesta });
         actualizarNotificaciones(IdNoti, { aprobado: true, visto: true });
         const { data } = await axios.get(endPoints.historial.filter(cons_movimiento));
         data.forEach(element => {
             actualizarHistorial(element.id, { razon_movimiento: "Rechazado" });
         });
+        const dataNotificacion = {
+            almacen_emisor: gestionNotificacion.notificacion.almacen_emisor,
+            almacen_receptor: gestionNotificacion.notificacion.almacen_receptor,
+            cons_movimiento: cons_movimiento,
+            tipo_movimiento: "Devolucion",
+            descripcion: "rechazada",
+            aprobado: true,
+            visto: false
+        };
+        setRespuesta(respuesta)
+        setPendiente(false)
+        agregarNotificaciones(dataNotificacion)
         gestionNotificacion.ingresarNotificacion(null);
         setAlert({
             active: true,
-            mensaje: "Devolucion rechazada",
+            mensaje: "Devolución rechazada",
             color: "warning",
             autoClose: false
         });
@@ -103,7 +116,7 @@ export default function Devolucion({movimiento}) {
             if (user?.id_rol == "Super administrador" && movimiento) {
                 const consAlmacen = almacenByUser.find((item) => item.nombre == almacen).consecutivo;
                 const respuesta = formData.get("respuesta");
-                const changes = { "pendiente": false, "respuesta" : respuesta };
+                const changes = { "pendiente": false, "respuesta": respuesta };
                 setRespuesta(respuesta);
                 actualizarMovimiento(movimientoID, changes);
                 products.forEach(item => {
@@ -115,7 +128,19 @@ export default function Devolucion({movimiento}) {
                     "aprobado": true
                 };
                 actualizarNotificaciones(gestionNotificacion.notificacion.id, notiChange);
-                setAjustado(true);
+                const dataNotificacion = {
+                    almacen_emisor: gestionNotificacion.notificacion.almacen_emisor,
+                    almacen_receptor: gestionNotificacion.notificacion.almacen_receptor,
+                    cons_movimiento: gestionNotificacion.notificacion.cons_movimiento,
+                    tipo_movimiento: "Devolucion",
+                    descripcion: "aprobada",
+                    aprobado: true,
+                    visto: false
+                };
+                agregarNotificaciones(dataNotificacion)
+                setPendiente(false)
+                setRespuesta(formData.get("respuesta"))
+                gestionNotificacion.ingresarNotificacion(null);
             } else {
                 const almacenR = formData.get('almacen');
                 const tipoDeMovimiento = formData.get('tipo-movimiento');
@@ -190,7 +215,6 @@ export default function Devolucion({movimiento}) {
                 autoClose: false
             });
         }
-        setBool(true);
     };
     return (
         <>
@@ -347,17 +371,17 @@ export default function Devolucion({movimiento}) {
                     </div>
 
                     {movimiento && (user.id_rol == "Super administrador") && <InputGroup size="sm" className="mb-3">
-                            <InputGroup.Text id="inputGroup-sizing-sm">Respuesta</InputGroup.Text>
-                            <Form.Control
-                                id="respuesta"
-                                name="respuesta"
-                                aria-label="Small"
-                                aria-describedby="inputGroup-sizing-sm"
-                                defaultValue={respuesta}
-                                required
-                                disabled={respuesta}
-                            />
-                        </InputGroup>}
+                        <InputGroup.Text id="inputGroup-sizing-sm">Respuesta</InputGroup.Text>
+                        <Form.Control
+                            id="respuesta"
+                            name="respuesta"
+                            aria-label="Small"
+                            aria-describedby="inputGroup-sizing-sm"
+                            defaultValue={respuesta}
+                            required
+                            disabled={respuesta}
+                        />
+                    </InputGroup>}
 
                     {!bool &&
                         <div className={styles.contenedor6}>
@@ -380,7 +404,7 @@ export default function Devolucion({movimiento}) {
                             </div>
                         </div>
                     }
-                    {pendiente && (user.id_rol == "Super administrador") && !ajutado &&
+                    {pendiente && (user.id_rol == "Super administrador") &&
                         <div className={styles.contenedor6}>
                             <div>
                             </div>

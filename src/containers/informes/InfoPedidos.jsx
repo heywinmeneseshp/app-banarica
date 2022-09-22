@@ -27,7 +27,6 @@ export default function InfoPedidos() {
         async function listarItems() {
             const res = await axios.get(endPoints.pedidos.pagination(pagination, limit));
             setTotal(res.data.total);
-            console.log(res.data.data)
             setPedidos(res.data.data);
         }
         try {

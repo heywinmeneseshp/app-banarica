@@ -77,7 +77,6 @@ export default function RecibirTraslado({ movimiento }) {
                 autoClose: false
             });
         } catch (e) {
-            console.log(e);
             setAlert({
                 active: true,
                 mensaje: "Error al cargar datos",

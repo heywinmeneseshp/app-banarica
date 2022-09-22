@@ -110,7 +110,6 @@ export default function InfoStock() {
             }
         }
         if (cons_almacen == 0) body.almacen.consecutivo = almacenByUser.map(item => item.consecutivo)
-        console.log(body)
         const { data } = await axios.post(endPoints.stock.filter, body);
         const newData = data.map((item) => {
             return {
