@@ -31,7 +31,7 @@ export default function Alerta({ data }) {
     useEffect(() => {
         setColor("warning")
         let texto = data.tipo_movimiento;
-        if (data.tipo_movimiento == "Pedido") setColor("")
+        if (data.tipo_movimiento == "Pedido") setColor("success")
         if (data.tipo_movimiento == "Liquidacion") {
             setColor("danger")
             texto = "Liquidación"
