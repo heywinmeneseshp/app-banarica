@@ -6,7 +6,7 @@ import { filtrarHistorialenGeneral } from '@services/api/historialMovimientos';
 
 const CardAjustes = ({ almacenes }) => {
 
-    const [items, setItems] = useState([]);
+    const [items, setItems] = useState([1, 2, 3]);
 
     const calendario = {
         "01": "Enero",
@@ -87,9 +87,13 @@ const CardAjustes = ({ almacenes }) => {
                 <div className="card" style={{ width: "16rem" }}>
                     <ul className="list-group list-group-flush">
                         {items.map((item, index) => {
+
+                            let color = (item[Object.keys(item)[0]] >= 0) ? "text-secondary" : "text-red";
+                            let unidades = ((item[Object.keys(item)[0]]) || ((item[Object.keys(item)[0]]) == 0)) ? "und" : "-";
+                            
                             return (<li key={index} className="list-group-item d-flex justify-content-between">
                                 <div>{Object.keys(item)[0]}</div>
-                                <div>{item[Object.keys(item)[0]]}</div>
+                                <div className={color}>{item[Object.keys(item)[0]]} {unidades}</div>
                             </li>);
                         })}
                     </ul>

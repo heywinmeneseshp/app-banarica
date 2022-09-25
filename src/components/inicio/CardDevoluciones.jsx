@@ -5,7 +5,7 @@ import { filtrarHistorialenGeneral } from '@services/api/historialMovimientos';
 
 
 const CardDevoluciones = ({ almacenes }) => {
-    const [items, setItems] = useState([]);
+    const [items, setItems] = useState([1, 2, 3]);
 
     const calendario = {
         "01": "Enero",
@@ -27,7 +27,7 @@ const CardDevoluciones = ({ almacenes }) => {
     }, []);
 
     const ultimos3Meses = async () => {
-        let mes = (new Date().getMonth()+2).toString();
+        let mes = (new Date().getMonth() + 2).toString();
         let anho = new Date().getFullYear();
         let data = {
             "movimiento": {
@@ -67,8 +67,8 @@ const CardDevoluciones = ({ almacenes }) => {
                 });
                 lista.push({ [calendario[mes]]: total });
             }
-            
-         
+
+
         }
         setItems(lista);
     };
@@ -81,9 +81,13 @@ const CardDevoluciones = ({ almacenes }) => {
                 <div className="card" style={{ width: "16rem" }}>
                     <ul className="list-group list-group-flush">
                         {items.map((item, index) => {
+
+                            let color = (item[Object.keys(item)[0]] >= 0) ? "text-secondary" : "text-red";
+                            let unidades = ((item[Object.keys(item)[0]]) || ((item[Object.keys(item)[0]]) == 0)) ? "und" : "-";
+
                             return (<li key={index} className="list-group-item d-flex justify-content-between">
                                 <div>{Object.keys(item)[0]}</div>
-                                <div>{item[Object.keys(item)[0]]}</div>
+                                <div className={color}>{item[Object.keys(item)[0]]} {unidades}</div>
                             </li>);
                         })}
                     </ul>
