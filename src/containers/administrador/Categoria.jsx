@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import axios from 'axios';
 //Services
 import endPoints from '@services/api';
-import { actualizarCategorias, buscarCategorias } from '@services/api/categorias';
+import { actualizarCategorias, buscarCategorias, filtrarCategorias, listarCategorias } from '@services/api/categorias';
 //Hooks
 import useAlert from '@hooks/useAlert';
 //Components
@@ -11,6 +11,7 @@ import Alertas from '@assets/Alertas';
 import Paginacion from '@components/Paginacion';
 //CSS
 import styles from '@styles/Listar.module.css';
+import useExcel from '@hooks/useExcel';
 
 
 
@@ -25,18 +26,21 @@ const Categoria = () => {
     const limit = 10;
 
     useEffect(() => {
-        async function listrasItems() {
-            const res = await axios.get(endPoints.categorias.pagination(pagination, limit)); //Debo crearlo
-            const total = await axios.get(endPoints.categorias.list);
-            setTotal(total.data.length);
-            setItems(res.data)
-        }
         try {
-            listrasItems()
+            listrasItems(pagination, limit).then((res) => {
+                setTotal(res.total);
+                setItems(res.data)
+            })
         } catch (e) {
             alert("Se ha producido un error al listar las categorías");
         }
     }, [alert, pagination])
+
+    async function listrasItems(page, limit) {
+        const nombre = buscardorRef.current.value
+        const res = await filtrarCategorias(page, limit, nombre)
+        return res
+    }
 
 
     const handleNuevo = () => {
@@ -50,19 +54,16 @@ const Categoria = () => {
     };
 
     const buscar = async () => {
-        const consecutivo = buscardorRef.current.value; consecutivo
-        const item = await buscarCategorias(consecutivo)
-        if (item == null) {
-            setAlert({
-                active: true,
-                mensaje: 'El almacen no existe',
-                color: "danger",
-                autoClose: true
-            })
-        } else {
-            setItems([item])
-            setTotal(1);
-        }
+        setPagination(1)
+        listrasItems(pagination, limit).then((res) => {
+            setTotal(res.total);
+            setItems(res.data)
+        })
+    }
+
+    const onDescargar = async () => {
+       const data = await listarCategorias()
+       useExcel(data, "Categorías", "Categorias")
     }
 
     const handleActivar = (item) => {
@@ -97,13 +98,15 @@ const Categoria = () => {
                         <button type="button" className="btn btn-danger btn-sm w-100">Eliminar</button>
                     </div>
                     <div className={styles.buscar}>
-                        <input ref={buscardorRef} className="form-control form-control-sm" type="text" placeholder="Buscar"></input>
+                        <input 
+                        ref={buscardorRef} 
+                        className="form-control form-control-sm" 
+                        type="text" 
+                        placeholder="Buscar"
+                        onChange={buscar}></input>
                     </div>
                     <div className={styles.botones}>
-                        <button onClick={buscar} type="button" className="btn btn-light btn-sm">Buscar</button>
-                    </div>
-                    <div className={styles.botones}>
-                        <button type="button" className="btn btn-light btn-sm">Ordenar</button>
+                        <button onClick={onDescargar} type="button" className="btn btn-light btn-sm w-100">Descargar lista</button>
                     </div>
                 </div>
 

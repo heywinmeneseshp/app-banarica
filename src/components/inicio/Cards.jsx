@@ -9,16 +9,19 @@ import CardAjustes from '@components/inicio/CardAjuste';
 
 //CSS
 import styles from '@styles/Card.module.css';
+import { useAuth } from '@hooks/useAuth';
+
+
 
 
 const Cards = () => {
-
+    const { almacenByUser } = useAuth();
     return (
         <>
             <div className={styles.superPadre}>
                 <div className={styles.padre}>
-                    <CardAjustes />
-                    <CardDevoluciones />
+                    <CardAjustes almacenes={almacenByUser.map(item => item.consecutivo)}/>
+                    <CardDevoluciones almacenes={almacenByUser.map(item => item.consecutivo)}/>
                     <CardLiquidacion />
                     <CardExportacion />
                 </div>

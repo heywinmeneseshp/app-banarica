@@ -10,11 +10,12 @@ import Alertas from '@assets/Alertas';
 //CSS
 import styles from '@styles/Listar.module.css';
 import NuevoCombo from '@components/administrador/NuevoCombo';
-import { actualizarCombos } from '@services/api/combos';
+import { actualizarCombos, listarCombos, paginarCombos } from '@services/api/combos';
+import useExcel from '@hooks/useExcel';
 
 
 const Combo = () => {
-    const buscardorRef = useRef(null);
+    const buscardorRef = useRef();
     const [item, setItem] = useState(null);
     const [items, setItems] = useState([]);
     const { alert, setAlert, toogleAlert } = useAlert();
@@ -24,19 +25,19 @@ const Combo = () => {
     const limit = 10;
 
     useEffect(() => {
-        async function listrasItems() {
-            const res = await axios.get(endPoints.combos.pagination(pagination, limit)); //Debo crearlo
-            const total = await axios.get(endPoints.combos.list);
-            setTotal(total.data.length);
-            setItems(res.data)
-        }
         try {
-            listrasItems()
+            listarItems(pagination, limit)
         } catch (e) {
             alert("Error al cargar los combos", "error")
         }
     }, [alert, pagination])
 
+    async function listarItems(page, limit) {
+        const nombre = buscardorRef.current.value
+        const res = await paginarCombos(page, limit, nombre)
+        setTotal(res.total);
+        setItems(res.data)
+    }
 
     const handleNuevo = () => {
         setOpen(true);
@@ -49,20 +50,14 @@ const Combo = () => {
     };
 
     const buscar = async () => {
-        const consecutivo = buscardorRef.current.value; 
-        const item = await buscarTransportadora(consecutivo)
-        if (item == null) {
-            setAlert({
-                active: true,
-                mensaje: 'El almacen no existe',
-                color: "danger",
-                autoClose: true
-            })
-        } else {
-            setItems([item])
-            setTotal(1);
-        }
+        setPagination(1)
+        listarItems(pagination, limit)
     }
+
+    const onDescargar = async () => {
+        const data = await listarCombos()
+        useExcel(data, "Combos", "Combos")
+     }
 
     const handleActivar = (item) => {
         try {
@@ -96,11 +91,16 @@ const Combo = () => {
                     <button type="button" className="btn btn-danger btn-sm w-100">Eliminar</button>
                 </div>
                 <div className={styles.buscar}>
-                    <input ref={buscardorRef} className="form-control form-control-sm" type="text" placeholder="Buscar"></input>
+                    <input 
+                    ref={buscardorRef} 
+                    className="form-control form-control-sm" 
+                    type="text" 
+                    placeholder="Buscar"
+                    onChange={buscar}></input>
                 </div>
                 <div className={styles.botones}>
-                    <button onClick={buscar} type="button" className="btn btn-light btn-sm w-100">Descargar lista</button>
-                </div>
+                        <button onClick={onDescargar} type="button" className="btn btn-light btn-sm w-100">Descargar lista</button>
+                    </div>
             </div>
 
             <table className="table">

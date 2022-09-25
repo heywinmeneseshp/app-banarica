@@ -54,13 +54,17 @@ const TableroB = () => {
 
             <div className={styles.superTablero}>
                 <div className={styles.tablero}>
-                    <div className={styles.miniTablero}>
+                    <div className='d-flex justify-content-between'>
                         {(user.id_rol == "Super administrador") &&
                             <button onClick={nuevoAviso} className={styles.circulo}>+</button>
                         }
                         <div>
                             <h5 className={styles.plus}>+ Avisos</h5>
                         </div>
+                    </div>
+
+                    <div className={styles.miniTablero}>
+
                         {avisos.map((aviso, index) => (
                             <Alert className={styles.alerta} key={index} variant="info">
                                 <span className={styles.eliminarAviso}>

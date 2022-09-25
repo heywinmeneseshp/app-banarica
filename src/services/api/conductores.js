@@ -13,26 +13,26 @@ const agregarConductor = async (Conductor) => {
     return response.data;
 }
 
-const eliminarConductor = async(consecutivo) => {
+const eliminarConductor = async (consecutivo) => {
     const res = await axios.delete(endPoints.conductores.delete(consecutivo));
     return res.data
 }
 
-const actualizarConductor = async(id, changes) => {
+const actualizarConductor = async (id, changes) => {
     const res = await axios.patch(endPoints.conductores.update(id), changes)
     return res.data
 }
 
-const buscarConductor = async(consecutivo) => {
+const buscarConductor = async (consecutivo) => {
     try {
-    const res = await axios.get(endPoints.conductores.findOne(consecutivo));
-    return res.data
+        const res = await axios.get(endPoints.conductores.findOne(consecutivo));
+        return res.data
     } catch (e) {
         alert("Se ha presentado un error al buscar el conductor")
-    } 
+    }
 }
 
-const listarConductores = async() => {
+const listarConductores = async () => {
     try {
         const res = await axios.get(endPoints.conductores.list);
         return res.data
@@ -41,4 +41,17 @@ const listarConductores = async() => {
     }
 }
 
-export { agregarConductor, eliminarConductor, actualizarConductor, buscarConductor, listarConductores };
+const paginarConductores = async (page, limit, nombre) => {
+    try {
+        const res = await axios.get(endPoints.conductores.pagination(page, limit, nombre))
+        return res.data
+    } catch {
+        alert("Error al paginar conductores")
+    }
+}
+
+export {
+    agregarConductor, eliminarConductor,
+    actualizarConductor, buscarConductor,
+    paginarConductores, listarConductores
+};

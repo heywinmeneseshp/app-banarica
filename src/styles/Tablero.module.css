@@ -6,28 +6,39 @@
 
 
 .tablero {
-    display: flex;
+    display: grid;
+    align-items:initial;
     justify-content: center;
     background-color: white;
     margin-left: 0px;
     margin-right: 0px;
     width: 480px;
-    height: 300px;
+    height: 310px;
     box-shadow: 0 0 8px rgb(210, 210, 210), inset 0 0.5px #b2b2b280;
     padding: 20px 10px 20px 20px;
+    position: relative;
 }
 
 .miniTablero{
-    width: 480px;
     overflow-y: auto;
-    height: 255px;
     padding-right: 10px;
-    position: relative;
+    width: 450px;
+    height: 223px;
+    margin-top: 8px;
 }
 
 .plus {
     font-weight: 750;
     margin-bottom: 10px;
+}
+
+.botonDespliegue{
+    display: block;
+    margin-right: 20px;
+}
+
+.botonDespliegue:focus{
+    box-shadow:0 0 0 0px #0d6efd !important;
 }
 
 .alert{
@@ -90,7 +101,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-right: 10px;
+    margin-right: 20px;
     color: white;
     font-weight: bold;
     position: absolute;

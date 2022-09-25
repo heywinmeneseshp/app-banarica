@@ -11,10 +11,10 @@ const config = {
 const agregarPedido = async (cons_pedido, item) => {
     const data = {
         cons_pedido: cons_pedido,
-		cons_producto: item.cons_producto,
-		cons_almacen_destino: item.cons_almacen_destino,
-		cantidad: item.cantidad
-    }    
+        cons_producto: item.cons_producto,
+        cons_almacen_destino: item.cons_almacen_destino,
+        cantidad: item.cantidad
+    }
     try {
         const response = await axios.post(endPoints.pedidos.create, data, config);
         return response.data;
@@ -23,7 +23,7 @@ const agregarPedido = async (cons_pedido, item) => {
     }
 }
 
-const agregarTablePedido =  async (data) => {
+const agregarTablePedido = async (data) => {
     try {
         const response = await axios.post(endPoints.pedidos.createTable, data, config)
         return response.data
@@ -47,7 +47,7 @@ const actualizarItemPedido = async (id, changes) => {
 }
 
 const actualizarPedido = async (consecutivo, changes) => {
-    try{
+    try {
         const res = await axios.patch(endPoints.pedidos.updatePedido(consecutivo), changes)
         return res.data
     } catch {
@@ -73,6 +73,24 @@ const buscarDocumetoPedido = async (consecutivo) => {
     }
 }
 
+const filtrarPedidos = async (offset, limit, cons_almacen, cons_categoria, producto_name, semana) => {
+    try {
+        const data = {
+            "page": offset,
+            "limit": limit,
+            "almacen": cons_almacen,
+            "cons_categoria": cons_categoria,
+            "producto": producto_name,
+            "semana": semana
+        }
+        const res = await axios.post(endPoints.pedidos.pagination, data)
+        return res.data
+    } catch {
+        alert("Error en el filtrado de los pedidos")
+    }
+
+}
+
 const listarPedidos = async () => {
     try {
         const res = await axios.get(endPoints.pedidos.list);
@@ -82,4 +100,14 @@ const listarPedidos = async () => {
     }
 }
 
-export { agregarPedido, eliminarPedido, actualizarPedido, actualizarItemPedido, buscarDocumetoPedido, buscarPedido, listarPedidos, agregarTablePedido };
+export {
+    agregarPedido,
+    eliminarPedido,
+    actualizarPedido,
+    actualizarItemPedido,
+    buscarDocumetoPedido,
+    buscarPedido,
+    listarPedidos,
+    agregarTablePedido,
+    filtrarPedidos
+};

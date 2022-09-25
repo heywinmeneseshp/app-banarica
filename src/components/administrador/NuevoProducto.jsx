@@ -173,7 +173,7 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
                             <div className={styles.grupo}>
                                 <label htmlFor="bulto">Unidades por bulto</label>
                                 <div>
-                                    <input defaultValue={producto?.bulto} type="text" className="form-control form-control-sm" name='bulto' id="bulto"></input>
+                                    <input defaultValue={producto?.bulto} type="text" className="form-control form-control-sm" name='bulto' id="bulto" required></input>
                                 </div>
                             </div>
                         </div>

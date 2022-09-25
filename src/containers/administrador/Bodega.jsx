@@ -26,7 +26,8 @@ const Bodega = () => {
 
     useEffect(() => {
         async function listarAlmacenes() {
-            const res = await axios.get(endPoints.almacenes.pagination(pagination, limit, "")); //Debo crearlo
+            const buscador = buscardorRef.current.value
+            const res = await axios.get(endPoints.almacenes.pagination(pagination, limit, buscador)); //Debo crearlo
             setTotal(res.data.total);
             setAlmacenes(res.data.data);
         }
@@ -49,6 +50,7 @@ const Bodega = () => {
     };
 
     const handleChangeBuscardor = async () => {
+        setPagination(1)
         const buscador = buscardorRef.current.value
         const res = await axios.get(endPoints.almacenes.pagination(pagination, limit, buscador))
         setTotal(res.data.total);

@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import axios from 'axios';
 //Services
 import endPoints from '@services/api';
-import { actualizarTransportadora, buscarTransportadora } from '@services/api/transportadoras';
+import { actualizarTransportadora, buscarTransportadora, listarTransportadoras, paginarTransportadora } from '@services/api/transportadoras';
 //Hooks
 import useAlert from '@hooks/useAlert';
 //Components
@@ -11,6 +11,7 @@ import Alertas from '@assets/Alertas';
 //CSS
 import styles from '@styles/Listar.module.css';
 import NuevoTransporte from '@components/administrador/NuevoTransporte';
+import useExcel from '@hooks/useExcel';
 
 
 const Transportadora = () => {
@@ -24,19 +25,15 @@ const Transportadora = () => {
     const limit = 10;
 
     useEffect(() => {
-        async function listrasItems() {
-            const res = await axios.get(endPoints.transportadoras.pagination(pagination, limit)); //Debo crearlo
-            const total = await axios.get(endPoints.transportadoras.list);
-            setTotal(total.data.length);
-            setItems(res.data)
-        }
-        try {
-            listrasItems()
-        } catch (e) {
-            alert("Error al cargar los transportadoras", "error")
-        }
+        listrasItems()
     }, [alert, pagination])
 
+    async function listrasItems() {
+        const nombre = buscardorRef.current.value
+        const res = await paginarTransportadora(pagination, limit, nombre)
+        setTotal(res.total);
+        setItems(res.data)
+    }
 
     const handleNuevo = () => {
         setOpen(true);
@@ -49,19 +46,13 @@ const Transportadora = () => {
     };
 
     const buscar = async () => {
-        const consecutivo = buscardorRef.current.value; consecutivo
-        const item = await buscarTransportadora(consecutivo)
-        if (item == null) {
-            setAlert({
-                active: true,
-                mensaje: 'El almacen no existe',
-                color: "danger",
-                autoClose: true
-            })
-        } else {
-            setItems([item])
-            setTotal(1);
-        }
+        setPagination(1)
+        listrasItems()
+    }
+
+    const onDescargar = async () => {
+       const data = await listarTransportadoras()
+       useExcel(data, "Transportadores", "Transportadores")
     }
 
     const handleActivar = (item) => {
@@ -96,13 +87,14 @@ const Transportadora = () => {
                         <button type="button" className="btn btn-danger btn-sm w-100">Eliminar</button>
                     </div>
                     <div className={styles.buscar}>
-                        <input ref={buscardorRef} className="form-control form-control-sm" type="text" placeholder="Buscar"></input>
+                        <input ref={buscardorRef} 
+                        className="form-control form-control-sm" 
+                        type="text" 
+                        placeholder="Buscar"
+                        onChange={buscar}></input>
                     </div>
                     <div className={styles.botones}>
-                        <button onClick={buscar} type="button" className="btn btn-light btn-sm">Buscar</button>
-                    </div>
-                    <div className={styles.botones}>
-                        <button type="button" className="btn btn-light btn-sm">Ordenar</button>
+                        <button onClick={onDescargar} type="button" className="btn btn-light btn-sm w-100">Descargar lista</button>
                     </div>
                 </div>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 //Services
 import endPoints from '@services/api';
@@ -16,7 +16,7 @@ import styles from '@styles/Listar.module.css';
 
 const Producto = () => {
 
-
+    const refBuscador = useRef()
     const [producto, setProducto] = useState(null);
     const [items, setItems] = useState([]);
     const { alert, setAlert, toogleAlert } = useAlert();
@@ -30,7 +30,8 @@ const Producto = () => {
 
     useEffect(() => {
         async function listrasItems() {
-            const res = await axios.get(endPoints.productos.pagination(pagination, limit, "")); //Debo crearlo
+            const buscador = refBuscador.current.value
+            const res = await axios.get(endPoints.productos.pagination(pagination, limit, buscador)); //Debo crearlo
             setTotal(res.data.total);
             setItems(res.data.data)           
         }
@@ -62,6 +63,7 @@ const Producto = () => {
     }
 
     const handleChangeBuscardor = async (e) => {
+        setPagination(1)
         const name = e.target.value;
         const res = await axios.get(endPoints.productos.pagination(pagination, limit, name)); //Debo crearlo
         setTotal(res.data.total);
@@ -120,6 +122,7 @@ const Producto = () => {
                         className="form-control form-control-sm w-90"
                         type="text"
                         placeholder="Buscar"
+                        ref={refBuscador}
                         onChange={handleChangeBuscardor}
                     ></input>
                 </div>

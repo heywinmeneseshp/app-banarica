@@ -17,6 +17,7 @@ export default function Alerta({ data }) {
     const router = useRouter();
     const { gestionNotificacion } = useContext(AppContext);
     const [color, setColor] = useState(null);
+    const [texto, setTexto] = useState("")
 
     const onButton = () => {
         gestionNotificacion.ingresarNotificacion(data)
@@ -29,15 +30,21 @@ export default function Alerta({ data }) {
 
     useEffect(() => {
         setColor("warning")
-        if (data.tipo_movimiento == "Pedido") setColor("success")
-        if (data.tipo_movimiento == "Liquidacion") setColor("danger")
+        let texto = data.tipo_movimiento;
+        if (data.tipo_movimiento == "Pedido") setColor("")
+        if (data.tipo_movimiento == "Liquidacion") {
+            setColor("danger")
+            texto = "Liquidación"
+        }
+        if (data.tipo_movimiento == "Devolucion") texto = "Devolución"
+        setTexto(texto)
     })
 
     return (
         <>
             <Alert className={styles.alert} key={color} variant={color}>
                 <div >
-                    <b>| {data.almacen_receptor} |</b> {data.tipo_movimiento} <b>{data.cons_movimiento}</b> {data.descripcion}
+                    <b>| {data.almacen_receptor} |</b> {texto} <b>{data.cons_movimiento}</b> {data.descripcion}
                 </div>
                 <div className={styles.cajaBoton}>
                     <button onClick={onButton} type="button" className="btn btn-success btn-sm">Ver</button>

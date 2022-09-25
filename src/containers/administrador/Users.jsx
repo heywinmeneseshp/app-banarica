@@ -39,6 +39,11 @@ const Users = () => {
         setUsuarios(res.data.data);
     }
 
+    const onChangeBuscador = () => {
+        setPagination(1)
+        listarUsurios()
+    } 
+
     const handleNuevo = async () => {
         setOpen(true);
         setUser(null)
@@ -86,7 +91,7 @@ const Users = () => {
                     <button type="button" className="btn btn-danger btn-sm w-100">Eliminar</button>
                 </div>
                 <div className={styles.buscar}>
-                    <input ref={buscardorRef} onChange={listarUsurios} className="form-control form-control-sm w-90" type="text" placeholder="Buscar"></input>
+                    <input ref={buscardorRef} onChange={onChangeBuscador} className="form-control form-control-sm w-90" type="text" placeholder="Buscar"></input>
                 </div>
                 <div className={styles.botones}>
                     <button onClick={onDescargar} type="button" className="btn btn-light btn-sm w-100">Descargar lista</button>

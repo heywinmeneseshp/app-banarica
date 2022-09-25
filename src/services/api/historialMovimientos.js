@@ -64,10 +64,21 @@ const listarHistorialMovimientoPaginado = async (page, limit) => {
     }
 }
 
+const filtrarHistorialenGeneral = async (body) => {
+    try{
+        const res = await axios.post(endPoints.historial.generalFilter, body);
+        return res.data
+    }catch{
+        alert("Error al realizar el filtrado")
+    }
+}
+
 export { agregarHistorial, 
     eliminarHistorial, 
     actualizarHistorial, 
     buscarHistorial, 
     listarHistorial, 
     filterHistorial,
-    listarHistorialMovimientoPaginado };
+    listarHistorialMovimientoPaginado,
+    filtrarHistorialenGeneral
+ };

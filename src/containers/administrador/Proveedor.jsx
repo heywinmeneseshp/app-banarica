@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import axios from 'axios';
 //Services
 import endPoints from '@services/api';
-import { actualizarProveedor, buscarProveedor } from '@services/api/proveedores';
+import { actualizarProveedor, buscarProveedor, listarProveedores, paginarProveedores } from '@services/api/proveedores';
 //Hooks
 import useAlert from '@hooks/useAlert';
 //Components
@@ -11,12 +11,13 @@ import NuevoProveedor from '@components/administrador/NuevoProveedor';
 import Alertas from '@assets/Alertas';
 //CSS
 import styles from '@styles/Listar.module.css';
+import useExcel from '@hooks/useExcel';
 
 
 
 
 const Proveedor = () => {
-    const buscardorRef = useRef(null);
+    const buscardorRef = useRef();
     const [item, setItem] = useState(null);
     const [items, setItems] = useState([]);
     const { alert, setAlert, toogleAlert } = useAlert();
@@ -26,18 +27,15 @@ const Proveedor = () => {
     const limit = 10;
 
     useEffect(() => {
-        async function listrasItems() {
-            const res = await axios.get(endPoints.proveedores.pagination(pagination, limit)); //Debo crearlo
-            const total = await axios.get(endPoints.proveedores.list);
-            setTotal(total.data.length);
-            setItems(res.data)
-        }
-        try {
-            listrasItems()
-        } catch (e) {
-            alert("Error al cargar los proveedores", "error")
-        }
+        listrasItems()
     }, [alert, pagination])
+
+    async function listrasItems() {
+        let nombre = buscardorRef.current.value
+        const res = await paginarProveedores(pagination, limit, nombre)
+        setItems(res.data)
+        setTotal(res.total)
+    }
 
     const handleNuevo = () => {
         setOpen(true);
@@ -50,19 +48,13 @@ const Proveedor = () => {
     };
 
     const buscar = async () => {
-        const consecutivo = buscardorRef.current.value; consecutivo
-        const item = await buscarProveedor(consecutivo)
-        if (item == null) {
-            setAlert({
-                active: true,
-                mensaje: 'El almacen no existe',
-                color: "danger",
-                autoClose: true
-            })
-        } else {
-            setItems([item])
-            setTotal(1);
-        }
+        setPagination(1)
+        listrasItems()
+    }
+
+    const onDescargar = async () => {
+        const data = await listarProveedores()
+        useExcel(data, "Proveedores", "Proveedores")
     }
 
     const handleActivar = (item) => {
@@ -98,13 +90,14 @@ const Proveedor = () => {
                         <button type="button" className="btn btn-danger btn-sm w-100">Eliminar</button>
                     </div>
                     <div className={styles.buscar}>
-                        <input ref={buscardorRef} className="form-control form-control-sm" type="text" placeholder="Buscar"></input>
+                        <input ref={buscardorRef}
+                            className="form-control form-control-sm"
+                            type="text"
+                            placeholder="Buscar"
+                            onChange={buscar}></input>
                     </div>
                     <div className={styles.botones}>
-                        <button onClick={buscar} type="button" className="btn btn-light btn-sm">Buscar</button>
-                    </div>
-                    <div className={styles.botones}>
-                        <button type="button" className="btn btn-light btn-sm">Ordenar</button>
+                        <button onClick={onDescargar} type="button" className="btn btn-light btn-sm w-100">Descargar lista</button>
                     </div>
                 </div>
 

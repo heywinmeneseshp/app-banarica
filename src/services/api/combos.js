@@ -12,26 +12,26 @@ const agregarCombos = async (body) => {
     return response.data;
 }
 
-const eliminarCombos = async(consecutivo) => {
+const eliminarCombos = async (consecutivo) => {
     const res = await axios.delete(endPoints.combos.delete(consecutivo));
     return res.data
 }
 
-const actualizarCombos = async(id, changes) => {
+const actualizarCombos = async (id, changes) => {
     const res = await axios.patch(endPoints.combos.update(id), changes)
     return res.data
 }
 
-const buscarCombos = async(consecutivo) => {
+const buscarCombos = async (consecutivo) => {
     try {
-    const res = await axios.get(endPoints.combos.findOne(consecutivo));
-    return res.data
+        const res = await axios.get(endPoints.combos.findOne(consecutivo));
+        return res.data
     } catch (e) {
         alert("Se ha presentado un error al buscar el combo")
-    } 
+    }
 }
 
-const buscarComboArmado = async(consecutivo) => {
+const buscarComboArmado = async (consecutivo) => {
     try {
         const res = await axios.get(endPoints.combos.findOneAsembled(consecutivo))
         return res.data
@@ -40,7 +40,7 @@ const buscarComboArmado = async(consecutivo) => {
     }
 }
 
-const listarCombos = async() => {
+const listarCombos = async () => {
     try {
         const res = await axios.get(endPoints.combos.list);
         return res.data
@@ -49,9 +49,27 @@ const listarCombos = async() => {
     }
 }
 
-const armarCombo = async(cons_combo, cons_producto) => {
-    const res = await axios.post(endPoints.combos.assemble, {cons_combo, cons_producto});
+const armarCombo = async (cons_combo, cons_producto) => {
+    const res = await axios.post(endPoints.combos.assemble, { cons_combo, cons_producto });
     return res.data
 }
 
-export { agregarCombos, eliminarCombos, actualizarCombos, buscarCombos, listarCombos, armarCombo, buscarComboArmado };
+const paginarCombos = async (page, limit, nombre) => {
+    try {
+        const res = await axios.get(endPoints.combos.pagination(page,limit,nombre))
+        return res.data
+    } catch {
+        alert("Error al paginar combos")
+    }
+}
+
+export {
+    agregarCombos,
+    eliminarCombos,
+    actualizarCombos,
+    buscarCombos,
+    listarCombos,
+    armarCombo,
+    buscarComboArmado,
+    paginarCombos
+};

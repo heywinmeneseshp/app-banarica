@@ -19,8 +19,8 @@ const agregarTransportadora = async (Transportadora) => {
 
 const eliminarTransportadora = async (consecutivo) => {
     try {
-    const res = await axios.delete(endPoints.transportadoras.delete(consecutivo));
-    return res.data
+        const res = await axios.delete(endPoints.transportadoras.delete(consecutivo));
+        return res.data
     } catch {
         alert("Error al eliminar transportadora")
     }
@@ -28,8 +28,8 @@ const eliminarTransportadora = async (consecutivo) => {
 
 const actualizarTransportadora = async (id, changes) => {
     try {
-    const res = await axios.patch(endPoints.transportadoras.update(id), changes)
-    return res.data
+        const res = await axios.patch(endPoints.transportadoras.update(id), changes)
+        return res.data
     } catch {
         alert("Error al actualizar la transportadora")
     }
@@ -53,4 +53,17 @@ const listarTransportadoras = async () => {
     }
 }
 
-export { agregarTransportadora, eliminarTransportadora, actualizarTransportadora, buscarTransportadora, listarTransportadoras };
+const paginarTransportadora = async (page, limit, nombre) => {
+    try {
+        const res = await axios.get(endPoints.transportadoras.pagination(page, limit, nombre))
+        return res.data
+    } catch {
+        alert("Error al paginar transportadoras")
+    }
+}
+
+export {
+    agregarTransportadora, eliminarTransportadora,
+    actualizarTransportadora, buscarTransportadora,
+    paginarTransportadora, listarTransportadoras
+};

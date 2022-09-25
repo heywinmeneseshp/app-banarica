@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import axios from 'axios';
 //Services
 import endPoints from '@services/api';
-import { actualizarConductor, buscarConductor } from '@services/api/conductores';
+import { actualizarConductor, buscarConductor, listarConductores, paginarConductores } from '@services/api/conductores';
 //Hooks
 import useAlert from '@hooks/useAlert';
 //Components
@@ -11,6 +11,7 @@ import Alertas from '@assets/Alertas';
 import NuevoConductor from '@components/administrador/NuevoConductor';
 //CSS
 import styles from '@styles/Listar.module.css';
+import useExcel from '@hooks/useExcel';
 
 const Conductor = () => {
     const buscardorRef = useRef(null);
@@ -23,19 +24,15 @@ const Conductor = () => {
     const limit = 10;
 
     useEffect(() => {
-        async function listrasItems() {
-            const res = await axios.get(endPoints.conductores.pagination(pagination, limit)); //Debo crearlo
-            const total = await axios.get(endPoints.conductores.list);
-            setTotal(total.data.length);
-            setItems(res.data)
-        }
-        try {
-            listrasItems()
-        } catch (e) {
-            alert("Error al cargar los conductores", "error")
-        }
+        listrasItems()
     }, [alert, pagination])
 
+    async function listrasItems() {
+        const nombre = buscardorRef.current.value
+        const res = await paginarConductores(pagination, limit, nombre)
+        setTotal(res.total);
+        setItems(res.data)
+    }
 
     const handleNuevo = () => {
         setOpen(true);
@@ -48,19 +45,13 @@ const Conductor = () => {
     };
 
     const buscar = async () => {
-        const consecutivo = buscardorRef.current.value; consecutivo
-        const item = await buscarConductor(consecutivo)
-        if (item == null) {
-            setAlert({
-                active: true,
-                mensaje: 'El almacen no existe',
-                color: "danger",
-                autoClose: true
-            })
-        } else {
-            setItems([item])
-            setTotal(1);
-        }
+        setPagination(1)
+        listrasItems()
+    }
+
+    const onDescargar = async () => {
+        const res = await listarConductores()
+        useExcel(res, "Conductores", "Conductores")
     }
 
     const handleActivar = (item) => {
@@ -96,13 +87,15 @@ const Conductor = () => {
                         <button type="button" className="btn btn-danger btn-sm w-100">Eliminar</button>
                     </div>
                     <div className={styles.buscar}>
-                        <input ref={buscardorRef} className="form-control form-control-sm" type="text" placeholder="Buscar"></input>
+                        <input 
+                        ref={buscardorRef} 
+                        className="form-control form-control-sm" 
+                        type="text" 
+                        placeholder="Buscar"
+                        onChange={buscar}></input>
                     </div>
                     <div className={styles.botones}>
-                        <button onClick={buscar} type="button" className="btn btn-light btn-sm">Buscar</button>
-                    </div>
-                    <div className={styles.botones}>
-                        <button type="button" className="btn btn-light btn-sm">Ordenar</button>
+                        <button onClick={onDescargar} type="button" className="btn btn-light btn-sm w-100">Descargar lista</button>
                     </div>
                 </div>
 

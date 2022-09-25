@@ -42,4 +42,20 @@ const listarCategorias = async () => {
     }
 }
 
-export { agregarCategorias, eliminarCategorias, actualizarCategorias, buscarCategorias, listarCategorias };
+const filtrarCategorias = async (page, limit, nombre) => {
+    try {
+        const res = await axios.get(endPoints.categorias.pagination(page, limit, nombre));
+        return res.data
+    } catch {
+        alert("Error al paginar categorías")
+    }
+}
+
+export {
+    agregarCategorias,
+    eliminarCategorias,
+    actualizarCategorias,
+    buscarCategorias,
+    listarCategorias,
+    filtrarCategorias
+};

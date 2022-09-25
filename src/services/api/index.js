@@ -37,7 +37,7 @@ const endPoints = {
         findOne: (id) => `${API}/api/${VERSION}/combos/${id}`,
         listAsembled: `${API}/api/${VERSION}/combos/listar`,
         findOneAsembled: (id) => `${API}/api/${VERSION}/combos/listar/${id}`,
-        pagination: (page, limit) => `${API}/api/${VERSION}/combos/paginar?page=${page}&limit=${limit}`,
+        pagination: (page, limit, nombre) => `${API}/api/${VERSION}/combos/paginar?page=${page}&limit=${limit}&nombre=${nombre}`,
         create: `${API}/api/${VERSION}/combos`,
         assemble: `${API}/api/${VERSION}/combos/listar`,
         update: (id) => `${API}/api/${VERSION}/combos/${id}`,
@@ -46,7 +46,7 @@ const endPoints = {
     categorias: {
         list: `${API}/api/${VERSION}/categorias`,
         findOne: (id) => `${API}/api/${VERSION}/categorias/${id}`,
-        pagination: (page, limit) => `${API}/api/${VERSION}/categorias/paginar?page=${page}&limit=${limit}`,
+        pagination: (page, limit, nombre) => `${API}/api/${VERSION}/categorias/paginar?page=${page}&limit=${limit}&nombre=${nombre}`,
         create: `${API}/api/${VERSION}/categorias/`,
         update: (id) => `${API}/api/${VERSION}/categorias/${id}`,
         delete: (id) => `${API}/api/${VERSION}/categorias/${id}`,
@@ -55,7 +55,7 @@ const endPoints = {
         list: `${API}/api/${VERSION}/proveedores`,
         findOne: (id) => `${API}/api/${VERSION}/proveedores/${id}`,
         create: `${API}/api/${VERSION}/proveedores`,
-        pagination: (page, limit) => `${API}/api/${VERSION}/proveedores/paginar?page=${page}&limit=${limit}`,
+        pagination: (page, limit, nombre) => `${API}/api/${VERSION}/proveedores/paginar?page=${page}&limit=${limit}&nombre=${nombre}`,
         update: (id) => `${API}/api/${VERSION}/proveedores/${id}`,
         delete: (id) => `${API}/api/${VERSION}/proveedores/${id}`,
     },
@@ -70,7 +70,7 @@ const endPoints = {
     transportadoras: {
         list: `${API}/api/${VERSION}/transportadoras`,
         findOne: (id) => `${API}/api/${VERSION}/transportadoras/${id}`,
-        pagination: (page, limit) => `${API}/api/${VERSION}/transportadoras/paginar?page=${page}&limit=${limit}`,
+        pagination: (page, limit, nombre) => `${API}/api/${VERSION}/transportadoras/paginar?page=${page}&limit=${limit}&nombre=${nombre}`,
         create: `${API}/api/${VERSION}/transportadoras`,
         update: (id) => `${API}/api/${VERSION}/transportadoras/${id}`,
         delete: (id) => `${API}/api/${VERSION}/transportadoras/${id}`,
@@ -78,7 +78,7 @@ const endPoints = {
     conductores: { //Crear
         list: `${API}/api/${VERSION}/conductores`,
         findOne: (id) => `${API}/api/${VERSION}/conductores/${id}`,
-        pagination: (page, limit) => `${API}/api/${VERSION}/conductores/paginar?page=${page}&limit=${limit}`,
+        pagination: (page, limit, nombre) => `${API}/api/${VERSION}/conductores/paginar?page=${page}&limit=${limit}&nombre=${nombre}`,
         create: `${API}/api/${VERSION}/conductores`,
         update: (id) => `${API}/api/${VERSION}/conductores/${id}`,
         delete: (id) => `${API}/api/${VERSION}/conductores/${id}`
@@ -103,7 +103,7 @@ const endPoints = {
         findOneAlmacen: (cons_almacen) => `${API}/api/${VERSION}/pedidos/filter/${cons_almacen}`,
         findOneProductInAll: (cons_producto) => `${API}/api/${VERSION}/pedidos/filter/product/${cons_producto}`,
         filterAlmacenAndProduct: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/pedidos/filter/${cons_almacen}/${cons_producto}`,
-        pagination: (page, limit) => `${API}/api/${VERSION}/pedidos/paginar?page=${page}&limit=${limit}`,
+        pagination: `${API}/api/${VERSION}/pedidos/paginar`,
         create: `${API}/api/${VERSION}/pedidos`,
         createTable: `${API}/api/${VERSION}/pedidos/listar`,
         findOneDocument: (consecutivo) => `${API}/api/${VERSION}/pedidos/listar/${consecutivo}`,
@@ -126,6 +126,7 @@ const endPoints = {
         list: `${API}/api/${VERSION}/historial-movimientos`, //Listo
         findOne: (consecutivo) => `${API}/api/${VERSION}/historial-movimientos/${consecutivo}`,
         filter: (consMovimiento) => `${API}/api/${VERSION}/historial-movimientos/filter?cons_movimiento=${consMovimiento}`,
+        generalFilter: `${API}/api/${VERSION}/historial-movimientos/filter`,
         pagination: (page, limit) => `${API}/api/${VERSION}/historial-movimientos/paginar?page=${page}&limit=${limit}`,
         create: `${API}/api/${VERSION}/historial-movimientos`,
         update: (id) => `${API}/api/${VERSION}/historial-movimientos/${id}`,

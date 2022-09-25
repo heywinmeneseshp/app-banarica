@@ -49,11 +49,31 @@ export default function RecibirTraslado({ movimiento }) {
             setProducts(res);
             let title = "+ Recibir traslado";
             if (traslado.estado == "Completado") title = `+ Traslado`;
-            setTraslado({...traslado, title: title});
+            setTraslado({ ...traslado, title: title });
             setObservaciones(traslado.observaciones);
         });
         setDate(generarFecha());
     }, [movimiento?.consecutivo]);
+
+    const rechazarTraslados = async () => {
+        try {
+            const formData = new FormData(formRef.current);
+            const respuesta = formData.get("observaciones");
+            const dataNotificacion = { descripcion: "Traslado rechazado", aprobado: true };
+            actualizarNotificaciones(gestionNotificacion.notificacion.id, dataNotificacion);
+            const data = { estado: "Rechazado", fecha_entrada: date, observaciones: respuesta };
+            actualizarTraslado(idTraslado, data);
+            setBool(true);
+            setAlert({
+                active: true,
+                mensaje: "Se ha rechazado el traslado",
+                color: "warning",
+                autoClose: false
+            });
+        } catch {
+            alert("Error, se presentó un problema al rechazar el traslado");
+        }
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -252,22 +272,29 @@ export default function RecibirTraslado({ movimiento }) {
                             disabled={(traslado?.estado == "Completado") || bool}
                         />
                     </InputGroup>
-                    {!bool && (traslado?.estado != "Completado") &&
-                        <div className={styles.contenedor6}>
-                            <div>
-                            </div>
-                            <div>
-                            </div>
-                            <div></div>
-                            <div></div>
-                            <div>
-                                <Button type="submit" className={styles.button} variant="success" size="sm">
-                                    Recibir traslado
-                                </Button>
-                            </div>
+          
+                       
+                        {!bool && (traslado?.estado != "Completado") &&
+                            <div className={styles.contenedor6}>
+                                <div>
+                                </div>
+                                <div>
+                                </div>
+                                <div></div>
+                                <div>
+                                    <Button type="button" onClick={rechazarTraslados} className={styles.button} variant="danger" size="sm">
+                                        Rechazar traslado
+                                    </Button>
+                                </div>
+                                <div>
+                                    <Button type="submit" className={styles.button} variant="success" size="sm">
+                                        Recibir traslado
+                                    </Button>
+                                </div>
 
-                        </div>
-                    }
+                            </div>
+                        }
+                
                 </form>
                 <Alertas alert={alert} handleClose={toogleAlert} />
             </Container>
