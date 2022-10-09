@@ -6,7 +6,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '@hooks/useAuth';
 import useAlert from '@hooks/useAlert';
 //Bootstrap
-import { Navbar } from 'react-bootstrap';
+import { Navbar, NavDropdown } from 'react-bootstrap';
 import { Nav } from 'react-bootstrap';
 import { Container } from 'react-bootstrap';
 import { DropdownButton } from 'react-bootstrap';
@@ -78,9 +78,52 @@ const Header = () => {
 
     return (
         <>
+
+
+
             <div className="header">
-                <Navbar bg="primary" variant="dark">
-                    <Container>
+                <Navbar className='justify' bg="primary" variant="dark">
+
+                    <div className='display-mobile' id="menuToggle">
+                        <input type="checkbox" />
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <ul id="menu">
+                            {(user?.id_rol == "Super administrador") &&
+                            <NavDropdown onClick={() => openMenu("admin")} title="Administrador" drop='end' id="nav-dropdown">
+                                <Dropdown.Item onClick={() => openWindow("usuarios")} >Usuarios</Dropdown.Item>
+                                <Dropdown.Item onClick={() => openWindow("productos")}>Productos</Dropdown.Item>
+                                <Dropdown.Item onClick={() => openWindow("combos")}>Combos</Dropdown.Item>
+                                <Dropdown.Item onClick={() => openWindow("categorias")}>Categorias</Dropdown.Item>
+                                <Dropdown.Item onClick={() => openWindow("proveedores")}>Proveedores</Dropdown.Item>
+                                <Dropdown.Item onClick={() => openWindow("bodegas")}>Almacenes</Dropdown.Item>
+                                <Dropdown.Item onClick={() => openWindow("transporte")}>Transporte</Dropdown.Item>
+                            </NavDropdown>}
+                            {(user.id_rol == "seguridad" || user.id_rol == "Super seguridad") &&
+                            <NavDropdown title="Seguridad" drop='end' id="nav-dropdown">
+                                <Dropdown.Item onClick={() => onSeguridad("/Recepcion")}>Recepción</Dropdown.Item>
+                                <Dropdown.Item onClick={() => onSeguridad("/Transferencias")}>Transferencias</Dropdown.Item>
+                                <Dropdown.Item onClick={() => onSeguridad("/Disponibles")}>Disponibles</Dropdown.Item>
+                                {user.id_rol == "Super seguridad" && <Dropdown.Item onClick={() => onSeguridad("/Usuarios")}>Usuarios</Dropdown.Item>}
+                            </NavDropdown>}
+                            <NavDropdown onClick={() => openMenu("almacen")} title="Almacén" drop='end' id="nav-dropdown">
+                                <Dropdown.Item onClick={initialAlmacenMenu.handleRecepcion}>Recepción</Dropdown.Item>
+                                <Dropdown.Item onClick={initialAlmacenMenu.handleTraslados}>Traslados</Dropdown.Item>
+                                <Dropdown.Item onClick={initialAlmacenMenu.handlePedidos}>Pedidos</Dropdown.Item>
+                                <Dropdown.Item onClick={initialAlmacenMenu.handleMovimientos}>Movimientos</Dropdown.Item>
+                            </NavDropdown>
+                            <NavDropdown onClick={() => openMenu("info")} title="Informes" drop='end' id="nav-dropdown">
+                                <Dropdown.Item onClick={initialInfoMenu.handleMovimientos}>Movimientos</Dropdown.Item>
+                                <Dropdown.Item onClick={initialInfoMenu.handleStock}>Stock</Dropdown.Item>
+                                <Dropdown.Item onClick={initialInfoMenu.handleTraslados}>Traslados</Dropdown.Item>
+                                <Dropdown.Item onClick={initialInfoMenu.handlePedidos}>Pedidos</Dropdown.Item>
+                            </NavDropdown>
+                        </ul>
+                    </div>
+
+
+                    <span className='display-desktop'>
                         <Navbar.Brand onClick={inicio}>Banarica</Navbar.Brand>
                         {initialMenu.navBar &&
                             <Nav className="me-auto">
@@ -94,12 +137,12 @@ const Header = () => {
                                         <Dropdown.Item onClick={() => openWindow("bodegas")}>Almacenes</Dropdown.Item>
                                         <Dropdown.Item onClick={() => openWindow("transporte")}>Transporte</Dropdown.Item>
                                     </DropdownButton>}
-                                {(user.username == "heywinmeneses" || user.id_rol == "seguridad" || user.id_rol == "Super seguridad" ) &&
-                                    <DropdownButton className={styles.itemMenu} id="dropdown-basic-button" title="Seguridad">
+                                {(user.id_rol == "seguridad" || user.id_rol == "Super seguridad") &&
+                                    <DropdownButton id="dropdown-basic-button" title="Seguridad">
                                         <Dropdown.Item onClick={() => onSeguridad("/Recepcion")}>Recepción</Dropdown.Item>
                                         <Dropdown.Item onClick={() => onSeguridad("/Transferencias")}>Transferencias</Dropdown.Item>
                                         <Dropdown.Item onClick={() => onSeguridad("/Disponibles")}>Disponibles</Dropdown.Item>
-                                        { user.id_rol == "Super seguridad" && <Dropdown.Item onClick={() => onSeguridad("/Usuarios")}>Usuarios</Dropdown.Item>}
+                                        {user.id_rol == "Super seguridad" && <Dropdown.Item onClick={() => onSeguridad("/Usuarios")}>Usuarios</Dropdown.Item>}
                                     </DropdownButton>}
 
                                 <DropdownButton onClick={() => openMenu("almacen")} className={styles.itemMenu} id="dropdown-basic-button" title="Almacén">
@@ -126,7 +169,9 @@ const Header = () => {
                             <Button onClick={handleProfile}>{user.nombre} {user.apellido}</Button>
                         </ButtonGroup>
 
-                    </Container>
+                    </span>
+
+
 
                 </Navbar>
                 {openNoti && <AsideNotificaciones setNotificaciones={setNotificaciones} notificaciones={notificaciones} />}
