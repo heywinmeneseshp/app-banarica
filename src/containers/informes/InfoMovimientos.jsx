@@ -220,13 +220,15 @@ export default function InfoMovimientos() {
                 <Table className={styles.tabla} striped bordered hover size="sm">
                     <thead>
                         <tr>
-                            <th>Cons</th>
-                            <th>Almacen</th>
+                            <th>Cons.</th>
+                            <th className={styles.display}>Almacén</th>
+                            <th className={styles.display_desktop}>Alm.</th>
                             <th>Artículo</th>
-                            <th>Unidades</th>
-                            <th>Movimiento</th>
+                            <th className={styles.display_desktop}>Und.</th>
+                            <th className={styles.display}>Unidades</th>
+                            <th className={styles.display}>Movimiento</th>
                             <th>Tipo</th>
-                            <th>Motivo</th>
+                            <th className={styles.display}>Motivo</th>
                             <th>Semana</th>
                             <th>Fecha</th>
                         </tr>
@@ -238,9 +240,9 @@ export default function InfoMovimientos() {
                                 <td>{item?.cons_almacen_gestor}</td>
                                 <td>{item?.Producto?.name}</td>
                                 <td>{item?.cantidad}</td>
-                                <td>{item?.cons_lista_movimientos}</td>
+                                <td className={styles.display}>{item?.cons_lista_movimientos}</td>
                                 {entradaOrSalida(item?.tipo_movimiento)}
-                                <td>{item?.razon_movimiento}</td>
+                                <td className={styles.display}>{item?.razon_movimiento}</td>
                                 <td>{item?.movimiento?.cons_semana}</td>
                                 <td>{item?.movimiento?.fecha}</td>
                             </tr>)

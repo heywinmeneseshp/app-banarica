@@ -72,6 +72,10 @@ const Header = () => {
         openMenu("inicio");
     };
 
+    const onSeguridad = (itemMenu) => {
+        router.push("/Seguridad" + itemMenu);
+    };
+
     return (
         <>
             <div className="header">
@@ -89,6 +93,13 @@ const Header = () => {
                                         <Dropdown.Item onClick={() => openWindow("proveedores")}>Proveedores</Dropdown.Item>
                                         <Dropdown.Item onClick={() => openWindow("bodegas")}>Almacenes</Dropdown.Item>
                                         <Dropdown.Item onClick={() => openWindow("transporte")}>Transporte</Dropdown.Item>
+                                    </DropdownButton>}
+                                {(user.username == "heywinmeneses" || user.id_rol == "seguridad" || user.id_rol == "Super seguridad" ) &&
+                                    <DropdownButton className={styles.itemMenu} id="dropdown-basic-button" title="Seguridad">
+                                        <Dropdown.Item onClick={() => onSeguridad("/Recepcion")}>Recepción</Dropdown.Item>
+                                        <Dropdown.Item onClick={() => onSeguridad("/Transferencias")}>Transferencias</Dropdown.Item>
+                                        <Dropdown.Item onClick={() => onSeguridad("/Disponibles")}>Disponibles</Dropdown.Item>
+                                        { user.id_rol == "Super seguridad" && <Dropdown.Item onClick={() => onSeguridad("/Usuarios")}>Usuarios</Dropdown.Item>}
                                     </DropdownButton>}
 
                                 <DropdownButton onClick={() => openMenu("almacen")} className={styles.itemMenu} id="dropdown-basic-button" title="Almacén">

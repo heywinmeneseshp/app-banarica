@@ -1,9 +1,9 @@
 import React, { useEffect } from "react";
 import { useRouter } from "next/router";
-import Devolucion from "@components/almacen/Devolucion";
 import ThirdLayout from 'layout/ThirdLayout';
+import Devolucion from "@components/almacen/Devolucion";
 
-export default function RDevolucion() {
+export default function RAjuste() {
     const router = useRouter();
 
     useEffect(() => {

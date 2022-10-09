@@ -1,8 +1,9 @@
 .main {
-    display: grid;
+    display: flex;
     justify-content: center;
-    min-height: 70vh;
+    min-height: 100vh;
     padding-top: 90px;
+    padding-bottom: 20px;
 }
 
 .header{
@@ -13,8 +14,22 @@
 }
 
 .footer {
-    padding: 2px;
-    min-height: 30vh;
+    display: grid;
+    justify-content: center;
+    align-items: center !important;
+    position: -webkit-sticky;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+	position: sticky;
+	bottom: 0;
+	z-index: 10;
+    background-color: #0d6efd;
+}
+
+
+.link{
+    cursor: pointer;
 }
 
 

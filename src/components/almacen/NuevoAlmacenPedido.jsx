@@ -87,7 +87,7 @@ export default function NuevoAlmacenPedido({ formRef }) {
 
                 <div className={styles.contenedor5}>
 
-                    <InputGroup size="sm" className="mb-3">
+                    <InputGroup size="sm">
                         <InputGroup.Text id="inputGroup-sizing-sm">Código alamcén</InputGroup.Text>
                         <Form.Control
                             aria-label="Small"
@@ -112,36 +112,43 @@ export default function NuevoAlmacenPedido({ formRef }) {
                             <div item={item} key={indexA}>
                                 <div className={styles.contenedor9} >
 
-                                    <InputGroup size="sm" className="mb-3">
-                                        <InputGroup.Text id="inputGroup-sizing-sm">Cod</InputGroup.Text>
-                                        <Form.Control
-                                            aria-label="Small"
-                                            aria-describedby="inputGroup-sizing-sm"
-                                            disabled={true}
-                                            defaultValue={consProducts[indexA]?.cons_producto}
-                                        />
+                                    <span className={styles.display}>
+                                        <InputGroup size="sm">
+                                            <InputGroup.Text id="inputGroup-sizing-sm">Cod</InputGroup.Text>
+                                            <Form.Control
+                                                aria-label="Small"
+                                                aria-describedby="inputGroup-sizing-sm"
+                                                disabled={true}
+                                                defaultValue={consProducts[indexA]?.cons_producto}
+                                            />
+                                        </InputGroup>
+                                    </span>
+
+                                    <InputGroup size="sm">
+                                        <InputGroup.Text id="inputGroup-sizing-sm">Artículo</InputGroup.Text>
+                                        <Form.Select onChange={() => handleSelect(indexA)} className={styles.select} id={"producto-" + indexA + "-" + almacen} name={"producto-" + indexA + "-" + almacen} size="sm" disabled={bool}>
+                                            {gestionPedido.productos.map((item, index) => (
+                                                <option key={index}>{item.name}</option>
+                                            ))}
+                                        </Form.Select>
                                     </InputGroup>
 
-                                    <Form.Select onChange={() => handleSelect(indexA)} className={styles.select} id={"producto-" + indexA + "-" + almacen} name={"producto-" + indexA + "-" + almacen} size="sm" disabled={bool}>
-                                        {gestionPedido.productos.map((item, index) => (
-                                            <option key={index}>{item.name}</option>
-                                        ))}
-                                    </Form.Select>
+                                    <span className={styles.display}>
+                                        <InputGroup size="sm">
+                                            <InputGroup.Text id="inputGroup-sizing-sm">Bultos</InputGroup.Text>
+                                            <Form.Control
+                                                onChange={() => handleSelect(indexA)}
+                                                aria-label="Small"
+                                                aria-describedby="inputGroup-sizing-sm"
+                                                id={"bulto-" + indexA + "-" + almacen} name={"bulto-" + indexA + "-" + almacen}
+                                                type="number"
+                                                disabled={bool}
+                                            />
 
-                                    <InputGroup size="sm" className="mb-3">
-                                        <InputGroup.Text id="inputGroup-sizing-sm">Bultos</InputGroup.Text>
-                                        <Form.Control
-                                            onChange={() => handleSelect(indexA)}
-                                            aria-label="Small"
-                                            aria-describedby="inputGroup-sizing-sm"
-                                            id={"bulto-" + indexA + "-" + almacen} name={"bulto-" + indexA + "-" + almacen}
-                                            type="number"
-                                            disabled={bool}
-                                        />
+                                        </InputGroup>
+                                    </span>
 
-                                    </InputGroup>
-
-                                    <InputGroup size="sm" className="mb-3">
+                                    <InputGroup size="sm">
                                         <InputGroup.Text id="inputGroup-sizing-sm">Cantidad</InputGroup.Text>
                                         <Form.Control
                                             aria-label="Small"
@@ -170,8 +177,8 @@ export default function NuevoAlmacenPedido({ formRef }) {
                             Remover producto
                         </Button>
                     </div>
-                    <div></div>
-                    <div></div>
+                    <div className={styles.display}></div>
+                    <div className={styles.display}></div>
                     <div>
                         <Button className={styles.button} onClick={cerrar} variant="warning" size="sm">
                             Cerrar pedido

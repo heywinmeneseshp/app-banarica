@@ -167,7 +167,8 @@ export default function Recepcion({ movimiento }) {
 
                     <div className={styles.contenedor8}>
 
-                        <InputGroup size="sm" className="mb-3">
+
+                        <InputGroup size="sm">
                             <InputGroup.Text id="inputGroup-sizing-sm">Consecutivo</InputGroup.Text>
                             <Form.Control
                                 aria-label="Small"
@@ -179,7 +180,7 @@ export default function Recepcion({ movimiento }) {
                             />
                         </InputGroup>
 
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm">
                             <InputGroup.Text id="inputGroup-sizing-sm">Almacén</InputGroup.Text>
                             <Form.Select
                                 id="almacen"
@@ -193,7 +194,7 @@ export default function Recepcion({ movimiento }) {
                             </Form.Select>
                         </InputGroup>
 
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm">
                             <InputGroup.Text id="inputGroup-sizing-sm">Remisión</InputGroup.Text>
                             <Form.Control
                                 aria-label="Small"
@@ -206,7 +207,7 @@ export default function Recepcion({ movimiento }) {
                             />
                         </InputGroup>
 
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm">
                             <InputGroup.Text id="inputGroup-sizing-sm">Pedido</InputGroup.Text>
                             <Form.Control
                                 aria-label="Small"
@@ -219,7 +220,7 @@ export default function Recepcion({ movimiento }) {
                             />
                         </InputGroup>
 
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm">
                             <InputGroup.Text id="inputGroup-sizing-sm">Fecha</InputGroup.Text>
                             <Form.Control
                                 aria-label="Small"
@@ -234,7 +235,7 @@ export default function Recepcion({ movimiento }) {
                         </InputGroup>
 
                         {!bool &&
-                            <InputGroup size="sm" className="mb-3">
+                            <InputGroup size="sm">
                                 <InputGroup.Text id="inputGroup-sizing-sm">Semana</InputGroup.Text>
                                 <Form.Control
                                     aria-label="Small"
@@ -250,7 +251,7 @@ export default function Recepcion({ movimiento }) {
                         }
 
                         {bool &&
-                            <InputGroup size="sm" className="mb-3">
+                            <InputGroup size="sm">
                                 <InputGroup.Text id="inputGroup-sizing-sm">Semana</InputGroup.Text>
                                 <Form.Control
                                     aria-label="Small"
@@ -273,17 +274,19 @@ export default function Recepcion({ movimiento }) {
                         <div key={key}>
                             <div className={styles.contenedor2} >
 
-                                <InputGroup size="sm" className="mb-3">
-                                    <InputGroup.Text id="inputGroup-sizing-sm">Cod</InputGroup.Text>
-                                    <Form.Control
-                                        aria-label="Small"
-                                        aria-describedby="inputGroup-sizing-sm"
-                                        disabled
-                                        id={`producto-${key}`}
-                                        name={`producto-${key}`}
-                                        defaultValue={product?.cons_producto}
-                                    />
-                                </InputGroup>
+                                <span className={styles.display}>
+                                    <InputGroup size="sm" className="mb-3">
+                                        <InputGroup.Text id="inputGroup-sizing-sm">Cod</InputGroup.Text>
+                                        <Form.Control
+                                            aria-label="Small"
+                                            aria-describedby="inputGroup-sizing-sm"
+                                            disabled
+                                            id={`producto-${key}`}
+                                            name={`producto-${key}`}
+                                            defaultValue={product?.cons_producto}
+                                        />
+                                    </InputGroup>
+                                </span>
 
                                 <InputGroup size="sm" className="mb-3">
                                     <InputGroup.Text id="inputGroup-sizing-sm">Artículo</InputGroup.Text>
@@ -337,17 +340,17 @@ export default function Recepcion({ movimiento }) {
                             <Button className={styles.button} onClick={removeProduct} variant="danger" size="sm">
                                 Remover artículo
                             </Button>
+                            <div className={styles.display}></div>
+                            <div className={styles.display}></div>
                             <div>
+
+                                <div>
+                                    <Button type='submit' className={styles.button} variant={!bool ? "success" : "warning"} size="sm">
+                                        {!bool ? "Cargar artículos" : "Modificar recepción"}
+                                    </Button>
+                                </div>
+
                             </div>
-
-                            <div></div>
-                            <div>
-                                <Button type='submit' className={styles.button} variant={!bool ? "success" : "warning"} size="sm">
-                                    {!bool ? "Cargar artículos" : "Modificar recepción"}
-                                </Button>
-                            </div>
-
-
                         </div>
                     }
                     <div className={styles.line}></div>

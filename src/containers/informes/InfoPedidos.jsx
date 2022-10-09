@@ -191,24 +191,24 @@ export default function InfoPedidos() {
                     <thead>
                         <tr>
                             <th>Cons.</th>
-                            <th>Cod</th>
+                            <th className={styles.display}>Cod.</th>
                             <th>Artículo</th>
                             <th>Cantidad</th>
                             <th>Destino</th>
                             <th>Semana</th>
-                            <th>Fecha</th>
+                            <th className={styles.display}>Fecha</th>
                         </tr>
                     </thead>
                     <tbody>
                         {pedidos.map((pedido, index) => (
                             <tr key={index}>
                                 <td>{pedido?.cons_pedido}</td>
-                                <td>{pedido?.cons_producto}</td>
+                                <td className={styles.display}>{pedido?.cons_producto}</td>
                                 <td>{pedido?.producto?.name}</td>
                                 <td>{pedido?.cantidad}</td>
                                 <td>{pedido?.almacen?.nombre}</td>
                                 <td>{pedido?.tabla?.cons_semana}</td>
-                                <td>{pedido?.tabla?.fecha}</td>
+                                <td className={styles.display}>{pedido?.tabla?.fecha}</td>
                             </tr>
                         ))}
                     </tbody>

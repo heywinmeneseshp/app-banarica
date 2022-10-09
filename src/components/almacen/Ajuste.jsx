@@ -157,17 +157,19 @@ export default function Ajuste({ exportacion, movimiento }) {
                     <h2>{titulo}</h2>
                     <div className={styles.contenedor7}>
 
-                        <InputGroup size="sm" className="mb-3">
-                            <InputGroup.Text id="inputGroup-sizing-sm">Consecutivo</InputGroup.Text>
-                            <Form.Control
-                                id="consecutivo"
-                                name="consecutivo"
-                                aria-label="Small"
-                                aria-describedby="inputGroup-sizing-sm"
-                                defaultValue={consMovimiento}
-                                disabled={true}
-                            />
-                        </InputGroup>
+                        <span className={styles.display}>
+                            <InputGroup size="sm" className="mb-3">
+                                <InputGroup.Text id="inputGroup-sizing-sm">Consecutivo</InputGroup.Text>
+                                <Form.Control
+                                    id="consecutivo"
+                                    name="consecutivo"
+                                    aria-label="Small"
+                                    aria-describedby="inputGroup-sizing-sm"
+                                    defaultValue={consMovimiento}
+                                    disabled={true}
+                                />
+                            </InputGroup>
+                        </span>
 
                         <InputGroup size="sm" className="mb-3">
                             <InputGroup.Text id="inputGroup-sizing-sm">Almacén</InputGroup.Text>
@@ -214,6 +216,8 @@ export default function Ajuste({ exportacion, movimiento }) {
                                     aria-label="Small"
                                     aria-describedby="inputGroup-sizing-sm"
                                     id="semana"
+                                    min="1"
+                                    max="52"
                                     name="semana"
                                     type="number"
                                     required
@@ -245,17 +249,19 @@ export default function Ajuste({ exportacion, movimiento }) {
                         <div key={key}>
                             <div className={styles.contenedor2} >
 
-                                <InputGroup size="sm" className="mb-3">
-                                    <InputGroup.Text id="inputGroup-sizing-sm">Cod</InputGroup.Text>
-                                    <Form.Control
-                                        aria-label="Small"
-                                        aria-describedby="inputGroup-sizing-sm"
-                                        disabled
-                                        id={`cons-producto-${key}`}
-                                        name={`cons-producto-${key}`}
-                                        defaultValue={prodcuctsCons[key]?.cons_producto}
-                                    />
-                                </InputGroup>
+                                <span className={styles.display}>
+                                    <InputGroup size="sm" className="mb-3">
+                                        <InputGroup.Text id="inputGroup-sizing-sm">Cod</InputGroup.Text>
+                                        <Form.Control
+                                            aria-label="Small"
+                                            aria-describedby="inputGroup-sizing-sm"
+                                            disabled
+                                            id={`cons-producto-${key}`}
+                                            name={`cons-producto-${key}`}
+                                            defaultValue={prodcuctsCons[key]?.cons_producto}
+                                        />
+                                    </InputGroup>
+                                </span>
 
                                 <InputGroup size="sm" className="mb-3">
                                     <InputGroup.Text id="inputGroup-sizing-sm">Artículo</InputGroup.Text>
@@ -313,8 +319,8 @@ export default function Ajuste({ exportacion, movimiento }) {
                                     Remover producto
                                 </Button>
                             </div>
-                            <div></div>
-                            <div></div>
+                            <div className={styles.display}></div>
+                            <div className={styles.display}></div>
                             <div>
                                 <Button type="submit" className={styles.button} variant="danger" size="sm">
                                     Ajustar

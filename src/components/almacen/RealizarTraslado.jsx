@@ -152,12 +152,12 @@ export default function RealizarTraslado() {
     return (
         <>
 
-            <Container className={styles.contTraslados} >
-                <Alertas alert={alert} handleClose={toogleAlert} />
+            <Container>
+               
                 <form ref={formRef} onSubmit={handleSubmit}>
                     <h2>+ Realizar traslado</h2>
                     <div className={styles.contenedor1}>
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm">
                             <InputGroup.Text id="inputGroup-sizing-sm">Consecutivo</InputGroup.Text>
                             <Form.Control
                                 aria-label="Small"
@@ -169,7 +169,7 @@ export default function RealizarTraslado() {
                             />
                         </InputGroup>
 
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm">
                             <InputGroup.Text id="inputGroup-sizing-sm">Origen</InputGroup.Text>
                             <Form.Select
                                 id="origen"
@@ -184,7 +184,7 @@ export default function RealizarTraslado() {
                             </Form.Select>
                         </InputGroup>
 
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm">
                             <InputGroup.Text id="inputGroup-sizing-sm">Destino</InputGroup.Text>
                             <Form.Select
                                 id="destino"
@@ -199,7 +199,7 @@ export default function RealizarTraslado() {
                             </Form.Select>
                         </InputGroup>
 
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm">
                             <InputGroup.Text id="inputGroup-sizing-sm">Fecha de envío</InputGroup.Text>
                             <Form.Control
                                 id="fecha"
@@ -213,11 +213,9 @@ export default function RealizarTraslado() {
                             />
                         </InputGroup>
 
-                    </div>
 
-                    <div className={styles.contenedor0}>
 
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm">
                             <InputGroup.Text id="inputGroup-sizing-sm">Semana</InputGroup.Text>
                             <Form.Control
                                 aria-label="Small"
@@ -225,12 +223,14 @@ export default function RealizarTraslado() {
                                 id="semana"
                                 name="semana"
                                 type="number"
+                                min="1"
+                                max="52"
                                 required
                                 disabled={bool}
                             />
                         </InputGroup>
 
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm">
                             <InputGroup.Text id="inputGroup-sizing-sm">Transportadora</InputGroup.Text>
                             <Form.Select
                                 id="transportadora"
@@ -244,7 +244,7 @@ export default function RealizarTraslado() {
                             </Form.Select>
                         </InputGroup>
 
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm">
                             <InputGroup.Text id="inputGroup-sizing-sm">Conductor</InputGroup.Text>
                             <Form.Select
                                 id="conductor"
@@ -258,7 +258,7 @@ export default function RealizarTraslado() {
                             </Form.Select>
                         </InputGroup>
 
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm">
                             <InputGroup.Text id="inputGroup-sizing-sm">Vehículo</InputGroup.Text>
                             <Form.Control
                                 id="vehiculo"
@@ -279,17 +279,19 @@ export default function RealizarTraslado() {
                         <div item={item} key={key}>
                             <div className={styles.contenedor2} >
 
-                                <InputGroup size="sm" className="mb-3">
-                                    <InputGroup.Text id="inputGroup-sizing-sm">Cod</InputGroup.Text>
-                                    <Form.Control
-                                        aria-label="Small"
-                                        aria-describedby="inputGroup-sizing-sm"
-                                        disabled
-                                        id={`producto-${key}`}
-                                        name={`producto-${key}`}
-                                        defaultValue={prodcuctsCons[key]}
-                                    />
-                                </InputGroup>
+                                <span className={styles.display}>
+                                    <InputGroup size="sm" className="mb-3">
+                                        <InputGroup.Text id="inputGroup-sizing-sm">Cod</InputGroup.Text>
+                                        <Form.Control
+                                            aria-label="Small"
+                                            aria-describedby="inputGroup-sizing-sm"
+                                            disabled
+                                            id={`producto-${key}`}
+                                            name={`producto-${key}`}
+                                            defaultValue={prodcuctsCons[key]}
+                                        />
+                                    </InputGroup>
+                                </span>
 
                                 <InputGroup size="sm" className="mb-3">
                                     <InputGroup.Text id="inputGroup-sizing-sm">Artículo</InputGroup.Text>
@@ -328,8 +330,8 @@ export default function RealizarTraslado() {
                                     Remover producto
                                 </Button>
                             </div>
-                            <div></div>
-                            <div></div>
+                            <div className={styles.display}></div>
+                            <div className={styles.display}></div>
                             <div>
                                 <Button type="submit" className={styles.button} variant="success" size="sm">
                                     Enviar artículos
@@ -339,7 +341,7 @@ export default function RealizarTraslado() {
                         </div>
                     }
                 </form>
-
+                <Alertas alert={alert} handleClose={toogleAlert} />
             </Container>
         </>
     );

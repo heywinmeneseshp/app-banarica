@@ -99,9 +99,9 @@ export default function Pedidos() {
                 <form ref={formRef} onSubmit={handleSubmit} >
                     <h2>+ Crear pedido</h2>
 
-                    <div className={styles.contenedor1}>
+                    <div className={styles.contenedor0}>
 
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm">
                             <InputGroup.Text id="inputGroup-sizing-sm">Consecutivo</InputGroup.Text>
                             <Form.Control
                                 aria-label="Small"
@@ -111,7 +111,7 @@ export default function Pedidos() {
                             />
                         </InputGroup>
 
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm">
                             <InputGroup.Text id="inputGroup-sizing-sm">Fecha</InputGroup.Text>
                             <Form.Control
                                 aria-label="Small"
@@ -125,7 +125,7 @@ export default function Pedidos() {
                             />
                         </InputGroup>
 
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm">
                             <InputGroup.Text id="inputGroup-sizing-sm">Semana</InputGroup.Text>
                             <Form.Control
                                 type="number"
@@ -149,7 +149,7 @@ export default function Pedidos() {
                     ))}
 
                     <div className={styles.line}></div>
-                    <InputGroup size="sm" className="mb-3">
+                    <InputGroup className="mb-3" size="sm">
                         <InputGroup.Text id="inputGroup-sizing-sm">Observaciones</InputGroup.Text>
                         <Form.Control
                             aria-label="Small"
@@ -157,28 +157,31 @@ export default function Pedidos() {
                             id="observaciones"
                             name="observaciones"
                             defaultValue={observaciones}
+                            required
                             disabled={bool}
                         />
                     </InputGroup>
+    
                     <div className={styles.line}></div>
                     {!bool &&
                         <div className={styles.contenedor6}>
-                            <div>
-                                {(user.id_rol == "Super administrador" || user.id_rol == "Administrador") &&
-                                    <Button className={styles.button} onClick={addDeposit} variant="info" size="sm">
-                                        Agregar almacén
-                                    </Button>
-                                }
-                            </div>
-                            <div>
-                                {(user.id_rol == "Super administrador" || user.id_rol == "Administrador") &&
-                                    <Button className={styles.buttonB} onClick={removeDeposit} size="sm">
-                                        Remover Alamcén
-                                    </Button>
-                                }
-                            </div>
-                            <div></div>
-                            <div></div>
+
+                            {(user.id_rol == "Super administrador" || user.id_rol == "Administrador") &&
+                                <Button className={styles.button} onClick={addDeposit} variant="info" size="sm">
+                                    Agregar almacén
+                                </Button>
+                            }
+
+
+                            {(user.id_rol == "Super administrador" || user.id_rol == "Administrador") &&
+                                <Button className={styles.buttonB} onClick={removeDeposit} size="sm">
+                                    Remover Alamcén
+                                </Button>
+                            }
+                            <div className={styles.display}></div>
+                            <div className={styles.display}></div>
+                            {!(user.id_rol == "Super administrador" || user.id_rol == "Administrador") && <div className={styles.display}></div>}
+                            {!(user.id_rol == "Super administrador" || user.id_rol == "Administrador") && <div className={styles.display}></div>}
                             <div>
                                 <Button type='submit' className={styles.button} variant="success" size="sm">
                                     Cargar productos

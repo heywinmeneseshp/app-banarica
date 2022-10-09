@@ -214,11 +214,12 @@ export default function InfoTraslados() {
                             <th>Origen</th>
                             <th>Destino</th>
                             <th>Artículo</th>
-                            <th>Cantidad</th>
+                            <th className={styles.display}>Cantidad</th>
+                            <th className={styles.display_desktop}>Cant.</th>
                             <th>Semana</th>
                             <th>Estado</th>
-                            <th>Salida</th>
-                            <th>Entrada</th>
+                            <th className={styles.display}>Salida</th>
+                            <th className={styles.display}>Entrada</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -231,8 +232,8 @@ export default function InfoTraslados() {
                                 <td>{traslado?.cantidad}</td>
                                 <td>{traslado?.traslado?.semana}</td>
                                 <td>{traslado?.traslado?.estado}</td>
-                                <td>{traslado?.traslado?.fecha_salida}</td>
-                                <td>{traslado?.traslado?.fecha_entrada}</td>
+                                <td className={styles.display}>{traslado?.traslado?.fecha_salida}</td>
+                                <td className={styles.display}>{traslado?.traslado?.fecha_entrada}</td>
                             </tr>
                         ))}
                     </tbody>

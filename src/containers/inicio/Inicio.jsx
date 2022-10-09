@@ -15,11 +15,17 @@ export default function Inicio() {
 
     return (
         <>
+<div className='container'>
+
             <div className={styles.contenedorTableros}>
                 <TableroA />
                 <TableroB />
             </div>
-            <Cards></Cards>
+
+
+</div>
+
+<Cards></Cards>
         </>
     )
 }

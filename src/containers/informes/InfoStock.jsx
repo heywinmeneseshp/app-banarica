@@ -197,7 +197,7 @@ export default function InfoStock() {
                     <thead>
                         <tr>
                             <th>Cod. Al</th>
-                            <th>Almacen</th>
+                            <th className={styles.display}>Almacén</th>
                             <th>Cod. Cat</th>
                             <th>Cod. Art</th>
                             <th>Artículo</th>
@@ -208,7 +208,7 @@ export default function InfoStock() {
                         {stock.map((item, index) => (
                             <tr key={index}>
                                 <td>{item?.cons_almacen}</td>
-                                <td>{item?.almacen?.nombre}</td>
+                                <td className={styles.display}>{item?.almacen?.nombre}</td>
                                 <td>{item?.producto?.cons_categoria}</td>
                                 <td>{item?.cons_producto}</td>
                                 <td>{item?.producto?.name}</td>

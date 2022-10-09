@@ -110,7 +110,7 @@ export default function RecibirTraslado({ movimiento }) {
 
     return (
         <>
-            <Container className={styles.contTraslados} >
+            <Container>
                 <form ref={formRef} onSubmit={handleSubmit}>
                     <h2>{traslado.title}</h2>
                     <div className={styles.contenedor1}>

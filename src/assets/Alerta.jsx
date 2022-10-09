@@ -1,5 +1,4 @@
 import React, { useContext, useEffect, useState } from "react";
-import { useAuth } from "@hooks/useAuth";
 import { useRouter } from "next/router";
 import endPoints from "@services/api";
 import AppContext from "@context/AppContext";
@@ -13,7 +12,6 @@ import styles from "@styles/almacen/almacen.module.css";
 
 
 export default function Alerta({ data }) {
-    const { user } = useAuth()
     const router = useRouter();
     const { gestionNotificacion } = useContext(AppContext);
     const [color, setColor] = useState(null);
@@ -43,11 +41,17 @@ export default function Alerta({ data }) {
     return (
         <>
             <Alert className={styles.alert} key={color} variant={color}>
-                <div >
-                    <b>| {data.almacen_receptor} |</b> {texto} <b>{data.cons_movimiento}</b> {data.descripcion}
-                </div>
-                <div className={styles.cajaBoton}>
-                    <button onClick={onButton} type="button" className="btn btn-success btn-sm">Ver</button>
+                <span className={styles.boton_desktop}>
+                    <div >
+                        <b>| {data.almacen_receptor} |</b> {texto} <b>{data.cons_movimiento}</b> {data.descripcion}
+                    </div>
+                    <div className={styles.cajaBoton}>
+                        <button onClick={onButton} type="button" className="btn btn-success btn-sm w-100">Ver</button>
+                    </div>
+                </span>
+
+                <div className={styles.boton_mobile} onClick={onButton}>
+                    <b>| {`${data.almacen_receptor}`} | </b> {` ${texto}`} {`${data.cons_movimiento}`} {data.descripcion}
                 </div>
             </Alert>
         </>

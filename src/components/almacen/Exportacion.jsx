@@ -76,7 +76,7 @@ export default function Ajuste() {
                 arrayPost.push({ cons_combo: consCombo, cantidad: cantidad });
             });
             setProducts(lista);
-            exportCombo(body, arrayPost).then(res =>{
+            exportCombo(body, arrayPost).then(res => {
                 setConsMovimiento(res.movimiento.consecutivo);
                 const dataNotificacion = {
                     almacen_emisor: consAlmacen,
@@ -89,7 +89,7 @@ export default function Ajuste() {
                 };
                 agregarNotificaciones(dataNotificacion);
             });
-           
+
             setBool(true);
             setAlert({
                 active: true,
@@ -114,17 +114,19 @@ export default function Ajuste() {
                     <h2>Exportación</h2>
                     <div className={styles.contenedor7}>
 
-                        <InputGroup size="sm" className="mb-3">
-                            <InputGroup.Text id="inputGroup-sizing-sm">Consecutivo</InputGroup.Text>
-                            <Form.Control
-                                id="consecutivo"
-                                name="consecutivo"
-                                aria-label="Small"
-                                aria-describedby="inputGroup-sizing-sm"
-                                defaultValue={consMovimiento}
-                                disabled={true}
-                            />
-                        </InputGroup>
+                        <span className={styles.display}>
+                            <InputGroup size="sm" className="mb-3">
+                                <InputGroup.Text id="inputGroup-sizing-sm">Consecutivo</InputGroup.Text>
+                                <Form.Control
+                                    id="consecutivo"
+                                    name="consecutivo"
+                                    aria-label="Small"
+                                    aria-describedby="inputGroup-sizing-sm"
+                                    defaultValue={consMovimiento}
+                                    disabled={true}
+                                />
+                            </InputGroup>
+                        </span>
 
                         <InputGroup size="sm" className="mb-3">
                             <InputGroup.Text id="inputGroup-sizing-sm">Almacén</InputGroup.Text>
@@ -175,6 +177,8 @@ export default function Ajuste() {
                                     id="semana"
                                     name="semana"
                                     type="number"
+                                    min="1"
+                                    max="52"
                                     required
                                     disabled={bool}
                                     defaultValue={semana}
@@ -204,17 +208,19 @@ export default function Ajuste() {
                         <div key={key}>
                             <div className={styles.contenedor2} >
 
-                                <InputGroup size="sm" className="mb-3">
-                                    <InputGroup.Text id="inputGroup-sizing-sm">Cod</InputGroup.Text>
-                                    <Form.Control
-                                        aria-label="Small"
-                                        aria-describedby="inputGroup-sizing-sm"
-                                        disabled
-                                        id={`cons-producto-${key}`}
-                                        name={`cons-producto-${key}`}
-                                        defaultValue={product.cons_producto}
-                                    />
-                                </InputGroup>
+                                <span className={styles.display}>
+                                    <InputGroup size="sm" className="mb-3">
+                                        <InputGroup.Text id="inputGroup-sizing-sm">Cod</InputGroup.Text>
+                                        <Form.Control
+                                            aria-label="Small"
+                                            aria-describedby="inputGroup-sizing-sm"
+                                            disabled
+                                            id={`cons-producto-${key}`}
+                                            name={`cons-producto-${key}`}
+                                            defaultValue={product.cons_producto}
+                                        />
+                                    </InputGroup>
+                                </span>
 
                                 <InputGroup size="sm" className="mb-3">
                                     <InputGroup.Text id="inputGroup-sizing-sm">Artículo</InputGroup.Text>
@@ -272,8 +278,8 @@ export default function Ajuste() {
                                     Remover producto
                                 </Button>
                             </div>
-                            <div></div>
-                            <div></div>
+                            <div className={styles.display}></div>
+                            <div className={styles.display}></div>
                             <div>
                                 <Button type="submit" className={styles.button} variant="info" size="sm">
                                     Exportar

@@ -20,9 +20,9 @@ export default function ThirdLayout({ children }) {
             <>
                 <Header />
                 <main className={styles.main}>
-                    <div >{children}</div>
+                    <div className='container'>{children}</div>
                 </main>
-                <Footer />
+                <Footer/>
             </>
         );
     }

@@ -8,7 +8,7 @@ import { actualizarUsuario, agregarUsuario, cargarAlmacenesPorUsuario } from '@s
 import styles from '@styles/NewUser.module.css';
 import axios from 'axios';
 
-export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
+export default function NuevoUsuario({ setAlert, setOpen, user, profile, autorizacion }) {
     const formRef = useRef(null);
     const [checkedState, setcheckedState] = useState([]);
     const [almacenes, setAlmacenes] = useState([]);
@@ -253,10 +253,12 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                                     <label htmlFor="id_rol">Rol</label>
                                     <div>
                                         <select defaultValue={user?.id_rol} id="id_rol" name="id_rol" className="form-select form-select-sm">
-                                            <option>Super administrador</option>
-                                            <option>Administrador</option>
-                                            <option>Oficinista</option>
-                                            <option>Operador</option>
+                                        {(autorizacion != "Super seguridad") && <option>Super administrador</option>}
+                                            {(autorizacion != "Super seguridad") && <option>Administrador</option>}
+                                            {(autorizacion != "Super seguridad") && <option>Oficinista</option>}
+                                            {(autorizacion != "Super seguridad") && <option>Operador</option>}
+                                            {(autorizacion != "Super seguridad") && <option>Super seguridad</option> }
+                                            {(autorizacion == "Super seguridad") && <option>Seguridad</option> }
                                         </select>
                                     </div>
                                 </div>}
@@ -328,10 +330,9 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                                     </div>
                                 </div>
 
-
-
                             </span>
                         }
+
                         <span >
                             {!profile &&
                                 <span>
