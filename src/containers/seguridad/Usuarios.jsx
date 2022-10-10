@@ -13,6 +13,7 @@ import useExcel from "@hooks/useExcel"
 //Bootstrap
 //CSS
 import styles from '@styles/Listar.module.css';
+import { listarUsuariosSeguridad } from '@services/api/seguridad';
 
 const Usuarios = () => {
     const buscardorRef = useRef(null);
@@ -33,11 +34,12 @@ const Usuarios = () => {
         }
     }, [alert, pagination])
 
+
     async function listarUsurios() {
         const username = buscardorRef.current.value
-        const res = await axios.get(endPoints.usuarios.pagination(pagination, limit, username));
-        setTotal(res.data.total);
-        setUsuarios(res.data.data);
+        const res = await listarUsuariosSeguridad(pagination, limit, username)
+        setTotal(res.total);
+        setUsuarios(res.data);
     }
 
     const onChangeBuscador = () => {

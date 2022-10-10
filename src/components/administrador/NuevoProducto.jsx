@@ -36,6 +36,9 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
                     });
                 });
                 setcheckedState(array);
+                setPermitir_traslados(producto.permitir_traslados);
+                setSerial(producto.serial);
+                setSalida_sin_stock(producto.salida_sin_stock);
             } else {
                 setcheckedState(array);
             }
@@ -78,12 +81,11 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
     const handleSubmit = (e) => {
         e.preventDefault();
         const formData = new FormData(formRef.current);
-        const categoria = categorias.find(item => item.nombre === formData.get('categoria'));
         const proveedor = proveedores.find(item => item.razon_social === formData.get('proveedor'));
         const data = {
             name: formData.get('name'),
             bulto: formData.get('bulto'),
-            cons_categoria: categoria.consecutivo,
+            cons_categoria: formData.get('categoria'),
             cons_proveedor: proveedor.consecutivo,
             salida_sin_stock: salida_sin_stock,
             serial: serial,
@@ -96,7 +98,7 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
             try {
                 agregarProducto(data).then((res) => {
                     almacenes.map((almacen, index) => {
-                        crearStock(almacen.consecutivo, res.consecutivo, checkedState[index]);
+                        crearStock(almacen.consecutivo, res.consecutivo, !checkedState[index]);
                     });
                 });
                 setAlert({
@@ -154,9 +156,9 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
                             <div className={styles.grupo}>
                                 <label htmlFor="categoria">Categoría</label>
                                 <div>
-                                    <select defaultValue={producto?.cons_categoria} id="categoria" name='categoria' className="form-select form-select-sm">
+                                    <select defaultValue={producto?.cons_categoria} id="categoria" name='categoria' className="form-select form-select-sm">                                       
                                         {categorias.map((categoria, index) => {
-                                            return <option key={index}>{categoria.nombre}</option>;
+                                            return <option key={index} value={categoria.consecutivo}>{categoria.nombre}</option>;
                                         })}
                                     </select>
                                 </div>

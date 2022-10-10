@@ -257,7 +257,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile, autoriz
                                             {(autorizacion != "Super seguridad") && <option>Administrador</option>}
                                             {(autorizacion != "Super seguridad") && <option>Oficinista</option>}
                                             {(autorizacion != "Super seguridad") && <option>Operador</option>}
-                                            {(autorizacion != "Super seguridad") && <option>Super seguridad</option> }
+                                            {(autorizacion == "Super seguridad") && <option>Super seguridad</option> }
                                             {(autorizacion == "Super seguridad") && <option>Seguridad</option> }
                                         </select>
                                     </div>

@@ -171,6 +171,13 @@ const endPoints = {
         stock: `${API}/api/${VERSION}/documentos/stock`,
         movimientos: (consecutivo, tipo_movimiento) => `${API}/api/${VERSION}/documentos/movimiento/${consecutivo}/${tipo_movimiento}`,
         traslados: (consecutivo) => `${API}/api/${VERSION}/documentos/traslado/${consecutivo}`
+    },
+    seguridad: {
+        listarProductos:  `${API}/api/${VERSION}/seguridad/listar-articulos`,
+        listarSeriales: `${API}/api/${VERSION}/seguridad/seriales`,
+        listarUsuarios: `${API}/api/${VERSION}/seguridad/usuarios`,
+        ActualizarSeriales: `${API}/api/${VERSION}/seguridad/actualizar-seriales`,
+        CargarSeriales: `${API}/api/${VERSION}/seguridad/cargar-seriales`,
     }
 }
 

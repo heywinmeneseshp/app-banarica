@@ -10,9 +10,9 @@ export default function Transferencias() {
             <section>
                 <h2>Transferencias</h2>
                 <div className={styles.grid_tranferencias}>
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text" id="inputGroup-sizing-sm">Orígen</span>
-                        <select class="form-select form-select-sm" aria-label=".form-select-sm example">
+                    <div className="input-group input-group-sm">
+                        <span className="input-group-text" id="inputGroup-sizing-sm">Orígen</span>
+                        <select className="form-select form-select-sm" aria-label=".form-select-sm example">
                             <option selected>Open this select menu</option>
                             <option value="1">One</option>
                             <option value="2">Two</option>
@@ -20,9 +20,9 @@ export default function Transferencias() {
                         </select>
                     </div>
 
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text" id="inputGroup-sizing-sm">Destino</span>
-                        <select class="form-select form-select-sm" aria-label=".form-select-sm example">
+                    <div className="input-group input-group-sm">
+                        <span className="input-group-text" id="inputGroup-sizing-sm">Destino</span>
+                        <select className="form-select form-select-sm" aria-label=".form-select-sm example">
                             <option selected>Open this select menu</option>
                             <option value="1">One</option>
                             <option value="2">Two</option>
@@ -30,9 +30,9 @@ export default function Transferencias() {
                         </select>
                     </div>
 
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text" id="inputGroup-sizing-sm">Artículo</span>
-                        <select class="form-select form-select-sm" aria-label=".form-select-sm example">
+                    <div className="input-group input-group-sm">
+                        <span className="input-group-text" id="inputGroup-sizing-sm">Artículo</span>
+                        <select className="form-select form-select-sm" aria-label=".form-select-sm example">
                             <option selected>Sobrante</option>
                             <option value="1">One</option>
                             <option value="2">Two</option>
@@ -40,32 +40,32 @@ export default function Transferencias() {
                         </select>
                     </div>
 
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text" id="inputGroup-sizing-sm">Serial</span>
-                        <input type="text" class="form-control" aria-label="Sizing example input"
+                    <div className="input-group input-group-sm">
+                        <span className="input-group-text" id="inputGroup-sizing-sm">Serial</span>
+                        <input type="text" className="form-control" aria-label="Sizing example input"
                             aria-describedby="inputGroup-sizing-sm"></input>
                     </div>
 
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text" id="inputGroup-sizing-sm">S Pack</span>
-                        <input type="text" class="form-control" aria-label="Sizing example input"
+                    <div className="input-group input-group-sm">
+                        <span className="input-group-text" id="inputGroup-sizing-sm">S Pack</span>
+                        <input type="text" className="form-control" aria-label="Sizing example input"
                             aria-describedby="inputGroup-sizing-sm"></input>
                     </div>
 
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text" id="inputGroup-sizing-sm">M Pack</span>
-                        <input type="text" class="form-control" aria-label="Sizing example input"
+                    <div className="input-group input-group-sm">
+                        <span className="input-group-text" id="inputGroup-sizing-sm">M Pack</span>
+                        <input type="text" className="form-control" aria-label="Sizing example input"
                             aria-describedby="inputGroup-sizing-sm"></input>
                     </div>
 
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text" id="inputGroup-sizing-sm">L Pack</span>
-                        <input type="text" class="form-control" aria-label="Sizing example input"
+                    <div className="input-group input-group-sm">
+                        <span className="input-group-text" id="inputGroup-sizing-sm">L Pack</span>
+                        <input type="text" className="form-control" aria-label="Sizing example input"
                             aria-describedby="inputGroup-sizing-sm"></input>
                     </div>
 
-                    <div class="input-group input-group-sm">
-                        <button ttype="button" class="btn btn-primary btn-sm w-100">Buscar artículos</button>
+                    <div className="input-group input-group-sm">
+                        <button ttype="button" className="btn btn-primary btn-sm w-100">Buscar artículos</button>
                     </div>
 
                 </div>
@@ -74,25 +74,25 @@ export default function Transferencias() {
                 <div>
 
                     <div className={styles.grid_result}>
-                        <div class={styles.botonesTrans}>
+                        <div className={styles.botonesTrans}>
                             <span className={styles.grid_result_child2}>
-                                <input type="number" class="form-control form-control-sm" id="exampleFormControlInput1"
+                                <input type="number" className="form-control form-control-sm" id="exampleFormControlInput1"
                                     placeholder="80"></input>
-                                <span class="mb-2 mt-2">Resultados de 100</span>
+                                <span className="mb-2 mt-2">Resultados de 100</span>
                             </span>
                             <span></span>
                             <span></span>
-                            <button type="button" class="btn btn-success btn-sm w-100">Descargar Excel</button>
+                            <button type="button" className="btn btn-success btn-sm w-100">Descargar Excel</button>
                         </div>
                     </div>
 
                     <span className={styles.tabla_text}>
                    
-                        <table class="table mb-4 table-striped cont_tabla">
+                        <table className="table mb-4 table-striped cont_tabla">
                             <thead>
                                 <tr>
                                     <th scope="row">
-                                        <input class="form-check-input" type="checkbox" id="inlineCheckbox1" value="option1"></input>
+                                        <input className="form-check-input" type="checkbox" id="inlineCheckbox1" value="option1"></input>
                                     </th>
                                     <th scope="col">Artículo</th>
                                     <th scope="col">Serial</th>
@@ -104,7 +104,7 @@ export default function Transferencias() {
                             <tbody>
                                 <tr>
                                     <th scope="row">
-                                        <input class="form-check-input" type="checkbox" id="inlineCheckbox1" value="option1"></input>
+                                        <input className="form-check-input" type="checkbox" id="inlineCheckbox1" value="option1"></input>
                                     </th>
                                     <td>Termógrafo</td>
                                     <td>KJS234HS0</td>
@@ -114,7 +114,7 @@ export default function Transferencias() {
                                 </tr>
                                 <tr>
                                     <th scope="row">
-                                        <input class="form-check-input" type="checkbox" id="inlineCheckbox1" value="option1"></input>
+                                        <input className="form-check-input" type="checkbox" id="inlineCheckbox1" value="option1"></input>
                                     </th>
                                     <td>Termógrafo</td>
                                     <td>KJS234HS0</td>
@@ -124,7 +124,7 @@ export default function Transferencias() {
                                 </tr>
                                 <tr>
                                     <th scope="row">
-                                        <input class="form-check-input" type="checkbox" id="inlineCheckbox1" value="option1"></input>
+                                        <input className="form-check-input" type="checkbox" id="inlineCheckbox1" value="option1"></input>
                                     </th>
                                     <td>Termógrafo</td>
                                     <td>KJS234HS0</td>

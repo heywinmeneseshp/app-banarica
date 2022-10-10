@@ -8,4 +8,5 @@ const useExcel = (data, sheet_name, book_name) => {
     XLSX.writeFile(book, `${book_name} ${useDate()}.xlsx`)
 };
 
+
 export default useExcel;
