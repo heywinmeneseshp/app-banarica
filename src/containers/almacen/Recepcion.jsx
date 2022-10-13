@@ -23,7 +23,6 @@ import AlertaPedido from "@assets/AlertaPedido";
 import styles from "@styles/almacen/almacen.module.css";
 
 export default function Recepcion({ movimiento }) {
-    const { gestionNotificacion } = useContext(AppContext);
     const formRef = useRef(null);
     const { almacenByUser } = useAuth();
     const [products, setProducts] = useState([1]);
@@ -156,6 +155,20 @@ export default function Recepcion({ movimiento }) {
             })
         }
     }
+
+    const nuevoMovimiento = () => {
+        setProducts([1]);
+        setBool(false);
+        setConsAlmacen(null);
+        setConsecutivo(null);
+        setSemana(null);
+        setObservaciones(null);
+        setRemision(null);
+        setPedido(null);
+        setAlert({
+            active: false,
+        })
+    }
     return (
         <>
             <form ref={formRef} onSubmit={handleSubmit}>
@@ -240,6 +253,8 @@ export default function Recepcion({ movimiento }) {
                                 <Form.Control
                                     aria-label="Small"
                                     aria-describedby="inputGroup-sizing-sm"
+                                    min="1"
+                                    max="52"
                                     id="semana"
                                     name="semana"
                                     type="number"
@@ -330,29 +345,33 @@ export default function Recepcion({ movimiento }) {
                         </InputGroup>
                     </div>
 
-                    {!bool &&
-                        <div className={styles.contenedor6}>
-                            <div>
-                                <Button className={styles.button} onClick={addProduct} variant="primary" size="sm">
-                                    Agregar artículo
-                                </Button>
-                            </div>
-                            <Button className={styles.button} onClick={removeProduct} variant="danger" size="sm">
-                                Remover artículo
-                            </Button>
-                            <div className={styles.display}></div>
-                            <div className={styles.display}></div>
-                            <div>
 
-                                <div>
-                                    <Button type='submit' className={styles.button} variant={!bool ? "success" : "warning"} size="sm">
-                                        {!bool ? "Cargar artículos" : "Modificar recepción"}
-                                    </Button>
-                                </div>
-
-                            </div>
+                    <div className={styles.contenedor6}>
+                        <div>
+                            {!bool && <Button className={styles.button} onClick={addProduct} variant="primary" size="sm">
+                                Agregar artículo
+                            </Button>}
                         </div>
-                    }
+                        {!bool && <Button className={styles.button} onClick={removeProduct} variant="danger" size="sm">
+                            Remover artículo
+                        </Button>}
+                        <div className={styles.display}></div>
+                        <div className={styles.display}></div>
+                        {bool && <div className={styles.display}></div>}
+                        <div>
+
+                            <div>
+                                {!bool && <Button type='submit' className={styles.button} variant="success" size="sm">
+                                    Cargar artículos
+                                </Button>}
+                                {bool && <Button type='submit' onClick={nuevoMovimiento} className={styles.button} variant="primary" size="sm">
+                                    Nueva recepción
+                                </Button>}
+                            </div>
+
+                        </div>
+                    </div>
+
                     <div className={styles.line}></div>
                     <Alertas alert={alert} handleClose={toogleAlert} />
                 </Container>

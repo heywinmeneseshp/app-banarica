@@ -92,6 +92,19 @@ export default function Pedidos() {
         setBool(true)
     }
 
+    const nuevoMovimiento = () => {
+        setDeposits([]);
+        setConsPedido(null);
+        setBool(false);
+        setObservaciones(null);
+        setAlert({
+            active: false
+        })
+        setTimeout(()=>{
+            setDeposits([1])
+        }, 50)
+    }
+
     return (
         <>
             <Container className={styles.contenedorPadre}>
@@ -161,35 +174,44 @@ export default function Pedidos() {
                             disabled={bool}
                         />
                     </InputGroup>
-    
+
                     <div className={styles.line}></div>
-                    {!bool &&
-                        <div className={styles.contenedor6}>
 
-                            {(user.id_rol == "Super administrador" || user.id_rol == "Administrador") &&
-                                <Button className={styles.button} onClick={addDeposit} variant="info" size="sm">
+                    <div className={styles.contenedor6}>
+
+                        {(user.id_rol == "Super administrador" || user.id_rol == "Administrador") &&
+                            <span>
+                                {bool && <span></span>}
+                                {!bool && <Button className={styles.button} onClick={addDeposit} variant="info" size="sm">
                                     Agregar almacén
-                                </Button>
-                            }
+                                </Button>}
+                            </span>
+                        }
 
 
-                            {(user.id_rol == "Super administrador" || user.id_rol == "Administrador") &&
-                                <Button className={styles.buttonB} onClick={removeDeposit} size="sm">
+                        {(user.id_rol == "Super administrador" || user.id_rol == "Administrador") &&
+                            <span>
+                                {bool && <span></span>}
+                                {!bool && <Button className={styles.buttonB} onClick={removeDeposit} size="sm">
                                     Remover Alamcén
-                                </Button>
-                            }
-                            <div className={styles.display}></div>
-                            <div className={styles.display}></div>
-                            {!(user.id_rol == "Super administrador" || user.id_rol == "Administrador") && <div className={styles.display}></div>}
-                            {!(user.id_rol == "Super administrador" || user.id_rol == "Administrador") && <div className={styles.display}></div>}
-                            <div>
-                                <Button type='submit' className={styles.button} variant="success" size="sm">
-                                    Cargar productos
-                                </Button>
-                            </div>
-
+                                </Button>}
+                            </span>
+                        }
+                        <div className={styles.display}></div>
+                        <div className={styles.display}></div>
+                        {!(user.id_rol == "Super administrador" || user.id_rol == "Administrador") && <div className={styles.display}></div>}
+                        {!(user.id_rol == "Super administrador" || user.id_rol == "Administrador") && <div className={styles.display}></div>}
+                        <div>
+                            {!bool && <Button type='submit' className={styles.button} variant="success" size="sm">
+                                Cargar productos
+                            </Button>}
+                            {bool && <Button type='submit' onClick={nuevoMovimiento} className={styles.button} variant="primary" size="sm">
+                                Nuevo pedido
+                            </Button>}
                         </div>
-                    }
+
+                    </div>
+
                     {bool && <Alertas alert={alert} handleClose={toogleAlert} />}
                 </form>
             </Container>

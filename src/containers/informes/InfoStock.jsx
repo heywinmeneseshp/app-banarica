@@ -159,8 +159,8 @@ export default function InfoStock() {
                                 onClick={onBuscar}
                             >
                                 <option value={""}>All</option>
-                                {categorias.map(item => (
-                                    <option value={item?.consecutivo}>{item?.nombre}</option>
+                                {categorias.map((item, index) => (
+                                    <option key={index} value={item?.consecutivo}>{item?.nombre}</option>
                                 ))}
                             </select>
                         </div>

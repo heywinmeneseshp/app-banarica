@@ -107,6 +107,22 @@ export default function Ajuste() {
         }
         setBool(true);
     };
+
+    const nuevoMovimiento = () => {
+        setBool(false);
+        setConsMovimiento([]);
+        setAlmacen(null);
+        setSemana(null);
+        setObservaciones("");
+        setProducts([]);
+        setTimeout(()=>{
+            setProducts([1]);
+        }, 50);
+        setAlert({
+            active: false,
+        });
+    };
+
     return (
         <>
             <Container>
@@ -266,27 +282,30 @@ export default function Ajuste() {
                         </InputGroup>
 
                     </div>
-                    {!bool &&
-                        <div className={styles.contenedor6}>
-                            <div>
-                                <Button className={styles.button} onClick={addProduct} variant="primary" size="sm">
-                                    Añadir producto
-                                </Button>
-                            </div>
-                            <div>
-                                <Button className={styles.button} onClick={removeProduct} variant="danger" size="sm">
-                                    Remover producto
-                                </Button>
-                            </div>
-                            <div className={styles.display}></div>
-                            <div className={styles.display}></div>
-                            <div>
-                                <Button type="submit" className={styles.button} variant="info" size="sm">
-                                    Exportar
-                                </Button>
-                            </div>
+
+                    <div className={styles.contenedor6}>
+                        <div>
+                            {!bool && <Button className={styles.button} onClick={addProduct} variant="primary" size="sm">
+                                Añadir producto
+                            </Button>}
                         </div>
-                    }
+                        <div>
+                            {!bool && <Button className={styles.button} onClick={removeProduct} variant="danger" size="sm">
+                                Remover producto
+                            </Button>}
+                        </div>
+                        <div className={styles.display}></div>
+                        <div className={styles.display}></div>
+                        <div>
+                            {!bool && <Button type="submit" className={styles.button} variant="info" size="sm">
+                                Exportar
+                            </Button>}
+                            {bool && <Button type="button" onClick={nuevoMovimiento} className={styles.button} variant="primary" size="sm">
+                                Nueva exportación
+                            </Button>}
+                        </div>
+                    </div>
+
                 </form>
                 <Alertas alert={alert} handleClose={toogleAlert} />
             </Container>

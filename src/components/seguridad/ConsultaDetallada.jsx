@@ -13,6 +13,7 @@ export default function ConsultaResumen({ data, setPagination, limit, pagination
     const [total, setTotal] = useState(0);
 
     useEffect(() => {
+        console.log(data);
         listarSeriales(pagination, limit, data).then(res =>{
             setTabla(res.data);
             setTotal(res.total);
@@ -49,7 +50,6 @@ export default function ConsultaResumen({ data, setPagination, limit, pagination
                                 <td className={styles.display}>{item.available == true ? "Disponible" : "Usado"}</td>
                             </tr>
                         ))}
-
                     </tbody>
                 </table>
                 <span className="container">

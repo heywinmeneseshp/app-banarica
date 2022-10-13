@@ -29,7 +29,16 @@ function useProviderAuth() {
             axios.defaults.headers.Authorization = 'Bearer ' + data.token
             const res = await axios.get(endPoints.auth.profile);
             setUser(res.data.usuario)
-            setAlmacenByUser(res.data.almacenes);
+            const almacenes = res.data.almacenes.sort((a, b) => {
+                if (a.nombre == b.nombre) {
+                  return 0;
+                }
+                if (a.nombre < b.nombre) {
+                  return -1;
+                }
+                return 1;
+              });
+            setAlmacenByUser(almacenes);
             router.push('/');
         } catch (e) {
             alert('Contraseña o usuario incorrecto');

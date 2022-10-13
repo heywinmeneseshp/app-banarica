@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import readXlsxFile from "read-excel-file";
 import { useRef } from "react";
 
+import useDate from "@hooks/useDate";
+
 
 //CSS
 import styles from "@styles/Seguridad.module.css";
@@ -11,18 +13,23 @@ import useFile from "@hooks/useFile";
 import useExcel from "@hooks/useExcel";
 import Alertas from "@assets/Alertas";
 import useAlert from "@hooks/useAlert";
+import { InputGroup, Form } from "react-bootstrap";
+import useSemana from "@hooks/useSemana";
 
 
 
 export default function Recepcion() {
     const almacenRef = useRef()
     const articuloRef = useRef()
+    const formRef = useRef()
     const { almacenByUser } = useAuth()
     const [archivoExcel, setArchivoExcel] = useState([])
     const [tabla, setTabla] = useState([])
     const [productos, setProductos] = useState([])
     const [limit, setLimit] = useState(0)
     const { alert, setAlert, toogleAlert } = useAlert();
+    const [archivoBruto, setArchivoBruto] = useState(null);
+    const [bool, setBool] = useState(false)
 
     useEffect(() => {
         listarProductosSeguridad().then(res => {
@@ -31,7 +38,9 @@ export default function Recepcion() {
     }, [])
 
     function subirExcel(e) {
-        readXlsxFile(e.target.files[0]).then((rows) => {
+        const archivo = e.target.files[0]
+        readXlsxFile(archivo).then((rows) => {
+            setArchivoBruto(rows)
             const cons_almacen = almacenRef.current.value;
             const cons_prodcuto = articuloRef.current.value;
             const response = useFile().ordenarExcelSerial(rows, cons_almacen, cons_prodcuto)
@@ -41,6 +50,19 @@ export default function Recepcion() {
             setTabla(res)
         })
         setLimit(5)
+    }
+
+    function previsualizar() {
+        if (archivoExcel.length != 0) {
+            const cons_almacen = almacenRef.current.value;
+            const cons_prodcuto = articuloRef.current.value;
+            const file = ["0"].concat(archivoBruto)
+            const response = useFile().ordenarExcelSerial(file, cons_almacen, cons_prodcuto)
+            setArchivoExcel(response)
+            let tabla = response
+            const res = tabla.slice(0, limit)
+            setTabla(res)
+        }
     }
 
     function decargarPlantilla() {
@@ -62,19 +84,38 @@ export default function Recepcion() {
         setTabla(res)
     }
 
-    async function cargarDatos() {
+    async function cargarDatos(e) {
+        e.preventDefault();
         try {
-            await cargarSeriales(archivoExcel);
-            setAlert({
-                active: true,
-                mensaje: "Se han cargado los datos con éxito",
-                color: "success",
-                autoClose: false
-            })
+            const formData = new FormData(formRef.current);
+            const remision = formData.get("remision");
+            const pedido = formData.get("pedido");
+            const semana = useSemana(formData.get("semana"));
+            const fecha = formData.get("fecha");
+            const observaciones = formData.get("observaciones");
+            const res = await cargarSeriales(archivoExcel, remision, pedido, semana, fecha, observaciones);
+            if (res.bool == true) {
+                setBool(true)
+                setAlert({
+                    active: true,
+                    mensaje: res.message,
+                    color: "success",
+                    autoClose: false
+                })
+            } else {
+                setAlert({
+                    active: true,
+                    mensaje: res.message,
+                    color: "danger",
+                    autoClose: false
+                })
+            }
+            
+           
         } catch (e) {
-            setAlert({
+           return setAlert({
                 active: true,
-                mensaje: e,
+                mensaje: "Error, quizá existan seriales repetidos.",
                 color: "danger",
                 autoClose: false
             })
@@ -87,40 +128,114 @@ export default function Recepcion() {
             <section>
                 <h2>Recepción</h2>
 
-                <div className={styles.grid_recepcion}>
+                <form ref={formRef} onSubmit={cargarDatos} className={styles.grid_recepcion}>
                     <div className="input-group input-group-sm">
                         <span className="input-group-text" id="inputGroup-sizing-sm">Alamcén</span>
                         <select className="form-select form-select-sm"
                             aria-label=".form-select-sm example"
                             id="almacen"
                             name="almacen"
+                            onChange={previsualizar}
+                            disabled={bool}
                             ref={almacenRef}>
                             {almacenByUser.map((item, index) => (
                                 <option key={index} value={item.consecutivo}>{item.nombre}</option>
                             ))}
                         </select>
                     </div>
+
+                    <InputGroup size="sm">
+                        <InputGroup.Text id="inputGroup-sizing-sm">Remisión</InputGroup.Text>
+                        <Form.Control
+                            aria-label="Small"
+                            aria-describedby="inputGroup-sizing-sm"
+                            id="remision"
+                            name="remision"
+                            required
+                            disabled={bool}
+                        />
+                    </InputGroup>
+
+                    <InputGroup size="sm">
+                        <InputGroup.Text id="inputGroup-sizing-sm">Pedido</InputGroup.Text>
+                        <Form.Control
+                            aria-label="Small"
+                            aria-describedby="inputGroup-sizing-sm"
+                            id="pedido"
+                            name="pedido"
+                            required
+                            disabled={bool}
+                        />
+                    </InputGroup>
+
+                    <InputGroup size="sm">
+                        <InputGroup.Text id="inputGroup-sizing-sm">Semana</InputGroup.Text>
+                        <Form.Control
+                            aria-label="Small"
+                            aria-describedby="inputGroup-sizing-sm"
+                            min="1"
+                            max="52"
+                            id="semana"
+                            name="semana"
+                            type="number"
+                            required
+                            disabled={bool}
+                        />
+                    </InputGroup>
+
+                    <InputGroup size="sm">
+                        <InputGroup.Text id="inputGroup-sizing-sm">Fecha</InputGroup.Text>
+                        <Form.Control
+                            aria-label="Small"
+                            aria-describedby="inputGroup-sizing-sm"
+                            id="fecha"
+                            name="fecha"
+                            type="date"
+                            defaultValue={useDate()}
+                            disabled={bool}
+                        />
+                    </InputGroup>
+
                     <div className="input-group input-group-sm">
                         <span className="input-group-text" id="inputGroup-sizing-sm">Artículo</span>
                         <select
                             className="form-select form-select-sm"
                             aria-label=".form-select-sm example"
-                            ref={articuloRef}>
+                            onChange={previsualizar}
+                            ref={articuloRef}
+                            disabled={bool}>
                             <option value={0}>{"Varios"}</option>
                             {productos.map((item, index) => (
                                 <option key={index} value={item.consecutivo}>{item.name}</option>
                             ))}
                         </select>
                     </div>
+
                     <div>
                         <input className="form-control form-control-sm"
                             onChange={subirExcel}
                             id="archivo-excel"
                             type="file"
+                            required
+                            disabled={bool}
                         ></input>
                     </div>
-                    <button type="button" onClick={cargarDatos} className="btn btn-success btn-sm">Cargar datos</button>
-                </div>
+
+                    <InputGroup size="sm">
+                        <InputGroup.Text id="inputGroup-sizing-sm">Observaciones</InputGroup.Text>
+                        <Form.Control
+                            aria-label="Small"
+                            aria-describedby="inputGroup-sizing-sm"
+                            id="observaciones"
+                            name="observaciones"
+                            required
+                            disabled={bool}
+                        />
+                    </InputGroup>
+                    {!bool &&
+                        <button type="submit" className="btn btn-success btn-sm">Cargar datos</button>
+                    }
+                </form>
 
                 <Alertas className="mt-3" alert={alert} handleClose={toogleAlert} />
 
