@@ -12,7 +12,7 @@ import endPoints from "@services/api";
 import { useAuth } from "@hooks/useAuth";
 import useAlert from "@hooks/useAlert";
 import generarSemana from "@hooks/useSemana";
-import useDate from "@hooks/useDate";
+import generarFecha from "@hooks/useDate";
 //Bootstrap
 import { Container } from "react-bootstrap";
 import Form from 'react-bootstrap/Form';
@@ -49,7 +49,8 @@ export default function Devolucion({ movimiento }) {
                 const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
                 const productlist = await filtrarProductos(data);
                 setProductos(productlist);
-                setDate(useDate())
+                const fecha = generarFecha();
+                setDate(fecha);
             };
             listar();
         } else {
@@ -370,6 +371,7 @@ export default function Devolucion({ movimiento }) {
                                 aria-describedby="inputGroup-sizing-sm"
                                 defaultValue={observaciones}
                                 required
+                                maxlength="120"
                                 disabled={bool}
                             />
                         </InputGroup>
@@ -385,7 +387,7 @@ export default function Devolucion({ movimiento }) {
                             aria-describedby="inputGroup-sizing-sm"
                             defaultValue={respuesta}
                             required
-                            maxlength="80"
+                            maxlength="120"
                             disabled={respuesta}
                         />
                     </InputGroup>}

@@ -29,9 +29,9 @@ export default function Ajuste() {
     const [semana, setSemana] = useState(null);
     const [observaciones, setObservaciones] = useState(null);
     const { alert, setAlert, toogleAlert } = useAlert();
-    const [radio, setRadio] = useState(0)
+    const [radio, setRadio] = useState(0);
     const [alertRadio, setAlertRadio] = useState(false);
-    const [nuevo, setNuevo] = useState(true)
+    const [nuevo, setNuevo] = useState(true);
 
     useEffect(() => {
         listarCombos().then(res => setCombos(res));
@@ -52,7 +52,7 @@ export default function Ajuste() {
     const handleSubmit = (e) => {
         e.preventDefault();
         //if (radio == 0) return setAlertRadio(true)
-        setAlertRadio(false)
+        setAlertRadio(false);
         const formData = new FormData(formRef.current);
         const almacenR = formData.get('almacen');
         const fecha = formData.get("fecha");
@@ -120,9 +120,9 @@ export default function Ajuste() {
         setSemana(null);
         setObservaciones(null);
         setProducts([1]);
-        setNuevo(false)
+        setNuevo(false);
         setTimeout(() => {
-            setNuevo(true)
+            setNuevo(true);
         }, 50);
         setAlert({
             active: false,
@@ -130,9 +130,9 @@ export default function Ajuste() {
     };
 
     const handleRadio = (e) => {
-        const radio = e.target.value
-        setRadio(radio)
-    }
+        const radio = e.target.value;
+        setRadio(radio);
+    };
 
     return (
         <>
@@ -257,7 +257,7 @@ export default function Ajuste() {
 
                             {alertRadio &&
                                 <span className={styles.alertRadio}>
-                                    <span class="yellow">¡Por favor selecciones el tipo de transporte!</span>
+                                    <span className="yellow">¡Por favor selecciones el tipo de transporte!</span>
                                 </span>
                             }
 

@@ -5,12 +5,11 @@ import styles from "@styles/Seguridad.module.css";
 import Paginacion from "@components/Paginacion";
 import { useEffect } from "react";
 import { useState } from "react";
-import { buscarProducto } from "@services/api/productos";
 import { filtrarCategorias } from "@services/api/categorias";
 import { useAuth } from "@hooks/useAuth";
 import { filtradoGeneralStock } from "@services/api/stock";
 
-export default function ConsultaDetallada({ data, setPagination, limit, setLimit, pagination, setResults }) {
+export default function ConsultaDetallada({ data, setPagination, limit, pagination, setResults }) {
 
     const [total, setTotal] = useState(0);
     const [tabla, setTabla] = useState([]);
