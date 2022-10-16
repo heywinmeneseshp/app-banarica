@@ -154,7 +154,7 @@ export default function Ajuste({ exportacion, movimiento }) {
         <>
             <Container>
                 <form ref={formRef} onSubmit={handleSubmit}>
-                    <h2>{titulo}</h2>
+                    <h2 className="mb-3">{titulo}</h2>
                     <div className={styles.contenedor7}>
 
                         <span className={styles.display}>

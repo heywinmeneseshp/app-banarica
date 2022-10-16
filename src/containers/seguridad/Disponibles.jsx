@@ -247,8 +247,8 @@ export default function Disponibles() {
                         </div>
                     </div>
 
-                    {!tablaConsulta && <ConsultaResumen setPagination={setPagination} limit={limit} pagination={pagination} data={data} setResults={setResults} />}
-                    {tablaConsulta && <ConsultaDetallada setPagination={setPagination} limit={limit} pagination={pagination} data={data} setResults={setResults} />}
+                    {!tablaConsulta && <ConsultaResumen setPagination={setPagination} limit={limit} setLimit={setLimit} pagination={pagination} data={data} setResults={setResults} />}
+                    {tablaConsulta && <ConsultaDetallada setPagination={setPagination} limit={limit} setLimit={setLimit} pagination={pagination} data={data} setResults={setResults} />}
 
                 </div>
             </section>

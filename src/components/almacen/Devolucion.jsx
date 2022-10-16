@@ -30,7 +30,7 @@ export default function Devolucion({ movimiento }) {
     const { gestionNotificacion } = useContext(AppContext);
     const [productos, setProductos] = useState([]);
     const [bool, setBool] = useState(false);
-    const [date, setDate] = useState(useDate());
+    const [date, setDate] = useState(null);
     const [almacen, setAlmacen] = useState(null);
     const [semana, setSemana] = useState(null);
     const [observaciones, setObservaciones] = useState(null);
@@ -49,6 +49,7 @@ export default function Devolucion({ movimiento }) {
                 const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
                 const productlist = await filtrarProductos(data);
                 setProductos(productlist);
+                setDate(useDate())
             };
             listar();
         } else {
@@ -220,7 +221,7 @@ export default function Devolucion({ movimiento }) {
         <>
             <Container>
                 <form ref={formRef} onSubmit={handleSubmit}>
-                    <h2>Devolución</h2>
+                    <h2 className="mb-3">Devolución</h2>
                     <div className={styles.contenedor7}>
 
                         <span className={styles.display}>

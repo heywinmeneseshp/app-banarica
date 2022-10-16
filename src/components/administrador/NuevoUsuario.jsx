@@ -252,13 +252,13 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile, autoriz
                                 {!profile && <div className={styles.grupo}>
                                     <label htmlFor="id_rol">Rol</label>
                                     <div>
-                                        <select defaultValue={user?.id_rol} id="id_rol" name="id_rol" className="form-select form-select-sm">
-                                        {(autorizacion != "Super seguridad") && <option>Super administrador</option>}
-                                            {(autorizacion != "Super seguridad") && <option>Administrador</option>}
-                                            {(autorizacion != "Super seguridad") && <option>Oficinista</option>}
-                                            {(autorizacion != "Super seguridad") && <option>Operador</option>}
-                                            {(autorizacion == "Super seguridad") && <option>Super seguridad</option> }
-                                            {(autorizacion == "Super seguridad") && <option>Seguridad</option> }
+                                        <select id="id_rol" name="id_rol" className="form-select form-select-sm">
+                                            {(autorizacion != "Super seguridad") && <option selected={user?.id_rol == "Super administrador"}>Super administrador</option>}
+                                            {(autorizacion != "Super seguridad") && <option selected={user?.id_rol == "Administrador"}>Administrador</option>}
+                                            {(autorizacion != "Super seguridad") && <option selected={user?.id_rol == "Oficinista"}>Oficinista</option>}
+                                            {(autorizacion != "Super seguridad") && <option selected={user?.id_rol == "Operador"}>Operador</option>}
+                                            {(autorizacion == "Super seguridad") && <option selected={user?.id_rol == "Super seguridad"}>Super seguridad</option>}
+                                            {(autorizacion == "Super seguridad") && <option selected={user?.id_rol == "Seguridad"}>Seguridad</option>}
                                         </select>
                                     </div>
                                 </div>}

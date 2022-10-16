@@ -114,7 +114,7 @@ export default function RecibirTraslado({ movimiento }) {
                 <form ref={formRef} onSubmit={handleSubmit}>
                     <h2>{traslado.title}</h2>
                     <div className={styles.contenedor1}>
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm" >
                             <InputGroup.Text id="inputGroup-sizing-sm">Consecutivo</InputGroup.Text>
                             <Form.Control
                                 aria-label="Small"
@@ -125,7 +125,7 @@ export default function RecibirTraslado({ movimiento }) {
                             />
                         </InputGroup>
 
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm" >
                             <InputGroup.Text id="inputGroup-sizing-sm">Origen</InputGroup.Text>
                             <Form.Select
                                 id="origen"
@@ -136,7 +136,7 @@ export default function RecibirTraslado({ movimiento }) {
                             </Form.Select>
                         </InputGroup>
 
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm" >
                             <InputGroup.Text id="inputGroup-sizing-sm">Destino</InputGroup.Text>
                             <Form.Select
                                 id="destino"
@@ -147,7 +147,7 @@ export default function RecibirTraslado({ movimiento }) {
                             </Form.Select>
                         </InputGroup>
 
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm" >
                             <InputGroup.Text id="inputGroup-sizing-sm">Recibido</InputGroup.Text>
                             <Form.Control
                                 id="fecha"
@@ -160,11 +160,7 @@ export default function RecibirTraslado({ movimiento }) {
                             />
                         </InputGroup>
 
-                    </div>
-
-                    <div className={styles.contenedor0}>
-
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm" >
                             <InputGroup.Text id="inputGroup-sizing-sm">Semana</InputGroup.Text>
                             <Form.Control
                                 aria-label="Small"
@@ -176,7 +172,7 @@ export default function RecibirTraslado({ movimiento }) {
                             />
                         </InputGroup>
 
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm" >
                             <InputGroup.Text id="inputGroup-sizing-sm">Transportadora</InputGroup.Text>
                             <Form.Select
                                 id="transportadora"
@@ -188,7 +184,7 @@ export default function RecibirTraslado({ movimiento }) {
                             </Form.Select>
                         </InputGroup>
 
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm" >
                             <InputGroup.Text id="inputGroup-sizing-sm">Conductor</InputGroup.Text>
                             <Form.Select
                                 id="conductor"
@@ -199,7 +195,7 @@ export default function RecibirTraslado({ movimiento }) {
                             </Form.Select>
                         </InputGroup>
 
-                        <InputGroup size="sm" className="mb-3">
+                        <InputGroup size="sm" >
                             <InputGroup.Text id="inputGroup-sizing-sm">Vehículo</InputGroup.Text>
                             <Form.Control
                                 id="vehiculo"
@@ -272,29 +268,29 @@ export default function RecibirTraslado({ movimiento }) {
                             disabled={(traslado?.estado == "Completado") || bool}
                         />
                     </InputGroup>
-          
-                       
-                        {!bool && (traslado?.estado != "Completado") &&
-                            <div className={styles.contenedor6}>
-                                <div>
-                                </div>
-                                <div>
-                                </div>
-                                <div></div>
-                                <div>
-                                    <Button type="button" onClick={rechazarTraslados} className={styles.button} variant="danger" size="sm">
-                                        Rechazar traslado
-                                    </Button>
-                                </div>
-                                <div>
-                                    <Button type="submit" className={styles.button} variant="success" size="sm">
-                                        Recibir traslado
-                                    </Button>
-                                </div>
 
+
+                    {!bool && (traslado?.estado != "Completado") &&
+                        <div className={styles.contenedor6}>
+                            <div>
                             </div>
-                        }
-                
+                            <div>
+                            </div>
+                            <div></div>
+                            <div>
+                                <Button type="button" onClick={rechazarTraslados} className={styles.button} variant="danger" size="sm">
+                                    Rechazar traslado
+                                </Button>
+                            </div>
+                            <div>
+                                <Button type="submit" className={styles.button} variant="success" size="sm">
+                                    Recibir traslado
+                                </Button>
+                            </div>
+
+                        </div>
+                    }
+
                 </form>
                 <Alertas alert={alert} handleClose={toogleAlert} />
             </Container>

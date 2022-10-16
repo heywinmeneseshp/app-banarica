@@ -173,9 +173,11 @@ export default function Recepcion({ movimiento }) {
         <>
             <form ref={formRef} onSubmit={handleSubmit}>
                 <Container className={styles.contenedorPadre}>
-                    {!bool && notificaciones.map((noti, index) => (
-                        <AlertaPedido key={index} data={noti} setChange={setChange} change={change}></AlertaPedido>
-                    ))}
+                    <span className={styles.alertContainer}>
+                        {!bool && notificaciones.map((noti, index) => (
+                            <AlertaPedido key={index} data={noti} setChange={setChange} change={change}></AlertaPedido>
+                        ))}
+                    </span>
                     <h2>+ Recepción de artículos</h2>
 
                     <div className={styles.contenedor8}>

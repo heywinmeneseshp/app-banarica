@@ -109,7 +109,7 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
                 });
                 setOpen(false);
             } catch (e) {
-              alert("Se ha presentado un error al crear el producto");
+                alert("Se ha presentado un error al crear el producto");
             }
         } else {
             actualizarProducto(producto.id, data).then(() => {
@@ -145,9 +145,9 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
                             <div className={styles.grupo}>
                                 <label htmlFor="proveedor">Proveedor</label>
                                 <div>
-                                    <select defaultValue={producto?.cons_proveedor} id="proveedor" name='proveedor' className="form-select form-select-sm">
+                                    <select id="proveedor" name='proveedor' className="form-select form-select-sm">
                                         {proveedores.map((proveedor, index) => {
-                                            return <option key={index}>{proveedor.razon_social}</option>;
+                                            return <option key={index} selected={producto?.cons_proveedor == proveedor.consecutivo}>{proveedor.razon_social}</option>;
                                         })}
                                     </select>
                                 </div>
@@ -156,9 +156,9 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
                             <div className={styles.grupo}>
                                 <label htmlFor="categoria">Categoría</label>
                                 <div>
-                                    <select defaultValue={producto?.cons_categoria} id="categoria" name='categoria' className="form-select form-select-sm">                                       
+                                    <select id="categoria" name='categoria' className="form-select form-select-sm">
                                         {categorias.map((categoria, index) => {
-                                            return <option key={index} value={categoria.consecutivo}>{categoria.nombre}</option>;
+                                            return <option key={index} selected={producto?.cons_categoria == categoria.consecutivo} value={categoria.consecutivo}>{categoria.nombre}</option>;
                                         })}
                                     </select>
                                 </div>

@@ -13,18 +13,6 @@ const config = {
 }
 
 const listarSeriales = async (offset, limit, body) => {
-    if (!body.serial) body = {
-        "cons_producto": "",
-        "serial": "",
-        "bag_pack": "",
-        "s_pack": "",
-        "m_pack": "",
-        "l_pack": "",
-        "cons_almacen": "",
-        "available": [
-            true
-        ]
-    }
     try {
         let data = { data: body }
         if (limit) data = { ...data, pagination: { offset: offset, limit: limit } }

@@ -10,40 +10,40 @@ import { filtrarCategorias } from "@services/api/categorias";
 import { useAuth } from "@hooks/useAuth";
 import { filtradoGeneralStock } from "@services/api/stock";
 
-export default function ConsultaDetallada({ data, setPagination, limit, pagination, setResults }) {
+export default function ConsultaDetallada({ data, setPagination, limit, setLimit, pagination, setResults }) {
 
     const [total, setTotal] = useState(0);
     const [tabla, setTabla] = useState([]);
-    const {almacenByUser} = useAuth();
+    const { almacenByUser } = useAuth();
 
     useEffect(() => {
 
         listar(data);
 
-    }, [data]);
+    }, [data, limit]);
 
     async function listar(data) {
-        let producto = data.cons_producto ? await buscarProducto(data.cons_producto) : "";
         let categoria = await filtrarCategorias(1, 1, "Seguridad");
         let body = {
-             "producto": {
-                 "name": data.cons_producto ? producto?.name : "",
-                 "cons_categoria": categoria?.data[0].consecutivo
-             },
-             "almacen": {
-                 "consecutivo": data?.cons_almacen ? data?.cons_almacen : ""
- 
-             },
-             "pagination": {
-                 "offset": pagination,
-                 "limit": limit
-             }
-         };
+            "producto": {
+                "cons_categoria": categoria?.data[0].consecutivo,
+                "consecutivo": data?.cons_producto ? data?.cons_producto : ""
+            },
+            "almacen": {
+                "consecutivo": data?.cons_almacen ? data?.cons_almacen : ""
+
+            },
+            "pagination": {
+                "offset": pagination,
+                "limit": limit
+            }
+        };
         if (data.cons_almacen == "") body.almacen.consecutivo = almacenByUser.map(item => item.consecutivo);
-        const res = await filtradoGeneralStock(body); 
+        const res = await filtradoGeneralStock(body);
         setTotal(res.total);
         setTabla(res.data);
         setResults(res.total);
+       
     }
 
     return (
@@ -60,16 +60,16 @@ export default function ConsultaDetallada({ data, setPagination, limit, paginati
                         </tr>
                     </thead>
                     <tbody>
-                        {tabla.map((item, index)=>(
+                        {tabla.map((item, index) => (
                             <tr key={index} >
-                            <td>{item.cons_almacen}</td>
-                            <td>{item.almacen.nombre}</td>
-                            <td>{item.cons_producto}</td>
-                            <td>{item.producto.name}</td>
-                            <td>{item.cantidad}</td>
-                        </tr>
+                                <td>{item.cons_almacen}</td>
+                                <td>{item.almacen.nombre}</td>
+                                <td>{item.cons_producto}</td>
+                                <td>{item.producto.name}</td>
+                                <td>{item.cantidad}</td>
+                            </tr>
                         ))}
-                        
+
                     </tbody>
                 </table>
                 <span className="container">

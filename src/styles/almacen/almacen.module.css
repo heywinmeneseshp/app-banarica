@@ -49,8 +49,7 @@
 .contenedor7 {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-    grid-gap: 0px 20px;
-    margin-top: 20px;
+    grid-gap: 14px 20px;
 }
 
 .contenedor8 {
@@ -66,6 +65,12 @@
     grid-template-columns: 1fr 2fr 1fr 1fr;
     grid-gap: 20px;
     margin-bottom: 14px;
+}
+
+.contenedor10 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 14px 20px;
 }
 
 .contTraslados {
@@ -169,6 +174,34 @@
     grid-template-columns: 6.5fr 1fr;
 }
 
+.alertContainer{
+    display: grid;
+    overflow-y: scroll;
+    scroll-behavior: smooth;
+    max-height: 160px !important;
+    margin-bottom: 10px;
+    padding-right: 10px;
+}
+
+.radio{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.radio :first-child {
+    margin: 0px 7px;
+}
+
+.alertRadio{
+    grid-column-start: 3;
+    grid-column-end: 5 ;
+    color: #dc3545;
+    margin: 0px 7px;
+}
+
+
+
 @media only screen and (max-width: 850px) {
     .alert {
         display: flex;
@@ -199,8 +232,7 @@
     .contenedor7 {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        grid-gap: 0px 10px;
-        margin-top: 10px;
+        grid-gap: 14px;
     }
 
     .display {

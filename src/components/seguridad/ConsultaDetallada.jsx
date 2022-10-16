@@ -7,18 +7,17 @@ import { useEffect } from "react";
 import { listarSeriales } from "@services/api/seguridad";
 import { useState } from "react";
 
-export default function ConsultaResumen({ data, setPagination, limit, pagination, setResults }) {
+export default function ConsultaResumen({ data, setPagination, limit, setLimit, pagination, setResults }) {
 
     const [tabla, setTabla] = useState([]);
     const [total, setTotal] = useState(0);
 
     useEffect(() => {
-        console.log(data);
-        listarSeriales(pagination, limit, data).then(res =>{
+        listarSeriales(pagination, limit, data).then(res => {
             setTabla(res.data);
             setTotal(res.total);
             setResults(res.total);
-        } );
+        });
     }, [data, pagination, limit]);
 
     return (

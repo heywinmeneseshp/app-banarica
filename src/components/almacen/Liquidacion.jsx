@@ -221,7 +221,7 @@ export default function Liquidacion({ movimiento }) {
         <>
             <Container>
                 <form ref={formRef} onSubmit={handleSubmit}>
-                    <h2>Liquidación</h2>
+                    <h2 className="mb-3">Liquidación</h2>
                     <div className={styles.contenedor7}>
 
                         <span className={styles.display}>
