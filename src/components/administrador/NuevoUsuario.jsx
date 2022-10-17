@@ -350,6 +350,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile, autoriz
                                                 </label>
                                             </div>
                                         ))}
+                                          
 
                                     </div>
                                 </span>

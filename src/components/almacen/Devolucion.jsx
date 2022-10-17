@@ -118,7 +118,7 @@ export default function Devolucion({ movimiento }) {
             if (user?.id_rol == "Super administrador" && movimiento) {
                 const consAlmacen = almacenByUser.find((item) => item.nombre == almacen).consecutivo;
                 const respuesta = formData.get("respuesta");
-                const changes = { "pendiente": false, "respuesta": respuesta };
+                const changes = { "pendiente": false, "respuesta": respuesta, 'aprobado_por': user.username };
                 setRespuesta(respuesta);
                 actualizarMovimiento(movimientoID, changes);
                 products.forEach(item => {
@@ -161,7 +161,8 @@ export default function Devolucion({ movimiento }) {
                     "pendiente": true,
                     "observaciones": observacionesR,
                     "cons_semana": semanaR,
-                    "fecha": fecha
+                    "fecha": fecha,
+                    "realizado_por": user.username
                 };
                 agregarMovimiento(data).then(res => {
                     const consMovimientoR = res.data.consecutivo;
@@ -192,7 +193,7 @@ export default function Devolucion({ movimiento }) {
                             cons_lista_movimientos: "DV",
                             tipo_movimiento: "Salida",
                             razon_movimiento: tipoDeMovimiento,
-                            cantidad: formData.get("cantidad-" + index)
+                            cantidad: formData.get("cantidad-" + index),
                         };
                         agregarHistorial(dataHistorial);
                     });

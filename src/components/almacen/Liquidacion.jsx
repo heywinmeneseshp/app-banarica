@@ -82,7 +82,11 @@ export default function Liquidacion({ movimiento }) {
         const IdNoti = gestionNotificacion.notificacion.id;
         const cons_movimiento = gestionNotificacion.notificacion.cons_movimiento;
         const respuesta = formData.get("respuesta");
-        actualizarMovimiento(movimientoID, { "pendiente": false, "respuesta": respuesta });
+        actualizarMovimiento(movimientoID, {
+            "pendiente": false,
+            "respuesta": respuesta,
+            "aprobado_por": user.username
+        });
         actualizarNotificaciones(IdNoti, { aprobado: true, visto: true });
         const { data } = await axios.get(endPoints.historial.filter(cons_movimiento));
         data.forEach(element => {
@@ -116,7 +120,11 @@ export default function Liquidacion({ movimiento }) {
             if (user.id_rol == "Super administrador" && movimiento) {
                 const consAlmacen = almacenByUser.find((item) => item.nombre == almacen).consecutivo;
                 const respuesta = formData.get("respuesta");
-                const changes = { "pendiente": false, "respuesta": respuesta };
+                const changes = {
+                    "pendiente": false,
+                    "respuesta": respuesta,
+                    "aprobado_por": user.username
+                };
                 actualizarMovimiento(movimientoID, changes);
                 products.forEach(item => {
                     const { cons_producto, cantidad } = item;
@@ -163,7 +171,8 @@ export default function Liquidacion({ movimiento }) {
                     "pendiente": true,
                     "observaciones": observacionesR,
                     "cons_semana": semanaR,
-                    "fecha": fecha
+                    "fecha": fecha,
+                    "realizado_por": user.username
                 };
                 agregarMovimiento(data).then(res => {
                     const consMovimientoR = res.data.consecutivo;

@@ -1,14 +1,15 @@
-.itemMenu{
+.itemMenu,
+.itemMenuAdmin {
     margin-right: 5px;
     margin-left: 5px;
 }
 
-.noti{
+.noti {
     position: relative;
     margin-right: 8px;
 }
 
-.circulo{
+.circulo {
     width: 20px;
     height: 20px;
     border-radius: 50%;
@@ -23,14 +24,14 @@
     cursor: pointer;
 }
 
-.number{
- font-size: 11px;
- margin-left: auto;
- margin-right: auto;
- font-weight: 800;
- line-height: 20px;
- text-align: center;
- width: 20px;
+.number {
+    font-size: 11px;
+    margin-left: auto;
+    margin-right: auto;
+    font-weight: 800;
+    line-height: 20px;
+    text-align: center;
+    width: 20px;
 }
 
 .tablero {
@@ -44,10 +45,10 @@
     height: 400px;
     box-shadow: 0 0 8px rgb(210, 210, 210), inset 0 0.5px #b2b2b280;
     padding: 20px 10px 20px 20px;
-    color:rgba(0, 0, 0, 0.74);
+    color: rgba(0, 0, 0, 0.74);
 }
 
-.miniTablero{
+.miniTablero {
     width: 480px;
     overflow-y: auto;
     height: 330px;
@@ -62,12 +63,32 @@
     position: fixed;
 }
 
-.marcar_leido{
+.marcar_leido {
     margin-top: 16px;
     text-align: center;
 }
 
-.marcar_leido :hover{
-  color: rgba(0, 0, 0, 0.877);
-  cursor: pointer;
+.marcar_leido :hover {
+    color: rgba(0, 0, 0, 0.877);
+    cursor: pointer;
+}
+
+.configButton {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    padding: 10px !important;
+    border-top: rgba(0, 0, 0, 0.288) solid 1px;
+}
+
+.imgConfig {
+    opacity: 0.5;
+}
+
+.textConfig {
+ margin-left: 6px;
+}
+
+.itemMenuAdmin :last-child {
+    padding-bottom: 0px;
 }

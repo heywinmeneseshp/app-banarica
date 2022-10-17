@@ -103,6 +103,7 @@ export default function Recepcion() {
                     autoClose: false
                 })
             } else {
+                console.log(e)
                 setAlert({
                     active: true,
                     mensaje: res.message,
@@ -110,10 +111,10 @@ export default function Recepcion() {
                     autoClose: false
                 })
             }
-            
-           
+
+
         } catch (e) {
-           return setAlert({
+            return setAlert({
                 active: true,
                 mensaje: "Error, quizá existan seriales repetidos.",
                 color: "danger",
@@ -138,9 +139,11 @@ export default function Recepcion() {
                             onChange={previsualizar}
                             disabled={bool}
                             ref={almacenRef}>
-                            {almacenByUser.map((item, index) => (
-                                <option key={index} value={item.consecutivo}>{item.nombre}</option>
-                            ))}
+                            {almacenByUser.map((item, index) => {
+                                return (
+                                    <option key={index} selected={item.consecutivo == "BRC"} value={item.consecutivo}>{item.nombre}</option>
+                                )
+                            })}
                         </select>
                     </div>
 

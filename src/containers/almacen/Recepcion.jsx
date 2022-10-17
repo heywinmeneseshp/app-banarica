@@ -24,7 +24,7 @@ import styles from "@styles/almacen/almacen.module.css";
 
 export default function Recepcion({ movimiento }) {
     const formRef = useRef(null);
-    const { almacenByUser } = useAuth();
+    const { almacenByUser, user } = useAuth();
     const [products, setProducts] = useState([1]);
     const [productos, setProductos] = useState([]);
     const [bool, setBool] = useState(false);
@@ -100,7 +100,9 @@ export default function Recepcion({ movimiento }) {
                 remision: formData.get("remision"),
                 fecha: formData.get("fecha"),
                 cons_semana: semanaR,
-                observaciones: formData.get("observaciones")
+                observaciones: formData.get("observaciones"),
+                aprobado_por: user.username,
+                realizado_por: user.username
             }
             agregarRecepcion(body).then((res) => {
                 const consMovimiento = res.data.consecutivo;

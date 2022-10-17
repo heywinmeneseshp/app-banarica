@@ -23,7 +23,7 @@ import styles from "@styles/almacen/almacen.module.css";
 
 export default function Ajuste({ exportacion, movimiento }) {
     const formRef = useRef();
-    const { almacenByUser } = useAuth();
+    const { almacenByUser, user } = useAuth();
     const [productos, setProductos] = useState([]);
     const [prodcuctsCons, setProductsCons] = useState([]);
     const [bool, setBool] = useState(false);
@@ -95,6 +95,8 @@ export default function Ajuste({ exportacion, movimiento }) {
                 "pendiente": false,
                 "observaciones": observacionesR,
                 "cons_semana": semanaR,
+                'realizado_por': user.username,
+                'aprobado_por': user.username,
                 "fecha": fecha
             };
 

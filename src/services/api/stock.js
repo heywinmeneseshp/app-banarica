@@ -112,7 +112,6 @@ const filtradoGeneralStock = async (body) => {
     }
 }
 
-
 export {
     habilitarProductoEnAlmacen,
     listarProductosEnUnAlmacen,

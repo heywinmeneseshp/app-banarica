@@ -13,12 +13,16 @@ import { Dropdown, Button, ButtonGroup } from 'react-bootstrap';
 //Components
 import NuevoUsuario from './administrador/NuevoUsuario';
 //Assets
+//Imagenes
+import config from '@public/images/config.png';
 
 //CSS
 import styles from '@styles/header.module.css';
 import endPoints from '@services/api';
 import AsideNotificaciones from '@assets/AsideNotificaciones';
 import { buscarUsuario } from '@services/api/usuarios';
+import Image from 'next/image';
+import Configuracion from './administrador/Configuracion';
 
 const Header = () => {
     const router = useRouter();
@@ -29,6 +33,7 @@ const Header = () => {
     const [notificaciones, setNotificaciones] = useState([]);
     const [openNoti, setOpenNoti] = useState(false);
     const [openProfile, setOpenProfile] = useState(false);
+    const [openConfig, setOpenConfig] = useState(false);
 
     useEffect(() => {
         const listar = async () => {
@@ -77,9 +82,6 @@ const Header = () => {
 
     return (
         <>
-
-
-
             <div className="header">
                 <Navbar className='justify' bg="primary" variant="dark">
 
@@ -90,22 +92,23 @@ const Header = () => {
                         <span></span>
                         <ul id="menu">
                             {(user?.id_rol == "Super administrador") &&
-                            <NavDropdown onClick={() => openMenu("admin")} title="Administrador" drop='end' id="nav-dropdown">
-                                <Dropdown.Item onClick={() => openWindow("usuarios")} >Usuarios</Dropdown.Item>
-                                <Dropdown.Item onClick={() => openWindow("productos")}>Productos</Dropdown.Item>
-                                <Dropdown.Item onClick={() => openWindow("combos")}>Combos</Dropdown.Item>
-                                <Dropdown.Item onClick={() => openWindow("categorias")}>Categorias</Dropdown.Item>
-                                <Dropdown.Item onClick={() => openWindow("proveedores")}>Proveedores</Dropdown.Item>
-                                <Dropdown.Item onClick={() => openWindow("bodegas")}>Almacenes</Dropdown.Item>
-                                <Dropdown.Item onClick={() => openWindow("transporte")}>Transporte</Dropdown.Item>
-                            </NavDropdown>}
+                                <NavDropdown onClick={() => openMenu("admin")} title="Administrador" drop='end' id="nav-dropdown">
+                                    <Dropdown.Item onClick={() => openWindow("usuarios")} >Usuarios</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => openWindow("productos")}>Productos</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => openWindow("combos")}>Combos</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => openWindow("categorias")}>Categorias</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => openWindow("proveedores")}>Proveedores</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => openWindow("bodegas")}>Almacenes</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => openWindow("transporte")}>Transporte</Dropdown.Item>
+                                    <Dropdown.Item >Configuración</Dropdown.Item>
+                                </NavDropdown>}
                             {(user.id_rol == "seguridad" || user.id_rol == "Super seguridad") &&
-                            <NavDropdown title="Seguridad" drop='end' id="nav-dropdown">
-                                <Dropdown.Item onClick={() => onSeguridad("/Recepcion")}>Recepción</Dropdown.Item>
-                                <Dropdown.Item onClick={() => onSeguridad("/Transferencias")}>Transferencias</Dropdown.Item>
-                                <Dropdown.Item onClick={() => onSeguridad("/Disponibles")}>Disponibles</Dropdown.Item>
-                                {user.id_rol == "Super seguridad" && <Dropdown.Item onClick={() => onSeguridad("/Usuarios")}>Usuarios</Dropdown.Item>}
-                            </NavDropdown>}
+                                <NavDropdown title="Seguridad" drop='end' id="nav-dropdown">
+                                    <Dropdown.Item onClick={() => onSeguridad("/Recepcion")}>Recepción</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => onSeguridad("/Transferencias")}>Transferencias</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => onSeguridad("/Disponibles")}>Disponibles</Dropdown.Item>
+                                    {user.id_rol == "Super seguridad" && <Dropdown.Item onClick={() => onSeguridad("/Usuarios")}>Usuarios</Dropdown.Item>}
+                                </NavDropdown>}
                             <NavDropdown onClick={() => openMenu("almacen")} title="Almacén" drop='end' id="nav-dropdown">
                                 <Dropdown.Item onClick={initialAlmacenMenu.handleRecepcion}>Recepción</Dropdown.Item>
                                 <Dropdown.Item onClick={initialAlmacenMenu.handleTraslados}>Traslados</Dropdown.Item>
@@ -127,7 +130,7 @@ const Header = () => {
                         {initialMenu.navBar &&
                             <Nav className="me-auto">
                                 {(user?.id_rol == "Super administrador") &&
-                                    <DropdownButton onClick={() => openMenu("admin")} className={styles.itemMenu} id="dropdown-basic-button" title="Administrador">
+                                    <DropdownButton className={styles.itemMenuAdmin} onClick={() => openMenu("admin")} id="dropdown-basic-button" title="Administrador">
                                         <Dropdown.Item onClick={() => openWindow("usuarios")} >Usuarios</Dropdown.Item>
                                         <Dropdown.Item onClick={() => openWindow("productos")}>Productos</Dropdown.Item>
                                         <Dropdown.Item onClick={() => openWindow("combos")}>Combos</Dropdown.Item>
@@ -135,6 +138,10 @@ const Header = () => {
                                         <Dropdown.Item onClick={() => openWindow("proveedores")}>Proveedores</Dropdown.Item>
                                         <Dropdown.Item onClick={() => openWindow("bodegas")}>Almacenes</Dropdown.Item>
                                         <Dropdown.Item onClick={() => openWindow("transporte")}>Transporte</Dropdown.Item>
+                                        <Dropdown.Item onClick={() => setOpenConfig(true)} className={styles.configButton}>
+                                            <Image className={styles.imgConfig} width="15" height="15" src={config} alt="configuración" />
+                                            <span className={styles.textConfig}>Configuración</span>
+                                        </Dropdown.Item>
                                     </DropdownButton>}
                                 {(user.id_rol == "seguridad" || user.id_rol == "Super seguridad") &&
                                     <DropdownButton id="dropdown-basic-button" title="Seguridad">
@@ -175,6 +182,7 @@ const Header = () => {
                 </Navbar>
                 {openNoti && <AsideNotificaciones setNotificaciones={setNotificaciones} notificaciones={notificaciones} />}
                 {openProfile && <NuevoUsuario setOpen={setOpenProfile} setAlert={setAlert} user={user} profile={true} />}
+                {openConfig && <Configuracion setOpen={setOpenConfig} />}
             </div>
 
         </>

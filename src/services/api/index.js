@@ -178,6 +178,11 @@ const endPoints = {
         listarUsuarios: `${API}/api/${VERSION}/seguridad/usuarios`,
         ActualizarSeriales: `${API}/api/${VERSION}/seguridad/actualizar-seriales`,
         CargarSeriales: `${API}/api/${VERSION}/seguridad/cargar-seriales`,
+        encontrarSerial: `${API}/api/${VERSION}/seguridad/encontrar-serial`,
+    },
+    confi: {
+        buscarModulo: (modulo) => `${API}/api/${VERSION}/confi/encontrar/${modulo}`,
+        actualizarModulo: `${API}/api/${VERSION}/confi/actualizar`
     }
 }
 

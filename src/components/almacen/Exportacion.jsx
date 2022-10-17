@@ -17,10 +17,12 @@ import Alertas from "@assets/Alertas";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
 import { listarCombos } from "@services/api/combos";
+import { exportarArticulosConSerial, verificarAndActualizarSeriales } from "@services/api/seguridad";
+import { encontrarModulo } from "@services/api/configuracion";
 
 export default function Ajuste() {
     const formRef = useRef();
-    const { almacenByUser } = useAuth();
+    const { almacenByUser, user } = useAuth();
     const [combos, setCombos] = useState([]);
     const [bool, setBool] = useState(false);
     const [consMovimiento, setConsMovimiento] = useState([]);
@@ -32,9 +34,11 @@ export default function Ajuste() {
     const [radio, setRadio] = useState(0);
     const [alertRadio, setAlertRadio] = useState(false);
     const [nuevo, setNuevo] = useState(true);
+    const [moduloSeguridad, setModuloSeguridad] = useState(false);
 
     useEffect(() => {
         listarCombos().then(res => setCombos(res));
+        encontrarModulo('Seguridad').then(res => setModuloSeguridad(res[0].habilitado));
     }, []);
 
 
@@ -49,9 +53,9 @@ export default function Ajuste() {
         setProducts(array);
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        //if (radio == 0) return setAlertRadio(true)
+        if (radio == 0 && moduloSeguridad) return setAlertRadio(true);
         setAlertRadio(false);
         const formData = new FormData(formRef.current);
         const almacenR = formData.get('almacen');
@@ -61,6 +65,17 @@ export default function Ajuste() {
         const observacionesR = formData.get("observaciones");
         const consAlmacen = almacenByUser.find((item) => item.nombre == almacenR).consecutivo;
         try {
+            const seriales = {
+                'Contenedor': formData.get('contenedor'),
+                'Termógrafo': formData.get('termografo'),
+                'Botella': formData.get('botella'),
+                'Guaya cont': formData.get('guaya-contenedor'),
+                'Etiqueta': formData.get('etiqueta'),
+                'Precinto plástico': formData.get('precinto-plastico'),
+                'Guaya camión': formData.get('guaya-camion')
+            };
+            let serialesVerificados;
+            if (moduloSeguridad) serialesVerificados = await verificarAndActualizarSeriales(seriales, consAlmacen);
             setAlmacen(almacenR);
             setDate(fecha);
             setSemana(semanaR);
@@ -69,7 +84,9 @@ export default function Ajuste() {
                 "cons_almacen": consAlmacen,
                 "cons_semana": semanaR,
                 "fecha": fecha,
-                "observaciones": observacionesR
+                "observaciones": observacionesR,
+                'realizado_por': user.username,
+                'aprobado_por': user.username,
             };
             let lista = [];
             let arrayPost = [];
@@ -81,19 +98,20 @@ export default function Ajuste() {
                 arrayPost.push({ cons_combo: consCombo, cantidad: cantidad });
             });
             setProducts(lista);
-            exportCombo(body, arrayPost).then(res => {
-                setConsMovimiento(res.movimiento.consecutivo);
-                const dataNotificacion = {
-                    almacen_emisor: consAlmacen,
-                    almacen_receptor: "BRC",
-                    cons_movimiento: res.movimiento.consecutivo,
-                    tipo_movimiento: "Exportacion",
-                    descripcion: "realizado",
-                    aprobado: true,
-                    visto: false
-                };
-                agregarNotificaciones(dataNotificacion);
-            });
+
+            const { movimiento } = await exportCombo(body, arrayPost);
+            setConsMovimiento(movimiento.consecutivo);
+            if (moduloSeguridad) exportarArticulosConSerial(serialesVerificados, consAlmacen, movimiento.consecutivo);
+            const dataNotificacion = {
+                almacen_emisor: consAlmacen,
+                almacen_receptor: "BRC",
+                cons_movimiento: movimiento.consecutivo,
+                tipo_movimiento: "Exportacion",
+                descripcion: "realizado",
+                aprobado: true,
+                visto: false
+            };
+            agregarNotificaciones(dataNotificacion);
 
             setBool(true);
             setAlert({
@@ -229,8 +247,9 @@ export default function Ajuste() {
                                 </InputGroup>
                             }
 
-                            {false &&
-                                <span>                            <div className={styles.radio}>
+
+                            { moduloSeguridad &&
+                                <div className={styles.radio}>
                                     <label htmlFor="radio-contenedor">Contenedor</label>
                                     <input
                                         id="radio-contenedor"
@@ -241,20 +260,20 @@ export default function Ajuste() {
                                         disabled={bool}
                                         aria-label="Radio button for following text input" />
                                 </div>
-                                    <div className={styles.radio}>
-                                        <label htmlFor="radio-camion">Camión</label>
-                                        <input
-                                            id="radio-camion"
-                                            type="radio"
-                                            value={2}
-                                            checked={radio == 2}
-                                            onChange={handleRadio}
-                                            disabled={bool}
-                                            aria-label="Radio button for following text input" />
-                                    </div>
-                                </span>
                             }
-
+                            { moduloSeguridad &&
+                                <div className={styles.radio}>
+                                <label htmlFor="radio-camion">Camión</label>
+                                <input
+                                    id="radio-camion"
+                                    type="radio"
+                                    value={2}
+                                    checked={radio == 2}
+                                    onChange={handleRadio}
+                                    disabled={bool}
+                                    aria-label="Radio button for following text input" />
+                            </div>
+                            }
                             {alertRadio &&
                                 <span className={styles.alertRadio}>
                                     <span className="yellow">¡Por favor selecciones el tipo de transporte!</span>
@@ -277,7 +296,7 @@ export default function Ajuste() {
                                     <InputGroup.Text id="inputGroup-sizing-sm">Contenedor</InputGroup.Text>
                                     <Form.Control
                                         id="contenedor"
-                                        name="termografo"
+                                        name="contenedor"
                                         aria-label="Small"
                                         aria-describedby="inputGroup-sizing-sm"
                                         required
@@ -301,8 +320,8 @@ export default function Ajuste() {
                                 <InputGroup size="sm" >
                                     <InputGroup.Text id="inputGroup-sizing-sm">Botella</InputGroup.Text>
                                     <Form.Control
-                                        id="guaya"
-                                        name="guaya"
+                                        id="botella"
+                                        name="botella"
                                         aria-label="Small"
                                         aria-describedby="inputGroup-sizing-sm"
                                         required
@@ -313,8 +332,8 @@ export default function Ajuste() {
                                 <InputGroup size="sm" >
                                     <InputGroup.Text id="inputGroup-sizing-sm">Guaya cont</InputGroup.Text>
                                     <Form.Control
-                                        id="guaya"
-                                        name="guaya"
+                                        id="guaya-contenedor"
+                                        name="guaya-contenedor"
                                         aria-label="Small"
                                         aria-describedby="inputGroup-sizing-sm"
                                         required
@@ -342,8 +361,8 @@ export default function Ajuste() {
                                 <InputGroup size="sm" >
                                     <InputGroup.Text id="inputGroup-sizing-sm">Precinto plástico</InputGroup.Text>
                                     <Form.Control
-                                        id="plastico"
-                                        name="plastico"
+                                        id="precinto-plastico"
+                                        name="precinto-plastico"
                                         aria-label="Small"
                                         aria-describedby="inputGroup-sizing-sm"
                                         required
