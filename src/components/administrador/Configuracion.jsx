@@ -14,8 +14,6 @@ export default function Configuracion({ setOpen }) {
         encontrarModulo("Seguridad").then(res => setSecurityCheck(res[0].habilitado));
     }, []);
 
-
-
     let styleBoton = { color: "success", text: "Guardar configuración" };
 
     const closeWindow = () => {
