@@ -384,8 +384,8 @@ export default function Ajuste() {
                                 <InputGroup size="sm" >
                                     <InputGroup.Text id="inputGroup-sizing-sm">Precinto plástico</InputGroup.Text>
                                     <Form.Select
-                                        id="preciton"
-                                        name="precinto"
+                                        id="precinto-plastico"
+                                        name="precinto-plastico"
                                         className={styles.select}
                                         size="sm"
                                         disabled={bool}>
