@@ -30,6 +30,7 @@ export default function Recepcion() {
     const { alert, setAlert, toogleAlert } = useAlert();
     const [archivoBruto, setArchivoBruto] = useState(null);
     const [bool, setBool] = useState(false)
+    const [nuevo, setNuevo] = useState(true)
 
     useEffect(() => {
         listarProductosSeguridad().then(res => {
@@ -123,122 +124,137 @@ export default function Recepcion() {
         }
     }
 
+    function nuevoMovimiento() {
+        setArchivoExcel([])
+        setTabla([])
+        setArchivoBruto(null);
+        setBool(false)
+        setNuevo(false)
+        setLimit(0)
+        setTimeout(() => {
+            setNuevo(true)
+        }, 50)
+    }
 
     return (
         <>
             <section>
                 <h2>Recepción</h2>
+                {nuevo &&
+                    <form ref={formRef} onSubmit={cargarDatos} className={styles.grid_recepcion}>
+                        <div className="input-group input-group-sm">
+                            <span className="input-group-text" id="inputGroup-sizing-sm">Alamcén</span>
+                            <select className="form-select form-select-sm"
+                                aria-label=".form-select-sm example"
+                                id="almacen"
+                                name="almacen"
+                                onChange={previsualizar}
+                                disabled={bool}
+                                ref={almacenRef}>
+                                {almacenByUser.map((item, index) => {
+                                    return (
+                                        <option key={index} selected={item.consecutivo == "BRC"} value={item.consecutivo}>{item.nombre}</option>
+                                    )
+                                })}
+                            </select>
+                        </div>
 
-                <form ref={formRef} onSubmit={cargarDatos} className={styles.grid_recepcion}>
-                    <div className="input-group input-group-sm">
-                        <span className="input-group-text" id="inputGroup-sizing-sm">Alamcén</span>
-                        <select className="form-select form-select-sm"
-                            aria-label=".form-select-sm example"
-                            id="almacen"
-                            name="almacen"
-                            onChange={previsualizar}
-                            disabled={bool}
-                            ref={almacenRef}>
-                            {almacenByUser.map((item, index) => {
-                                return (
-                                    <option key={index} selected={item.consecutivo == "BRC"} value={item.consecutivo}>{item.nombre}</option>
-                                )
-                            })}
-                        </select>
-                    </div>
+                        <InputGroup size="sm">
+                            <InputGroup.Text id="inputGroup-sizing-sm">Remisión</InputGroup.Text>
+                            <Form.Control
+                                aria-label="Small"
+                                aria-describedby="inputGroup-sizing-sm"
+                                id="remision"
+                                name="remision"
+                                required
+                                disabled={bool}
+                            />
+                        </InputGroup>
 
-                    <InputGroup size="sm">
-                        <InputGroup.Text id="inputGroup-sizing-sm">Remisión</InputGroup.Text>
-                        <Form.Control
-                            aria-label="Small"
-                            aria-describedby="inputGroup-sizing-sm"
-                            id="remision"
-                            name="remision"
-                            required
-                            disabled={bool}
-                        />
-                    </InputGroup>
+                        <InputGroup size="sm">
+                            <InputGroup.Text id="inputGroup-sizing-sm">Pedido</InputGroup.Text>
+                            <Form.Control
+                                aria-label="Small"
+                                aria-describedby="inputGroup-sizing-sm"
+                                id="pedido"
+                                name="pedido"
+                                required
+                                disabled={bool}
+                            />
+                        </InputGroup>
 
-                    <InputGroup size="sm">
-                        <InputGroup.Text id="inputGroup-sizing-sm">Pedido</InputGroup.Text>
-                        <Form.Control
-                            aria-label="Small"
-                            aria-describedby="inputGroup-sizing-sm"
-                            id="pedido"
-                            name="pedido"
-                            required
-                            disabled={bool}
-                        />
-                    </InputGroup>
+                        <InputGroup size="sm">
+                            <InputGroup.Text id="inputGroup-sizing-sm">Semana</InputGroup.Text>
+                            <Form.Control
+                                aria-label="Small"
+                                aria-describedby="inputGroup-sizing-sm"
+                                min="1"
+                                max="52"
+                                id="semana"
+                                name="semana"
+                                type="number"
+                                required
+                                disabled={bool}
+                            />
+                        </InputGroup>
 
-                    <InputGroup size="sm">
-                        <InputGroup.Text id="inputGroup-sizing-sm">Semana</InputGroup.Text>
-                        <Form.Control
-                            aria-label="Small"
-                            aria-describedby="inputGroup-sizing-sm"
-                            min="1"
-                            max="52"
-                            id="semana"
-                            name="semana"
-                            type="number"
-                            required
-                            disabled={bool}
-                        />
-                    </InputGroup>
+                        <InputGroup size="sm">
+                            <InputGroup.Text id="inputGroup-sizing-sm">Fecha</InputGroup.Text>
+                            <Form.Control
+                                aria-label="Small"
+                                aria-describedby="inputGroup-sizing-sm"
+                                id="fecha"
+                                name="fecha"
+                                type="date"
+                                defaultValue={useDate()}
+                                disabled={bool}
+                            />
+                        </InputGroup>
 
-                    <InputGroup size="sm">
-                        <InputGroup.Text id="inputGroup-sizing-sm">Fecha</InputGroup.Text>
-                        <Form.Control
-                            aria-label="Small"
-                            aria-describedby="inputGroup-sizing-sm"
-                            id="fecha"
-                            name="fecha"
-                            type="date"
-                            defaultValue={useDate()}
-                            disabled={bool}
-                        />
-                    </InputGroup>
+                        <div className="input-group input-group-sm">
+                            <span className="input-group-text" id="inputGroup-sizing-sm">Artículo</span>
+                            <select
+                                className="form-select form-select-sm"
+                                aria-label=".form-select-sm example"
+                                onChange={previsualizar}
+                                ref={articuloRef}
+                                disabled={bool}>
+                                <option value={0}>{"Varios"}</option>
+                                {productos.map((item, index) => (
+                                    <option key={index} value={item.consecutivo}>{item.name}</option>
+                                ))}
+                            </select>
+                        </div>
 
-                    <div className="input-group input-group-sm">
-                        <span className="input-group-text" id="inputGroup-sizing-sm">Artículo</span>
-                        <select
-                            className="form-select form-select-sm"
-                            aria-label=".form-select-sm example"
-                            onChange={previsualizar}
-                            ref={articuloRef}
-                            disabled={bool}>
-                            <option value={0}>{"Varios"}</option>
-                            {productos.map((item, index) => (
-                                <option key={index} value={item.consecutivo}>{item.name}</option>
-                            ))}
-                        </select>
-                    </div>
+                        <div>
+                            <input className="form-control form-control-sm"
+                                onChange={subirExcel}
+                                id="archivo-excel"
+                                type="file"
+                                required
+                                disabled={bool}
+                            ></input>
+                        </div>
 
-                    <div>
-                        <input className="form-control form-control-sm"
-                            onChange={subirExcel}
-                            id="archivo-excel"
-                            type="file"
-                            required
-                            disabled={bool}
-                        ></input>
-                    </div>
-
-                    <InputGroup size="sm">
-                        <InputGroup.Text id="inputGroup-sizing-sm">Observaciones</InputGroup.Text>
-                        <Form.Control
-                            aria-label="Small"
-                            aria-describedby="inputGroup-sizing-sm"
-                            id="observaciones"
-                            name="observaciones"
-                            required
-                            disabled={bool}
-                        />
-                    </InputGroup>
-                    {!bool &&
-                        <button type="submit" className="btn btn-success btn-sm">Cargar datos</button>
-                    }
-                </form>
+                        <InputGroup size="sm">
+                            <InputGroup.Text id="inputGroup-sizing-sm">Observaciones</InputGroup.Text>
+                            <Form.Control
+                                aria-label="Small"
+                                aria-describedby="inputGroup-sizing-sm"
+                                id="observaciones"
+                                name="observaciones"
+                                required
+                                disabled={bool}
+                            />
+                        </InputGroup>
+                        {!bool &&
+                            <button type="submit" className="btn btn-success btn-sm">Cargar datos</button>
+                        }
+                        {bool &&
+                            <button type="button" onClick={nuevoMovimiento} className="btn btn-primary btn-sm">Nuevo movimiento</button>
+                        }
+                    </form>
+                }
 
                 <Alertas className="mt-3" alert={alert} handleClose={toogleAlert} />
 

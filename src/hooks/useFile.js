@@ -27,10 +27,10 @@ export default function useFile() {
                 const data = {
                     cons_producto: cons_producto,
                     serial: item[1],
-                    bag_pack: item[2],
-                    s_pack: item[3],
-                    m_pack: item[4],
-                    l_pack: item[5],
+                    bag_pack: item[2] ? item[2] : "null",
+                    s_pack: item[3] ? item[3] : "null",
+                    m_pack: item[4] ? item[4] : "null",
+                    l_pack: item[5] ? item[5] : "null",
                     cons_almacen: cons_almacen,
                     available: true
                 }

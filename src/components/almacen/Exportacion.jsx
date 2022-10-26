@@ -17,7 +17,7 @@ import Alertas from "@assets/Alertas";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
 import { listarCombos } from "@services/api/combos";
-import { exportarArticulosConSerial, verificarAndActualizarSeriales } from "@services/api/seguridad";
+import { encontrarUnSerial, exportarArticulosConSerial, listarSeriales, verificarAndActualizarSeriales } from "@services/api/seguridad";
 import { encontrarModulo } from "@services/api/configuracion";
 
 export default function Ajuste() {
@@ -35,11 +35,33 @@ export default function Ajuste() {
     const [alertRadio, setAlertRadio] = useState(false);
     const [nuevo, setNuevo] = useState(true);
     const [moduloSeguridad, setModuloSeguridad] = useState(false);
+    const [precintos, setPrecintos] = useState([])
 
     useEffect(() => {
         listarCombos().then(res => setCombos(res));
         encontrarModulo('Seguridad').then(res => setModuloSeguridad(res[0].habilitado));
+        onChangeAlmacen()
     }, []);
+
+    const onChangeAlmacen = async () => {
+        const formData = new FormData(formRef.current)
+        const almacenR = formData.get('almacen')
+        const producto = await encontrarUnSerial({ "producto": { "name": "Precinto plástico" } })
+        const data = {
+            "cons_producto": producto.cons_producto,
+            "serial": "",
+            "bag_pack": "",
+            "s_pack": "",
+            "m_pack": "",
+            "l_pack": "",
+            "cons_almacen": almacenByUser.find((item) => item.nombre == almacenR).consecutivo,
+            "available": [
+                true
+            ]
+        }
+        const precintosR = await listarSeriales(false, false, data)
+        setPrecintos(precintosR)
+    }
 
 
     const [products, setProducts] = useState([1]);
@@ -181,6 +203,7 @@ export default function Ajuste() {
                                     name="almacen"
                                     className={styles.select}
                                     size="sm"
+                                    onChange={onChangeAlmacen}
                                     disabled={bool}>
                                     {!bool && almacenByUser.map((item, index) => (
                                         <option key={index}>{item.nombre}</option>
@@ -248,7 +271,7 @@ export default function Ajuste() {
                             }
 
 
-                            { moduloSeguridad &&
+                            {moduloSeguridad &&
                                 <div className={styles.radio}>
                                     <label htmlFor="radio-contenedor">Contenedor</label>
                                     <input
@@ -261,18 +284,18 @@ export default function Ajuste() {
                                         aria-label="Radio button for following text input" />
                                 </div>
                             }
-                            { moduloSeguridad &&
+                            {moduloSeguridad &&
                                 <div className={styles.radio}>
-                                <label htmlFor="radio-camion">Camión</label>
-                                <input
-                                    id="radio-camion"
-                                    type="radio"
-                                    value={2}
-                                    checked={radio == 2}
-                                    onChange={handleRadio}
-                                    disabled={bool}
-                                    aria-label="Radio button for following text input" />
-                            </div>
+                                    <label htmlFor="radio-camion">Camión</label>
+                                    <input
+                                        id="radio-camion"
+                                        type="radio"
+                                        value={2}
+                                        checked={radio == 2}
+                                        onChange={handleRadio}
+                                        disabled={bool}
+                                        aria-label="Radio button for following text input" />
+                                </div>
                             }
                             {alertRadio &&
                                 <span className={styles.alertRadio}>
@@ -282,14 +305,14 @@ export default function Ajuste() {
 
                         </div>
 
-                        {(radio != 0) &&
+                        {((radio != 0) && (radio != 1)) &&
                             <span>
                                 <div className="mb-3"></div>
                                 <div className={styles.line}></div>
                             </span>
                         }
 
-                        {radio == 1 &&
+                        {false &&
                             <div className={styles.contenedor7}>
 
                                 <InputGroup size="sm" >
@@ -360,16 +383,24 @@ export default function Ajuste() {
 
                                 <InputGroup size="sm" >
                                     <InputGroup.Text id="inputGroup-sizing-sm">Precinto plástico</InputGroup.Text>
-                                    <Form.Control
-                                        id="precinto-plastico"
-                                        name="precinto-plastico"
-                                        aria-label="Small"
-                                        aria-describedby="inputGroup-sizing-sm"
-                                        required
-                                        disabled={bool}
-                                    />
+                                    <Form.Select
+                                        id="preciton"
+                                        name="precinto"
+                                        className={styles.select}
+                                        size="sm"
+                                        disabled={bool}>
+                                        {precintos.map((item, index) => {
+                                            console.log(item)
+                                            return (
+                                                <option key={index}>{item.serial}</option>
+                                            )
+                                        })}
+
+
+                                    </Form.Select>
                                 </InputGroup>
 
+{ false &&
                                 <InputGroup size="sm" >
                                     <InputGroup.Text id="inputGroup-sizing-sm">Guaya camión</InputGroup.Text>
                                     <Form.Control
@@ -380,6 +411,7 @@ export default function Ajuste() {
                                         disabled={bool}
                                     />
                                 </InputGroup>
+}
                             </div>
                         }
                         <div className="mb-3"></div>
