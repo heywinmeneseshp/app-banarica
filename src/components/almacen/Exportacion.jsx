@@ -35,18 +35,18 @@ export default function Ajuste() {
     const [alertRadio, setAlertRadio] = useState(false);
     const [nuevo, setNuevo] = useState(true);
     const [moduloSeguridad, setModuloSeguridad] = useState(false);
-    const [precintos, setPrecintos] = useState([])
+    const [precintos, setPrecintos] = useState([]);
 
     useEffect(() => {
         listarCombos().then(res => setCombos(res));
         encontrarModulo('Seguridad').then(res => setModuloSeguridad(res[0].habilitado));
-        onChangeAlmacen()
+        onChangeAlmacen();
     }, []);
 
     const onChangeAlmacen = async () => {
-        const formData = new FormData(formRef.current)
-        const almacenR = formData.get('almacen')
-        const producto = await encontrarUnSerial({ "producto": { "name": "Precinto plástico" } })
+        const formData = new FormData(formRef.current);
+        const almacenR = formData.get('almacen');
+        const producto = await encontrarUnSerial({ "producto": { "name": "Precinto plástico" } });
         const data = {
             "cons_producto": producto.cons_producto,
             "serial": "",
@@ -58,10 +58,10 @@ export default function Ajuste() {
             "available": [
                 true
             ]
-        }
-        const precintosR = await listarSeriales(false, false, data)
-        setPrecintos(precintosR)
-    }
+        };
+        const precintosR = await listarSeriales(false, false, data);
+        setPrecintos(precintosR);
+    };
 
 
     const [products, setProducts] = useState([1]);
@@ -390,10 +390,10 @@ export default function Ajuste() {
                                         size="sm"
                                         disabled={bool}>
                                         {precintos.map((item, index) => {
-                                            console.log(item)
+                                            console.log(item);
                                             return (
                                                 <option key={index}>{item.serial}</option>
-                                            )
+                                            );
                                         })}
 
 
