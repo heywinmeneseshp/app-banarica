@@ -82,6 +82,7 @@ export default function Liquidacion({ movimiento }) {
         const IdNoti = gestionNotificacion.notificacion.id;
         const cons_movimiento = gestionNotificacion.notificacion.cons_movimiento;
         const respuesta = formData.get("respuesta");
+        if (!respuesta) return window.alert("Por favor rellenar todos los campos")
         actualizarMovimiento(movimientoID, {
             "pendiente": false,
             "respuesta": respuesta,

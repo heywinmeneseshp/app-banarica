@@ -8,7 +8,7 @@ import useAlert from "@hooks/useAlert";
 import generarSemana from "@hooks/useSemana";
 import useDate from "@hooks/useDate";
 //Bootstrap
-import { Container } from "react-bootstrap";
+import { Container, ToastBody } from "react-bootstrap";
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import Button from 'react-bootstrap/Button';
@@ -102,7 +102,7 @@ export default function Ajuste() {
             setDate(fecha);
             setSemana(semanaR);
             setObservaciones(observacionesR);
-            const body = {
+            let body = {
                 "cons_almacen": consAlmacen,
                 "cons_semana": semanaR,
                 "fecha": fecha,
@@ -110,6 +110,9 @@ export default function Ajuste() {
                 'realizado_por': user.username,
                 'aprobado_por': user.username,
             };
+            let vehiculo = formData.get('vehiculo')
+            if (vehiculo) body['vehiculo'] = vehiculo;
+            console.log(body)
             let lista = [];
             let arrayPost = [];
             products.map((product, index) => {
@@ -122,6 +125,7 @@ export default function Ajuste() {
             setProducts(lista);
 
             const { movimiento } = await exportCombo(body, arrayPost);
+            console.log(movimiento)
             setConsMovimiento(movimiento.consecutivo);
             if (moduloSeguridad) exportarArticulosConSerial(serialesVerificados, consAlmacen, movimiento.consecutivo);
             const dataNotificacion = {
@@ -297,6 +301,19 @@ export default function Ajuste() {
                                         aria-label="Radio button for following text input" />
                                 </div>
                             }
+                            {moduloSeguridad &&
+                                <div className={styles.radio}>
+                                    <label htmlFor="radio-camion">Camión sin Precinto</label>
+                                    <input
+                                        id="radio-sin-precinto"
+                                        type="radio"
+                                        value={3}
+                                        checked={radio == 3}
+                                        onChange={handleRadio}
+                                        disabled={bool}
+                                        aria-label="Radio button for following text input" />
+                                </div>
+                            }
                             {alertRadio &&
                                 <span className={styles.alertRadio}>
                                     <span className="yellow">¡Por favor selecciones el tipo de transporte!</span>
@@ -305,7 +322,7 @@ export default function Ajuste() {
 
                         </div>
 
-                        {((radio != 0) && (radio != 1)) &&
+                        {((radio != 0) && (radio != 1) && (radio != 3)) &&
                             <span>
                                 <div className="mb-3"></div>
                                 <div className={styles.line}></div>
@@ -390,7 +407,6 @@ export default function Ajuste() {
                                         size="sm"
                                         disabled={bool}>
                                         {precintos.map((item, index) => {
-                                            console.log(item);
                                             return (
                                                 <option key={index}>{item.serial}</option>
                                             );
@@ -400,18 +416,31 @@ export default function Ajuste() {
                                     </Form.Select>
                                 </InputGroup>
 
-{ false &&
                                 <InputGroup size="sm" >
-                                    <InputGroup.Text id="inputGroup-sizing-sm">Guaya camión</InputGroup.Text>
+                                    <InputGroup.Text id="inputGroup-sizing-sm">Vehículo</InputGroup.Text>
                                     <Form.Control
-                                        id="guaya-camion"
-                                        name="guaya-camion"
+                                        id="vehiculo"
+                                        name="vehiculo"
+                                        minLength={6}
+                                        required
                                         aria-label="Small"
                                         aria-describedby="inputGroup-sizing-sm"
                                         disabled={bool}
                                     />
                                 </InputGroup>
-}
+
+                                {false &&
+                                    <InputGroup size="sm" >
+                                        <InputGroup.Text id="inputGroup-sizing-sm">Guaya camión</InputGroup.Text>
+                                        <Form.Control
+                                            id="guaya-camion"
+                                            name="guaya-camion"
+                                            aria-label="Small"
+                                            aria-describedby="inputGroup-sizing-sm"
+                                            disabled={bool}
+                                        />
+                                    </InputGroup>
+                                }
                             </div>
                         }
                         <div className="mb-3"></div>
@@ -457,7 +486,6 @@ export default function Ajuste() {
                                             defaultValue={product?.cantidad}
                                             required
                                         />
-
                                     </InputGroup>
                                 </div>
                             </div>

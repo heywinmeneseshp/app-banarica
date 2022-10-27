@@ -78,13 +78,15 @@ export default function Devolucion({ movimiento }) {
         const array = products.slice(0, -1);
         setProducts(array);
     }
-
+ 
     async function rechazarAjuste() {
         const formData = new FormData(formRef.current);
         const IdNoti = gestionNotificacion.notificacion.id;
         const cons_movimiento = gestionNotificacion.notificacion.cons_movimiento;
         const respuesta = formData.get("respuesta");
-        actualizarMovimiento(movimientoID, { pendiente: false, respuesta: respuesta });
+        if (!respuesta) return window.alert("Por favor rellenar todos los campos")
+        const aprobado_por = user.username
+        actualizarMovimiento(movimientoID, { pendiente: false, respuesta: respuesta, aprobado_por: aprobado_por });
         actualizarNotificaciones(IdNoti, { aprobado: true, visto: true });
         const { data } = await axios.get(endPoints.historial.filter(cons_movimiento));
         data.forEach(element => {

@@ -24,7 +24,7 @@ export default function Alerta({ data, setChange, change }) {
     }
 
     const onCerrar = () => {
-        actualizarNotificaciones(data.id, { visto: true, aprobado: true, descripcion: "completado"  })
+        actualizarNotificaciones(data.id, { visto: true, aprobado: true, descripcion: "completado" })
         actualizarPedido(data.cons_movimiento, { pendiente: false })
         setChange(true)
         setTimeout(() => {
@@ -47,8 +47,12 @@ export default function Alerta({ data, setChange, change }) {
                     <b>| {data.almacen_receptor} |</b> {data.tipo_movimiento} <b>{data.cons_movimiento}</b> {data.descripcion}
                 </div>
                 <div className={styles.cajaBoton2}>
-                    <button onClick={onCerrar} type="button" className="btn btn-danger btn-sm">Cerrar Pedido</button>
-                    <button onClick={onVer} type="button" className="btn btn-success btn-sm">Ver pedido</button>
+                    <button onClick={onCerrar} type="button" className="btn btn-danger btn-sm">
+                        Cerrar
+                    </button>
+                    <button onClick={onVer} type="button" className="btn btn-success btn-sm">
+                        Ver
+                    </button>
                 </div>
             </Alert>
         </>

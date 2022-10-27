@@ -41,14 +41,14 @@ export default function Alerta({ data }) {
     return (
         <>
             <Alert className={styles.alert} key={color} variant={color}>
-                <span className={styles.boton_desktop}>
+                <div className={styles.boton_desktop}>
                     <div >
                         <b>| {data.almacen_receptor} |</b> {texto} <b>{data.cons_movimiento}</b> {data.descripcion}
                     </div>
                     <div className={styles.cajaBoton}>
                         <button onClick={onButton} type="button" className="btn btn-success btn-sm w-100">Ver</button>
                     </div>
-                </span>
+                </div>
 
                 <div className={styles.boton_mobile} onClick={onButton}>
                     <b>| {`${data.almacen_receptor}`} | </b> {` ${texto}`} {`${data.cons_movimiento}`} {data.descripcion}
