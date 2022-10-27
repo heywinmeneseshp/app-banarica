@@ -8,7 +8,7 @@ import useAlert from "@hooks/useAlert";
 import generarSemana from "@hooks/useSemana";
 import useDate from "@hooks/useDate";
 //Bootstrap
-import { Container, ToastBody } from "react-bootstrap";
+import { Container } from "react-bootstrap";
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import Button from 'react-bootstrap/Button';
@@ -110,9 +110,9 @@ export default function Ajuste() {
                 'realizado_por': user.username,
                 'aprobado_por': user.username,
             };
-            let vehiculo = formData.get('vehiculo')
+            let vehiculo = formData.get('vehiculo');
             if (vehiculo) body['vehiculo'] = vehiculo;
-            console.log(body)
+            console.log(body);
             let lista = [];
             let arrayPost = [];
             products.map((product, index) => {
@@ -125,7 +125,7 @@ export default function Ajuste() {
             setProducts(lista);
 
             const { movimiento } = await exportCombo(body, arrayPost);
-            console.log(movimiento)
+            console.log(movimiento);
             setConsMovimiento(movimiento.consecutivo);
             if (moduloSeguridad) exportarArticulosConSerial(serialesVerificados, consAlmacen, movimiento.consecutivo);
             const dataNotificacion = {
