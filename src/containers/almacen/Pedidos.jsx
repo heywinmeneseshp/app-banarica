@@ -34,7 +34,7 @@ export default function Pedidos() {
     const { alert, setAlert, toogleAlert } = useAlert();
     const [bool, setBool] = useState(false)
     const [observaciones, setObservaciones] = useState(null);
-    const [semanaActual, setSemanaActual] = useStete(null);
+    const [semanaActual, setSemanaActual] = useState(null);
 
     useEffect(() => {
         gestionPedido.initialize(almacenByUser)
