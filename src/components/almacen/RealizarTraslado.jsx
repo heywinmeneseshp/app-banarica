@@ -42,7 +42,7 @@ export default function RealizarTraslado() {
     const [dates, setDate] = useState();
     const { alert, setAlert, toogleAlert } = useAlert();
     const [consTraslado, setConsTraslado] = useState(null);
-    const [semana, setSemana] = useState(null)
+    const [semana, setSemana] = useState(null);
 
     useEffect(() => {
         const listar = async () => {
@@ -69,7 +69,7 @@ export default function RealizarTraslado() {
     }
 
     const handleSubmit = (e) => {
-        console.log(semana?.semana_actual + semana?.semana_siguiente)
+        console.log(semana?.semana_actual + semana?.semana_siguiente);
         e.preventDefault();
         const formData = new FormData(formRef.current);
         const fecha = formData.get("fecha");

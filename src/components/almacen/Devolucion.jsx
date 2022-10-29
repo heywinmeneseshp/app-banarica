@@ -42,7 +42,7 @@ export default function Devolucion({ movimiento }) {
     const [movimientoID, setMovimientoID] = useState(null);
     const [respuesta, setRespuesta] = useState(null);
     const [pendiente, setPendiente] = useState(null);
-    const [semanaActual, setSemanaActual] = useState(null)
+    const [semanaActual, setSemanaActual] = useState(null);
 
     useEffect(() => {
         if (!movimiento) {
@@ -53,7 +53,7 @@ export default function Devolucion({ movimiento }) {
                 setProductos(productlist);
                 const fecha = generarFecha();
                 setDate(fecha);
-                encontrarModulo('Semana').then(res => setSemanaActual(res[0]))
+                encontrarModulo('Semana').then(res => setSemanaActual(res[0]));
             };
             listar();
         } else {

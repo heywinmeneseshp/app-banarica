@@ -36,7 +36,7 @@ export default function Ajuste({ exportacion, movimiento }) {
     const [observaciones, setObservaciones] = useState(null);
     const { alert, setAlert, toogleAlert } = useAlert();
     const [titulo, setTitulo] = useState("Ajuste");
-    const [semanaActual, setSemanaActual] = useState(null)
+    const [semanaActual, setSemanaActual] = useState(null);
     useEffect(() => {
         if (exportacion) setTitulo(exportacion);
         if (!movimiento) {
@@ -45,7 +45,7 @@ export default function Ajuste({ exportacion, movimiento }) {
                 const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
                 const productlist = await filtrarProductos(data);
                 setProductos(productlist);
-                encontrarModulo("Semana").then(res => setSemanaActual(res[0]))
+                encontrarModulo("Semana").then(res => setSemanaActual(res[0]));
             };
             listar();
         } else {

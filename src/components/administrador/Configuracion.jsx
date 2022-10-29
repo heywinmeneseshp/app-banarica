@@ -10,7 +10,7 @@ import styles1 from '@styles/Config.module.css';
 import { useRef } from 'react';
 
 export default function Configuracion({ setOpen }) {
-    const formRef = useRef()
+    const formRef = useRef();
     const [securityCheck, setSecurityCheck] = useState(false);
     const [semana, setSemana] = useState(null);
 
@@ -31,7 +31,7 @@ export default function Configuracion({ setOpen }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        const formData = new FormData(formRef.current)
+        const formData = new FormData(formRef.current);
         try {
             actualizarModulo({
                 "modulo": "Seguridad",
