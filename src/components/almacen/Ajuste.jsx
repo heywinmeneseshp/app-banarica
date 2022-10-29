@@ -19,6 +19,7 @@ import Button from 'react-bootstrap/Button';
 import Alertas from "@assets/Alertas";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
+import { encontrarModulo } from "@services/api/configuracion";
 
 
 export default function Ajuste({ exportacion, movimiento }) {
@@ -35,6 +36,7 @@ export default function Ajuste({ exportacion, movimiento }) {
     const [observaciones, setObservaciones] = useState(null);
     const { alert, setAlert, toogleAlert } = useAlert();
     const [titulo, setTitulo] = useState("Ajuste");
+    const [semanaActual, setSemanaActual] = useState(null)
     useEffect(() => {
         if (exportacion) setTitulo(exportacion);
         if (!movimiento) {
@@ -43,6 +45,7 @@ export default function Ajuste({ exportacion, movimiento }) {
                 const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
                 const productlist = await filtrarProductos(data);
                 setProductos(productlist);
+                encontrarModulo("Semana").then(res => setSemanaActual(res[0]))
             };
             listar();
         } else {
@@ -218,8 +221,8 @@ export default function Ajuste({ exportacion, movimiento }) {
                                     aria-label="Small"
                                     aria-describedby="inputGroup-sizing-sm"
                                     id="semana"
-                                    min="1"
-                                    max="52"
+                                    min={semanaActual?.semana_actual * 1 - semanaActual?.semana_previa}
+                                    max={semanaActual?.semana_actual * 1 + semanaActual?.semana_siguiente}
                                     name="semana"
                                     type="number"
                                     required

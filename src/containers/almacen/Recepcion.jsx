@@ -21,6 +21,7 @@ import Alertas from "@assets/Alertas";
 import AlertaPedido from "@assets/AlertaPedido";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
+import { encontrarModulo } from "@services/api/configuracion";
 
 export default function Recepcion({ movimiento }) {
     const formRef = useRef(null);
@@ -37,7 +38,8 @@ export default function Recepcion({ movimiento }) {
     const [remision, setRemision] = useState(null)
     const [pedido, setPedido] = useState(null);
     const [notificaciones, setNotificaciones] = useState([])
-    const [change, setChange] = useState(false)
+    const [change, setChange] = useState(false);
+    const [semanaActual, setSemanaActual] = useState(null);
 
     useEffect(() => {
         async function listrasItems() {
@@ -54,6 +56,7 @@ export default function Recepcion({ movimiento }) {
                 const productlist = await filtrarProductos(data);
                 setProductos(productlist);
                 setDate(useDate());
+                encontrarModulo('Semana').then(res => setSemanaActual(res[0]));
             } else {
                 setBool(true)
                 filterHistorial(movimiento.consecutivo).then(res => {
@@ -257,11 +260,13 @@ export default function Recepcion({ movimiento }) {
                                 <Form.Control
                                     aria-label="Small"
                                     aria-describedby="inputGroup-sizing-sm"
-                                    min="1"
-                                    max="52"
+                                    min={semanaActual?.semana_actual - semana?.semana_previa}
+                                    max={semanaActual?.semana_actual * 1 + semana?.semana_siguiente}
                                     id="semana"
                                     name="semana"
                                     type="number"
+                                    min={semanaActual?.semana_actual * 1 - semanaActual?.semana_previa}
+                                    max={semanaActual?.semana_actual * 1 + semanaActual?.semana_siguiente}
                                     required
                                     defaultValue={semana}
                                     disabled={bool}

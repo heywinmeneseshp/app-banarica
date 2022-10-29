@@ -22,6 +22,7 @@ import Button from 'react-bootstrap/Button';
 import Alertas from "@assets/Alertas";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
+import { encontrarModulo } from "@services/api/configuracion";
 
 
 export default function Devolucion({ movimiento }) {
@@ -41,6 +42,7 @@ export default function Devolucion({ movimiento }) {
     const [movimientoID, setMovimientoID] = useState(null);
     const [respuesta, setRespuesta] = useState(null);
     const [pendiente, setPendiente] = useState(null);
+    const [semanaActual, setSemanaActual] = useState(null)
 
     useEffect(() => {
         if (!movimiento) {
@@ -51,6 +53,7 @@ export default function Devolucion({ movimiento }) {
                 setProductos(productlist);
                 const fecha = generarFecha();
                 setDate(fecha);
+                encontrarModulo('Semana').then(res => setSemanaActual(res[0]))
             };
             listar();
         } else {
@@ -78,7 +81,7 @@ export default function Devolucion({ movimiento }) {
         const array = products.slice(0, -1);
         setProducts(array);
     }
- 
+
     async function rechazarAjuste() {
         const formData = new FormData(formRef.current);
         const IdNoti = gestionNotificacion.notificacion.id;
@@ -291,8 +294,8 @@ export default function Devolucion({ movimiento }) {
                                     id="semana"
                                     name="semana"
                                     type="number"
-                                    min="1"
-                                    max="52"
+                                    min={semanaActual?.semana_actual * 1 - semanaActual?.semana_previa}
+                                    max={semanaActual?.semana_actual * 1 + semanaActual?.semana_siguiente}
                                     required
                                     disabled={bool}
                                     defaultValue={semana}

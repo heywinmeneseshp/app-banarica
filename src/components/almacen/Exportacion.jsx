@@ -36,10 +36,12 @@ export default function Ajuste() {
     const [nuevo, setNuevo] = useState(true);
     const [moduloSeguridad, setModuloSeguridad] = useState(false);
     const [precintos, setPrecintos] = useState([]);
+    const [semanaActual, setSemanaActual] = useState(null)
 
     useEffect(() => {
         listarCombos().then(res => setCombos(res));
         encontrarModulo('Seguridad').then(res => setModuloSeguridad(res[0].habilitado));
+        encontrarModulo('Semana').then(res => setSemanaActual(res[0]))
         onChangeAlmacen();
     }, []);
 
@@ -250,8 +252,8 @@ export default function Ajuste() {
                                         id="semana"
                                         name="semana"
                                         type="number"
-                                        min="1"
-                                        max="52"
+                                        min={semanaActual?.semana_actual * 1 - semanaActual?.semana_previa}
+                                        max={semanaActual?.semana_actual * 1 + semanaActual?.semana_siguiente}
                                         required
                                         disabled={bool}
                                         defaultValue={semana}

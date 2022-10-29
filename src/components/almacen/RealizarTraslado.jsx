@@ -22,6 +22,7 @@ import Button from 'react-bootstrap/Button';
 import Alertas from "@assets/Alertas";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
+import { encontrarModulo } from "@services/api/configuracion";
 
 
 export default function RealizarTraslado() {
@@ -41,6 +42,7 @@ export default function RealizarTraslado() {
     const [dates, setDate] = useState();
     const { alert, setAlert, toogleAlert } = useAlert();
     const [consTraslado, setConsTraslado] = useState(null);
+    const [semana, setSemana] = useState(null)
 
     useEffect(() => {
         const listar = async () => {
@@ -52,6 +54,7 @@ export default function RealizarTraslado() {
             listarConductores().then(res => setConductores(res));
             listarTransportadoras().then(res => setTransportadoras(res));
             setDate(generarFecha());
+            encontrarModulo("Semana").then(res => setSemana(res[0]));
         };
         listar();
     }, []);
@@ -66,6 +69,7 @@ export default function RealizarTraslado() {
     }
 
     const handleSubmit = (e) => {
+        console.log(semana?.semana_actual + semana?.semana_siguiente)
         e.preventDefault();
         const formData = new FormData(formRef.current);
         const fecha = formData.get("fecha");
@@ -223,8 +227,8 @@ export default function RealizarTraslado() {
                                 id="semana"
                                 name="semana"
                                 type="number"
-                                min="1"
-                                max="52"
+                                min={semana?.semana_actual - semana?.semana_previa}
+                                max={semana?.semana_actual*1 + semana?.semana_siguiente}
                                 required
                                 disabled={bool}
                             />

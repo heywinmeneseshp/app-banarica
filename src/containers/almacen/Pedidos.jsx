@@ -21,6 +21,7 @@ import NuevoAlmacenPedido from "@components/almacen/NuevoAlmacenPedido.jsx";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
 import Alertas from "@assets/Alertas";
+import { encontrarModulo } from "@services/api/configuracion";
 
 
 export default function Pedidos() {
@@ -33,10 +34,12 @@ export default function Pedidos() {
     const { alert, setAlert, toogleAlert } = useAlert();
     const [bool, setBool] = useState(false)
     const [observaciones, setObservaciones] = useState(null);
+    const [semanaActual, setSemanaActual] = useStete(null);
 
     useEffect(() => {
         gestionPedido.initialize(almacenByUser)
         setDate(generarFecha)
+        encontrarModulo('Semana').then(res => setSemanaActual(res[0]))
     }, [])
 
     function addDeposit() {
@@ -100,7 +103,7 @@ export default function Pedidos() {
         setAlert({
             active: false
         })
-        setTimeout(()=>{
+        setTimeout(() => {
             setDeposits([1])
         }, 50)
     }
@@ -144,8 +147,8 @@ export default function Pedidos() {
                                 type="number"
                                 id="semana"
                                 name="semana"
-                                min="1"
-                                max="52"
+                                min={semanaActual?.semana_actual * 1 - semanaActual?.semana_previa}
+                                max={semanaActual?.semana_actual * 1 + semanaActual?.semana_siguiente}
                                 aria-label="Small"
                                 aria-describedby="inputGroup-sizing-sm"
                                 required

@@ -22,6 +22,7 @@ import Button from 'react-bootstrap/Button';
 import Alertas from "@assets/Alertas";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
+import { encontrarModulo } from "@services/api/configuracion";
 
 
 export default function Liquidacion({ movimiento }) {
@@ -41,6 +42,7 @@ export default function Liquidacion({ movimiento }) {
     const [movimientoID, setMovimientoID] = useState(null);
     const [respuesta, setRespuesta] = useState(null);
     const [pendiente, setPendiente] = useState(null);
+    const [semanaActual, setSemanaActual] = useState(null);
 
     useEffect(() => {
         if (!movimiento) {
@@ -49,6 +51,8 @@ export default function Liquidacion({ movimiento }) {
                 const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
                 const productlist = await filtrarProductos(data);
                 setProductos(productlist);
+                encontrarModulo('Semana').then(res => setSemanaActual(res[0]));
+                encontrarModulo('Semana').then(res => console.log(res[0]));
             };
             listar();
         } else {
@@ -295,11 +299,10 @@ export default function Liquidacion({ movimiento }) {
                                     id="semana"
                                     name="semana"
                                     type="number"
-                                    min="1"
-                                    max="52"
+                                    min={semanaActual?.semana_actual * 1 - semanaActual?.semana_previa}
+                                    max={semanaActual?.semana_actual * 1 + semanaActual?.semana_siguiente}
                                     required
                                     disabled={bool}
-                                    defaultValue={semana}
                                 />
                             </InputGroup>
                         }
