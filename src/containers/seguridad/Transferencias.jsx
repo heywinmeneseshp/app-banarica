@@ -145,7 +145,6 @@ export default function Transferencias() {
 
             const traslado = await agregarTraslado(data)
             const cons_traslado = traslado.data.consecutivo;
-            console.log(cons_traslado)
             for (const property in claves) {
                 const dataHistorial = {
                     cons_movimiento: cons_traslado,
@@ -177,7 +176,6 @@ export default function Transferencias() {
                 autoClose: false
             })
         } catch (e) {
-            console.log(e)
             setAlert({
                 active: true,
                 mensaje: "Error en la transferencia",

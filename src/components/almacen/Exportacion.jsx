@@ -114,7 +114,6 @@ export default function Ajuste() {
             };
             let vehiculo = formData.get('vehiculo');
             if (vehiculo) body['vehiculo'] = vehiculo;
-            console.log(body);
             let lista = [];
             let arrayPost = [];
             products.map((product, index) => {
@@ -127,7 +126,6 @@ export default function Ajuste() {
             setProducts(lista);
 
             const { movimiento } = await exportCombo(body, arrayPost);
-            console.log(movimiento);
             setConsMovimiento(movimiento.consecutivo);
             if (moduloSeguridad) exportarArticulosConSerial(serialesVerificados, consAlmacen, movimiento.consecutivo);
             const dataNotificacion = {

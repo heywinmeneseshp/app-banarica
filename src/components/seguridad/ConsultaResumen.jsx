@@ -16,9 +16,7 @@ export default function ConsultaDetallada({ data, setPagination, limit, paginati
     const { almacenByUser } = useAuth();
 
     useEffect(() => {
-
         listar(data);
-
     }, [data, limit]);
 
     async function listar(data) {
@@ -39,10 +37,13 @@ export default function ConsultaDetallada({ data, setPagination, limit, paginati
         };
         if (data.cons_almacen == "") body.almacen.consecutivo = almacenByUser.map(item => item.consecutivo);
         const res = await filtradoGeneralStock(body);
+        const result = res.data.sort((a, b) => {
+            if (a.cantidad > b.cantidad) return 1;
+            if (a.cantidad < b.cantidad) return -1;
+        });
         setTotal(res.total);
-        setTabla(res.data);
+        setTabla(result);
         setResults(res.total);
-       
     }
 
     return (

@@ -104,7 +104,6 @@ export default function Recepcion() {
                     autoClose: false
                 })
             } else {
-                console.log(e)
                 setAlert({
                     active: true,
                     mensaje: res.message,

@@ -22,7 +22,6 @@ export default function useFile() {
             return newList
         } else {
             data.shift()
-            console.log(data)
             const newList = data.map(item => {
                 const data = {
                     cons_producto: cons_producto,

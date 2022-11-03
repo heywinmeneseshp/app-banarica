@@ -52,7 +52,6 @@ export default function Liquidacion({ movimiento }) {
                 const productlist = await filtrarProductos(data);
                 setProductos(productlist);
                 encontrarModulo('Semana').then(res => setSemanaActual(res[0]));
-                encontrarModulo('Semana').then(res => console.log(res[0]));
             };
             listar();
         } else {

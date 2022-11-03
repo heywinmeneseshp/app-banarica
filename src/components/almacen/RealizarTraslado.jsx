@@ -69,7 +69,6 @@ export default function RealizarTraslado() {
     }
 
     const handleSubmit = (e) => {
-        console.log(semana?.semana_actual + semana?.semana_siguiente);
         e.preventDefault();
         const formData = new FormData(formRef.current);
         const fecha = formData.get("fecha");

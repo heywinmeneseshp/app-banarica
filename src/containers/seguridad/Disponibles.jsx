@@ -74,7 +74,6 @@ export default function Disponibles() {
 
     const descargarExcel = async () => {
         if (!tablaConsulta) {
-            console.log(data)
             const response = await listarSeriales(false, false, data);
             useExcel(response, "seriales", "Artículos de seguridad")
         } else {

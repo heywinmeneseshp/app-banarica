@@ -17,8 +17,6 @@ export default function Seguridad() {
     const router = useRouter();
 
     useEffect(() => {
-
-        console.log(router?.query);
     }, [router?.query]);
     return (
         <ThirdLayout>

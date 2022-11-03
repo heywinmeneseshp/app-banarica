@@ -46,7 +46,6 @@ const cargarSeriales = async (dataExcel, remision, pedido, semana, fecha, observ
         await axios.post(endPoints.seguridad.CargarSeriales, dataExcel)
         let data = {}
         dataExcel.map((item) => {
-            console.log(item)
             if (data?.[item.cons_producto]) {
                 data[item.cons_producto] = data?.[item.cons_producto] + 1
 
@@ -62,7 +61,6 @@ const cargarSeriales = async (dataExcel, remision, pedido, semana, fecha, observ
             observaciones: observaciones
         }
         agregarRecepcion(body).then((res) => {
-            console.log(res)
             productList.map(item => {
                 const almacen = dataExcel[1].cons_almacen;
                 const cons_producto = item;
@@ -149,7 +147,7 @@ const exportarArticulosConSerial = async (updatedSeriales, cons_almacen, cons_mo
                  razon_movimiento: "Exportación",
                  cantidad: 1
              };
-             agregarHistorial(dataHistorial).then(res => console.log(res))
+             agregarHistorial(dataHistorial)
              restar(element.previous.cons_almacen, dataHistorial.cons_producto, dataHistorial.cantidad)
          }
      });

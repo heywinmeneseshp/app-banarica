@@ -46,7 +46,6 @@ const TableroA = () => {
 
     const handleSelect = (item) => {
         if (item == null) {
-            console.log(gestionNotificacion.notificaciones);
             setNotificaciones(gestionNotificacion.notificaciones);
         } else {
             const res = gestionNotificacion.notificaciones.filter(noti => noti.tipo_movimiento == item);
