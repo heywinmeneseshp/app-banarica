@@ -21,7 +21,7 @@ import styles from '@styles/informes/informes.module.css';
 
 export default function InfoStock() {
     const formRef = useRef();
-    const { almacenByUser } = useAuth();
+    const { almacenByUser, user } = useAuth();
     const [stock, setStock] = useState([1]);
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
@@ -31,18 +31,25 @@ export default function InfoStock() {
 
     useEffect(() => {
         try {
+            listarCategorias().then((res) => {
+                if (user.id_rol == "Super seguridad" || user.id_rol == "Seguridad") {
+                    setCategorias(res.filter(item => item.nombre == "Seguridad"))
+                } else {
+                    setCategorias(res)
+                }
+            })
             listar()
-            listarCategorias().then((res) => setCategorias(res))
         } catch (e) {
             alert("Error al cargar items", "error")
         }
-    }, [alert, pagination])
+    }, [alert, pagination, setStock])
 
     async function listar() {
         const formData = new FormData(formRef.current);
         const cons_almacen = formData.get('almacen');
-        const cons_categoria = formData.get('categoria');
-        const product_name = formData.get('articulo')
+        const cons_cat_rol = user.id_rol == "Seguridad" || user.id_rol == "Super seguridad" ? await listarCategorias() : false
+        const cons_categoria = cons_cat_rol ? cons_cat_rol.find(item => item.nombre == "Seguridad").consecutivo : formData.get('categoria');
+        const product_name = formData.get('articulo');
         let body = {
             "producto": {
                 "name": product_name || "",
@@ -100,7 +107,7 @@ export default function InfoStock() {
         const cons_almacen = formData.get('almacen');
         const cons_categoria = formData.get('categoria');
         const cons_producto = formData.get('articulo')
-        let body = {
+                let body = {
             "producto": {
                 "name": cons_producto,
                 "cons_categoria": cons_categoria
@@ -156,9 +163,12 @@ export default function InfoStock() {
                             <select className="form-select form-select-sm"
                                 id="categoria"
                                 name="categoria"
-                                onClick={onBuscar}
+                                onChange={onBuscar}
                             >
-                                <option value={""}>All</option>
+                                {!(user.id_rol == "Seguridad" || user.id_rol == "Super seguridad") &&
+                                    <option value={""}>All</option>
+                                }
+
                                 {categorias.map((item, index) => (
                                     <option key={index} value={item?.consecutivo}>{item?.nombre}</option>
                                 ))}

@@ -14,6 +14,7 @@ import Alertas from "@assets/Alertas";
 import useSemana from "@hooks/useSemana";
 import { agregarNotificaciones } from "@services/api/notificaciones";
 import { agregarHistorial } from "@services/api/historialMovimientos";
+import { encontrarModulo } from "@services/api/configuracion";
 
 
 export default function Transferencias() {
@@ -30,6 +31,8 @@ export default function Transferencias() {
     const [productos, setProductos] = useState([]);
     const [pagination, setPagination] = useState(1);
     const { alert, setAlert, toogleAlert } = useAlert();
+    const [semana, setSemana] = useState(null)
+    const [bool, setBool] = useState(false)
 
     useEffect(() => {
         const listar = async () => {
@@ -56,10 +59,12 @@ export default function Transferencias() {
         listarAlmacenes().then(res => setAlmacenes(res));
         listarProductosSeguridad().then(res => setProductos(res.filter(item => item.serial == true)))
         buscarArticulos();
+        encontrarModulo("Semana").then(res => setSemana(res[0]));
         listar()
     }, [limit, pagination])
 
     const buscarArticulos = async () => {
+        setCheckAll(false)
         setPagination(1)
         const formData = new FormData(formRef.current)
         const data = {
@@ -85,10 +90,11 @@ export default function Transferencias() {
     const handleLimit = () => {
         const limit = limitRef.current.value ? limitRef.current.value : 1
         setLimit(limit)
+        setCheckAll(false)
     }
 
     const handleCheckAll = () => {
-        const array = checKs.fill(!checkAll)
+        checKs.fill(!checkAll)
         const newChecks = checKs.map((item, index) => {
             return !checkAll
         });
@@ -106,14 +112,21 @@ export default function Transferencias() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const boolChecks = checKs.filter((item) => item == true);
+        if (boolChecks.length == 0) return setAlert({
+            active: true,
+            mensaje: "No ha seleccionado ningun artículo.",
+            color: "danger",
+            autoClose: true
+        })
         try {
             const formData = new FormData(formRef.current)
             if (formData.get("destino") == formData.get("origen")) {
-               return  setAlert({
+                return setAlert({
                     active: true,
                     mensaje: "El origen y el destin no pueden ser el mismo.",
                     color: "danger",
-                    autoClose: false
+                    autoClose: true
                 })
             }
             let tranferencias = [];
@@ -171,10 +184,11 @@ export default function Transferencias() {
             setPagination(1)
             setAlert({
                 active: true,
-                mensaje: "Transferencia pendiente por acetación",
+                mensaje: "Transferencia pendiente por aceptación",
                 color: "success",
                 autoClose: false
             })
+            setBool(true)
         } catch (e) {
             setAlert({
                 active: true,
@@ -183,6 +197,15 @@ export default function Transferencias() {
                 autoClose: false
             })
         }
+    }
+
+    const nuevaTranferencia = async () => {
+        setBool(false)
+        setAlert({
+            active: false,
+        })
+        checKs.fill(false)
+        await buscarArticulos()
     }
 
     return (
@@ -196,7 +219,8 @@ export default function Transferencias() {
                             aria-label=".form-select-sm example"
                             onChange={buscarArticulos}
                             id="origen"
-                            name="origen">
+                            name="origen"
+                            disabled={bool}>
                             {almacenByUser.map((item, index) => (
                                 <option key={index} value={item.consecutivo}>{item.nombre}</option>
                             ))}
@@ -209,8 +233,8 @@ export default function Transferencias() {
                         <select
                             className="form-select form-select-sm"
                             aria-label=".form-select-sm example"
-                            onChange={buscarArticulos}
                             id="destino"
+                            disabled={bool}
                             name="destino">
                             {almacenes.map((item, index) => (
                                 <option key={index} value={item.consecutivo}>{item.nombre}</option>
@@ -225,6 +249,7 @@ export default function Transferencias() {
                             aria-label=".form-select-sm example"
                             id="producto"
                             name="producto"
+                            disabled={bool}
                             onChange={buscarArticulos}
                         >
                             <option value={""}>All</option>
@@ -241,10 +266,10 @@ export default function Transferencias() {
                             aria-label="Sizing example input"
                             id="semana"
                             name="semana"
-                            min={1}
-                            max={52}
+                            min={semana?.semana_actual - semana?.semana_previa}
+                            max={semana?.semana_actual * 1 + semana?.semana_siguiente}
                             required
-                            onChange={buscarArticulos}
+                            disabled={bool}
                             aria-describedby="inputGroup-sizing-sm"></input>
                     </div>
 
@@ -255,8 +280,8 @@ export default function Transferencias() {
                             aria-label="Sizing example input"
                             id="fecha"
                             name="fecha"
-                            onChange={buscarArticulos}
                             defaultValue={useDate()}
+                            disabled={bool}
                             aria-describedby="inputGroup-sizing-sm"></input>
                     </div>
 
@@ -268,6 +293,7 @@ export default function Transferencias() {
                             id="serial"
                             name="serial"
                             onChange={buscarArticulos}
+                            disabled={bool}
                             aria-describedby="inputGroup-sizing-sm"></input>
                     </div>
 
@@ -279,6 +305,7 @@ export default function Transferencias() {
                             aria-describedby="inputGroup-sizing-sm"
                             id="bag_pack"
                             onChange={buscarArticulos}
+                            disabled={bool}
                             name="bag_pack"></input>
                     </div>
 
@@ -290,6 +317,7 @@ export default function Transferencias() {
                             aria-describedby="inputGroup-sizing-sm"
                             id="s_pack"
                             onChange={buscarArticulos}
+                            disabled={bool}
                             name="s_pack"></input>
                     </div>
 
@@ -302,7 +330,9 @@ export default function Transferencias() {
                             aria-describedby="inputGroup-sizing-sm"
                             onChange={buscarArticulos}
                             id="m_pack"
-                            name="m_pack"></input>
+                            name="m_pack"
+                            disabled={bool}></input>
+
                     </div>
 
 
@@ -314,7 +344,8 @@ export default function Transferencias() {
                             aria-describedby="inputGroup-sizing-sm"
                             onChange={buscarArticulos}
                             id="l_pack"
-                            name="l_pack"></input>
+                            name="l_pack"
+                            disabled={bool}></input>
                     </div>
 
                 </div>
@@ -339,7 +370,12 @@ export default function Transferencias() {
                             </span>
                             <span></span>
                             <span></span>
-                            <button type="submit" className="btn btn-success btn-sm w-100">Realizar Transferencia</button>
+                            {!bool &&
+                                <button type="submit" className="btn btn-success btn-sm w-100">Realizar Transferencia</button>
+                            }
+                            {bool &&
+                                <button type="button" onClick={nuevaTranferencia} className="btn btn-primary btn-sm w-100">Nueva Transferencia</button>
+                            }
                         </div>
                     </div>
 

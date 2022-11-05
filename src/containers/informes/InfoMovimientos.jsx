@@ -16,17 +16,27 @@ import Paginacion from '@components/Paginacion';
 import styles from '@styles/informes/informes.module.css';
 import { Container } from "react-bootstrap";
 import { buscarMovimiento } from "@services/api/movimientos";
+import { listarCategorias } from "@services/api/categorias";
 
 export default function InfoMovimientos() {
-    const { almacenByUser } = useAuth();
+    const { almacenByUser, user } = useAuth();
     const formRef = useRef();
     const [historial, setHistorial] = useState([1]);
     const [pagination, setPagination] = useState(1);
+    const [categorias, setCategorias] = useState([])
     const [total, setTotal] = useState(0);
     const limit = 20;
 
     useEffect(() => {
         try {
+            listarCategorias().then(res => {
+                if (user.id_rol == "Super seguridad" || user.id_rol == "Seguridad") {
+                    console.log(res)
+                    setCategorias(res.filter(item => item.nombre == "Seguridad"))
+                } else {
+                    setCategorias(res)
+                }
+            })
             listarItems()
         } catch (e) {
             alert("Error al cargar los usuarios", "error")
@@ -47,6 +57,9 @@ export default function InfoMovimientos() {
         const cons_movimiento = formData.get('movimiento');
         const cons_semana = formData.get('semana');
         const producto = formData.get('articulo');
+        const categoria = formData.get('categoria') == 0 ? "" : formData.get('categoria');
+        const seguridad = user.id_rol == "Seguridad" || user.id_rol == "Super seguridad" ? await listarCategorias() : false
+        const cons_categoria = !seguridad ? categoria : seguridad.find(item => item.nombre == "Seguridad").consecutivo  
         let url = `${endPoints.historial.list}/filter`
         let body = {}
         const anho = new Date().getFullYear()
@@ -59,7 +72,8 @@ export default function InfoMovimientos() {
         }
         if (cons_movimiento != 0) body.historial = { ...body.historial, cons_lista_movimientos: cons_movimiento };
         body.pagination = { limit: limit, offset: pagination }
-        const res = await axios.post(url, { ...body, producto: { name: producto } })
+        const res = await axios.post(url, { ...body, producto: { name: producto, cons_categoria: cons_categoria } })
+        console.log({ ...body, producto: { name: producto, cons_categoria: cons_categoria } })
         setTotal(res.data.total);
         setHistorial(res.data.data)
     }
@@ -168,6 +182,26 @@ export default function InfoMovimientos() {
                             </div>
 
                             <div className={styles.grupo}>
+                                <label htmlFor="almacen">Categoría</label>
+                                <div>
+                                    <select
+                                        className="form-select form-select-sm"
+                                        id="categoria"
+                                        name="categoria"
+                                        onChange={onBuscar}
+                                    >
+                                        {!(user.id_rol == "Super seguridad" || user.id_rol == "Seguridad") &&
+                                            <option value={0}>All</option>
+                                        }
+
+                                        {categorias.map(categoria => (
+                                            <option key={categoria.consecutivo} value={categoria.consecutivo} >{categoria.nombre}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className={styles.grupo}>
                                 <label htmlFor="articulo">Artículo</label>
                                 <div>
                                     <input type="text"
@@ -191,9 +225,6 @@ export default function InfoMovimientos() {
                                 </div>
                             </div>
 
-                            <Button onClick={onDescargar} className={styles.button} variant="success" size="sm">
-                                Descargar Excel
-                            </Button>
                         </div>
                         <div className={styles.contenedor3}>
                             <div className={styles.grupo}>
@@ -208,6 +239,11 @@ export default function InfoMovimientos() {
                             </div>
                             <Button onClick={onDescargarDocumento} className={styles.button} variant="warning" size="sm">
                                 Ver documento
+                            </Button>
+
+
+                            <Button onClick={onDescargar} className={styles.button} variant="success" size="sm">
+                                Descargar Excel
                             </Button>
 
                         </div>
