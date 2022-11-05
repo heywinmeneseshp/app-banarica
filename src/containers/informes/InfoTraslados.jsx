@@ -37,12 +37,9 @@ export default function InfoTraslados() {
 
     useEffect(() => {
         async function listar() {
-            const productos = await axios.get(endPoints.productos.list);
             const categorias = await axios.get(endPoints.categorias.list);
-            const almacenes = almacenByUser.map(item => item.consecutivo)
             const categoria_lis = user.id_rol == "Seguridad" || user.id_rol == "Super seguridad" ? categorias.data.filter(item => item.nombre == "Seguridad") : categorias.data
             setCategorias(categoria_lis);
-            setProductos(productos.data);
             onBuscar()
         }
         try {

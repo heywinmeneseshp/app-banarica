@@ -59,7 +59,7 @@ export default function RecibirTraslado({ movimiento }) {
         try {
             const formData = new FormData(formRef.current);
             const respuesta = formData.get("observaciones");
-            if (!respuesta || respuesta == "") return window.alert("Por favor ingresar las obervaciones")
+            if (!respuesta || respuesta == "") return window.alert("Por favor ingresar las obervaciones");
             const dataNotificacion = { descripcion: "Traslado rechazado", aprobado: true };
             actualizarNotificaciones(gestionNotificacion.notificacion.id, dataNotificacion);
             const data = { estado: "Rechazado", fecha_entrada: date, observaciones: respuesta };
