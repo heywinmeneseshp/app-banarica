@@ -17,6 +17,7 @@ import Button from 'react-bootstrap/Button';
 import { Container } from "react-bootstrap";
 //CSS
 import styles from '@styles/informes/informes.module.css';
+import { listarCategorias } from "@services/api/categorias";
 
 
 
@@ -54,7 +55,8 @@ export default function InfoTraslados() {
         let almacenes = formData.get("almacen")
         const semana = formData.get("semana")
         const producto = formData.get("articulo")
-        const categoria = formData.get("categoria")
+        const seguridad = user.id_rol == "Seguridad" || user.id_rol == "Super seguridad" ? await listarCategorias() : false
+        const categoria = seguridad ? seguridad.find(item => item.nombre == "Seguridad").consecutivo : formData.get("categoria")
         if (almacenes == 0) almacenes = almacenByUser.map(item => item.consecutivo)
         if (almacenes != 0) almacenes = [almacenes]
         const res = await filtrarTraslados(almacenes, semana, producto, categoria, pagination, limit)

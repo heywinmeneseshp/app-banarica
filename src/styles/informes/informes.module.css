@@ -32,6 +32,18 @@
   margin-top: 20px;
 }
 
+.buttons {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 10px;
+}
+
+.semanaAndAnho{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 10px 20px;
+}
+
 .tabla {
   margin-top: 20px;
 }
