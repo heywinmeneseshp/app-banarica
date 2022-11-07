@@ -20,7 +20,7 @@ export default function ReporteSemanalMovimientos() {
     const [semana, setSemana] = useState(null);
     const [tabla, setTabla] = useState([]);
     const [productos, setProductos] = useState([]);
-    const [product, setProduct] = useState("")
+    const [product, setProduct] = useState("");
 
     useEffect(() => {
         selectAlmacenes();
@@ -30,13 +30,13 @@ export default function ReporteSemanalMovimientos() {
     const encontrarProductos = async (categoria, categorias) => {
         const data = {
             producto: {
-                cons_categoria: categoria == "" ? categorias.map(item => { return item.consecutivo }) : categoria,
+                cons_categoria: categoria == "" ? categorias.map(item => { return item.consecutivo; }) : categoria,
                 isBlock: false
             }
-        }
-        const res = await filtrarProductos(data)
-        setProductos(res)
-    }
+        };
+        const res = await filtrarProductos(data);
+        setProductos(res);
+    };
 
     const listarTabla = async () => {
         const categories = await listarCategorias();
