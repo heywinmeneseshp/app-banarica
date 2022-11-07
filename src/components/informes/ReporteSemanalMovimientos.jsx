@@ -7,6 +7,7 @@ import { useAuth } from "@hooks/useAuth";
 import { listarCategorias } from "@services/api/categorias";
 import { Table } from "react-bootstrap";
 import { encontrarModulo } from "@services/api/configuracion";
+import { filtrarProductos } from "@services/api/productos";
 
 
 export default function ReporteSemanalMovimientos() {
@@ -18,10 +19,24 @@ export default function ReporteSemanalMovimientos() {
     const [company, setCompany] = useState("Banarica");
     const [semana, setSemana] = useState(null);
     const [tabla, setTabla] = useState([]);
+    const [productos, setProductos] = useState([]);
+    const [product, setProduct] = useState("")
 
     useEffect(() => {
         selectAlmacenes();
-    }, []);
+        listarTabla();
+    }, [product]);
+
+    const encontrarProductos = async (categoria, categorias) => {
+        const data = {
+            producto: {
+                cons_categoria: categoria == "" ? categorias.map(item => { return item.consecutivo }) : categoria,
+                isBlock: false
+            }
+        }
+        const res = await filtrarProductos(data)
+        setProductos(res)
+    }
 
     const listarTabla = async () => {
         const categories = await listarCategorias();
@@ -33,7 +48,8 @@ export default function ReporteSemanalMovimientos() {
         setSemana(cons_semana);
         let anho = formData.get('anho') ? formData.get('anho') : new Date().getFullYear();
         const cons_categoria = formData.get('categoria') == 0 ? "" : formData.get('categoria');
-        const producto = formData.get('articulo') ? formData.get('articulo') : "";
+        await encontrarProductos(cons_categoria, categories);
+        const producto = product;
         if (!cons_semana || cons_semana == "") {
             encontrarModulo("Semana").then(res => {
                 cons_semana = res[0].semana_actual;
@@ -167,14 +183,23 @@ export default function ReporteSemanalMovimientos() {
                     </div>
 
                     <div className={styles.grupo}>
-                        <label htmlFor="articulo">Artículo</label>
+                        <label >Artículo</label>
                         <div>
-                            <input type="text"
+                            <input
+                                type="text"
+                                list="articulo"
                                 className="form-control form-control-sm"
+                                onChange={ (e) => setProduct(e.target.value)}
+                            />
+                            <datalist
                                 id="articulo"
                                 name='articulo'
-                                onChange={listarTabla}
-                            ></input>
+                            >
+                                <option  value={""} />
+                                {productos.map((item, index) => (
+                                    <option key={index} value={item.name} />
+                                ))}
+                            </datalist>
                         </div>
                     </div>
 
@@ -246,19 +271,17 @@ export default function ReporteSemanalMovimientos() {
                                 for (var almacenR in tabla[dia]?.categoria) {
                                     const almacenTabla = almacenR.substring(0, almacen?.consecutivo.length);
                                     if (almacenTabla == almacen.consecutivo) {
-                                        console.log(almacenR);
-                                        console.log(tabla[dia].categoria[almacenR]);
                                         dias[dia] = dias[dia] + tabla[dia].categoria[almacenR];
                                     }
                                 }
                             }
                             let total = 0;
-                            for (dia in dias ){
+                            for (dia in dias) {
                                 total = total + dias[dia];
                             }
 
-                            const color = total == 0 ? "table-warning" : "";
-                        
+                            const color = total == 0 ? "table-danger" : "";
+
                             return (
                                 <tr className={color} key={index}>
                                     <td>{almacen.consecutivo}</td>
