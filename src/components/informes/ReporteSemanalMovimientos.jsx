@@ -25,7 +25,7 @@ export default function ReporteSemanalMovimientos() {
     useEffect(() => {
         selectAlmacenes();
         listarTabla();
-    }, [product]);
+    }, [product, semana]);
 
     const encontrarProductos = async (categoria, categorias) => {
         const data = {
