@@ -118,6 +118,7 @@ export default function ReporteSemanalMovimientos() {
                                 className="form-select form-select-sm"
                                 id="almacen"
                                 name="almacen"
+                                onChange={listarTabla}
                             >
                                 <option value={0}>All</option>
                                 {almacenes.map(almacen => (
@@ -134,6 +135,7 @@ export default function ReporteSemanalMovimientos() {
                                 className="form-select form-select-sm"
                                 id='movimiento'
                                 name='movimiento'
+                                onChange={listarTabla}
                             >
                                 <option value={'RC'}>Recepción</option>
                                 <option value={'AJ'}>Ajuste</option>
@@ -151,6 +153,7 @@ export default function ReporteSemanalMovimientos() {
                                 className="form-select form-select-sm"
                                 id="categoria"
                                 name="categoria"
+                                onChange={listarTabla}
                             >
                                 {!(user.id_rol == "Super seguridad" || user.id_rol == "Seguridad") &&
                                     <option value={0}>All</option>
@@ -170,6 +173,7 @@ export default function ReporteSemanalMovimientos() {
                                 className="form-control form-control-sm"
                                 id="articulo"
                                 name='articulo'
+                                onChange={listarTabla}
                             ></input>
                         </div>
                     </div>
@@ -198,6 +202,7 @@ export default function ReporteSemanalMovimientos() {
                                     id="anho"
                                     name='anho'
                                     defaultValue={new Date().getFullYear()}
+                                    onChange={listarTabla}
                                 ></input>
                             </div>
                         </div>
