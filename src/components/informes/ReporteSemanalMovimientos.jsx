@@ -183,7 +183,7 @@ export default function ReporteSemanalMovimientos() {
                     </div>
 
                     <div className={styles.grupo}>
-                        <label >Artículo</label>
+                        <label htmlFor="articulo">Artículo</label>
                         <div>
                             <input
                                 type="text"
