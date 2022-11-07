@@ -23,7 +23,6 @@ export default function ReporteSemanalMovimientos() {
     const [product, setProduct] = useState("");
 
     useEffect(() => {
-        selectAlmacenes();
         listarTabla();
     }, [product]);
 
@@ -43,6 +42,7 @@ export default function ReporteSemanalMovimientos() {
         const categories = await listarCategorias();
         setCategorias(categories);
         const cons_almacen = formData.get('almacen');
+        console.log(cons_almacen)
         const cons_movimiento = formData.get('movimiento');
         let cons_semana = formData.get('semana');
         let anho = formData.get('anho') ? formData.get('anho') : new Date().getFullYear();
@@ -50,19 +50,21 @@ export default function ReporteSemanalMovimientos() {
         await encontrarProductos(cons_categoria, categories);
         const producto = product;
         if (semana == null) {
-            const currentWeek = await encontrarModulo('Semana');
-            cons_semana = currentWeek[0].semana_actual;
+            const week = await encontrarModulo("Semana")
+            cons_semana = week[0].semana_actual;
         }
         setSemana(cons_semana);
         let body = {};
         body.movimiento = { cons_semana: `S${cons_semana}-${anho}` };
-        if (cons_almacen != 0) {
-            body.historial = { cons_almacen_gestor: cons_almacen };
-        } else {
-            const list = almacenes.map((item) => item.consecutivo);
+        if (cons_almacen == 0) {
+            const res = selectAlmacenes()
+            const list = res.map((item) => item.consecutivo);
             body.historial = { cons_almacen_gestor: list };
+        } else {
+            body.historial = { cons_almacen_gestor: cons_almacen };
         }
         if (cons_movimiento != 0) body.historial = { ...body.historial, cons_lista_movimientos: cons_movimiento };
+        console.log(body)
         const { data } = await axios.post(`${endPoints.historial.list}/filter`, { ...body, producto: { name: producto, cons_categoria: cons_categoria } });
         let dias = {
             domingo: data.filter(item => new Date(item?.movimiento?.fecha).getDay() == 0),
@@ -98,9 +100,11 @@ export default function ReporteSemanalMovimientos() {
         if (companyR == "Banachica") {
             const banachica = almacenByUser.filter(item => item.consecutivo.substr(-2, item.consecutivo.length) == "BC");
             setAlmacenes(banachica);
+            return banachica
         } else {
             const banarica = almacenByUser.filter(item => item.consecutivo.substr(-2, item.consecutivo.length) != "BC");
             setAlmacenes(banarica);
+            return banarica
         }
     };
 
@@ -187,13 +191,13 @@ export default function ReporteSemanalMovimientos() {
                                 type="text"
                                 list="articulo"
                                 className="form-control form-control-sm"
-                                onChange={ (e) => setProduct(e.target.value)}
+                                onChange={(e) => setProduct(e.target.value)}
                             />
                             <datalist
                                 id="articulo"
                                 name='articulo'
                             >
-                                <option  value={""} />
+                                <option value={""} />
                                 {productos.map((item, index) => (
                                     <option key={index} value={item.name} />
                                 ))}
