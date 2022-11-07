@@ -251,19 +251,21 @@ export default function ReporteSemanalMovimientos() {
                             for (dia in dias ){
                                 total = total + dias[dia];
                             }
+
+                            const color = total == 0 ? "table-warning" : ""
                         
                             return (
                                 <tr key={index}>
                                     <td>{almacen.consecutivo}</td>
                                     <td>{almacen.nombre}</td>
-                                    <td>{dias.lunes}</td>
-                                    <td>{dias.martes}</td>
-                                    <td>{dias.miercoles}</td>
-                                    <td>{dias.jueves}</td>
-                                    <td>{dias.viernes}</td>
-                                    <td>{dias.sabado}</td>
-                                    <td>{dias.domingo}</td>
-                                    <td>{total}</td>
+                                    <td className={color}>{dias.lunes}</td>
+                                    <td className={color}>{dias.martes}</td>
+                                    <td className={color}>{dias.miercoles}</td>
+                                    <td className={color}>{dias.jueves}</td>
+                                    <td className={color}>{dias.viernes}</td>
+                                    <td className={color}>{dias.sabado}</td>
+                                    <td className={color}>{dias.domingo}</td>
+                                    <td className={color}>{total}</td>
                                 </tr>
                             );
                         })
