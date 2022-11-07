@@ -61,7 +61,7 @@ export default function ReporteGeneralMovimientos() {
             const currentWeek = await encontrarModulo('Semana');
             cons_semana = currentWeek[0].semana_actual;
         }
-        setSemana(cons_semana)
+        setSemana(cons_semana);
         const producto = formData.get('articulo');
         const categoria = formData.get('categoria') == 0 ? "" : formData.get('categoria');
         const seguridad = user.id_rol == "Seguridad" || user.id_rol == "Super seguridad" ? await listarCategorias() : false;

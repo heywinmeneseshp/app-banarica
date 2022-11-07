@@ -53,7 +53,7 @@ export default function ReporteSemanalMovimientos() {
             const currentWeek = await encontrarModulo('Semana');
             cons_semana = currentWeek[0].semana_actual;
         }
-        setSemana(cons_semana)
+        setSemana(cons_semana);
         let body = {};
         body.movimiento = { cons_semana: `S${cons_semana}-${anho}` };
         if (cons_almacen != 0) {
