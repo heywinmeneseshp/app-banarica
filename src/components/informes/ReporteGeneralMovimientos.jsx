@@ -25,7 +25,7 @@ export default function ReporteGeneralMovimientos() {
     const [pagination, setPagination] = useState(1);
     const [categorias, setCategorias] = useState([]);
     const [total, setTotal] = useState(0);
-    const [semana, setSemana] = useState();
+    const [semana, setSemana] = useState(null);
     const limit = 20;
 
     useEffect(() => {
@@ -57,12 +57,11 @@ export default function ReporteGeneralMovimientos() {
         const cons_almacen = formData.get('almacen');
         const cons_movimiento = formData.get('movimiento');
         let cons_semana = formData.get('semana');
-        if (!cons_semana || cons_semana == "") {
-            encontrarModulo('Semana').then(res => {
-                cons_semana = res[0].semana_actual;
-                setSemana(res[0].semana_actual);
-            });
+        if (semana == null) {
+            const currentWeek = await encontrarModulo('Semana');
+            cons_semana = currentWeek[0].semana_actual;
         }
+        setSemana(cons_semana)
         const producto = formData.get('articulo');
         const categoria = formData.get('categoria') == 0 ? "" : formData.get('categoria');
         const seguridad = user.id_rol == "Seguridad" || user.id_rol == "Super seguridad" ? await listarCategorias() : false;
@@ -80,7 +79,6 @@ export default function ReporteGeneralMovimientos() {
         if (cons_movimiento != 0) body.historial = { ...body.historial, cons_lista_movimientos: cons_movimiento };
         body.pagination = { limit: limit, offset: pagination };
         const res = await axios.post(url, { ...body, producto: { name: producto, cons_categoria: cons_categoria } });
-        console.log({ ...body, producto: { name: producto, cons_categoria: cons_categoria } });
         setTotal(res.data.total);
         setHistorial(res.data.data);
     }
@@ -240,6 +238,7 @@ export default function ReporteGeneralMovimientos() {
                                         className="form-control form-control-sm"
                                         id="anho"
                                         name='anho'
+                                        onChange={onBuscar}
                                         defaultValue={new Date().getFullYear()}
                                     ></input>
                                 </div>

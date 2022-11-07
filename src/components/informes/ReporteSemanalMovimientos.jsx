@@ -25,7 +25,7 @@ export default function ReporteSemanalMovimientos() {
     useEffect(() => {
         selectAlmacenes();
         listarTabla();
-    }, [product, semana]);
+    }, [product]);
 
     const encontrarProductos = async (categoria, categorias) => {
         const data = {
@@ -39,23 +39,21 @@ export default function ReporteSemanalMovimientos() {
     };
 
     const listarTabla = async () => {
+        const formData = new FormData(formRef.current);
         const categories = await listarCategorias();
         setCategorias(categories);
-        const formData = new FormData(formRef.current);
         const cons_almacen = formData.get('almacen');
         const cons_movimiento = formData.get('movimiento');
         let cons_semana = formData.get('semana');
-        setSemana(cons_semana);
         let anho = formData.get('anho') ? formData.get('anho') : new Date().getFullYear();
         const cons_categoria = formData.get('categoria') == 0 ? "" : formData.get('categoria');
         await encontrarProductos(cons_categoria, categories);
         const producto = product;
-        if (!cons_semana || cons_semana == "") {
-            encontrarModulo("Semana").then(res => {
-                cons_semana = res[0].semana_actual;
-                setSemana(res[0].semana_actual);
-            });
+        if (semana == null) {
+            const currentWeek = await encontrarModulo('Semana');
+            cons_semana = currentWeek[0].semana_actual;
         }
+        setSemana(cons_semana)
         let body = {};
         body.movimiento = { cons_semana: `S${cons_semana}-${anho}` };
         if (cons_almacen != 0) {
