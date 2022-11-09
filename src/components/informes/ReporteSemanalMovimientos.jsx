@@ -5,13 +5,15 @@ import endPoints from "@services/api";
 import styles from '@styles/informes/informes.module.css';
 import { useAuth } from "@hooks/useAuth";
 import { listarCategorias } from "@services/api/categorias";
-import { Table } from "react-bootstrap";
+import { Button, Table } from "react-bootstrap";
 import { encontrarModulo } from "@services/api/configuracion";
 import { filtrarProductos } from "@services/api/productos";
+import { DownloadTableExcel } from 'react-export-table-to-excel';
 
 
 export default function ReporteSemanalMovimientos() {
     const { almacenByUser, user } = useAuth();
+    const tablaRef = useRef();
     const formRef = useRef();
     const companies = ["Banarica", "Banachica"];
     const [almacenes, setAlmacenes] = useState([]);
@@ -25,6 +27,75 @@ export default function ReporteSemanalMovimientos() {
     useEffect(() => {
         listarTabla();
     }, [product]);
+
+
+    const tablaGenerate = () => {
+        return (
+            <Table striped bordered hover size="sm">
+                <thead>
+                    <tr>
+                        <th>Cod.</th>
+                        <th>Almacén</th>
+                        <th>Lunes</th>
+                        <th>Martes</th>
+                        <th>Miercoles</th>
+                        <th>Jueves</th>
+                        <th>Viernes</th>
+                        <th>Sábado</th>
+                        <th>Domingo</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {almacenes.map((almacen, index) => {
+
+                        let dias = {
+                            lunes: 0,
+                            martes: 0,
+                            miercoles: 0,
+                            jueves: 0,
+                            viernes: 0,
+                            sabado: 0,
+                            domingo: 0
+                        };
+
+                        for (var dia in tabla) {
+
+                            for (var almacenR in tabla[dia]?.categoria) {
+                                const almacenTabla = almacenR.substring(0, almacen?.consecutivo.length);
+                                if (almacenTabla == almacen.consecutivo) {
+                                    console.log(dia);
+                                    dias[dia] = dias[dia] + tabla[dia].categoria[almacenR];
+                                }
+                            }
+                        }
+                        let total = 0;
+                        for (dia in dias) {
+                            total = total + dias[dia];
+                        }
+
+                        const color = total == 0 ? "table-danger" : "";
+
+                        return (
+                            <tr className={color} key={index}>
+
+                                <td>{almacen.consecutivo}</td>
+                                <td>{almacen.nombre}</td>
+                                <td>{dias.domingo}</td>
+                                <td>{dias.lunes}</td>
+                                <td>{dias.martes}</td>
+                                <td>{dias.miercoles}</td>
+                                <td>{dias.jueves}</td>
+                                <td>{dias.viernes}</td>
+                                <td>{dias.sabado}</td>
+                                <td>{total}</td>
+                            </tr>
+                        );
+                    })
+                    }
+                </tbody>
+            </Table>);
+    };
 
     const encontrarProductos = async (categoria, categorias) => {
         const data = {
@@ -42,7 +113,6 @@ export default function ReporteSemanalMovimientos() {
         const categories = await listarCategorias();
         setCategorias(categories);
         const cons_almacen = formData.get('almacen');
-        console.log(cons_almacen);
         const cons_movimiento = formData.get('movimiento');
         let cons_semana = formData.get('semana');
         let anho = formData.get('anho') ? formData.get('anho') : new Date().getFullYear();
@@ -64,7 +134,6 @@ export default function ReporteSemanalMovimientos() {
             body.historial = { cons_almacen_gestor: cons_almacen };
         }
         if (cons_movimiento != 0) body.historial = { ...body.historial, cons_lista_movimientos: cons_movimiento };
-        console.log(body);
         const { data } = await axios.post(`${endPoints.historial.list}/filter`, { ...body, producto: { name: producto, cons_categoria: cons_categoria } });
         let dias = {
             domingo: data.filter(item => new Date(item?.movimiento?.fecha).getDay() == 0),
@@ -75,7 +144,6 @@ export default function ReporteSemanalMovimientos() {
             viernes: data.filter(item => new Date(item?.movimiento?.fecha).getDay() == 5),
             sabado: data.filter(item => new Date(item?.movimiento?.fecha).getDay() == 6)
         };
-
         for (var dia in dias) {
             let categoria = {};
             let producto = {};
@@ -235,13 +303,27 @@ export default function ReporteSemanalMovimientos() {
                         </div>
                     </span>
 
+                    <div className={styles.grupo}>
+                        <DownloadTableExcel
+                            filename={`Reporte Sem ${semana}`}
+                            sheet={`Semana ${semana}`}
+                            currentTableRef={tablaRef.current}
+                        >
+                            
+
+                            <Button className="w-100 mt-4" variant="success" size="sm">
+                                Descargar Excel
+                            </Button>
+                         
+                        </DownloadTableExcel>
+                    </ div >
 
                 </div>
             </form>
 
             <div className="mt-3">
                 <h3 >{company} - {semana}</h3>
-                <Table striped bordered hover size="sm">
+                <Table ref={tablaRef} striped bordered hover size="sm" >
                     <thead>
                         <tr>
                             <th>Cod.</th>
@@ -260,19 +342,21 @@ export default function ReporteSemanalMovimientos() {
                         {almacenes.map((almacen, index) => {
 
                             let dias = {
-                                domingo: 0,
                                 lunes: 0,
                                 martes: 0,
                                 miercoles: 0,
                                 jueves: 0,
                                 viernes: 0,
-                                sabado: 0
+                                sabado: 0,
+                                domingo: 0
                             };
 
                             for (var dia in tabla) {
+
                                 for (var almacenR in tabla[dia]?.categoria) {
                                     const almacenTabla = almacenR.substring(0, almacen?.consecutivo.length);
                                     if (almacenTabla == almacen.consecutivo) {
+                                        console.log(dia);
                                         dias[dia] = dias[dia] + tabla[dia].categoria[almacenR];
                                     }
                                 }
@@ -286,15 +370,16 @@ export default function ReporteSemanalMovimientos() {
 
                             return (
                                 <tr className={color} key={index}>
+
                                     <td>{almacen.consecutivo}</td>
                                     <td>{almacen.nombre}</td>
+                                    <td>{dias.domingo}</td>
                                     <td>{dias.lunes}</td>
                                     <td>{dias.martes}</td>
                                     <td>{dias.miercoles}</td>
                                     <td>{dias.jueves}</td>
                                     <td>{dias.viernes}</td>
                                     <td>{dias.sabado}</td>
-                                    <td>{dias.domingo}</td>
                                     <td>{total}</td>
                                 </tr>
                             );
