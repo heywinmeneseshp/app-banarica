@@ -66,7 +66,12 @@ export default function ReporteSemanalMovimientos() {
             body.historial = { cons_almacen_gestor: cons_almacen };
         }
         if (cons_movimiento != 0) body.historial = { ...body.historial, cons_lista_movimientos: cons_movimiento };
-        const { data } = await axios.post(`${endPoints.historial.list}/filter`, { ...body, producto: { name: producto, cons_categoria: cons_categoria } });
+        let { data } = await axios.post(`${endPoints.historial.list}/filter`, { ...body, producto: { name: producto, cons_categoria: cons_categoria } });
+    
+
+        data = data.filter(item => item.movimiento.pendiente == false && item.movimiento.razon_movimiento != "Rechazado")
+      
+
         let dias = {
             domingo: data.filter(item => new Date(item?.movimiento?.fecha).getDay() == 0),
             lunes: data.filter(item => new Date(item?.movimiento?.fecha).getDay() == 1),
@@ -241,12 +246,12 @@ export default function ReporteSemanalMovimientos() {
                             sheet={`Semana ${semana}`}
                             currentTableRef={tablaRef.current}
                         >
-                            
+
 
                             <Button className="w-100 mt-4" variant="success" size="sm">
                                 Descargar Excel
                             </Button>
-                         
+
                         </DownloadTableExcel>
                     </ div >
 
@@ -288,7 +293,6 @@ export default function ReporteSemanalMovimientos() {
                                 for (var almacenR in tabla[dia]?.categoria) {
                                     const almacenTabla = almacenR.substring(0, almacen?.consecutivo.length);
                                     if (almacenTabla == almacen.consecutivo) {
-                                        console.log(dia);
                                         dias[dia] = dias[dia] + tabla[dia].categoria[almacenR];
                                     }
                                 }
