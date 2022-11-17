@@ -69,7 +69,7 @@ export default function ReporteSemanalMovimientos() {
         let { data } = await axios.post(`${endPoints.historial.list}/filter`, { ...body, producto: { name: producto, cons_categoria: cons_categoria } });
     
 
-        data = data.filter(item => item.movimiento.pendiente == false && item.movimiento.razon_movimiento != "Rechazado")
+        data = data.filter(item => item.movimiento.pendiente == false && item.movimiento.razon_movimiento != "Rechazado");
       
 
         let dias = {
