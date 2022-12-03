@@ -23,13 +23,13 @@ export default function MovimientoPDF ({ move }) {
 
         table: { marginTop: "30px" },
         tableHead: { display: "flex", flexDirection: "row", width: "85%", borderBottom: "2px solid #AEB6BF", paddingBottom: "5px", paddingRight: "5px", paddingLeft: "5px" },
-        tableBody: { display: "flex", fontSize: "9", flexDirection: "row", width: "85%", borderBottom: "1px solid #AEB6BF", paddingBottom: "3px", paddingTop: "3px", paddingRight: "5px", paddingLeft: "5px", marginBottom: "20px" },
+        tableBody: { display: "flex", fontSize: "9", flexDirection: "row", width: "85%", borderBottom: "1px solid #AEB6BF", paddingBottom: "3px", paddingTop: "3px", paddingRight: "5px", paddingLeft: "5px" },
         almacen: { width: "15%" },
         cod: { width: "20%", textAlign: "center" },
         articulo: { width: "45%" },
         cantidad: { width: "20%", textAlign: "right" },
 
-        approvedContainer: { display: "flex", flexDirection: "row", justifyContent: "flex-end", textAlign: "left", width: "85%", marginBottom: "30px" },
+        approvedContainer: { display: "flex", flexDirection: "row", justifyContent: "flex-end", textAlign: "left", width: "85%", marginBottom: "30px", marginTop: "30px" },
         left: { width: "30%" },
         right: { width: "70%" },
         aprobado: { display: "flex", width: "100%", flexDirection: "row", border: "1px solid #AEB6BF", paddingBottom: "8px", paddingTop: "8px", paddingRight: "30px", paddingLeft: "30px", marginTop: "10px" },
@@ -97,8 +97,6 @@ export default function MovimientoPDF ({ move }) {
 
 
                     }
-
-
                 </View>
 
 
