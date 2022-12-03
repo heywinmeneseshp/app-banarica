@@ -169,7 +169,7 @@ const endPoints = {
     document: {
         pedido: `${API}/api/${VERSION}/documentos/pedido`,
         stock: `${API}/api/${VERSION}/documentos/stock`,
-        movimientos: (consecutivo, tipo_movimiento) => `${API}/api/${VERSION}/documentos/movimiento/${consecutivo}/${tipo_movimiento}`,
+        movimientos: (consecutivo) => `https://app-banarica.vercel.app/Documento/Movimiento/${consecutivo}`,
         traslados: (consecutivo) => `${API}/api/${VERSION}/documentos/traslado/${consecutivo}`
     },
     seguridad: {

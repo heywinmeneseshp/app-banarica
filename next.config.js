@@ -4,7 +4,7 @@ const nextConfig = {
     reactStrictMode: true,
     swcMinify: true,
     images: {
-        domains: ['placeimg.com', 'static.platzi.com'], //Para que deje trabajar con la API con el dominio
+        domains: ['placeimg.com', 'banarica.com'], //Para que deje trabajar con la API con el dominio
     },
   };
   
