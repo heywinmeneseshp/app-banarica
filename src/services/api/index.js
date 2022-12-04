@@ -1,5 +1,6 @@
 const API = process.env.NEXT_PUBLIC_API_URL;
 const VERSION = process.env.NEXT_PUBLIC_API_VERSION;
+const OWN_URL = process.env.NEXT_PUBLIC_OWN_URL;
 
 const endPoints = { 
     auth: { //Crear
@@ -169,8 +170,8 @@ const endPoints = {
     document: {
         pedido: `${API}/api/${VERSION}/documentos/pedido`,
         stock: `${API}/api/${VERSION}/documentos/stock`,
-        movimientos: (consecutivo) => `https://app-banarica.vercel.app/Documento/Movimiento/${consecutivo}`,
-        traslados: (consecutivo) => `${API}/api/${VERSION}/documentos/traslado/${consecutivo}`
+        movimientos: (consecutivo) => `${OWN_URL}/Documento/Movimiento/${consecutivo}`,
+        traslados: (consecutivo) => `${OWN_URL}/Documento/Traslado/${consecutivo}`
     },
     seguridad: {
         listarProductos:  `${API}/api/${VERSION}/seguridad/listar-articulos`,

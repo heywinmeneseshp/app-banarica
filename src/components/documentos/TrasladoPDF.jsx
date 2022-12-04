@@ -18,6 +18,7 @@ export default function TrasladoPDF({ move }) {
         companyName: { fontSize: move.comercializadora == "C.I. BANACHICA S.A.S. ZOMAC." ? "18" : "13", fontStyle: "bold", marginBottom: "10px" },
         movimiento: { textAlign: "left", width: "40%", marginLeft: "30px" },
         movChild: { display: "flex", flexDirection: "row", borderBottom: "1px solid #AEB6BF", paddingBottom: "8px", paddingTop: "8px" },
+        movRecep: { display: "flex", color: move.res[0].traslado.fecha_entrada ? "black" : "red", flexDirection: "row", borderBottom: "1px solid #AEB6BF", paddingBottom: "8px", paddingTop: "8px" },
         movChildEnd: { display: "flex", flexDirection: "row", paddingBottom: "8px", paddingTop: "8px" },
         movTag: { fontWeight: "bold", width: "50%" },
 
@@ -38,21 +39,29 @@ export default function TrasladoPDF({ move }) {
 
         },
         imagen: {
-            opacity: "0.5"
+            opacity: "0.2"
         },
 
         table: { marginTop: "30px" },
         tableHead: { display: "flex", flexDirection: "row", width: "85%", borderBottom: "2px solid #AEB6BF", paddingBottom: "5px", paddingRight: "5px", paddingLeft: "5px" },
         tableBody: { display: "flex", fontSize: "9", flexDirection: "row", width: "85%", borderBottom: "1px solid #AEB6BF", paddingBottom: "6px", paddingTop: "6px", paddingRight: "5px", paddingLeft: "5px" },
         almacen: { width: "15%" },
-        cod: { width: "20%", textAlign: "center" },
-        articulo: { width: "45%" },
+        cod: { width: "10%", textAlign: "center" },
+        articulo: { width: "40%" },
         cantidad: { width: "20%", textAlign: "right" },
 
         approvedContainer: { display: "flex", flexDirection: "row", justifyContent: "flex-end", textAlign: "left", width: "85%", marginBottom: "30px", marginTop: "30px" },
-        left: { width: "30%" },
-        right: { width: "70%" },
-        aprobado: { display: "flex", width: "100%", flexDirection: "row", border: "1px solid #AEB6BF", paddingBottom: "8px", paddingTop: "8px", paddingRight: "30px", paddingLeft: "30px", marginTop: "10px" },
+        left: { width: "50%", marginRight: "10px" },
+        right: { width: "50%", marginLeft: "10px" },
+
+        approvedContainer2: { display: "flex", flexDirection: "row", justifyContent: "flex-end", textAlign: "left", width: "85%", marginBottom: "30px", marginTop: "30px" },
+        left2: { width: "50%" },
+        right2: { width: "50%" },
+        aprobado2: { display: "flex", width: "100%", flexDirection: "row", border: "1px solid #AEB6BF", paddingBottom: "8px", paddingTop: "8px", paddingRight: "30px", paddingLeft: "30px", fontSize: "10" },
+        aproTag2: { marginRight: "5px", width: "120px", textAlign: "left" },
+        user2: { textAlign: "left", width: "100%" },
+
+        aprobado: { display: "flex", width: "100%", flexDirection: "row", borderBottom: "1px solid #AEB6BF", paddingBottom: "8px", paddingTop: "40px", paddingRight: "10px", paddingLeft: "10px", marginLeft: "" },
         aproTag: { marginRight: "10px", width: "120px", textAlign: "left" },
         user: { textAlign: "center", width: "100%" },
         noApproved: { textAlign: "center", width: "100%", color: "red" },
@@ -70,11 +79,12 @@ export default function TrasladoPDF({ move }) {
             <Page size="A4"
                 style={styles.page} >
 
-                {false &&
+
+                {(move.res[0].traslado.estado == "Rechazado") &&
                     <View style={styles.agua}>
                         <Image
                             style={styles.imagen}
-                            src="https://cdn.streamelements.com/uploads/badfc17d-0f9e-40e8-be04-d8470d5464fc.png"
+                            src="https://t4.ftcdn.net/jpg/00/06/32/33/360_F_6323356_UNMbB0uOmhkfPFC2JpzX5QX3Nnj9xMVI.jpg"
                         />
                     </View>
                 }
@@ -97,76 +107,106 @@ export default function TrasladoPDF({ move }) {
 
                     <View style={styles.movimiento}>
                         <View style={styles.movChild}>
-                            <Text style={styles.movTag}>Movimiento:</Text>
-                            <Text>{move.movimiento}</Text>
+                            <Text style={styles.movTag}>Origen:</Text>
+                            <Text>{move.res[0].traslado.origen}</Text>
                         </View>
                         <View style={styles.movChild}>
-                            <Text style={styles.movTag}>Fecha:</Text>
-                            <Text>{move.fecha}</Text>
+                            <Text style={styles.movTag}>Destino:</Text>
+                            <Text>{move.res[0].traslado.destino}</Text>
+                        </View>
+                        <View style={styles.movChild}>
+                            <Text style={styles.movTag}>Remisión:</Text>
+                            <Text>{move.res[0].traslado.fecha_salida}</Text>
+                        </View>
+                        <View style={styles.movRecep}>
+                            <Text style={styles.movTag}>Recepción:</Text>
+                            <Text>{move.res[0].traslado.fecha_entrada ? move.res[0].traslado.fecha_entrada : ""}</Text>
                         </View>
                         <View style={styles.movChild}>
                             <Text style={styles.movTag}>Semana:</Text>
-                            <Text>{move.cons_semana}</Text>
+                            <Text>{move.res[0].traslado.semana}</Text>
                         </View>
                         <View style={styles.movChildEnd}>
-                            <Text style={styles.movTag}>Consecutivo:</Text>
-                            <Text>{move.consecutivo}</Text>
+                            <Text style={styles.movTag}>Traslado:</Text>
+                            <Text>{move.res[0].cons_movimiento}</Text>
                         </View>
                     </View>
                 </View>
 
                 <View style={styles.table}>
                     <View style={styles.tableHead}>
-                        <Text style={styles.almacen}>Almacén</Text>
+                        <Text style={styles.almacen}>Origen</Text>
+                        <Text style={styles.almacen}>Destino</Text>
                         <Text style={styles.cod}>Cod</Text>
                         <Text style={styles.articulo}>Artículo</Text>
                         <Text style={styles.cantidad}>Cantidad</Text>
                     </View>
-                    {move.historial_movimientos.map((item, index) => {
+                    {move.res.map((item, index) => {
                         return (
                             <View key={index} style={styles.tableBody}>
-                                <Text style={styles.almacen}>{item.cons_almacen_gestor}</Text>
-                                <Text style={styles.cod}>{item.cons_producto}</Text>
+                                <Text style={styles.almacen}>{item.traslado.origen}</Text>
+                                <Text style={styles.almacen}>{item.traslado.destino}</Text>
+                                <Text style={styles.cod}>{item.Producto.consecutivo}</Text>
                                 <Text style={styles.articulo}>{item.Producto.name}</Text>
                                 <Text style={styles.cantidad}>{item.cantidad}</Text>
                             </View>
                         );
-                    })
-
-
-                    }
+                    })}
                 </View>
 
+                {!move.res[0].traslado.fecha_entrada &&
+                    <View style={styles.approvedContainer}>
+                        <View style={styles.left} >
 
-                <View style={styles.approvedContainer}>
-                    <View style={styles.left} >
-
-                    </View>
-                    <View style={styles.right}>
-                        <View style={styles.aprobado}>
-                            <Text style={styles.aproTag}>Realizado por:</Text>
-                            <Text style={styles.user}>{move.realizado.nombre + " " + move.realizado.apellido}</Text>
-                        </View>
-                        {(move.historial_movimientos[0].cons_lista_movimientos == "DV" || move.historial_movimientos[0].cons_lista_movimientos == "LQ") &&
                             <View style={styles.aprobado}>
-                                <Text style={styles.aproTag}>Aprobado por:</Text>
-                                <Text style={move.aprobado ? styles.user : styles.noApproved}>{move.aprobado ? move.aprobado.nombre + " " + move.aprobado.apellido : "Pendiente por aprobación"}</Text>
+                                <Text style={styles.aproTag}>Remite:</Text>
+                                <Text style={styles.user}></Text>
                             </View>
-                        }
+
+                            <View style={styles.aprobado}>
+                                <Text style={styles.aproTag}>Conductor:</Text>
+                                <Text style={styles.user}></Text>
+                            </View>
+
+                        </View>
+                        <View style={styles.right}>
+
+
+                            <View style={styles.aprobado}>
+                                <Text style={styles.aproTag}>Recibe:</Text>
+                                <Text style={styles.user}></Text>
+                            </View>
+
+
+
+                        </View>
                     </View>
-                </View>
+                }
+
+                {move.res[0].traslado.fecha_entrada &&
+                    <View style={styles.approvedContainer2}>
+                        <View style={styles.left2} >
+
+                        </View>
+                        <View style={styles.right2}>
+                            <View style={styles.aprobado2}>
+                                <Text style={styles.aproTag2}>Transportadora:</Text>
+                                <Text style={styles.user2}>{move.res[0].traslado.transportadora}</Text>
+                            </View>
+
+                            <View style={styles.aprobado2}>
+                                <Text style={styles.aproTag2}>Conductor:</Text>
+                                <Text style={styles.user2}>{move.res[0].traslado.conductor}</Text>
+                            </View>
+                        </View>
+                    </View>
+                }
 
                 <View style={styles.observaciones}>
                     <View style={styles.obChild}>
                         <Text style={styles.obChildTag}>Observaciones:</Text>
-                        <Text>{move.observaciones}</Text>
+                        <Text>{move.res[0].traslado.observaciones}</Text>
                     </View>
-                    {move.respuesta &&
-                        <View style={styles.obChild}>
-                            <Text style={styles.obChildTag}>Respuesta:</Text>
-                            <Text>{move.respuesta}</Text>
-                        </View>
-                    }
                 </View>
             </Page>
 
