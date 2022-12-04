@@ -58,12 +58,7 @@ export default function InfoPedidos() {
     const onDescargar = async () => {
         const formData = new FormData(formRef.current)
         const consecutivo = formData.get("consecutivo")
-        axios.post(endPoints.document.pedido, { consecutivo: consecutivo })
-            .then(() => axios.get(endPoints.document.pedido, { responseType: 'blob' }))
-            .then((res) => {
-                const pdfBlob = new Blob([res.data], { type: 'application/pdf' });
-                saveAs(pdfBlob, `Pedido ${consecutivo}.pdf`);
-            })
+        window.open(process.env.NEXT_PUBLIC_OWN_URL + "/Documento/Pedido/" + consecutivo)
     }
 
     const onDescargarExcel = async () => {

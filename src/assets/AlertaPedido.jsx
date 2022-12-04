@@ -19,7 +19,7 @@ export default function Alerta({ data, setChange, change }) {
     const [color, setColor] = useState(null);
 
     const onVer = () => {
-        window.open(endPoints.document.pedido + "/" + data.cons_movimiento)
+        window.open(process.env.NEXT_PUBLIC_OWN_URL + "/Documento/Pedido/" + data.cons_movimiento)
         if (user?.id_rol == "Super administrador") actualizarNotificaciones(data.id, { visto: true })
     }
 

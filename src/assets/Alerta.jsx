@@ -20,7 +20,7 @@ export default function Alerta({ data }) {
     const onButton = () => {
         gestionNotificacion.ingresarNotificacion(data)
         if (data.tipo_movimiento == "Pedido") {
-            window.open(endPoints.document.pedido + "/" + data.cons_movimiento)
+            window.open(process.env.NEXT_PUBLIC_OWN_URL + "/Documento/Pedido/" + data.cons_movimiento)
         } else {
             router.push(`/Movimiento/${data.tipo_movimiento}/${data.cons_movimiento}`)
         }
