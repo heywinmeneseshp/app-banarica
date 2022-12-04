@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useRef } from "react";
 //Services
+import endPoints from "@services/api";
 import { filtrarProductos } from "@services/api/productos";
 import { listarAlmacenes } from "@services/api/almacenes";
 import { listarConductores } from "@services/api/conductores";
@@ -23,7 +24,6 @@ import Alertas from "@assets/Alertas";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
 import { encontrarModulo } from "@services/api/configuracion";
-
 
 export default function RealizarTraslado() {
     const formRef = useRef();
@@ -131,7 +131,7 @@ export default function RealizarTraslado() {
                         //sumar(almacen, consecutiveProdcut, formData.get("cantidad-" + index));
                         agregarHistorial(dataHistorial);
                     });
-                    window.open(endPoints.document.traslados(consMovimiento))
+                    window.open(endPoints.document.traslados(consMovimiento));
                     setProductsCons(array);
                 });
                 setBool(true);
