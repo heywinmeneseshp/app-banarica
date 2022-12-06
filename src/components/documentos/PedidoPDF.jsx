@@ -56,7 +56,7 @@ export default function PedidoPDF({ move }) {
         user: { textAlign: "center", width: "100%" },
         noApproved: { textAlign: "center", width: "100%", color: "red" },
 
-        observaciones: { borderTop: "2px solid #AEB6BF", width: "85%", paddingLeft: "5px", paddingRight: "5px", marginBottom: "15px", fontSize: "10" },
+        observaciones: { borderTop: "2px solid #AEB6BF", width: "85%", paddingLeft: "5px", paddingRight: "5px", marginBottom: "5px", fontSize: "10" },
         observaciones2: { width: "85%", paddingLeft: "5px", paddingRight: "5px", fontSize: "10" },
         obChild: { display: "flex", flexDirection: "row", marginTop: "15px", width: "100%", paddingTop: "10px" },
 
