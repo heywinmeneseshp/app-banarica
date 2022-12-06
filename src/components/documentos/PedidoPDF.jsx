@@ -57,7 +57,7 @@ export default function PedidoPDF({ move }) {
         noApproved: { textAlign: "center", width: "100%", color: "red" },
 
         observaciones: { borderTop: "2px solid #AEB6BF", width: "85%", paddingLeft: "5px", paddingRight: "5px", fontSize: "10" },
-        obChild: { display: "flex", flexDirection: "row", marginTop: "15px", width: "100%" },
+        obChild: { display: "flex", flexDirection: "row", marginTop: "15px", width: "100%", paddingTop: "10px" },
 
 
     });
@@ -152,7 +152,7 @@ export default function PedidoPDF({ move }) {
 
                 <View style={styles.observaciones}>
        
-                        <Text styles={styles.obChild}>Observaciones: {move.observaciones}</Text>
+                        <Text styles={styles.obChild}>Observaciones: {"  "} {move.observaciones}</Text>
       
                 </View>
             </Page>
