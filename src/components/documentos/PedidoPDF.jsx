@@ -33,7 +33,7 @@ export default function PedidoPDF({ move }) {
         },
         head: { display: "flex", flexDirection: "row", width: "85%", alignItems: "center" },
         company: { textAlign: 'center', width: "60%", fontSize: "10" },
-        companyName: { fontSize: move.comercializadora ==  "C.I. BANACHICA S.A.S. ZOMAC." ? "18" : "13" , fontStyle: "bold", marginBottom: "10px" },
+        companyName: { fontSize: move.comercializadora == "C.I. BANACHICA S.A.S. ZOMAC." ? "18" : "13", fontStyle: "bold", marginBottom: "10px" },
         movimiento: { textAlign: "left", width: "40%", marginLeft: "30px", fontSize: "10px" },
         movChild: { display: "flex", flexDirection: "row", borderBottom: "1px solid #AEB6BF", paddingBottom: "8px", paddingTop: "8px" },
         movChildEnd: { display: "flex", flexDirection: "row", paddingBottom: "8px", paddingTop: "8px" },
@@ -56,7 +56,8 @@ export default function PedidoPDF({ move }) {
         user: { textAlign: "center", width: "100%" },
         noApproved: { textAlign: "center", width: "100%", color: "red" },
 
-        observaciones: { borderTop: "2px solid #AEB6BF", width: "85%", paddingLeft: "5px", paddingRight: "5px", fontSize: "10" },
+        observaciones: { borderTop: "2px solid #AEB6BF", width: "85%", paddingLeft: "5px", paddingRight: "5px", marginBottom: "15px", fontSize: "10" },
+        observaciones2: { width: "85%", paddingLeft: "5px", paddingRight: "5px", fontSize: "10" },
         obChild: { display: "flex", flexDirection: "row", marginTop: "15px", width: "100%", paddingTop: "10px" },
 
 
@@ -151,9 +152,12 @@ export default function PedidoPDF({ move }) {
                 </View>
 
                 <View style={styles.observaciones}>
-       
-                        <Text styles={styles.obChild}>Observaciones: {"  "} {move.observaciones}</Text>
-      
+
+                </View>
+                <View style={styles.observaciones2}>
+
+                    <Text styles={styles.obChild}>Observaciones: {"  "} {move.observaciones}</Text>
+
                 </View>
             </Page>
 
