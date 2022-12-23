@@ -169,7 +169,7 @@ const endPoints = {
     },
     document: {
         pedido: `${API}/api/${VERSION}/documentos/pedido`,
-        stock: `${API}/api/${VERSION}/documentos/stock`,
+        stock: (cons_almacen, cons_categoria) => `${OWN_URL}/Documento/Stock/${cons_almacen}?cons_categoria=${cons_categoria}`,
         movimientos: (consecutivo) => `${OWN_URL}/Documento/Movimiento/${consecutivo}`,
         traslados: (consecutivo) => `${OWN_URL}/Documento/Traslado/${consecutivo}`
     },

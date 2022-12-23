@@ -1,6 +1,6 @@
 import { Document, Page, View, Text, StyleSheet, Image } from "@react-pdf/renderer";
 
-export default function TrasladoPDF({ move }) {
+export default function MovimientoPDF({ move }) {
 
     const styles = StyleSheet.create({
         page: {

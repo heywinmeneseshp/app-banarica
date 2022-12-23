@@ -78,28 +78,9 @@ export default function InfoStock() {
         const formData = new FormData(formRef.current);
         const cons_almacen = formData.get('almacen');
         const cons_categoria = formData.get('categoria');
-        const product_name = formData.get('articulo')
-        let body = {
-            "stock": {
-                "isBlock": false
-            },
-            "producto": {
-                "name": product_name,
-                "cons_categoria": cons_categoria
-            },
-            "almacen": {
-                "consecutivo": cons_almacen
-            }
-        }
         if (cons_almacen == 0) return alert("Por favor, seleccione un almacen")
         if (cons_categoria == "") return alert("Por favor, seleccione una categoria")
-        axios.post(endPoints.document.stock, body)
-            .then(() => axios.get(endPoints.document.pedido, { responseType: 'blob' }))
-            .then((res) => {
-                const pdfBlob = new Blob([res.data], { type: 'application/pdf' });
-                saveAs(pdfBlob, `Stock ${cons_almacen} ${useDate()}.pdf`);
-            })
-
+        window.open(endPoints.document.stock(cons_almacen,cons_categoria))
     }
 
     const onDescargarExcel = async () => {
