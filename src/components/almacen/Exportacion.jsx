@@ -37,6 +37,7 @@ export default function Ajuste() {
     const [moduloSeguridad, setModuloSeguridad] = useState(false);
     const [precintos, setPrecintos] = useState([]);
     const [semanaActual, setSemanaActual] = useState(null);
+    const [noPrecintos, setNoPrecintos] = useState([]);
 
     useEffect(() => {
         listarCombos().then(res => setCombos(res));
@@ -89,7 +90,7 @@ export default function Ajuste() {
         const observacionesR = formData.get("observaciones");
         const consAlmacen = almacenByUser.find((item) => item.nombre == almacenR).consecutivo;
         try {
-            const seriales = {
+            let seriales = {
                 'Contenedor': formData.get('contenedor'),
                 'Termógrafo': formData.get('termografo'),
                 'Botella': formData.get('botella'),
@@ -98,6 +99,23 @@ export default function Ajuste() {
                 'Precinto plástico': formData.get('precinto-plastico'),
                 'Guaya camión': formData.get('guaya-camion')
             };
+            noPrecintos.map(index => {
+                seriales[`Precinto plástico ${index}`] = formData.get(`precinto-plastico-${index}`)
+            })
+            let array = Object.values(seriales)
+            let duplicados = [];
+            const tempArray = [...array].sort();
+            for (let i = 0; i < tempArray.length; i++) {
+                if (tempArray[i + 1] === tempArray[i]) {
+                    duplicados.push(tempArray[i]);
+                }
+            }
+            duplicados = duplicados.find(item => item != null)
+            if (duplicados) {
+                window.alert("No se puede exportar mas de una vez el mismo Precinto")
+                return
+            }
+
             let serialesVerificados;
             if (moduloSeguridad) serialesVerificados = await verificarAndActualizarSeriales(seriales, consAlmacen);
             setAlmacen(almacenR);
@@ -138,7 +156,6 @@ export default function Ajuste() {
                 visto: false
             };
             agregarNotificaciones(dataNotificacion);
-
             setBool(true);
             setAlert({
                 active: true,
@@ -158,6 +175,8 @@ export default function Ajuste() {
     };
 
     const nuevoMovimiento = () => {
+        setRadio(0)
+        setPrecintos([]);
         setBool(false);
         setConsMovimiento(null);
         setAlmacen(null);
@@ -174,9 +193,25 @@ export default function Ajuste() {
     };
 
     const handleRadio = (e) => {
+        onChangeAlmacen()
         const radio = e.target.value;
         setRadio(radio);
+        if (radio == 2) {
+            setNoPrecintos([1])
+        }
     };
+
+
+
+    const sumarPrecitnos = () => {
+        setNoPrecintos([...noPrecintos, noPrecintos.length + 1]);
+        console.log(noPrecintos)
+    }
+
+    const removerPrecitnos = () => {
+        const array = noPrecintos.slice(0, -1);
+        setNoPrecintos(array);
+    }
 
     return (
         <>
@@ -399,24 +434,6 @@ export default function Ajuste() {
                             <div className={styles.contenedor10}>
 
                                 <InputGroup size="sm" >
-                                    <InputGroup.Text id="inputGroup-sizing-sm">Precinto plástico</InputGroup.Text>
-                                    <Form.Select
-                                        id="precinto-plastico"
-                                        name="precinto-plastico"
-                                        className={styles.select}
-                                        size="sm"
-                                        disabled={bool}>
-                                        {precintos.map((item, index) => {
-                                            return (
-                                                <option key={index}>{item.serial}</option>
-                                            );
-                                        })}
-
-
-                                    </Form.Select>
-                                </InputGroup>
-
-                                <InputGroup size="sm" >
                                     <InputGroup.Text id="inputGroup-sizing-sm">Vehículo</InputGroup.Text>
                                     <Form.Control
                                         id="vehiculo"
@@ -428,6 +445,39 @@ export default function Ajuste() {
                                         disabled={bool}
                                     />
                                 </InputGroup>
+
+                                {noPrecintos.map((index, key) => {
+                                    console.log(index)
+                                    return (
+                                        < InputGroup size="sm" key={key} >
+                                            <InputGroup.Text id="inputGroup-sizing-sm">Precinto plástico {index}</InputGroup.Text>
+                                            <Form.Select
+                                                id={"precinto-plastico" + "-" + index}
+                                                name={"precinto-plastico" + "-" + index}
+                                                className={styles.select}
+                                                size="sm"
+                                                disabled={bool}>
+                                                {precintos.map((item, index) => {
+                                                    return (
+                                                        <option key={index}>{item.serial}</option>
+                                                    );
+                                                })}
+                                            </Form.Select>
+                                        </InputGroup >
+                                    )
+                                })
+                                }
+
+                                {!bool && <InputGroup size="sm" className={styles.contenedor7Blank}>
+                                    <Button onClick={() => sumarPrecitnos()} variant="primary" size="sm">
+                                        Añadir Precinto
+                                    </Button>
+                                    <Button onClick={() => removerPrecitnos()} variant="danger" size="sm">
+                                        Remover Precinto
+                                    </Button>
+                                </InputGroup>}
+
+
 
                                 {false &&
                                     <InputGroup size="sm" >

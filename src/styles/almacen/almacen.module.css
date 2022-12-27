@@ -52,6 +52,17 @@
     grid-gap: 14px 20px;
 }
 
+.contenedor7Blank{
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    grid-column: 2;
+}
+
+.contenedor7Blank button{
+    width: 50%;
+}
+
 .contenedor8 {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;

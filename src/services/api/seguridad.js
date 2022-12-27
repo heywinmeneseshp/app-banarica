@@ -107,17 +107,19 @@ const listarProductosSeguridad = async () => {
 
 const verificarAndActualizarSeriales = async (data, cons_almacen) => {
     let updatedData = []
-    for (var property in data) {
+    for (let property in data) {
         if (data[property]) {
             let newData = {
                 serial: data[property],
                 available: false,
                 cons_almacen: cons_almacen
             }
-            const existe = await encontrarUnSerial({ serial: data[property], producto: { name: property } })
+            property = property.includes("Precinto plástico") ? "Precinto plástico" : property
+            const existe = await encontrarUnSerial({ serial: newData.serial, producto: { name: property } })
+            console.log(existe)
             if (existe == null) {
-                if (confirm(`No existe ${property} con serial ${data[property]} ¿Desea corregir el serial?`)) {
-                    newData.serial = prompt(`Por favor, corrija el serial, ${property}:`, data[property])
+                if (confirm(`No existe ${property} con serial ${newData.serial} ¿Desea corregir el serial?`)) {
+                    newData.serial = prompt(`Por favor, corrija el serial, ${property}:`, newData.serial)
                     const res = await encontrarUnSerial({ producto: { name: property } })
                     newData['cons_producto'] = res?.producto.consecutivo
                 } else {

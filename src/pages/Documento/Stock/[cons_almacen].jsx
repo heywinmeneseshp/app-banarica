@@ -33,7 +33,6 @@ export default function Documento() {
 
             const res = await axios.post(endPoints.stock.filter, body);
             let result = res.data;
-            console.log(result[0]);
             let ci = res.data[0]?.cons_almacen.substr(-2);
             let comercializadora = ci == "BC" ? "C.I. BANACHICA S.A.S. ZOMAC." : "Comercializadora Internacional Bana Rica S.A.";
             let direccion = ci == "BC" ? "Cra 5 5 44 AP 03, Aracataca, Magdalena" : "Cra 43a 16a Sur 38 IN 1008, Medellin, Antioquia";
