@@ -100,9 +100,9 @@ export default function Exportacion() {
                 'Guaya camión': formData.get('guaya-camion')
             };
             noPrecintos.map(index => {
-                seriales[`Precinto plástico ${index}`] = formData.get(`precinto-plastico-${index}`)
-            })
-            let array = Object.values(seriales)
+                seriales[`Precinto plástico ${index}`] = formData.get(`precinto-plastico-${index}`);
+            });
+            let array = Object.values(seriales);
             let duplicados = [];
             const tempArray = [...array].sort();
             for (let i = 0; i < tempArray.length; i++) {
@@ -110,10 +110,10 @@ export default function Exportacion() {
                     duplicados.push(tempArray[i]);
                 }
             }
-            duplicados = duplicados.find(item => item != null)
+            duplicados = duplicados.find(item => item != null);
             if (duplicados) {
-                window.alert("No se puede exportar mas de una vez el mismo Precinto")
-                return
+                window.alert("No se puede exportar mas de una vez el mismo Precinto");
+                return;
             }
 
             let serialesVerificados;
@@ -175,7 +175,7 @@ export default function Exportacion() {
     };
 
     const nuevoMovimiento = () => {
-        setRadio(0)
+        setRadio(0);
         setPrecintos([]);
         setBool(false);
         setConsMovimiento(null);
@@ -193,11 +193,11 @@ export default function Exportacion() {
     };
 
     const handleRadio = (e) => {
-        onChangeAlmacen()
+        onChangeAlmacen();
         const radio = e.target.value;
         setRadio(radio);
         if (radio == 2) {
-            setNoPrecintos([1])
+            setNoPrecintos([1]);
         }
     };
 
@@ -205,13 +205,13 @@ export default function Exportacion() {
 
     const sumarPrecitnos = () => {
         setNoPrecintos([...noPrecintos, noPrecintos.length + 1]);
-        console.log(noPrecintos)
-    }
+        console.log(noPrecintos);
+    };
 
     const removerPrecitnos = () => {
         const array = noPrecintos.slice(0, -1);
         setNoPrecintos(array);
-    }
+    };
 
     return (
         <>
@@ -447,7 +447,7 @@ export default function Exportacion() {
                                 </InputGroup>
 
                                 {noPrecintos.map((index, key) => {
-                                    console.log(index)
+                                    console.log(index);
                                     return (
                                         < InputGroup size="sm" key={key} >
                                             <InputGroup.Text id="inputGroup-sizing-sm">Precinto plástico {index}</InputGroup.Text>
@@ -464,7 +464,7 @@ export default function Exportacion() {
                                                 })}
                                             </Form.Select>
                                         </InputGroup >
-                                    )
+                                    );
                                 })
                                 }
 
