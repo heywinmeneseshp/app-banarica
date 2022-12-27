@@ -265,8 +265,6 @@ export default function Recepcion({ movimiento }) {
                                     id="semana"
                                     name="semana"
                                     type="number"
-                                    min={semanaActual?.semana_actual * 1 - semanaActual?.semana_previa}
-                                    max={semanaActual?.semana_actual * 1 + semanaActual?.semana_siguiente}
                                     required
                                     defaultValue={semana}
                                     disabled={bool}
