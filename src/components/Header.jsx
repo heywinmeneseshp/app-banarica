@@ -148,7 +148,7 @@ const Header = () => {
                                         <Dropdown.Item onClick={() => onSeguridad("/Recepcion")}>Recepción</Dropdown.Item>
                                         <Dropdown.Item onClick={() => onSeguridad("/Transferencias")}>Transferencias</Dropdown.Item>
                                         <Dropdown.Item onClick={() => onSeguridad("/Disponibles")}>Disponibles</Dropdown.Item>
-                                        {user.id_rol == "Super seguridad" && <Dropdown.Item onClick={() => onSeguridad("/Usuarios")}>Usuarios</Dropdown.Item>}
+                                        {(user.id_rol == "Super seguridad") && <Dropdown.Item onClick={() => onSeguridad("/Usuarios")}>Usuarios</Dropdown.Item>}
                                     </DropdownButton>}
 
                                 <DropdownButton onClick={() => openMenu("almacen")} className={styles.itemMenu} id="dropdown-basic-button" title="Almacén">

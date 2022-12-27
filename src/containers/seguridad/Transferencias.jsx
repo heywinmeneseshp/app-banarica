@@ -15,6 +15,8 @@ import useSemana from "@hooks/useSemana";
 import { agregarNotificaciones } from "@services/api/notificaciones";
 import { agregarHistorial } from "@services/api/historialMovimientos";
 import { encontrarModulo } from "@services/api/configuracion";
+import endPoints from "@services/api";
+import { restar, sumar } from "@services/api/stock";
 
 
 export default function Transferencias() {
@@ -65,7 +67,6 @@ export default function Transferencias() {
 
     const buscarArticulos = async () => {
         setCheckAll(false)
-        setPagination(1)
         const formData = new FormData(formRef.current)
         const data = {
             cons_producto: formData.get("producto"),
@@ -87,7 +88,13 @@ export default function Transferencias() {
         });
     }
 
+    const onChanageBuscar = () => {
+        setPagination(1)
+        buscarArticulos()
+    }
+
     const handleLimit = () => {
+        setPagination(1)
         const limit = limitRef.current.value ? limitRef.current.value : 1
         setLimit(limit)
         setCheckAll(false)
@@ -151,11 +158,12 @@ export default function Transferencias() {
                 vehiculo: "No aplica",
                 origen: formData.get("origen"),
                 destino: formData.get("destino"),
-                estado: "Pendiente",
+                estado: "Completado",
                 fecha_salida: formData.get("fecha"),
+                fecha_entrada: formData.get("fecha"),
+                observaciones: `Precintos tranferidos al almacén ${formData.get("destino")}`,
                 semana: semana
             };
-
             const traslado = await agregarTraslado(data)
             const cons_traslado = traslado.data.consecutivo;
             for (const property in claves) {
@@ -168,7 +176,8 @@ export default function Transferencias() {
                     tipo_movimiento: "Traslado",
                     cantidad: claves[property]
                 };
-                //sumar(almacen, consecutiveProdcut, formData.get("cantidad-" + index));
+                restar(data.origen, property, claves[property]);
+                sumar(data.destino, property, claves[property]);
                 agregarHistorial(dataHistorial);
             }
             const dataNotificacion = {
@@ -176,18 +185,19 @@ export default function Transferencias() {
                 almacen_receptor: data.destino,
                 cons_movimiento: cons_traslado,
                 tipo_movimiento: "Traslado",
-                descripcion: "pendiente por recibir",
-                aprobado: false,
+                descripcion: "Prencintos transferidos.",
+                aprobado: true,
                 visto: false
             };
             agregarNotificaciones(dataNotificacion);
-            setPagination(1)
+            setPagination(1);
             setAlert({
                 active: true,
-                mensaje: "Transferencia pendiente por aceptación",
+                mensaje: "Transferencia realizada",
                 color: "success",
                 autoClose: false
             })
+            window.open(endPoints.document.traslados(cons_traslado));
             setBool(true)
         } catch (e) {
             setAlert({
@@ -217,7 +227,7 @@ export default function Transferencias() {
                         <span className="input-group-text" id="inputGroup-sizing-sm">Orígen</span>
                         <select className="form-select form-select-sm"
                             aria-label=".form-select-sm example"
-                            onChange={buscarArticulos}
+                            onChange={onChanageBuscar}
                             id="origen"
                             name="origen"
                             disabled={bool}>
@@ -250,7 +260,7 @@ export default function Transferencias() {
                             id="producto"
                             name="producto"
                             disabled={bool}
-                            onChange={buscarArticulos}
+                            onChange={onChanageBuscar}
                         >
                             <option value={""}>All</option>
                             {productos.map((item, index) => (
@@ -292,7 +302,7 @@ export default function Transferencias() {
                             aria-label="Sizing example input"
                             id="serial"
                             name="serial"
-                            onChange={buscarArticulos}
+                            onChange={onChanageBuscar}
                             disabled={bool}
                             aria-describedby="inputGroup-sizing-sm"></input>
                     </div>
@@ -304,7 +314,7 @@ export default function Transferencias() {
                             aria-label="Sizing example input"
                             aria-describedby="inputGroup-sizing-sm"
                             id="bag_pack"
-                            onChange={buscarArticulos}
+                            onChange={onChanageBuscar}
                             disabled={bool}
                             name="bag_pack"></input>
                     </div>
@@ -316,7 +326,7 @@ export default function Transferencias() {
                             aria-label="Sizing example input"
                             aria-describedby="inputGroup-sizing-sm"
                             id="s_pack"
-                            onChange={buscarArticulos}
+                            onChange={onChanageBuscar}
                             disabled={bool}
                             name="s_pack"></input>
                     </div>
@@ -328,7 +338,7 @@ export default function Transferencias() {
                             className="form-control"
                             aria-label="Sizing example input"
                             aria-describedby="inputGroup-sizing-sm"
-                            onChange={buscarArticulos}
+                            onChange={onChanageBuscar}
                             id="m_pack"
                             name="m_pack"
                             disabled={bool}></input>
@@ -342,7 +352,7 @@ export default function Transferencias() {
                             className="form-control"
                             aria-label="Sizing example input"
                             aria-describedby="inputGroup-sizing-sm"
-                            onChange={buscarArticulos}
+                            onChange={onChanageBuscar}
                             id="l_pack"
                             name="l_pack"
                             disabled={bool}></input>

@@ -39,7 +39,7 @@ const listarUsuariosSeguridad = async (offset, limit, username) => {
     }
 }
 
-const cargarSeriales = async (dataExcel, remision, pedido, semana, fecha, observaciones) => {
+const cargarSeriales = async (dataExcel, remision, pedido, semana, fecha, observaciones, username) => {
     try {
         const res = dataExcel.find(item => item.cons_producto == null)
         if (res?.cons_producto === null) return { message: "Existen artículos sin código ID.", bool: false }
@@ -48,7 +48,6 @@ const cargarSeriales = async (dataExcel, remision, pedido, semana, fecha, observ
         dataExcel.map((item) => {
             if (data?.[item.cons_producto]) {
                 data[item.cons_producto] = data?.[item.cons_producto] + 1
-
             } else {
                 data[item.cons_producto] = 1
             }
@@ -58,7 +57,9 @@ const cargarSeriales = async (dataExcel, remision, pedido, semana, fecha, observ
             remision: remision,
             fecha: fecha,
             cons_semana: semana,
-            observaciones: observaciones
+            observaciones: observaciones,
+            aprobado_por: user.username,
+            realizado_por: user.username
         }
         agregarRecepcion(body).then((res) => {
             productList.map(item => {

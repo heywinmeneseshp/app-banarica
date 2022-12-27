@@ -16,13 +16,11 @@ import useAlert from "@hooks/useAlert";
 import { InputGroup, Form } from "react-bootstrap";
 import useSemana from "@hooks/useSemana";
 
-
-
 export default function Recepcion() {
     const almacenRef = useRef()
     const articuloRef = useRef()
     const formRef = useRef()
-    const { almacenByUser } = useAuth()
+    const { almacenByUser, user } = useAuth()
     const [archivoExcel, setArchivoExcel] = useState([])
     const [tabla, setTabla] = useState([])
     const [productos, setProductos] = useState([])
@@ -94,7 +92,7 @@ export default function Recepcion() {
             const semana = useSemana(formData.get("semana"));
             const fecha = formData.get("fecha");
             const observaciones = formData.get("observaciones");
-            const res = await cargarSeriales(archivoExcel, remision, pedido, semana, fecha, observaciones);
+            const res = await cargarSeriales(archivoExcel, remision, pedido, semana, fecha, observaciones, user.username);
             if (res.bool == true) {
                 setBool(true)
                 setAlert({
