@@ -157,7 +157,7 @@ export default function RealizarTraslado() {
         <>
 
             <Container>
-               
+
                 <form ref={formRef} onSubmit={handleSubmit}>
                     <h2>+ Realizar traslado</h2>
                     <div className={styles.contenedor1}>
@@ -228,9 +228,22 @@ export default function RealizarTraslado() {
                                 name="semana"
                                 type="number"
                                 min={semana?.semana_actual - semana?.semana_previa}
-                                max={semana?.semana_actual*1 + semana?.semana_siguiente}
+                                max={semana?.semana_actual * 1 + semana?.semana_siguiente}
                                 required
                                 disabled={bool}
+                            />
+
+                         
+                            <Form.Control
+                             className={styles.anho}
+                                aria-label="Small"
+                                aria-describedby="inputGroup-sizing-sm"
+                                id="anho_actual"
+                                name="anho_actual"
+                                type="text"
+                                required
+                                disabled
+                                defaultValue={semana?.anho_actual}
                             />
                         </InputGroup>
 

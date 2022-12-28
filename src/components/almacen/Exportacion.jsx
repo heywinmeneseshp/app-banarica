@@ -291,6 +291,18 @@ export default function Exportacion() {
                                         disabled={bool}
                                         defaultValue={semana}
                                     />
+
+                                    <Form.Control
+                                     className={styles.anho}
+                                        aria-label="Small"
+                                        aria-describedby="inputGroup-sizing-sm"
+                                        id="anho_actual"
+                                        name="anho_actual"
+                                        type="text"
+                                        required
+                                        disabled
+                                        defaultValue={semanaActual?.anho_actual}
+                                    />
                                 </InputGroup>
                             }
                             {bool &&
@@ -474,7 +486,7 @@ export default function Exportacion() {
                                     </Button>
                                     <Button onClick={() => removerPrecitnos()} variant="danger" size="sm">
                                         Remover Precinto
-                                    </Button> 
+                                    </Button>
                                 </InputGroup>}
 
 

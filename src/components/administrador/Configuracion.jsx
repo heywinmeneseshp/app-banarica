@@ -41,7 +41,8 @@ export default function Configuracion({ setOpen }) {
                 "modulo": "Semana",
                 "semana_actual": formData.get('actual'),
                 "semana_siguiente": formData.get('siguiente'),
-                "semana_previa": formData.get('anterior')
+                "semana_previa": formData.get('anterior'),
+                "anho_actual": formData.get('anho_actual')
             });
             setOpen(false);
         } catch (e) {
@@ -82,7 +83,7 @@ export default function Configuracion({ setOpen }) {
                                             className={styles1.input_semana}
                                             type='number'
                                             max={52}
-                                            min={semana?.semana_actual}
+                                            min={0}
                                             defaultValue={semana?.semana_actual}
                                         />
                                     </InputGroup>
@@ -117,6 +118,24 @@ export default function Configuracion({ setOpen }) {
                                         />
                                     </InputGroup>
 
+                                </span>
+
+                                <span>Año:</span>
+                                <span className={styles1.input_group_semana}>
+                                    <InputGroup size="sm">
+                                        <InputGroup.Text id="inputGroup-sizing-sm">Actual</InputGroup.Text>
+                                        <Form.Control
+                                            id="anho_actual"
+                                            name='anho_actual'
+                                            aria-label="Small"
+                                            className={styles1.input_semana}
+                                            aria-describedby="inputGroup-sizing-sm"
+                                            type='number'
+                                            min={0}
+                                            max={9999}
+                                            defaultValue={semana?.anho_actual}
+                                        />
+                                    </InputGroup>
                                 </span>
                             </div>
 

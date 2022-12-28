@@ -300,6 +300,18 @@ export default function Devolucion({ movimiento }) {
                                     disabled={bool}
                                     defaultValue={semana}
                                 />
+
+                                <Form.Control
+                                    className={styles.anho}
+                                    aria-label="Small"
+                                    aria-describedby="inputGroup-sizing-sm"
+                                    id="anho_actual"
+                                    name="anho_actual"
+                                    type="text"
+                                    required
+                                    disabled
+                                    defaultValue={semanaActual?.anho_actual}
+                                />
                             </InputGroup>
                         }
                         {bool &&

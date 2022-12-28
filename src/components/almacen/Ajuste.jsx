@@ -75,13 +75,13 @@ export default function Ajuste({ exportacion, movimiento }) {
         setProducts(array);
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const formData = new FormData(formRef.current);
         const almacenR = formData.get('almacen');
         const tipoDeMovimiento = formData.get('tipo-movimiento');
         const fecha = formData.get("fecha");
-        const semanaR = generarSemana(formData.get('semana'));
+        const semanaR = await generarSemana(formData.get('semana'));
         const observacionesR = formData.get("observaciones");
         const consAlmacen = almacenByUser.find((item) => item.nombre == almacenR).consecutivo;
         let tipo;
@@ -229,6 +229,18 @@ export default function Ajuste({ exportacion, movimiento }) {
                                     disabled={bool}
                                     defaultValue={semana}
                                 />
+
+                                <Form.Control
+                                    className={styles.anho}
+                                    aria-label="Small"
+                                    aria-describedby="inputGroup-sizing-sm"
+                                    id="anho_actual"
+                                    name="anho_actual"
+                                    type="text"
+                                    required
+                                    disabled
+                                    defaultValue={semanaActual?.anho_actual}
+                                />
                             </InputGroup>
                         }
                         {bool &&
@@ -244,6 +256,7 @@ export default function Ajuste({ exportacion, movimiento }) {
                                     disabled={bool}
                                     defaultValue={semana}
                                 />
+
                             </InputGroup>
                         }
                     </div>

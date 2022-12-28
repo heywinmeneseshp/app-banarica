@@ -269,6 +269,18 @@ export default function Recepcion({ movimiento }) {
                                     defaultValue={semana}
                                     disabled={bool}
                                 />
+
+                                <Form.Control
+                                    className={styles.anho}
+                                    aria-label="Small"
+                                    aria-describedby="inputGroup-sizing-sm"
+                                    id="anho_actual"
+                                    name="anho_actual"
+                                    type="text"
+                                    required
+                                    disabled
+                                    defaultValue={semanaActual?.anho_actual}
+                                />
                             </InputGroup>
                         }
 
