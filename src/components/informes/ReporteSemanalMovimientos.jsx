@@ -68,9 +68,9 @@ export default function ReporteSemanalMovimientos() {
         if (cons_movimiento != 0) body.historial = { ...body.historial, cons_lista_movimientos: cons_movimiento };
         let { data } = await axios.post(`${endPoints.historial.list}/filter`, { ...body, producto: { name: producto, cons_categoria: cons_categoria } });
     
-
         data = data.filter(item => item.movimiento.razon_movimiento != "Rechazado");
-      
+        
+        if (cons_movimiento == "DV" || cons_movimiento == "LQ") data = data.filter(item => item.movimiento.pendiente == false);
 
         let dias = {
             domingo: data.filter(item => new Date(item?.movimiento?.fecha).getDay() == 0),
