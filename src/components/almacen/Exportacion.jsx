@@ -86,7 +86,7 @@ export default function Exportacion() {
         const almacenR = formData.get('almacen');
         const fecha = formData.get("fecha");
         const week = formData.get('semana');
-        const semanaR = generarSemana(week);
+        const semanaR = await generarSemana(week);
         const observacionesR = formData.get("observaciones");
         const consAlmacen = almacenByUser.find((item) => item.nombre == almacenR).consecutivo;
         try {

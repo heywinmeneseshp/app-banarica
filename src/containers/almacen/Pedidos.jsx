@@ -66,9 +66,7 @@ export default function Pedidos() {
             usuario: user.username
         }
         let almacenes = []
-        console.log(data)
         const res = await agregarTablePedido(data)
-        console.log(res)
         setConsPedido(res.data.consecutivo)
         const cons_pedido = res.data.consecutivo
         gestionPedido.listaPedido.map((item, index) => {

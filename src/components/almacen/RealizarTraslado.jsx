@@ -68,7 +68,7 @@ export default function RealizarTraslado() {
         setProducts(array);
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const formData = new FormData(formRef.current);
         const fecha = formData.get("fecha");
@@ -76,7 +76,7 @@ export default function RealizarTraslado() {
         const conductor0 = formData.get("conductor");
         const vehiculo = formData.get("vehiculo");
         const week = formData.get("semana");
-        const semanaR = generarSemana(week);
+        const semanaR = await generarSemana(week);
         const origen0 = destinos.find((item) => item.nombre == formData.get("origen")).consecutivo;
         const destino0 = destinos.find((item) => item.nombre == formData.get("destino")).consecutivo;
         if (origen0 == destino0) {

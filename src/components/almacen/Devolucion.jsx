@@ -116,7 +116,7 @@ export default function Devolucion({ movimiento }) {
         });
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const formData = new FormData(formRef.current);
         try {
@@ -155,7 +155,7 @@ export default function Devolucion({ movimiento }) {
                 const observacionesR = formData.get("observaciones");
                 const consAlmacen = almacenByUser.find((item) => item.nombre == almacenR).consecutivo;
                 const week = formData.get("semana");
-                const semanaR = generarSemana(week);
+                const semanaR = await generarSemana(week);
                 setRazonMovimiento(tipoDeMovimiento);
                 setDate(fecha);
                 setSemana(semanaR);

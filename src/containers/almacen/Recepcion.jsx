@@ -88,7 +88,7 @@ export default function Recepcion({ movimiento }) {
         setProducts(array);
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             const formData = new FormData(formRef.current);
@@ -97,7 +97,7 @@ export default function Recepcion({ movimiento }) {
             const pedido = formData.get("pedido");
             setConsAlmacen(nombreAlmacen);
             const week = formData.get("semana");
-            const semanaR = generarSemana(week);
+            const semanaR = await generarSemana(week);
             setSemana(semanaR)
             const body = {
                 remision: formData.get("remision"),
