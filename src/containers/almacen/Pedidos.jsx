@@ -56,7 +56,7 @@ export default function Pedidos() {
         const formData = new FormData(formRef.current)
         const observaciones = formData.get("observaciones")
         const week = formData.get("semana");
-        const semanaR = generarSemana(week);
+        const semanaR = await generarSemana(week);
         setObservaciones(observaciones)
         const data = {
             pendiente: true,
@@ -66,7 +66,9 @@ export default function Pedidos() {
             usuario: user.username
         }
         let almacenes = []
+        console.log(data)
         const res = await agregarTablePedido(data)
+        console.log(res)
         setConsPedido(res.data.consecutivo)
         const cons_pedido = res.data.consecutivo
         gestionPedido.listaPedido.map((item, index) => {
