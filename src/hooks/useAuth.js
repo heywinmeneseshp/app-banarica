@@ -28,6 +28,7 @@ function useProviderAuth() {
             Cookie.set('token', data.token, { expires: expire });
             axios.defaults.headers.Authorization = 'Bearer ' + data.token
             const res = await axios.get(endPoints.auth.profile);
+            if (res.data.usuario.isBlock == true) return window.alert("El usuario esta deshabilitado, por favor comuníquese con el administrador")
             setUser(res.data.usuario)
             const almacenes = res.data.almacenes.sort((a, b) => {
                 if (a.nombre == b.nombre) {
