@@ -16,7 +16,6 @@ import Paginacion from '@components/Paginacion';
 import styles from '@styles/informes/informes.module.css';
 import { buscarMovimiento } from "@services/api/movimientos";
 import { listarCategorias } from "@services/api/categorias";
-import { encontrarModulo } from "@services/api/configuracion";
 
 export default function ReporteGeneralMovimientos() {
     const { almacenByUser, user } = useAuth();
@@ -25,7 +24,6 @@ export default function ReporteGeneralMovimientos() {
     const [pagination, setPagination] = useState(1);
     const [categorias, setCategorias] = useState([]);
     const [total, setTotal] = useState(0);
-    const [semana, setSemana] = useState(null);
     const limit = 20;
 
     useEffect(() => {
@@ -57,11 +55,6 @@ export default function ReporteGeneralMovimientos() {
         const cons_almacen = formData.get('almacen');
         const cons_movimiento = formData.get('movimiento');
         let cons_semana = formData.get('semana');
-        if (semana == null) {
-            const currentWeek = await encontrarModulo('Semana');
-            cons_semana = currentWeek[0].semana_actual;
-        }
-        setSemana(cons_semana);
         const producto = formData.get('articulo');
         const categoria = formData.get('categoria') == 0 ? "" : formData.get('categoria');
         const seguridad = user.id_rol == "Seguridad" || user.id_rol == "Super seguridad" ? await listarCategorias() : false;
@@ -69,7 +62,9 @@ export default function ReporteGeneralMovimientos() {
         let url = `${endPoints.historial.list}/filter`;
         let body = {};
         const anho = formData.get('anho') ? formData.get('anho') : new Date().getFullYear();
-        if (cons_semana) body.movimiento = { cons_semana: `S${cons_semana}-${anho}` };
+        if (cons_semana) {
+            body.movimiento = { cons_semana: `S${cons_semana}-${anho}` };
+        } 
         if (cons_almacen != 0) {
             body.historial = { cons_almacen_gestor: cons_almacen };
         } else {
@@ -94,7 +89,7 @@ export default function ReporteGeneralMovimientos() {
         const cons_movimiento = formData.get('movimiento');
         const cons_semana = formData.get('semana');
         let body = {};
-        const anho = new Date().getFullYear();
+        const anho = formData.get('anho') ? formData.get('anho') : new Date().getFullYear();
         if (cons_semana) body.movimiento = { cons_semana: `S${cons_semana}-${anho}` };
         if (cons_almacen != 0) {
             body.historial = { cons_almacen_gestor: cons_almacen };
@@ -226,7 +221,6 @@ export default function ReporteGeneralMovimientos() {
                                         id="semana"
                                         name='semana'
                                         onChange={onBuscar}
-                                        defaultValue={semana}
                                     ></input>
                                 </div>
                             </div>

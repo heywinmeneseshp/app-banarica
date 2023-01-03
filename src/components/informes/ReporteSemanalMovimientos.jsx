@@ -10,7 +10,6 @@ import { encontrarModulo } from "@services/api/configuracion";
 import { filtrarProductos } from "@services/api/productos";
 import { DownloadTableExcel } from 'react-export-table-to-excel';
 
-
 export default function ReporteSemanalMovimientos() {
     const { almacenByUser, user } = useAuth();
     const tablaRef = useRef();
@@ -27,7 +26,6 @@ export default function ReporteSemanalMovimientos() {
     useEffect(() => {
         listarTabla();
     }, [product]);
-
 
     const encontrarProductos = async (categoria, categorias) => {
         const data = {
@@ -67,9 +65,9 @@ export default function ReporteSemanalMovimientos() {
         }
         if (cons_movimiento != 0) body.historial = { ...body.historial, cons_lista_movimientos: cons_movimiento };
         let { data } = await axios.post(`${endPoints.historial.list}/filter`, { ...body, producto: { name: producto, cons_categoria: cons_categoria } });
-    
+
         data = data.filter(item => item.movimiento.razon_movimiento != "Rechazado");
-        
+
         if (cons_movimiento == "DV" || cons_movimiento == "LQ") data = data.filter(item => item.movimiento.pendiente == false);
 
         let dias = {
