@@ -55,6 +55,15 @@ const restar = async (cons_almacen, cons_producto, cantidad) => {
     }
 }
 
+const actualizarNoDisponibles = async (cons_almacen, cons_producto, und_no_disponibles) => {
+    try {
+        const res = await axios.patch(endPoints.stock.disponible(cons_almacen, cons_producto), { no_disponible: und_no_disponibles })
+        return res.data
+    } catch {
+        alert("Se ha producido un error al actualizar las unidades no disponibles")
+    }
+}
+
 const exportCombo = async (body, listaCombo) => {
     const data = {
         ...body,
@@ -122,5 +131,6 @@ export {
     eliminarStock,
     crearStock,
     filtrarPorProductoYAlmacen,
-    filtradoGeneralStock
+    filtradoGeneralStock,
+    actualizarNoDisponibles
 };

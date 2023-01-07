@@ -4,7 +4,6 @@ import endPoints from '@services/api';
 import Cookie from 'js-cookie';
 import { useRouter } from 'next/router';
 
-
 const AuthContext = createContext();
 
 export function ProviderAuth({ children }) {

@@ -98,6 +98,7 @@ const endPoints = {
         add: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/stock/sumar/${cons_almacen}/${cons_producto}`,
         subtract: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/stock/restar/${cons_almacen}/${cons_producto}`,
         enable: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/stock/habilitar/${cons_almacen}/${cons_producto}`,
+        disponible: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/stock/disponible/${cons_almacen}/${cons_producto}`,
     },
     pedidos: {
         list: `${API}/api/${VERSION}/pedidos`,
