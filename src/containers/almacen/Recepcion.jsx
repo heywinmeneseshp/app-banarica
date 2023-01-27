@@ -91,7 +91,23 @@ export default function Recepcion({ movimiento }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+
+
             const formData = new FormData(formRef.current);
+
+            let existe = []
+            products.map((product, index) => {
+
+                let res = existe.find(item => formData.get(`producto-${index}`) == item)
+                if (res) {
+                    existe.push("Stop")
+                }
+                existe.push(formData.get(`producto-${index}`))
+            })
+
+            if (existe.find(item => item == "Stop") ) return window.alert("No puede seleccionar más de 1 vez el mismo artículo")
+
+
             const nombreAlmacen = formData.get("almacen")
             const almacen = almacenByUser.find((almacen) => almacen.nombre == nombreAlmacen).consecutivo
             const pedido = formData.get("pedido");
@@ -112,7 +128,7 @@ export default function Recepcion({ movimiento }) {
                 setConsecutivo(consMovimiento)
                 let array = []
                 products.map((product, index) => {
-                    const consecutiveProdcut = productos.find(producto => producto.name == formData.get(`producto-${index}`)).consecutivo
+                    const consecutiveProdcut = formData.get(`producto-${index}`)
                     let dataPedido = {
                         cons_producto: consecutiveProdcut,
                         cons_almacen_destino: almacen,
@@ -304,51 +320,53 @@ export default function Recepcion({ movimiento }) {
                     </div>
 
                     <div className={styles.line}></div>
-                    {products.map((product, key) => (
-                        <div key={key}>
-                            <div className={styles.contenedor2} >
+                    {products.map((product, key) => {
+                        return (
+                            <div key={key}>
+                                <div className={styles.contenedor2} >
 
-                                <span className={styles.display}>
+                                    <span className={styles.display}>
+                                        <InputGroup size="sm" className="mb-3">
+                                            <InputGroup.Text id="inputGroup-sizing-sm">Cod</InputGroup.Text>
+                                            <Form.Control
+                                                aria-label="Small"
+                                                aria-describedby="inputGroup-sizing-sm"
+                                                disabled
+                                                id={`producto-${key}`}
+                                                name={`producto-${key}`}
+                                                defaultValue={product?.cons_producto}
+                                            />
+                                        </InputGroup>
+                                    </span>
+
                                     <InputGroup size="sm" className="mb-3">
-                                        <InputGroup.Text id="inputGroup-sizing-sm">Cod</InputGroup.Text>
+                                        <InputGroup.Text id="inputGroup-sizing-sm">Artículo</InputGroup.Text>
+                                        <Form.Select className={styles.select} id={"producto-" + key} name={"producto-" + key} size="sm" disabled={bool}>
+                                            {productos.map((item, index) => {
+                                                return <option key={index} value={item.consecutivo}>{item.name}</option>
+                                            })}
+                                            {bool && <option >{product?.Producto?.name ? product?.Producto?.name : product?.name}</option>}
+                                        </Form.Select>
+                                    </InputGroup>
+
+                                    <InputGroup size="sm" className="mb-3">
+                                        <InputGroup.Text id="inputGroup-sizing-sm">Cantidad</InputGroup.Text>
                                         <Form.Control
                                             aria-label="Small"
                                             aria-describedby="inputGroup-sizing-sm"
-                                            disabled
-                                            id={`producto-${key}`}
-                                            name={`producto-${key}`}
-                                            defaultValue={product?.cons_producto}
+                                            type="number"
+                                            id={"cantidad-" + key}
+                                            name={"cantidad-" + key}
+                                            disabled={bool}
+                                            defaultValue={product?.cantidad}
+                                            required
                                         />
+
                                     </InputGroup>
-                                </span>
-
-                                <InputGroup size="sm" className="mb-3">
-                                    <InputGroup.Text id="inputGroup-sizing-sm">Artículo</InputGroup.Text>
-                                    <Form.Select className={styles.select} id={"producto-" + key} name={"producto-" + key} size="sm" disabled={bool}>
-                                        {productos.map((item, index) => {
-                                            return <option key={index}>{item.name}</option>
-                                        })}
-                                        {bool && <option>{product?.Producto?.name ? product?.Producto?.name : product?.name}</option>}
-                                    </Form.Select>
-                                </InputGroup>
-
-                                <InputGroup size="sm" className="mb-3">
-                                    <InputGroup.Text id="inputGroup-sizing-sm">Cantidad</InputGroup.Text>
-                                    <Form.Control
-                                        aria-label="Small"
-                                        aria-describedby="inputGroup-sizing-sm"
-                                        type="number"
-                                        id={"cantidad-" + key}
-                                        name={"cantidad-" + key}
-                                        disabled={bool}
-                                        defaultValue={product?.cantidad}
-                                        required
-                                    />
-
-                                </InputGroup>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        )
+                    })}
                     <div>
                         <InputGroup size="sm" className="mb-3">
                             <InputGroup.Text id="inputGroup-sizing-sm">Observaciones</InputGroup.Text>

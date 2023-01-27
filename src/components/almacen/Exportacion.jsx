@@ -83,6 +83,21 @@ export default function Exportacion() {
         if (radio == 0 && moduloSeguridad) return setAlertRadio(true);
         setAlertRadio(false);
         const formData = new FormData(formRef.current);
+
+        let existeCombo = [];
+        products.map((product, index) => {
+            const nombreCombo = formData.get("producto-" + index);
+            const consCombo = combos.find((item) => item.nombre == nombreCombo).consecutivo;
+            const existe = existeCombo.find(item => item == consCombo);
+            if (existe) {
+                existeCombo.push("Stop");
+            } else {
+                existeCombo.push(consCombo);
+            }
+        });
+
+        if (existeCombo.find(item => item == "Stop")) return window.alert("No puede seleccionar más de 1 vez el mismo combo");
+
         const almacenR = formData.get('almacen');
         const fecha = formData.get("fecha");
         const week = formData.get('semana');
@@ -293,7 +308,7 @@ export default function Exportacion() {
                                     />
 
                                     <Form.Control
-                                     className={styles.anho}
+                                        className={styles.anho}
                                         aria-label="Small"
                                         aria-describedby="inputGroup-sizing-sm"
                                         id="anho_actual"
