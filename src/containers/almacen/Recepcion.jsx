@@ -260,8 +260,6 @@ export default function Recepcion({ movimiento }) {
                                 <Form.Control
                                     aria-label="Small"
                                     aria-describedby="inputGroup-sizing-sm"
-                                    min={semanaActual?.semana_actual - semana?.semana_previa}
-                                    max={semanaActual?.semana_actual * 1 + semana?.semana_siguiente}
                                     id="semana"
                                     name="semana"
                                     type="number"
@@ -290,6 +288,8 @@ export default function Recepcion({ movimiento }) {
                                 <Form.Control
                                     aria-label="Small"
                                     aria-describedby="inputGroup-sizing-sm"
+                                    min={semanaActual?.semana_actual - semana?.semana_previa}
+                                    max={semanaActual?.semana_actual * 1 + semana?.semana_siguiente}
                                     id="semana"
                                     name="semana"
                                     type="text"
