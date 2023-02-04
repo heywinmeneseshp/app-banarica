@@ -43,7 +43,13 @@ export default function InfoPedidos() {
         const formData = new FormData(formRef.current)
         const categoria = formData.get("categoria")
         const producto = formData.get("articulo")
-        const semana = formData.get("semana")
+        let semana = formData.get("semana")
+        const anho = formData.get("anho");
+        if (semana) {
+            semana = `S${semana}-${anho}`
+        } else {
+            semana = anho
+        }
         let almacen = formData.get("almacen")
         if (almacen == "All") almacen = almacenByUser.map(item => item.consecutivo)
         if (page && limit) {
@@ -138,17 +144,34 @@ export default function InfoPedidos() {
                             </div>
                         </div>
 
-                        <div className={styles.grupo}>
-                            <label htmlFor="semana">Semana</label>
-                            <div>
-                                <input
-                                    id="semana"
-                                    name="semana"
-                                    type="number"
-                                    onChange={() => listarItems(1, limit)}
-                                    className="form-control form-control-sm" ></input>
+
+
+                        <span className={styles.semanaAndAnho}>
+                            <div className={styles.grupo}>
+                                <label htmlFor="semana">Semana</label>
+                                <div>
+                                    <input type="number"
+                                        className="form-control form-control-sm"
+                                        id="semana"
+                                        name='semana'
+                                        onChange={() => listarItems(1, limit)}
+                                    ></input>
+                                </div>
                             </div>
-                        </div>
+
+                            <div className={styles.grupo}>
+                                <label htmlFor="anho">Año</label>
+                                <div>
+                                    <input type="number"
+                                        className="form-control form-control-sm"
+                                        id="anho"
+                                        name='anho'
+                                        onChange={() => listarItems(1, limit)}
+                                        defaultValue={new Date().getFullYear()}
+                                    ></input>
+                                </div>
+                            </div>
+                        </span>
 
                         <Button 
                         className={styles.button} 

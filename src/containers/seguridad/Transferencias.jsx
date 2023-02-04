@@ -151,7 +151,7 @@ export default function Transferencias() {
                 }
             })
             await actualizarSeriales(tranferencias);
-            const semana = useSemana(formData.get("semana"))
+            const semana = await useSemana(formData.get("semana"))
             const data = {
                 transportadora: "No aplica",
                 conductor: "No aplica",

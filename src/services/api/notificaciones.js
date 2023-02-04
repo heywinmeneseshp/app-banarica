@@ -78,6 +78,4 @@ const filtrarNotificaciones = async (data) => {
     }
 }
 
-
-
 export { agregarNotificaciones, eliminarNotificaciones, actualizarNotificaciones, buscarNotificaciones, listarNotificaciones, filtrarNotificaciones };

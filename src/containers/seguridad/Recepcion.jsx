@@ -89,7 +89,7 @@ export default function Recepcion() {
             const formData = new FormData(formRef.current);
             const remision = formData.get("remision");
             const pedido = formData.get("pedido");
-            const semana = useSemana(formData.get("semana"));
+            const semana = await useSemana(formData.get("semana"));
             const fecha = formData.get("fecha");
             const observaciones = formData.get("observaciones");
             const res = await cargarSeriales(archivoExcel, remision, pedido, semana, fecha, observaciones, user.username);

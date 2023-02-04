@@ -58,15 +58,17 @@ const cargarSeriales = async (dataExcel, remision, pedido, semana, fecha, observ
             fecha: fecha,
             cons_semana: semana,
             observaciones: observaciones,
-            aprobado_por: user.username,
-            realizado_por: user.username
+            aprobado_por: username,
+            realizado_por: username
         }
+
         agregarRecepcion(body).then((res) => {
+            console.log(res)
             productList.map(item => {
                 const almacen = dataExcel[1].cons_almacen;
                 const cons_producto = item;
                 const cantidad = data[item];
-                const consMovimiento = res.consecutivo;
+                const consMovimiento = res.data.consecutivo;
                 const dataHistorial = {
                     cons_movimiento: consMovimiento,
                     cons_producto: item,
@@ -83,6 +85,7 @@ const cargarSeriales = async (dataExcel, remision, pedido, semana, fecha, observ
         })
         return { message: "Se han cargado los datos con éxito.", bool: true }
     } catch (e) {
+        console.log(e)
         throw e
     }
 
