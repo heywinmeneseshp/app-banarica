@@ -35,7 +35,7 @@
 
 .buttons {
   display: grid;
-  grid-template-columns: auto auto;
+  grid-template-columns: auto auto auto;
   gap: 10px;
 }
 
@@ -107,6 +107,37 @@
   transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
 }
 
+.tablaContainer{
+  width: auto;
+  overflow-x: auto;
+}
+
+.tabla2 {
+  display: block;
+  width: max-content;
+}
+
+.nombre {
+  min-width: 200px;
+  max-width: 200px;
+}
+
+.detalle {
+  min-width: 60px;
+  max-width: 60px;
+}
+
+
+.radio{
+  display: flex;
+  flex-direction: row;
+  justify-items:unset;
+  justify-content: center;
+}
+
+.radio :first-child {
+  margin: 25.5px 10px 0px 10px;
+}
 
 
 
@@ -135,4 +166,16 @@
   .display_desktop {
     display: block;
   }
+
+  .tabla2 {
+    display: flex;
+    width: min-content;
+  }
+
+  .buttons {
+    display: grid;
+    grid-template-columns: auto;
+    gap: 10px;
+  }
+
 }

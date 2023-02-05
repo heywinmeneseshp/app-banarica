@@ -15,13 +15,11 @@ export default function ReporteSemanalMovimientos() {
     const tablaRef = useRef();
     const formRef = useRef();
     const companies = ["Banarica", "Banachica"];
-    const [tipoTabla, setTipoTable] = useState(false);
     const [almacenes, setAlmacenes] = useState([]);
     const [categorias, setCategorias] = useState([]);
     const [company, setCompany] = useState("Banarica");
     const [semana, setSemana] = useState(null);
     const [tabla, setTabla] = useState([]);
-    const [productArray, setProductArray] = useState([]);
     const [productos, setProductos] = useState([]);
     const [product, setProduct] = useState("");
 
@@ -58,14 +56,12 @@ export default function ReporteSemanalMovimientos() {
         setSemana(cons_semana);
         let body = {};
         body.movimiento = { cons_semana: `S${cons_semana}-${anho}` };
-        let almacenes = [];
         if (cons_almacen == 0) {
-            almacenes = selectAlmacenes();
-            const list = almacenes.map((item) => item.consecutivo);
+            const res = selectAlmacenes();
+            const list = res.map((item) => item.consecutivo);
             body.historial = { cons_almacen_gestor: list };
         } else {
             body.historial = { cons_almacen_gestor: cons_almacen };
-            almacenes = almacenByUser.filter(item => item.consecutivo == cons_almacen);
         }
         if (cons_movimiento != 0) body.historial = { ...body.historial, cons_lista_movimientos: cons_movimiento };
         let { data } = await axios.post(`${endPoints.historial.list}/filter`, { ...body, producto: { name: producto, cons_categoria: cons_categoria } });
@@ -74,31 +70,30 @@ export default function ReporteSemanalMovimientos() {
 
         if (cons_movimiento == "DV" || cons_movimiento == "LQ") data = data.filter(item => item.movimiento.pendiente == false);
 
-        let productList = [];
-        for (let product of data) {
-            const item = { nombre: product.Producto.name, consecutivo: product.Producto.consecutivo };
-            if (!productList.find(item => item.nombre == product.Producto.name)) productList.push(item);
+        let dias = {
+            domingo: data.filter(item => new Date(item?.movimiento?.fecha).getDay() == 0),
+            lunes: data.filter(item => new Date(item?.movimiento?.fecha).getDay() == 1),
+            martes: data.filter(item => new Date(item?.movimiento?.fecha).getDay() == 2),
+            miercoles: data.filter(item => new Date(item?.movimiento?.fecha).getDay() == 3),
+            jueves: data.filter(item => new Date(item?.movimiento?.fecha).getDay() == 4),
+            viernes: data.filter(item => new Date(item?.movimiento?.fecha).getDay() == 5),
+            sabado: data.filter(item => new Date(item?.movimiento?.fecha).getDay() == 6)
+        };
+        for (var dia in dias) {
+            let categoria = {};
+            let producto = {};
+            dias[dia].map((item) => {
+                const almacenR = item?.cons_almacen_gestor;
+                const cantidad = item?.cantidad;
+                const productoR = item?.Producto?.name;
+                const cons_categoria = categories.find(item2 => item2.consecutivo == item.Producto.cons_categoria).nombre;
+                categoria[`${almacenR}-${cons_categoria}`] = categoria[`${almacenR}-${cons_categoria}`] ? categoria[`${almacenR}-${cons_categoria}`] + cantidad : cantidad;
+                producto[`${almacenR}-${productoR}`] = producto[`${almacenR}-${productoR}`] ? producto[`${almacenR}-${productoR}`] + cantidad : cantidad;
+            });
+            dias[dia] = { categoria, producto };
         }
-        productList.sort((a, b) => {
-            if (a.consecutivo > b.consecutivo) return 1;
-            if (a.consecutivo < b.consecutivo) return -1;
-        });
-        setProductArray(productList);
+        setTabla(dias);
 
-        let newTable = [];
-        almacenes.map((item) => {
-            let result = {};
-            productList.map((product) => {
-                result[product.consecutivo] = 0;
-            });
-            const list = data.filter(itemB => itemB.cons_almacen_gestor == item.consecutivo);
-
-            list.map((dataItem) => {
-                result[dataItem.cons_producto] = result[dataItem.cons_producto] + dataItem.cantidad;
-            });
-            newTable.push({ consecutivo: item.consecutivo, result: result, nombre: item.nombre });
-        });
-        setTabla(newTable);
     };
 
     const selectAlmacenes = () => {
@@ -116,10 +111,6 @@ export default function ReporteSemanalMovimientos() {
         }
     };
 
-    const handleCheck = () => {
-        setTipoTable(!tipoTabla);
-    };
-
 
     return (
         <>
@@ -132,7 +123,7 @@ export default function ReporteSemanalMovimientos() {
                                 className="form-select form-select-sm"
                                 id="company"
                                 name="company"
-                                onChange={listarTabla}
+                                onChange={selectAlmacenes}
                             >
                                 {companies.map((item, index) => (
                                     <option key={index} selected={item == "Banarica"}>{item}</option>
@@ -247,34 +238,19 @@ export default function ReporteSemanalMovimientos() {
                         </div>
                     </span>
 
-
-
-                    <div className={styles.radio}>
-                        <input
-                            id="Check"
-                            checked={tipoTabla}
-                            onChange={() => handleCheck()}
-                            className="form-check-input"
-                            type="checkbox"
-                            aria-label="Radio button for following text input" />
-                        <label className="form-check-label w-100 mt-4" htmlFor="flexCheckDefault">
-                            Invertir vista
-                        </label>
-                    </div>
-
                     <div className={styles.grupo}>
-
                         <DownloadTableExcel
                             filename={`Reporte Sem ${semana}`}
                             sheet={`Semana ${semana}`}
                             currentTableRef={tablaRef.current}
                         >
+
+
                             <Button className="w-100 mt-4" variant="success" size="sm">
                                 Descargar Excel
                             </Button>
 
                         </DownloadTableExcel>
-
                     </ div >
 
                 </div>
@@ -282,78 +258,69 @@ export default function ReporteSemanalMovimientos() {
 
             <div className="mt-3">
                 <h3 >{company} - {semana}</h3>
-                <div className={styles.tablaContainer}>
+                <Table ref={tablaRef} striped bordered hover size="sm" >
+                    <thead>
+                        <tr>
+                            <th>Cod.</th>
+                            <th>Almacén</th>
+                            <th>Lunes</th>
+                            <th>Martes</th>
+                            <th>Miercoles</th>
+                            <th>Jueves</th>
+                            <th>Viernes</th>
+                            <th>Sábado</th>
+                            <th>Domingo</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {almacenes.map((almacen, index) => {
 
-                    <Table ref={tablaRef} striped bordered hover size="sm" className={styles.tabla2}>
+                            let dias = {
+                                lunes: 0,
+                                martes: 0,
+                                miercoles: 0,
+                                jueves: 0,
+                                viernes: 0,
+                                sabado: 0,
+                                domingo: 0
+                            };
 
-                        {tipoTabla && <thead>
-                            <tr className="d-flex">
-                                <th className="w-100">Cod.</th>
-                                <th className={styles.nombre}>Almacén</th>
-                                {productArray.map((item, index) => {
-                                    return (<th key={index} className="w-100" >{item.nombre}</th>);
-                                })
+                            for (var dia in tabla) {
+
+                                for (var almacenR in tabla[dia]?.categoria) {
+                                    const almacenTabla = almacenR.substring(0, almacen?.consecutivo.length);
+                                    if (almacenTabla == almacen.consecutivo) {
+                                        dias[dia] = dias[dia] + tabla[dia].categoria[almacenR];
+                                    }
                                 }
-                            </tr>
-                        </thead>}
-                        {tipoTabla && <tbody>
-                            {tabla.map((almacen, index) => {
-                                const dataAlmacen = Object.values(almacen.result);
-                                return (
-                                    <tr key={index} className="d-flex">
-                                        <td className="w-100">{almacen?.consecutivo}</td>
-                                        <td className={styles.nombre}>{almacen?.nombre}</td>
-                                        {dataAlmacen.map((item, indexB) => {
-                                            return (<td key={indexB} className="w-100">{item}</td>);
-                                        })
-                                        }
-                                    </tr>
-                                );
-                            })
                             }
-                        </tbody>}
-
-
-                        {!tipoTabla && <thead>
-
-                            <tr className="d-flex">
-                                <th className={styles.detalle}>Cod.</th>
-                                <th className={styles.nombre}>Artículo</th>
-                                {tabla.map((almacen, index) => {
-                                    return (
-                                        <th key={index} className={styles.detalle}>{almacen?.consecutivo}</th>
-                                    );
-                                })
-                                }
-
-                            </tr>
-                        </thead>}
-                        {!tipoTabla && <tbody>
-                            {productArray.map((item, index) => {
-                                return (
-                                    <tr key={index} className="d-flex">
-                                        <td className={styles.detalle}>{item.consecutivo}</td>
-                                        <td className={styles.nombre}>{item.nombre}</td>
-                                        {tabla.map((itemB, indexB) => {
-
-                                            const result = itemB.result[item.consecutivo];
-                                            return (
-                                                <td key={indexB} className={styles.detalle}>{result}</td>
-                                            );
-                                        })}
-
-
-                                    </tr>
-                                );
-                            })
+                            let total = 0;
+                            for (dia in dias) {
+                                total = total + dias[dia];
                             }
-                        </tbody>}
-                    </Table>
 
+                            const color = total == 0 ? "table-danger" : "";
 
+                            return (
+                                <tr className={color} key={index}>
 
-
-                </div>
+                                    <td>{almacen.consecutivo}</td>
+                                    <td>{almacen.nombre}</td>
+                                    <td>{dias.domingo}</td>
+                                    <td>{dias.lunes}</td>
+                                    <td>{dias.martes}</td>
+                                    <td>{dias.miercoles}</td>
+                                    <td>{dias.jueves}</td>
+                                    <td>{dias.viernes}</td>
+                                    <td>{dias.sabado}</td>
+                                    <td>{total}</td>
+                                </tr>
+                            );
+                        })
+                        }
+                    </tbody>
+                </Table>
             </div>
 
 
