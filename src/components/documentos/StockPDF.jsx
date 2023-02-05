@@ -41,11 +41,11 @@ export default function StockPDF({ data }) {
             opacity: "0.5"
         },
         table: { marginTop: "30px" },
-        tableHead: { display: "flex", flexDirection: "row", width: "85%", borderBottom: "2px solid #AEB6BF", paddingBottom: "5px", paddingRight: "5px", paddingLeft: "5px" },
+        tableHead: { display: "flex", fontSize: "9", flexDirection: "row", width: "85%", borderBottom: "2px solid #AEB6BF", paddingBottom: "5px", paddingRight: "5px", paddingLeft: "5px" },
         tableBody: { display: "flex", fontSize: "9", flexDirection: "row", width: "85%", borderBottom: "1px solid #AEB6BF", paddingBottom: "6px", paddingTop: "6px", paddingRight: "5px", paddingLeft: "5px" },
         cod: { width: "10%", textAlign: "center" },
         articulo: { width: "26%" },
-        cantidad: { width: "16%", textAlign: "center", borderLeft: "1px solid #AEB6BF" },
+        cantidad: { width: "14%", textAlign: "center", borderLeft: "1px solid #AEB6BF" },
 
         approvedContainer: { display: "flex", flexDirection: "row", justifyContent: "flex-end", textAlign: "left", width: "85%", marginBottom: "30px", marginTop: "30px" },
         left: { width: "50%", marginRight: "10px" },
@@ -99,8 +99,9 @@ export default function StockPDF({ data }) {
                     <View style={styles.tableHead}>
                         <Text style={styles.cod}>Cod</Text>
                         <Text style={styles.articulo}>Artículo</Text>
-                        <Text style={styles.cantidad}>Buen estado</Text>
-                        <Text style={styles.cantidad}>Mal estado</Text>
+                        <Text style={styles.cantidad}>Bueno</Text>
+                        <Text style={styles.cantidad}>Defectuoso</Text>
+                        <Text style={styles.cantidad}>Averiado</Text>
                         <Text style={styles.cantidad}>Teórico</Text>
                         <Text style={styles.cantidad}>Físico</Text>
                     </View>
@@ -109,6 +110,7 @@ export default function StockPDF({ data }) {
                             <View key={index} style={styles.tableBody}>
                                 <Text style={styles.cod}>{item.cons_producto}</Text>
                                 <Text style={styles.articulo}>{item.producto.name}</Text>
+                                <Text style={styles.cantidad}></Text>
                                 <Text style={styles.cantidad}></Text>
                                 <Text style={styles.cantidad}></Text>
                                 <Text style={styles.cantidad}>{item.cantidad}</Text>
