@@ -100,6 +100,7 @@ const Header = () => {
                                     <Dropdown.Item onClick={() => openWindow("proveedores")}>Proveedores</Dropdown.Item>
                                     <Dropdown.Item onClick={() => openWindow("bodegas")}>Almacenes</Dropdown.Item>
                                     <Dropdown.Item onClick={() => openWindow("transporte")}>Transporte</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => openWindow("etiquetas")}>Etiquetas</Dropdown.Item>
                                     <Dropdown.Item >Configuración</Dropdown.Item>
                                 </NavDropdown>}
                             {(user.id_rol == "seguridad" || user.id_rol == "Super seguridad") &&
@@ -124,7 +125,6 @@ const Header = () => {
                         </ul>
                     </div>
 
-
                     <span className='display-desktop'>
                         <Navbar.Brand onClick={inicio}>Banarica</Navbar.Brand>
                         {initialMenu.navBar &&
@@ -138,6 +138,7 @@ const Header = () => {
                                         <Dropdown.Item onClick={() => openWindow("proveedores")}>Proveedores</Dropdown.Item>
                                         <Dropdown.Item onClick={() => openWindow("bodegas")}>Almacenes</Dropdown.Item>
                                         <Dropdown.Item onClick={() => openWindow("transporte")}>Transporte</Dropdown.Item>
+                                        <Dropdown.Item onClick={() => openWindow("etiquetas")}>Etiquetas</Dropdown.Item>
                                         <Dropdown.Item onClick={() => setOpenConfig(true)} className={styles.configButton}>
                                             <Image className={styles.imgConfig} width="15" height="15" src={config} alt="configuración" />
                                             <span className={styles.textConfig}>Configuración</span>

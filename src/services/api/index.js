@@ -182,6 +182,12 @@ const endPoints = {
         CargarSeriales: `${API}/api/${VERSION}/seguridad/cargar-seriales`,
         encontrarSerial: `${API}/api/${VERSION}/seguridad/encontrar-serial`,
     },
+    etiquetas: {
+        crearEtiqueta:  `${API}/api/${VERSION}/etiquetas`,
+        encontrarEtiqueta: (consecutivo) => `${API}/api/${VERSION}/etiquetas/${consecutivo}`,
+        listarEtiquetas: `${API}/api/${VERSION}/etiquetas`,
+        actualizarEtiqueta: (consecutivo) => `${API}/api/${VERSION}/etiquetas/${consecutivo}`,
+    },
     confi: {
         buscarModulo: (modulo) => `${API}/api/${VERSION}/confi/encontrar/${modulo}`,
         actualizarModulo: `${API}/api/${VERSION}/confi/actualizar`

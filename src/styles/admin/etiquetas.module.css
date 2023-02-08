@@ -1,0 +1,59 @@
+.container {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    column-gap: 14px;
+    row-gap: 14px;
+}
+
+.container2 {
+    display: grid;
+    grid-template-columns: auto auto;
+    column-gap: 14px;
+    row-gap: 14px;
+    padding: 20px 20px 40px 0px;
+}
+
+.conatiner2 :nth-child(3) {
+      grid-column: 1;
+        grid-row: 1 / 3;
+      
+}
+
+.container3 {
+    display: grid;
+    grid-template-columns: auto auto;
+    column-gap: 14px;
+    row-gap: 14px;
+    margin-bottom: 30px;
+}
+
+
+.tableros {
+    background-color: rgba(0, 0, 0, 0.253);
+    position: fixed;
+    top: 49px;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+.padre {
+    background-color: white;
+    width: fit-content;
+    padding: 15px 0px 10px 20px;
+    margin: 80px auto;
+    position: relative;
+    
+}
+
+.x{
+    cursor: pointer;
+}
+
+.ex {
+    color: rgba(0, 0, 0, 0.39);
+    text-align: end;
+    font-weight: 700;
+    margin-right: 20px;
+    font-family: sans-serif;
+}

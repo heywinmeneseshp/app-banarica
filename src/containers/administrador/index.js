@@ -11,6 +11,7 @@ import Proveedor from '@containers/administrador/Proveedor';
 import Transporte from '@containers/administrador/Transporte';
 import Users from '@containers/administrador/Users';
 import Inicio from "@containers/inicio/Inicio";
+import Etiquetas from "@containers/administrador/Etiquetas"
 
 export default function Adminsitrador() {
 
@@ -28,6 +29,7 @@ export default function Adminsitrador() {
         {initialAdminMenu.adminMenu.proveedores && <Proveedor />}
         {initialAdminMenu.adminMenu.transporte && <Transporte />}
         {initialAdminMenu.adminMenu.usuarios && <Users />}
+        {initialAdminMenu.adminMenu.etiquetas && <Etiquetas/>}
       </div>
 
     </>
