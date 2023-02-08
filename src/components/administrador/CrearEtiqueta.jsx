@@ -4,7 +4,6 @@ import styles from '@styles/admin/etiquetas.module.css';
 
 //Components
 import { Button, Form, InputGroup, Table } from 'react-bootstrap';
-import { listarAlmacenes } from '@services/api/almacenes';
 import NuevaEtiqueta from '@components/administrador/NuevaEtiqueta';
 import { listarEtiquetas } from '@services/api/etiquetas';
 
