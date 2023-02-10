@@ -297,6 +297,7 @@ export default function Ajuste({ exportacion, movimiento }) {
                                         aria-label="Small"
                                         aria-describedby="inputGroup-sizing-sm"
                                         type="number"
+                                        min={0}
                                         id={"cantidad-" + key}
                                         name={"cantidad-" + key}
                                         disabled={bool}

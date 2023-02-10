@@ -4,11 +4,13 @@ import MovimientoPDF from "@components/documentos/MovimientoPDF";
 import PedidoPDF from "@components/documentos/PedidoPDF";
 import TrasladoPDF from "@components/documentos/TrasladoPDF";
 import StockPDF from "@components/documentos/StockPDF";
+import BarcodePDF from "@components/documentos/BarcodePDF";
 
 export default function PDF( { movimiento, documento } ) {
     const [client, setClient] = useState(false)
 
     useEffect(() => {
+        console.log(documento)
         setClient(true)
     }, [])
 
@@ -18,6 +20,7 @@ export default function PDF( { movimiento, documento } ) {
            {(documento == "pedido") && <PedidoPDF  move={movimiento} />}
            {(documento == "traslado") && <TrasladoPDF  move={movimiento} />}
            {(documento == "stock") && <StockPDF  data={movimiento} />}
+           {(documento == "barcodes") && <BarcodePDF  />}
         </PDFViewer>
     );
 }

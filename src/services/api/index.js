@@ -172,7 +172,8 @@ const endPoints = {
         pedido: `${API}/api/${VERSION}/documentos/pedido`,
         stock: (cons_almacen, cons_categoria) => `${OWN_URL}/Documento/Stock/${cons_almacen}?cons_categoria=${cons_categoria}`,
         movimientos: (consecutivo) => `${OWN_URL}/Documento/Movimiento/${consecutivo}`,
-        traslados: (consecutivo) => `${OWN_URL}/Documento/Traslado/${consecutivo}`
+        traslados: (consecutivo) => `${OWN_URL}/Documento/Traslado/${consecutivo}`,
+        barcodes: `${OWN_URL}/Documento/Barcodes`
     },
     seguridad: {
         listarProductos:  `${API}/api/${VERSION}/seguridad/listar-articulos`,

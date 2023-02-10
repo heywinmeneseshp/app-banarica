@@ -2,10 +2,15 @@ import React, { useEffect, useRef } from 'react';
 import { useState } from 'react';
 import styles from '@styles/admin/etiquetas.module.css';
 
+//Services
+import endPoints from '@services/api';
+
 //Components
-import { Button, Form, InputGroup, Table } from 'react-bootstrap';
+import { Button, Form, Image, InputGroup, Table } from 'react-bootstrap';
 import { listarAlmacenes } from '@services/api/almacenes';
 import { listarEtiquetas } from '@services/api/etiquetas';
+
+import JsBarcode from 'jsbarcode';
 import Barcode from 'react-barcode';
 
 
@@ -23,6 +28,8 @@ export default function CrearBardcode() {
     useEffect(() => {
         listarAlmacenes().then((res) => setAlmacenes(res));
         listarEtiquetas().then((res) => setProductor(res));
+        JsBarcode(".barcode", "Hi world!");
+
     }, []);
 
     const generarCodigos = (e) => {
@@ -56,7 +63,16 @@ export default function CrearBardcode() {
         setCodigos(codigos);
     };
 
+
+    const descargarBarcodes = async () => {
+
+        window.open(endPoints.document.barcodes);
+
+    };
+    
+
     const barcode = (codigo) => {
+        
         return <Barcode value={codigo} format="CODE128C" ean128={true} />;
     };
     return (
@@ -76,7 +92,8 @@ export default function CrearBardcode() {
                         })}
                     </Form.Select>
                 </InputGroup>
-
+                <Image className="barcode"></Image>
+                
                 <InputGroup size="sm" >
                     <InputGroup.Text id="inputGroup-sizing-sm">Producto</InputGroup.Text>
                     <Form.Select size="sm"
@@ -123,7 +140,7 @@ export default function CrearBardcode() {
                     Generar codigos
                 </Button>
 
-                <Button variant='warning' size="sm">
+                <Button onClick={() => descargarBarcodes()} variant='warning' size="sm">
                     Descargar barcodes
                 </Button>
             </form>
