@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useState } from 'react';
-import styles from '@styles/admin/etiquetas.module.css';
+import editarPick from '@public/images/editar.png';
+
 
 //Components
 import { Button, Form, InputGroup, Table } from 'react-bootstrap';
@@ -8,17 +9,29 @@ import NuevaEtiqueta from '@components/administrador/NuevaEtiqueta';
 import { listarEtiquetas } from '@services/api/etiquetas';
 
 //CSS
-
+import styles from '@styles/admin/etiquetas.module.css';
+import styles2 from '@styles/informes/informes.module.css';
+import Image from 'next/image';
 
 export default function CrearEtiqueta() {
 
     const [etiquetas, setEtiquetas] = useState([]);
+    const [etiqueta, setEtiqueta] = useState([]);
     const [open, setOpen] = useState(false);
 
     useEffect(() => {
         listarEtiquetas().then((res) => setEtiquetas(res));
-    }, []);
+    }, [open]);
 
+    function editarEtiqueta(item) {
+        setEtiqueta(item);
+        setOpen(true);
+    }
+
+    function nuevaEtiqueta () {
+        setEtiqueta(null);
+        setOpen(true);
+    }
 
     return (
 
@@ -41,8 +54,16 @@ export default function CrearEtiqueta() {
                     />
                 </InputGroup>
 
+                <InputGroup size="sm">
+                    <InputGroup.Text id="inputGroup-sizing-sm">EAN13</InputGroup.Text>
+                    <Form.Control
+                        aria-label="Small"
+                        aria-describedby="inputGroup-sizing-sm"
+                    />
+                </InputGroup>
+
                 <Button onClick={() =>
-                    setOpen(true)} variant="primary" size="sm">
+                    nuevaEtiqueta()} variant="primary" size="sm">
                     Nueva Etiqueta
                 </Button>
 
@@ -54,7 +75,7 @@ export default function CrearEtiqueta() {
             </div>
 
 
-            {open && <NuevaEtiqueta setOpen={setOpen} />}
+            {open && <NuevaEtiqueta setOpen={setOpen} etiqueta={etiqueta} />}
 
             <Table className='mt-4' striped bordered hover>
                 <thead>
@@ -62,6 +83,7 @@ export default function CrearEtiqueta() {
                         <th >Cod.</th>
                         <th >Producto</th>
                         <th >GNL</th>
+                        <th >EAN13</th>
                         <th >Detalle superior</th>
                         <th >Detalle inferior</th>
                         <th ></th>
@@ -75,9 +97,14 @@ export default function CrearEtiqueta() {
                                 <td>{item?.id}</td>
                                 <td>{item?.producto}</td>
                                 <td>{item?.gnl}</td>
+                                <td>{item?.ean13}</td>
                                 <td>{item?.detalle_superior}</td>
                                 <td>{item?.detalle_inferior}</td>
-                                <td></td>
+                                <td>
+                                    <span>
+                                        <Image onClick={() => editarEtiqueta(item)} className={styles2.imagenEditar} width="20" height="20" src={editarPick} alt="editar" />
+                                    </span>
+                                </td>
                             </tr>
                         );
                     })

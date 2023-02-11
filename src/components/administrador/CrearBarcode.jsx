@@ -5,12 +5,14 @@ import styles from '@styles/admin/etiquetas.module.css';
 //Services
 import endPoints from '@services/api';
 
+//Hooks
+import useBarcodes from "@hooks/useBarcodes";
+
 //Components
-import { Button, Form, Image, InputGroup, Table } from 'react-bootstrap';
+import { Button, Form, InputGroup, Table } from 'react-bootstrap';
 import { listarAlmacenes } from '@services/api/almacenes';
 import { listarEtiquetas } from '@services/api/etiquetas';
 
-import JsBarcode from 'jsbarcode';
 import Barcode from 'react-barcode';
 
 
@@ -20,6 +22,7 @@ import Barcode from 'react-barcode';
 export default function CrearBardcode() {
 
     const formRef = useRef();
+    const { generarSCC18 } = useBarcodes();
 
     const [almacenes, setAlmacenes] = useState([]);
     const [productos, setProductor] = useState([]);
@@ -28,52 +31,43 @@ export default function CrearBardcode() {
     useEffect(() => {
         listarAlmacenes().then((res) => setAlmacenes(res));
         listarEtiquetas().then((res) => setProductor(res));
-        JsBarcode(".barcode", "Hi world!");
-
     }, []);
 
-    const generarCodigos = (e) => {
+    const generarCodigos = async (e) => {
         e.preventDefault();
         const formData = new FormData(formRef.current);
         const id_producto = formData.get('producto');
         let inicial = formData.get('inicial');
         let final = formData.get('final');
         const ibm = formData.get('almacen');
-        const producto = productos.find((item) => item.id == id_producto);
-        const concat = `003${producto.gnl}${ibm}`;
-
-        let codigos = [];
-        for (let init = inicial; init < ((final * 1) + 1); init++) {
-            let pallet = init;
-            if (pallet < 1000 && pallet > 99) pallet = `0${pallet}`;
-            if (pallet < 100 && pallet > 9) pallet = `00${pallet}`;
-            if (pallet < 10) pallet = `000${pallet}`;
-
-            let control = 0;
-            for (let number in Array.from(`${concat}${pallet}`).reverse()) {
-                if ((number % 2) == 0) {
-                    control = control + (Array.from(`${concat}${pallet}`).reverse()[number] * 3);
-                } else {
-                    control = control + (Array.from(`${concat}${pallet}`).reverse()[number] * 1);
-                }
-            }
-            const digitoControl = (Math.ceil(control / 10) * 10) - control;
-            codigos.push(`${concat}${pallet}${digitoControl}`);
-        }
-        setCodigos(codigos);
+        let producto = productos.find((item) => item.id == id_producto);
+        producto = { ...producto, inicial, final, ibm };
+        const resCodigos = generarSCC18(producto, inicial, final, ibm);
+        console.log(resCodigos);
+        setCodigos(resCodigos);
     };
 
 
     const descargarBarcodes = async () => {
-
+        const formData = new FormData(formRef.current);
+        const id_producto = formData.get('producto');
+        let inicial = formData.get('inicial');
+        let final = formData.get('final');
+        const ibm = formData.get('almacen');
+        let producto = productos.find((item) => item.id == id_producto);
+        producto = { ...producto, inicial, final, ibm };
+        localStorage.setItem("productCODES", JSON.stringify(producto));
+        const resCodigos = generarSCC18(producto, inicial, final, ibm);
+        setCodigos(resCodigos);
         window.open(endPoints.document.barcodes);
-
     };
-    
+
 
     const barcode = (codigo) => {
-        
-        return <Barcode value={codigo} format="CODE128C" ean128={true} />;
+        return <Barcode value={codigo} format="CODE128C" ean128={true}
+            height={20}
+            displayValue={false}
+        />;
     };
     return (
         <>
@@ -92,8 +86,7 @@ export default function CrearBardcode() {
                         })}
                     </Form.Select>
                 </InputGroup>
-                <Image className="barcode"></Image>
-                
+
                 <InputGroup size="sm" >
                     <InputGroup.Text id="inputGroup-sizing-sm">Producto</InputGroup.Text>
                     <Form.Select size="sm"

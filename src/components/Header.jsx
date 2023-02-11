@@ -80,6 +80,11 @@ const Header = () => {
         router.push("/Seguridad" + itemMenu);
     };
 
+    const cerrarSesion = () => {
+        localStorage.clear();
+        router.push('/login');
+    };
+
     return (
         <>
             <div className="header">
@@ -174,6 +179,10 @@ const Header = () => {
 
                             </div>
                             <Button onClick={handleProfile}>{user.nombre} {user.apellido}</Button>
+                        </ButtonGroup>
+
+                        <ButtonGroup size="sm">
+                            <Button onClick={() => cerrarSesion()}>Cerrar sesión</Button>
                         </ButtonGroup>
 
                     </span>

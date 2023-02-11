@@ -1,14 +1,17 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 //Components
 
 //CSS
 import styles from '@styles/admin/etiquetas.module.css';
 import { Button, Form, InputGroup } from 'react-bootstrap';
-import { crearEtiqueta } from '@services/api/etiquetas';
+import { actualizarEtiqueta, crearEtiqueta } from '@services/api/etiquetas';
 
-export default function NuevaEtiqueta({ setOpen, item }) {
+export default function NuevaEtiqueta({ setOpen, etiqueta }) {
     const formRef = useRef(null);
+
+    useEffect(() => {
+    }, []);
 
     const closeWindow = () => {
         setOpen(false);
@@ -21,15 +24,22 @@ export default function NuevaEtiqueta({ setOpen, item }) {
         const gnl = formData.get('gnl');
         const detSup = formData.get('detalle_sup');
         const detInf = formData.get('detalle_inf');
+        const ean13 = formData.get('ean13');
 
         const body = {
-            'producto' : producto,
+            'producto': producto,
             'gnl': gnl,
+            'ean13': ean13,
             'detalle_superior': detSup,
             'detalle_inferior': detInf
         };
-
-        crearEtiqueta(body);
+        console.log(etiqueta);
+        if (!etiqueta) {
+            await crearEtiqueta(body);
+        } else {
+            console.log("------");
+            await actualizarEtiqueta(etiqueta.id, body);
+        }
         closeWindow();
     };
     return (
@@ -46,6 +56,7 @@ export default function NuevaEtiqueta({ setOpen, item }) {
                                 name='producto'
                                 aria-label="Small"
                                 aria-describedby="inputGroup-sizing-sm"
+                                defaultValue={etiqueta ? etiqueta.producto : null}
                             />
                         </InputGroup>
 
@@ -56,6 +67,18 @@ export default function NuevaEtiqueta({ setOpen, item }) {
                                 name='gnl'
                                 aria-label="Small"
                                 aria-describedby="inputGroup-sizing-sm"
+                                defaultValue={etiqueta ? etiqueta.gnl : null}
+                            />
+                        </InputGroup>
+
+                        <InputGroup size="sm">
+                            <InputGroup.Text id="inputGroup-sizing-sm">EAN13</InputGroup.Text>
+                            <Form.Control
+                                id='ean13'
+                                name='ean13'
+                                aria-label="Small"
+                                aria-describedby="inputGroup-sizing-sm"
+                                defaultValue={etiqueta ? etiqueta.ean13 : null}
                             />
                         </InputGroup>
 
@@ -66,6 +89,7 @@ export default function NuevaEtiqueta({ setOpen, item }) {
                                 name='detalle_sup'
                                 aria-label="Small"
                                 aria-describedby="inputGroup-sizing-sm"
+                                defaultValue={etiqueta ? etiqueta.detalle_superior : null}
                             />
                         </InputGroup>
 
@@ -76,13 +100,14 @@ export default function NuevaEtiqueta({ setOpen, item }) {
                                 name='detalle_inf'
                                 aria-label="Small"
                                 aria-describedby="inputGroup-sizing-sm"
+                                defaultValue={etiqueta ? etiqueta.detalle_inferior : null}
                             />
                         </InputGroup>
 
 
 
-                        <Button type='submit' variant={item ? "warning" : "success"} size="sm">
-                            {item ? "Editar Etiqueta" : "Crear Etiqueta"}
+                        <Button type='submit' variant={etiqueta ? "warning" : "success"} size="sm">
+                            {etiqueta ? "Editar Etiqueta" : "Crear Etiqueta"}
                         </Button>
 
                     </form>

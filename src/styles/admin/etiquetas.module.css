@@ -7,7 +7,7 @@
 
 .container2 {
     display: grid;
-    grid-template-columns: auto auto;
+    grid-template-columns: auto auto auto;
     column-gap: 14px;
     row-gap: 14px;
     padding: 20px 20px 40px 0px;
