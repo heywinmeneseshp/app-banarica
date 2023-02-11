@@ -144,7 +144,6 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile, autoriz
         <div>
             <div className={styles.tableros}>
                 <div className={styles.padre}>
-
                     <div className={styles.ex}><span tabIndex={0} role="button" onClick={closeWindow} onKeyDown={closeWindow} className={styles.x}>X</span></div>
 
                     <form ref={formRef} onSubmit={handleSubmit}>
@@ -350,8 +349,6 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile, autoriz
                                                 </label>
                                             </div>
                                         ))}
-                                          
-
                                     </div>
                                 </span>
                             }

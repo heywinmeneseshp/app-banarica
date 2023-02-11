@@ -8,6 +8,7 @@ import endPoints from '@services/api';
 //Components
 //CSS
 import styles from '@styles/admin/crearProducto.module.css';
+import styles2 from '@styles/NewUser.module.css';
 import { listarCategorias } from '@services/api/categorias';
 
 
@@ -128,97 +129,137 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
     };
     return (
         <div>
-
             <div className={styles.tableros}>
                 <div className={styles.padre}>
                     <div className={styles.ex}><span tabIndex={0} role="button" onClick={closeWindow} onKeyDown={closeWindow} className={styles.x}>X</span></div>
 
                     <form ref={formRef} onSubmit={handleSubmit} >
-                        <div className={styles.formulario}>
-                            <div className={styles.grupo}>
-                                <label htmlFor="consecutivo">Código</label>
-                                <div>
-                                    <input defaultValue={producto?.consecutivo} type="text" className="form-control form-control-sm" name="consecutivo" id="consecutivo" disabled></input>
+                        <span>
+                            <div className={styles.formulario}>
+                                <div className={styles.grupo}>
+                                    <label htmlFor="consecutivo">Código</label>
+                                    <div>
+                                        <input defaultValue={producto?.consecutivo} type="text" className="form-control form-control-sm" name="consecutivo" id="consecutivo" disabled></input>
+                                    </div>
+                                </div>
+
+                                <div className={styles.grupo}>
+                                    <label htmlFor="proveedor">Proveedor</label>
+                                    <div>
+                                        <select id="proveedor" name='proveedor' className="form-select form-select-sm">
+                                            {proveedores.map((proveedor, index) => {
+                                                return <option key={index} selected={producto?.cons_proveedor == proveedor.consecutivo}>{proveedor.razon_social}</option>;
+                                            })}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className={styles.grupo}>
+                                    <label htmlFor="categoria">Categoría</label>
+                                    <div>
+                                        <select id="categoria" name='categoria' className="form-select form-select-sm">
+                                            {categorias.map((categoria, index) => {
+                                                return <option key={index} selected={producto?.cons_categoria == categoria.consecutivo} value={categoria.consecutivo}>{categoria.nombre}</option>;
+                                            })}
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className={styles.grupo}>
-                                <label htmlFor="proveedor">Proveedor</label>
-                                <div>
-                                    <select id="proveedor" name='proveedor' className="form-select form-select-sm">
-                                        {proveedores.map((proveedor, index) => {
-                                            return <option key={index} selected={producto?.cons_proveedor == proveedor.consecutivo}>{proveedor.razon_social}</option>;
-                                        })}
-                                    </select>
+                            <div className={styles.formulario2}>
+                                <div className={styles.grupo}>
+                                    <label htmlFor="name">Descripción del producto</label>
+                                    <div>
+                                        <input defaultValue={producto?.name} type="text" className="form-control form-control-sm" name='name' id="name"></input>
+                                    </div>
+                                </div>
+                                <div className={styles.grupo}>
+                                    <label htmlFor="bulto">Unidades por bulto</label>
+                                    <div>
+                                        <input defaultValue={producto?.bulto} type="text" className="form-control form-control-sm" name='bulto' id="bulto" required></input>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className={styles.grupo}>
-                                <label htmlFor="categoria">Categoría</label>
-                                <div>
-                                    <select id="categoria" name='categoria' className="form-select form-select-sm">
-                                        {categorias.map((categoria, index) => {
-                                            return <option key={index} selected={producto?.cons_categoria == categoria.consecutivo} value={categoria.consecutivo}>{categoria.nombre}</option>;
-                                        })}
-                                    </select>
+                            <div className={styles.formulario7}>
+                                <div className={styles.grupo}>
+                                    <label htmlFor="unidad">Unidad de medida</label>
+                                    <div>
+                                        <select className="form-select form-select-sm" name="unidad" id="unidad">
+                                            <option>und</option>
+                                            <option>km</option>
+                                            <option>m</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className={styles.grupo}>
+                                    <label htmlFor="costo">Costo por Unidad</label>
+                                    <div>
+                                        <input type="text" className="form-control form-control-sm" name='costo' id="costo" ></input>
+                                    </div>
+                                </div>
+                                <div className={styles.grupo}>
+                                    <label htmlFor="costo">Precio por Unidad</label>
+                                    <div>
+                                        <input type="text" className="form-control form-control-sm" name='precio' id="precio" ></input>
+                                    </div>
+                                </div>
+                                <div className={styles.grupo}>
+                                    <label htmlFor="gravamen">Gravamen</label>
+                                    <div>
+                                        <input type="text" className="form-control form-control-sm" name='gravamen' id="gravamen" ></input>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className={styles.formulario2}>
-                            <div className={styles.grupo}>
-                                <label htmlFor="name">Descripción del producto</label>
-                                <div>
-                                    <input defaultValue={producto?.name} type="text" className="form-control form-control-sm" name='name' id="name"></input>
-                                </div>
-                            </div>
-                            <div className={styles.grupo}>
-                                <label htmlFor="bulto">Unidades por bulto</label>
-                                <div>
-                                    <input defaultValue={producto?.bulto} type="text" className="form-control form-control-sm" name='bulto' id="bulto" required></input>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div className={styles.formulario3}>
-                            <div className="form-check">
-                                <input className="form-check-input" onChange={() => handleChangeBool("salida_sin_stock")} type="checkbox" checked={salida_sin_stock} value="" name="salida_sin_stock" id="salida_sin_stock"></input>
-                                <label htmlFor="salida_sin_stock" className="form-check-label" >
-                                    Salida sin stock
-                                </label>
-                            </div>
 
-                            <div className="form-check">
-                                <input className="form-check-input" onChange={() => handleChangeBool("serial")} type="checkbox" checked={serial} value="" name='serial' id="serial"></input>
-                                <label htmlFor='serial' className="form-check-label" >
-                                    Serial
-                                </label>
-                            </div>
 
-                            <div className="form-check">
-                                <input className="form-check-input" onChange={() => handleChangeBool("permitir_traslado")} type="checkbox" checked={permitir_traslados} value="" name='permitir_traslado' id="permitir_traslado"></input>
-                                <label htmlFor='permitir_traslado' className="form-check-label" >
-                                    Permitir traslados
-                                </label>
-                            </div>
-                        </div>
-
-                        <div className={styles.formulario5}>
-                            <p>Habilitar almacenes</p>
-                        </div>
-
-                        <div className={styles.formulario4}>
-
-                            {almacenes.map((almacen, index) => (
-                                <div key={index} className="form-check">
-                                    <input className="form-check-input" type="checkbox" checked={checkedState[index]} onChange={() => handleChange(index)} name={almacen.consecutivo} id={almacen.consecutivo}></input>
-                                    <label className="form-check-label" htmlFor={almacen.consecutivo}>
-                                        {almacen.consecutivo}
+                            <div className={styles.formulario3}>
+                                <div className="form-check">
+                                    <input className="form-check-input" onChange={() => handleChangeBool("salida_sin_stock")} type="checkbox" checked={salida_sin_stock} value="" name="salida_sin_stock" id="salida_sin_stock"></input>
+                                    <label htmlFor="salida_sin_stock" className="form-check-label" >
+                                        Salida sin stock
                                     </label>
                                 </div>
-                            ))}
 
-                        </div>
+                                <div className="form-check">
+                                    <input className="form-check-input" onChange={() => handleChangeBool("serial")} type="checkbox" checked={serial} value="" name='serial' id="serial"></input>
+                                    <label htmlFor='serial' className="form-check-label" >
+                                        Serial
+                                    </label>
+                                </div>
+
+                                <div className="form-check">
+                                    <input className="form-check-input" onChange={() => handleChangeBool("permitir_traslado")} type="checkbox" checked={permitir_traslados} value="" name='permitir_traslado' id="permitir_traslado"></input>
+                                    <label htmlFor='permitir_traslado' className="form-check-label" >
+                                        Permitir traslados
+                                    </label>
+                                </div>
+                            </div>
+                        </span>
+
+                        <span>
+                            <div className={styles.formulario5}>
+                                <p>Habilitar almacenes</p>
+                            </div>
+
+                            <div className={styles.formulario4}>
+
+                                {almacenes.map((almacen, index) => (
+                                    <div key={index} className="form-check">
+                                        <input className="form-check-input" type="checkbox" checked={checkedState[index]} onChange={() => handleChange(index)} name={almacen.consecutivo} id={almacen.consecutivo}></input>
+                                        <label className="form-check-label" htmlFor={almacen.consecutivo}>
+                                            {almacen.consecutivo}
+                                        </label>
+                                    </div>
+                                ))}
+
+                            </div>
+                        </span>
+
+
+
 
                         <div className={styles.formulario6}>
                             <br />
