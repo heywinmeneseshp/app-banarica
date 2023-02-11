@@ -8,7 +8,6 @@ import endPoints from '@services/api';
 //Components
 //CSS
 import styles from '@styles/admin/crearProducto.module.css';
-import styles2 from '@styles/NewUser.module.css';
 import { listarCategorias } from '@services/api/categorias';
 
 
