@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useContext } from "react";
 import axios from "axios";
 import AppContext from "@context/AppContext";
+import { useRouter } from "next/router";
 //Serviec
 import { agregarMovimiento, actualizarMovimiento, bucarDoumentoMovimiento } from "@services/api/movimientos";
 import { actualizarNotificaciones, agregarNotificaciones } from "@services/api/notificaciones";
@@ -25,8 +26,9 @@ import styles from "@styles/almacen/almacen.module.css";
 import { encontrarModulo } from "@services/api/configuracion";
 
 
-export default function Devolucion({ movimiento }) {
+export default function Devolucion({ movimiento, exportacion }) {
     const formRef = useRef();
+    const router = useRouter();
     const { almacenByUser, user } = useAuth();
     const { gestionNotificacion } = useContext(AppContext);
     const [productos, setProductos] = useState([]);
@@ -45,12 +47,15 @@ export default function Devolucion({ movimiento }) {
     const [semanaActual, setSemanaActual] = useState(null);
 
     useEffect(() => {
+        const listarProductos = async () => {
+            const almacenes = almacenByUser.map(item => item.consecutivo);
+            const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
+            const productlist = await filtrarProductos(data);
+            setProductos(productlist);
+        };
+        listarProductos();
         if (!movimiento) {
             const listar = async () => {
-                const almacenes = almacenByUser.map(item => item.consecutivo);
-                const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
-                const productlist = await filtrarProductos(data);
-                setProductos(productlist);
                 const fecha = generarFecha();
                 setDate(fecha);
                 encontrarModulo('Semana').then(res => setSemanaActual(res[0]));
@@ -70,17 +75,17 @@ export default function Devolucion({ movimiento }) {
                 setPendiente(res.movimiento.pendiente);
             });
             setBool(true);
-        }
+        };
     }, [movimiento?.consecutivo]);
 
     function addProduct() {
         setProducts([...products, products.length + 1]);
-    }
+    };
 
     function removeProduct() {
         const array = products.slice(0, -1);
         setProducts(array);
-    }
+    };
 
     async function rechazarAjuste() {
         const formData = new FormData(formRef.current);
@@ -114,7 +119,24 @@ export default function Devolucion({ movimiento }) {
             color: "warning",
             autoClose: false
         });
-    }
+    };
+
+    async function modificarMovimiento() {
+        if (!bool) {
+            const formData = new FormData(formRef.current);
+            const week = formData.get("semana");
+            const anho = formData.get("anho_actual");
+            actualizarMovimiento(movimientoID, {
+                "fecha": formData.get("fecha"),
+                "cons_semana": `S${week}-${anho}`,
+            });
+        };
+        setBool(!bool);
+    };
+
+    function cancelarActualizacion() {
+        router.push(`/`);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -204,8 +226,7 @@ export default function Devolucion({ movimiento }) {
                     });
                     setProducts(array);
                 });
-
-            }
+            };
             setBool(true);
             let message = "Devolucion cargada, pendiente por aprobación";
             if (user?.id_rol == "Super administrador" && gestionNotificacion.notificacion) message = "Devolución aprobada";
@@ -222,13 +243,13 @@ export default function Devolucion({ movimiento }) {
                 color: "danger",
                 autoClose: false
             });
-        }
+        };
     };
     return (
         <>
             <Container>
                 <form ref={formRef} onSubmit={handleSubmit}>
-                    <h2 className="mb-3">Devolución</h2>
+                    <h2 className="mb-3">{exportacion ? exportacion : `Devolución`}</h2>
                     <div className={styles.contenedor7}>
 
                         <span className={styles.display}>
@@ -251,25 +272,23 @@ export default function Devolucion({ movimiento }) {
                                 id="almacen"
                                 name="almacen"
                                 size="sm"
-                                disabled={bool}>
-                                {!bool && almacenByUser.map((item, index) => (
-                                    <option key={index}>{item.nombre}</option>
+                                disabled={consMovimiento}>
+                                {almacenByUser.map((item, index) => (
+                                    <option selected={almacen == item.nombre} key={index}>{item.nombre}</option>
                                 ))}
-                                {bool && <option>{almacen}</option>}
                             </Form.Select>
                         </InputGroup>
 
                         <Form.Select className={styles.select}
                             id="tipo-movimiento"
                             name="tipo-movimiento"
-                            disabled={bool}
+                            disabled={consMovimiento}
                             size="sm">
-                            {!bool && <option>Mal estado</option>}
-                            {!bool && <option>Bulto incompleto</option>}
-                            {!bool && <option>Pedido incompleto</option>}
-                            {!bool && <option>Sobrante</option>}
-                            {!bool && <option>Error en registro</option>}
-                            {bool && <option>{razonMovimiento}</option>}
+                            <option selected={razonMovimiento == 'Mal estado'}>Mal estado</option>
+                            <option selected={razonMovimiento == 'Bulto incompleto'}>Bulto incompleto</option>
+                            <option selected={razonMovimiento == 'Pedido incompleto'}>Pedido incompleto</option>
+                            <option selected={razonMovimiento == 'Sobrante'}>Sobrante</option>
+                            <option selected={razonMovimiento == 'Error en registro'}>Error en registro</option>
                         </Form.Select>
 
                         <InputGroup size="sm" className="mb-3">
@@ -285,50 +304,36 @@ export default function Devolucion({ movimiento }) {
                                 disabled={bool}
                             />
                         </InputGroup>
-                        {!bool &&
-                            <InputGroup size="sm" className="mb-3">
-                                <InputGroup.Text id="inputGroup-sizing-sm">Semana</InputGroup.Text>
-                                <Form.Control
-                                    aria-label="Small"
-                                    aria-describedby="inputGroup-sizing-sm"
-                                    id="semana"
-                                    name="semana"
-                                    type="number"
-                                    min={semanaActual?.semana_actual * 1 - semanaActual?.semana_previa}
-                                    max={semanaActual?.semana_actual * 1 + semanaActual?.semana_siguiente}
-                                    required
-                                    disabled={bool}
-                                    defaultValue={semana}
-                                />
 
-                                <Form.Control
-                                    className={styles.anho}
-                                    aria-label="Small"
-                                    aria-describedby="inputGroup-sizing-sm"
-                                    id="anho_actual"
-                                    name="anho_actual"
-                                    type="text"
-                                    required
-                                    disabled
-                                    defaultValue={semanaActual?.anho_actual}
-                                />
-                            </InputGroup>
-                        }
-                        {bool &&
-                            <InputGroup size="sm" className="mb-3">
-                                <InputGroup.Text id="inputGroup-sizing-sm">Semana</InputGroup.Text>
-                                <Form.Control
-                                    aria-label="Small"
-                                    aria-describedby="inputGroup-sizing-sm"
-                                    id="semana"
-                                    name="semana"
-                                    type="text"
-                                    required
-                                    disabled={bool}
-                                    defaultValue={semana}
-                                />
-                            </InputGroup>
-                        }
+                        <InputGroup size="sm" className="mb-3">
+                            <InputGroup.Text id="inputGroup-sizing-sm">Semana</InputGroup.Text>
+                            <Form.Control
+                                aria-label="Small"
+                                aria-describedby="inputGroup-sizing-sm"
+                                id="semana"
+                                name="semana"
+                                type="number"
+                                min={semanaActual?.semana_actual * 1 - semanaActual?.semana_previa}
+                                max={semanaActual?.semana_actual * 1 + semanaActual?.semana_siguiente}
+                                required
+                                disabled={bool}
+                                defaultValue={semana?.split('-')[0].slice(1, semana.split('-')[0].length)}
+                            />
+
+                            <Form.Control
+                                className={styles.anho}
+                                aria-label="Small"
+                                aria-describedby="inputGroup-sizing-sm"
+                                id="anho_actual"
+                                name="anho_actual"
+                                type="text"
+                                required
+                                disabled={semana ? bool : true}
+                                defaultValue={semanaActual?.anho_actual || semana?.split('-')[1]}
+                            />
+                        </InputGroup>
+
+
                     </div>
 
                     <div className={styles.line}></div>
@@ -352,11 +357,11 @@ export default function Devolucion({ movimiento }) {
 
                                 <InputGroup size="sm" className="mb-3">
                                     <InputGroup.Text id="inputGroup-sizing-sm">Artículo</InputGroup.Text>
-                                    <Form.Select className={styles.select} id={"producto-" + key} name={"producto-" + key} size="sm" disabled={bool}>
-                                        {!bool && productos.map((item, index) => {
-                                            return <option key={index}>{item.name}</option>;
+                                    <Form.Select className={styles.select} id={"producto-" + key} name={"producto-" + key} size="sm" disabled={consMovimiento}>
+                                        {productos.map((item, index) => {
+                                            return <option selected={product?.nombre == item.name} key={index}>{item.name}</option>;
                                         })}
-                                        {bool && <option>{product?.nombre}</option>}
+
                                     </Form.Select>
                                 </InputGroup>
 
@@ -368,11 +373,10 @@ export default function Devolucion({ movimiento }) {
                                         type="number"
                                         id={"cantidad-" + key}
                                         name={"cantidad-" + key}
-                                        disabled={bool}
+                                        disabled={consMovimiento}
                                         required
                                         defaultValue={product?.cantidad}
                                     />
-
                                 </InputGroup>
                             </div>
                         </div>
@@ -390,13 +394,13 @@ export default function Devolucion({ movimiento }) {
                                 defaultValue={observaciones}
                                 required
                                 maxlength="120"
-                                disabled={bool}
+                                disabled={movimiento}
                             />
                         </InputGroup>
 
                     </div>
 
-                    {movimiento && (user.id_rol == "Super administrador") && <InputGroup size="sm" className="mb-3">
+                    {bool && movimiento && (user.id_rol == "Super administrador") && <InputGroup size="sm" className="mb-3">
                         <InputGroup.Text id="inputGroup-sizing-sm">Respuesta</InputGroup.Text>
                         <Form.Control
                             id="respuesta"
@@ -410,7 +414,7 @@ export default function Devolucion({ movimiento }) {
                         />
                     </InputGroup>}
 
-                    {!bool &&
+                    {!bool && !movimiento &&
                         <div className={styles.contenedor6}>
                             <div>
                                 <Button className={styles.button} onClick={addProduct} variant="primary" size="sm">
@@ -432,22 +436,40 @@ export default function Devolucion({ movimiento }) {
                         </div>
                     }
                     {pendiente && (user.id_rol == "Super administrador") &&
-                        <div className={styles.contenedor6}>
+                        <div className={styles.contenedor7}>
                             <div>
                             </div>
                             <div>
                             </div>
-                            <div></div>
                             <div>
-                                <Button className={styles.button} onClick={rechazarAjuste} variant="danger" size="sm">
+                                {bool &&
+                                    <Button className={styles.button} onClick={modificarMovimiento} variant="warning" size="sm">
+                                        Modificar movimiento
+                                    </Button>
+                                }
+                            </div>
+                            <div>
+                                {bool && <Button className={styles.button} onClick={rechazarAjuste} variant="danger" size="sm">
                                     Rechazar devolución
-                                </Button>
+                                </Button>}
+                                {!bool &&
+                                    <Button className={styles.button} onClick={cancelarActualizacion} variant="danger" size="sm">
+                                        Cancelar actualización
+                                    </Button>
+                                }
                             </div>
+
                             <div>
-                                <Button type="submit" className={styles.button} variant="success" size="sm">
+                                {bool && <Button type="submit" className={styles.button} variant="success" size="sm">
                                     Cargar devolución
-                                </Button>
+                                </Button>}
+                                {!bool &&
+                                    <Button className={styles.button} onClick={modificarMovimiento} variant="warning" size="sm">
+                                        Actualizar movimiento
+                                    </Button>
+                                }
                             </div>
+
                         </div>
                     }
                 </form>

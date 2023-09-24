@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
+import { useRouter } from "next/router";
 //Serviec
-import { agregarMovimiento, bucarDoumentoMovimiento } from "@services/api/movimientos";
+import { agregarMovimiento, bucarDoumentoMovimiento, actualizarMovimiento } from "@services/api/movimientos";
 import { agregarNotificaciones } from "@services/api/notificaciones";
 import { agregarHistorial } from "@services/api/historialMovimientos";
 import { restar, sumar } from "@services/api/stock";
@@ -9,7 +10,7 @@ import { filtrarProductos } from "@services/api/productos";
 import { useAuth } from "@hooks/useAuth";
 import useAlert from "@hooks/useAlert";
 import generarSemana from "@hooks/useSemana";
-import useDate from "@hooks/useDate";
+import generarFecha from "@hooks/useDate";
 //Bootstrap
 import { Container } from "react-bootstrap";
 import Form from 'react-bootstrap/Form';
@@ -24,12 +25,13 @@ import { encontrarModulo } from "@services/api/configuracion";
 
 export default function Ajuste({ exportacion, movimiento }) {
     const formRef = useRef();
+    const router = useRouter();
     const { almacenByUser, user } = useAuth();
     const [productos, setProductos] = useState([]);
     const [prodcuctsCons, setProductsCons] = useState([]);
     const [bool, setBool] = useState(false);
     const [consMovimiento, setConsMovimiento] = useState([]);
-    const [date, setDate] = useState(useDate());
+    const [date, setDate] = useState();
     const [tipoMovimiento, setTipoMovimiento] = useState(null);
     const [almacen, setAlmacen] = useState(null);
     const [semana, setSemana] = useState(null);
@@ -37,10 +39,15 @@ export default function Ajuste({ exportacion, movimiento }) {
     const { alert, setAlert, toogleAlert } = useAlert();
     const [titulo, setTitulo] = useState("Ajuste");
     const [semanaActual, setSemanaActual] = useState(null);
+    const [editarMovimiento, setEditarMovimiento] = useState(true);
+    const [movimientoID, setMovimientoID] = useState(null);
+
     useEffect(() => {
         if (exportacion) setTitulo(exportacion);
-        if (!movimiento) {
+        if (!movimiento) { 
             const listar = async () => {
+                const fecha = generarFecha();
+                setDate(fecha);
                 const almacenes = almacenByUser.map(item => item.consecutivo);
                 const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
                 const productlist = await filtrarProductos(data);
@@ -50,6 +57,7 @@ export default function Ajuste({ exportacion, movimiento }) {
             listar();
         } else {
             bucarDoumentoMovimiento(movimiento.consecutivo).then(res => {
+                setMovimientoID(res.movimiento.id);
                 setConsMovimiento(res.movimiento.consecutivo);//Listo
                 setAlmacen(res.almacen);//Listo
                 setTipoMovimiento(res.razon_movimiento);//Listo
@@ -61,19 +69,38 @@ export default function Ajuste({ exportacion, movimiento }) {
             });
             setBool(true);
         }
-    }, [movimiento?.consecutivo]);
+    }, [movimiento?.consecutivo, movimiento, date]);
 
 
     const [products, setProducts] = useState([1]);
 
     function addProduct() {
         setProducts([...products, products.length + 1]);
-    }
-
+    };
     function removeProduct() {
         const array = products.slice(0, -1);
         setProducts(array);
-    }
+    };
+    function onEditarMovimiento() {
+        setEditarMovimiento(!editarMovimiento);
+    };
+    function onCancelarActualizacion() {
+        router.push(`/`);
+    };
+    function onActualizarMovimiento() {
+
+        if (!editarMovimiento) {
+            const formData = new FormData(formRef.current);
+            const week = formData.get("semana");
+            const anho = formData.get("anho_actual");
+            actualizarMovimiento(movimientoID, {
+                "fecha": formData.get("fecha"),
+                "cons_semana": `S${week}-${anho}`,
+            });
+        };
+        setEditarMovimiento(!editarMovimiento);
+        window.alert('Movimiento actualizado');
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -211,54 +238,40 @@ export default function Ajuste({ exportacion, movimiento }) {
                                 defaultValue={date}
                                 id="fecha"
                                 name="fecha"
-                                disabled={bool}
+                                disabled={bool && editarMovimiento}
                             />
                         </InputGroup>
-                        {!bool &&
-                            <InputGroup size="sm" className="mb-3">
-                                <InputGroup.Text id="inputGroup-sizing-sm">Semana</InputGroup.Text>
-                                <Form.Control
-                                    aria-label="Small"
-                                    aria-describedby="inputGroup-sizing-sm"
-                                    id="semana"
-                                    min={semanaActual?.semana_actual * 1 - semanaActual?.semana_previa}
-                                    max={semanaActual?.semana_actual * 1 + semanaActual?.semana_siguiente}
-                                    name="semana"
-                                    type="number"
-                                    required
-                                    disabled={bool}
-                                    defaultValue={semana}
-                                />
 
-                                <Form.Control
-                                    className={styles.anho}
-                                    aria-label="Small"
-                                    aria-describedby="inputGroup-sizing-sm"
-                                    id="anho_actual"
-                                    name="anho_actual"
-                                    type="text"
-                                    required
-                                    disabled
-                                    defaultValue={semanaActual?.anho_actual}
-                                />
-                            </InputGroup>
-                        }
-                        {bool &&
-                            <InputGroup size="sm" className="mb-3">
-                                <InputGroup.Text id="inputGroup-sizing-sm">Semana</InputGroup.Text>
-                                <Form.Control
-                                    aria-label="Small"
-                                    aria-describedby="inputGroup-sizing-sm"
-                                    id="semana"
-                                    name="semana"
-                                    type="text"
-                                    required
-                                    disabled={bool}
-                                    defaultValue={semana}
-                                />
 
-                            </InputGroup>
-                        }
+                        <InputGroup size="sm" className="mb-3">
+                            <InputGroup.Text id="inputGroup-sizing-sm">Semana</InputGroup.Text>
+                            <Form.Control
+                                aria-label="Small"
+                                aria-describedby="inputGroup-sizing-sm"
+                                id="semana"
+                                min={semanaActual?.semana_actual * 1 - semanaActual?.semana_previa}
+                                max={semanaActual?.semana_actual * 1 + semanaActual?.semana_siguiente}
+                                name="semana"
+                                type="number"
+                                required
+                                disabled={bool && editarMovimiento}
+                                defaultValue={semana?.split('-')[0].slice(1, semana.split('-')[0].length)}
+                            />
+
+                            <Form.Control
+                                className={styles.anho}
+                                aria-label="Small"
+                                aria-describedby="inputGroup-sizing-sm"
+                                id="anho_actual"
+                                name="anho_actual"
+                                type="text"
+                                required
+                                disabled={editarMovimiento}
+                                defaultValue={semanaActual?.anho_actual || semana?.split('-')[1]}
+                            />
+                        </InputGroup>
+
+
                     </div>
 
                     <div className={styles.line}></div>
@@ -311,7 +324,6 @@ export default function Ajuste({ exportacion, movimiento }) {
                     ))}
 
                     <div className={styles.contenedor3}>
-
                         <InputGroup size="sm" className="mb-3">
                             <InputGroup.Text id="inputGroup-sizing-sm">Observaciones</InputGroup.Text>
                             <Form.Control
@@ -326,27 +338,44 @@ export default function Ajuste({ exportacion, movimiento }) {
                         </InputGroup>
 
                     </div>
-                    {!bool &&
-                        <div className={styles.contenedor6}>
-                            <div>
-                                <Button className={styles.button} onClick={addProduct} variant="primary" size="sm">
-                                    Añadir producto
-                                </Button>
-                            </div>
-                            <div>
-                                <Button className={styles.button} onClick={removeProduct} variant="danger" size="sm">
-                                    Remover producto
-                                </Button>
-                            </div>
-                            <div className={styles.display}></div>
-                            <div className={styles.display}></div>
-                            <div>
-                                <Button type="submit" className={styles.button} variant="danger" size="sm">
-                                    Ajustar
-                                </Button>
-                            </div>
+
+                    <div className={styles.contenedor6}>
+                        <div>
+                            {!bool && <Button className={styles.button} onClick={addProduct} variant="primary" size="sm">
+                                Añadir producto
+                            </Button>
+                            }
                         </div>
-                    }
+                        <div>
+                            {!bool && <Button className={styles.button} onClick={removeProduct} variant="danger" size="sm">
+                                Remover producto
+                            </Button>}
+                        </div>
+                        <div className={styles.display}></div>
+                        <div className={styles.display}>
+                            {bool && (user?.id_rol == "Super administrador") &&
+                                !editarMovimiento &&
+                                <Button onClick={onCancelarActualizacion} className={styles.button} variant="danger" size="sm">
+                                    Cancelar  actualización
+                                </Button>}
+                        </div>
+                        <div>
+                            {!bool && <Button type="submit" className={styles.button} variant="danger" size="sm">
+                                Ajustar
+                            </Button>}
+                            {bool && (user?.id_rol == "Super administrador") &&
+                                editarMovimiento &&
+                                <Button onClick={onEditarMovimiento} className={styles.button} variant="warning" size="sm">
+                                    Modificar movimiento
+                                </Button>}
+                            {bool && (user?.id_rol == "Super administrador") &&
+                                !editarMovimiento &&
+                                <Button onClick={onActualizarMovimiento} className={styles.button} variant="warning" size="sm">
+                                    Actualizar movimiento
+                                </Button>}
+                        </div>
+                    </div>
+
                 </form>
                 <Alertas alert={alert} handleClose={toogleAlert} />
             </Container>

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import * as XLSX from 'xlsx';
 //Services
+import { useRouter } from "next/router";
 //Hooks
 import { useAuth } from "@hooks/useAuth";
 import fecha from "@hooks/useDate";
@@ -19,6 +20,7 @@ import { listarCategorias } from "@services/api/categorias";
 
 export default function ReporteGeneralMovimientos() {
     const { almacenByUser, user } = useAuth();
+    const router = useRouter();
     const formRef = useRef();
     const [historial, setHistorial] = useState([1]);
     const [pagination, setPagination] = useState(1);
@@ -33,7 +35,7 @@ export default function ReporteGeneralMovimientos() {
                     setCategorias(res.filter(item => item.nombre == "Seguridad"));
                 } else {
                     setCategorias(res);
-                }
+                };
             });
             listarItems();
 
@@ -47,7 +49,7 @@ export default function ReporteGeneralMovimientos() {
             return <td className="text-success">{item}</td>;
         } else {
             return <td className="text-danger">{item}</td>;
-        }
+        };
     };
 
     async function listarItems() {
@@ -64,23 +66,32 @@ export default function ReporteGeneralMovimientos() {
         const anho = formData.get('anho') ? formData.get('anho') : new Date().getFullYear();
         if (cons_semana) {
             body.movimiento = { cons_semana: `S${cons_semana}-${anho}` };
-        } 
+        };
         if (cons_almacen != 0) {
             body.historial = { cons_almacen_gestor: cons_almacen };
         } else {
             const list = almacenByUser.map((item) => item.consecutivo);
             body.historial = { cons_almacen_gestor: list };
-        }
+        };
         if (cons_movimiento != 0) body.historial = { ...body.historial, cons_lista_movimientos: cons_movimiento };
         body.pagination = { limit: limit, offset: pagination };
         const res = await axios.post(url, { ...body, producto: { name: producto, cons_categoria: cons_categoria } });
         setTotal(res.data.total);
         setHistorial(res.data.data);
-    }
+    };
 
     const onBuscar = async () => {
         setPagination(1);
         listarItems();
+    };
+
+    const onEditarMovimiento = async () => {
+        const formData = new FormData(formRef.current);
+        let documento = formData.get(`documento`).toUpperCase();
+        if (!documento) return alert("Por favor, introduzca un consecutivo");
+        const res = await buscarMovimiento(documento);
+        if (!res) return;
+        router.push(`/Movimiento/Editar/${documento}`);
     };
 
     const onDescargar = async () => {
@@ -96,7 +107,7 @@ export default function ReporteGeneralMovimientos() {
         } else {
             const list = almacenByUser.map((item) => item.consecutivo);
             body.historial = { cons_almacen_gestor: list };
-        }
+        };
         if (cons_movimiento != 0) body.historial = { ...body.historial, cons_lista_movimientos: cons_movimiento };
         const { data } = await axios.post(`${endPoints.historial.list}/filter`, body);
         const newData = data.map(item => {
@@ -141,7 +152,6 @@ export default function ReporteGeneralMovimientos() {
         <>
 
             <div>
-
                 <form ref={formRef}>
                     <div className={styles.contenedor3}>
                         <div className={styles.grupo}>
@@ -251,6 +261,11 @@ export default function ReporteGeneralMovimientos() {
                                 ></input>
                             </div>
                         </div>
+                        {(user?.id_rol == "Super administrador") &&
+                            <Button onClick={onEditarMovimiento} className={styles.button} variant="warning" size="sm">
+                                Editar movimiento
+                            </Button>
+                        }
                         <Button onClick={onDescargarDocumento} className={styles.button} variant="warning" size="sm">
                             Ver documento
                         </Button>
