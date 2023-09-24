@@ -5,7 +5,7 @@ import { actualizarUsuario, agregarUsuario, cargarAlmacenesPorUsuario } from '@s
 //Hooks
 //Components
 //CSS
-import styles from '@styles/NewUser.module.css';
+import styles from '@styles/admin/crearProducto.module.css';
 import axios from 'axios';
 
 export default function NuevoUsuario({ setAlert, setOpen, user, profile, autorizacion }) {
@@ -142,13 +142,14 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile, autoriz
 
     return (
         <div>
+
             <div className={styles.tableros}>
                 <div className={styles.padre}>
                     <div className={styles.ex}><span tabIndex={0} role="button" onClick={closeWindow} onKeyDown={closeWindow} className={styles.x}>X</span></div>
 
                     <form ref={formRef} onSubmit={handleSubmit}>
                         {!changePass &&
-                            <span className={styles.formulario}>
+                            <span className={styles.formulario7}>
                                 <div className={styles.grupo}>
                                     <label htmlFor="username">Usuario</label>
                                     <div>
