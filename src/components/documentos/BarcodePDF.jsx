@@ -148,14 +148,13 @@ export default function BarcodePDF() {
             inicial: toJSON.inicial,
             final: toJSON.final,
             ean13: toJSON.gnl
-        })
-        console.log(toJSON)
+        });
 
         const codeList = () => {
             const ean = textToBase64Barcode(toJSON.gnl, "EAN13");
-            setEan13(ean)
+            setEan13(ean);
             const codes = generarSCC18(toJSON, toJSON.inicial, toJSON.final, toJSON.ibm);
-            setSSCC(codes)
+            setSSCC(codes);
             let base64Codes = [];
             codes.map((item) => {
                 const base64 = textToBase64Barcode(item, "CODE128C");
@@ -172,7 +171,6 @@ export default function BarcodePDF() {
         <Document>
 
             {codigos.map((item, index) => {
-                console.log(producto)
                 return (
                     <Page size={[284, 608]} key={index}
                         style={styles.page} >
