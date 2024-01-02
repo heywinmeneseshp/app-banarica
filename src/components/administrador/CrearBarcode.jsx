@@ -37,13 +37,12 @@ export default function CrearBardcode() {
         e.preventDefault();
         const formData = new FormData(formRef.current);
         const id_producto = formData.get('producto');
-        let inicial = formData.get('inicial');
-        let final = formData.get('final');
+        let inicial = formData.get('inicial')*1;
+        let final = formData.get('final')*1;
         const ibm = formData.get('almacen');
         let producto = productos.find((item) => item.id == id_producto);
         producto = { ...producto, inicial, final, ibm };
         const resCodigos = generarSCC18(producto, inicial, final, ibm);
-        console.log(resCodigos);
         setCodigos(resCodigos);
     };
 

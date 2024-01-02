@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import dynamic from "next/dynamic";
 
 
-const DocumentPDF = dynamic(() => import("@containers/documentos/PDF"), {
+const DocumentPDF = dynamic(() => import("@containers/documentos/PDFBarcode"), {
     ssr: false
 });
 
