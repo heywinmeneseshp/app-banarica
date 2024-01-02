@@ -188,7 +188,7 @@ export default function BarcodePDF() {
                                 <Text style={styles.superior}>{producto.superior}</Text>
                                 <View style={styles.subVista2}>
                                     <Text style={styles.pallet_ibm}>{`IBM ${producto.ibm}`}</Text>
-                                    <Text style={styles.pallet_ibm}>{`PALLET SERIAL No. ${producto.inicial * 1 + index}`}</Text>
+                                    <Text style={styles.pallet_ibm}>{`PALLET SERIAL No. ${SSCC[index].substr(15,4)}`}</Text>
                                 </View>
                                 <View >
                                     <Image style={styles.etiqueta3} src={item} />
