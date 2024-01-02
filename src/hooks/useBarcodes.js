@@ -3,7 +3,7 @@
 const useAdminMenu = () => {
    
     const generarSCC18 = (producto, pallet_inicial, pallet_final, ibm) => {
-        const concat = `003${producto.gnl}${ibm}`;
+        const concat = `003${producto.gnl.substr(0,9)}${ibm}`;
         let codigos = [];
         for (let init = pallet_inicial; init < ((pallet_final * 1) + 1); init++) {
             let pallet = init;

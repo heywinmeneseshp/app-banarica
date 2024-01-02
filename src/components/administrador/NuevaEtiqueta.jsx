@@ -61,7 +61,7 @@ export default function NuevaEtiqueta({ setOpen, etiqueta }) {
                         </InputGroup>
 
                         <InputGroup size="sm">
-                            <InputGroup.Text id="inputGroup-sizing-sm">GLN</InputGroup.Text>
+                            <InputGroup.Text id="inputGroup-sizing-sm">EAN13</InputGroup.Text>
                             <Form.Control
                                 id='gnl'
                                 name='gnl'
@@ -72,13 +72,13 @@ export default function NuevaEtiqueta({ setOpen, etiqueta }) {
                         </InputGroup>
 
                         <InputGroup size="sm">
-                            <InputGroup.Text id="inputGroup-sizing-sm">EAN13</InputGroup.Text>
+                            <InputGroup.Text id="inputGroup-sizing-sm">GNL</InputGroup.Text>
                             <Form.Control
                                 id='ean13'
                                 name='ean13'
                                 aria-label="Small"
                                 aria-describedby="inputGroup-sizing-sm"
-                                defaultValue={etiqueta ? etiqueta.ean13 : null}
+                                defaultValue={etiqueta ? etiqueta.gnl.substr(0,9) : null}
                             />
                         </InputGroup>
 

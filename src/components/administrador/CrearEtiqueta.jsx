@@ -47,7 +47,7 @@ export default function CrearEtiqueta() {
                 </InputGroup>
 
                 <InputGroup size="sm">
-                    <InputGroup.Text id="inputGroup-sizing-sm">GLN</InputGroup.Text>
+                    <InputGroup.Text id="inputGroup-sizing-sm">EAN13</InputGroup.Text>
                     <Form.Control
                         aria-label="Small"
                         aria-describedby="inputGroup-sizing-sm"
@@ -55,7 +55,7 @@ export default function CrearEtiqueta() {
                 </InputGroup>
 
                 <InputGroup size="sm">
-                    <InputGroup.Text id="inputGroup-sizing-sm">EAN13</InputGroup.Text>
+                    <InputGroup.Text id="inputGroup-sizing-sm">GNL</InputGroup.Text>
                     <Form.Control
                         aria-label="Small"
                         aria-describedby="inputGroup-sizing-sm"
@@ -96,8 +96,8 @@ export default function CrearEtiqueta() {
                             <tr key={index}>
                                 <td>{item?.id}</td>
                                 <td>{item?.producto}</td>
+                                <td>{item?.gnl.substr(0,9)}</td>
                                 <td>{item?.gnl}</td>
-                                <td>{item?.ean13}</td>
                                 <td>{item?.detalle_superior}</td>
                                 <td>{item?.detalle_inferior}</td>
                                 <td>

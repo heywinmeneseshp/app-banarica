@@ -13,7 +13,6 @@ export default function BarcodePDF() {
     const [producto, setProducto] = useState({});
     const [EAN13, setEan13] = useState();
     const etiqueta = [1, 2, 3, 4];
-
     const { generarSCC18 } = useBarcodes();
 
     const styles = StyleSheet.create({
@@ -61,7 +60,6 @@ export default function BarcodePDF() {
             display: "flex",
             width: "50mm",
             height: "10mm",
-
         },
         ean13B: {
             display: "flex",
@@ -83,7 +81,6 @@ export default function BarcodePDF() {
             width: "100mm",
             justifyContent: "center",
             alignItems: "center"
-
         },
         barcode: {
             width: "80mm",
@@ -125,7 +122,7 @@ export default function BarcodePDF() {
         textEan13: {
             marginLeft: "20mm",
             fontSize: "2mm"
-        }
+        },
     });
 
     function textToBase64Barcode(text, codeType) { // "CODE128C"
@@ -135,7 +132,7 @@ export default function BarcodePDF() {
             height: 200, fontSize: 0
         });
         return canvas.toDataURL("image/png");
-    }
+    };
 
     useEffect(() => {
         const product = localStorage.getItem("productCODES");
@@ -165,11 +162,9 @@ export default function BarcodePDF() {
         codeList();
     }, []);
 
-
     return (
 
         <Document>
-
             {codigos.map((item, index) => {
                 return (
                     <Page size={[284, 608]} key={index}
@@ -188,17 +183,12 @@ export default function BarcodePDF() {
                             </View>
                         </View>
 
-
-
-
                         {etiqueta.map(etiqueta => (
                             <View key={etiqueta} style={styles.vista2}>
                                 <Text style={styles.superior}>{producto.superior}</Text>
                                 <View style={styles.subVista2}>
-
                                     <Text style={styles.pallet_ibm}>{`IBM ${producto.ibm}`}</Text>
                                     <Text style={styles.pallet_ibm}>{`PALLET SERIAL No. ${producto.inicial * 1 + index}`}</Text>
-
                                 </View>
                                 <View >
                                     <Image style={styles.etiqueta3} src={item} />
@@ -216,15 +206,7 @@ export default function BarcodePDF() {
 
                                 </View>
                             </View>
-                        )
-
-                        )
-                        }
-
-
-
-
-
+                        ))}
 
                         <View style={styles.vista1}>
                             <View style={styles.sscc_box}>
@@ -238,7 +220,6 @@ export default function BarcodePDF() {
                                 <Text style={styles.ean}>{producto.ean13}</Text>
                             </View>
                         </View>
-
 
                     </Page>
                 );
