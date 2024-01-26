@@ -4,8 +4,8 @@
     "display": "standalone",
     "scope": "/",
     "start_url": "/",
-    "name": "App Banarica",
-    "short_name": "Banarica",
+    "name": "App LogiCrack",
+    "short_name": "LogiCrack",
     "description": "Aplicaci\u00f3n de inventario",
     "icons": [
         {

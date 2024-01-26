@@ -14,7 +14,7 @@ export default function ReporteSemanalMovimientos() {
     const { almacenByUser, user } = useAuth();
     const tablaRef = useRef();
     const formRef = useRef();
-    const companies = ["Banarica", "Banachica"];
+    const companies = ["LogiCrack", "Banachica"];
     const [almacenes, setAlmacenes] = useState([]);
     const [categorias, setCategorias] = useState([]);
     const [company, setCompany] = useState("Banarica");

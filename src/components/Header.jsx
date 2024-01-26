@@ -131,7 +131,7 @@ const Header = () => {
                     </div>
 
                     <span className='display-desktop'>
-                        <Navbar.Brand onClick={inicio}>Banarica</Navbar.Brand>
+                        <Navbar.Brand onClick={inicio}>LogiCrack</Navbar.Brand>
                         {initialMenu.navBar &&
                             <Nav className="me-auto">
                                 {(user?.id_rol == "Super administrador") &&
