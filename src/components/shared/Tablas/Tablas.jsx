@@ -8,7 +8,7 @@ import NuevoItem from '@components/shared/Formularios/Formularios';
 import Alertas from '@assets/Alertas';
 //CSS
 import styles from '@styles/Listar.module.css';
-import excel from '@hooks/excel';
+import excel from '@hooks/useExcel';
 
 export default function Tablas({ encabezados, actualizar, listar, paginar, crear, titulo, arrayList }) {
   const ItemdorRef = useRef();

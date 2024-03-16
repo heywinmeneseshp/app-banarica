@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import readXlsxFile from "read-excel-file";
 import { useRef } from "react";
 
-import uDate from "@hooks/uDate";
+import uDate from "@hooks/useDate";
 
 
 //CSS
@@ -14,7 +14,7 @@ import excel from "@hooks/excel";
 import Alertas from "@assets/Alertas";
 import useAlert from "@hooks/useAlert";
 import { InputGroup, Form } from "react-bootstrap";
-import uSemana from "@hooks/uSemana";
+import uSemana from "@hooks/useSemana";
 
 export default function Recepcion() {
     const almacenRef = useRef();
