@@ -1,7 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import axios from 'axios';
-//Services
-import endPoints from '@services/api';
+
 //Hooks
 import useAlert from '@hooks/useAlert';
 //Components
@@ -11,7 +9,7 @@ import Alertas from '@assets/Alertas';
 import styles from '@styles/Listar.module.css';
 import NuevoCombo from '@components/administrador/NuevoCombo';
 import { actualizarCombos, listarCombos, paginarCombos } from '@services/api/combos';
-import useExcel from '@hooks/useExcel';
+import excel from '@hooks/useExcel';
 
 
 const Combo = () => {
@@ -56,7 +54,7 @@ const Combo = () => {
 
     const onDescargar = async () => {
         const data = await listarCombos();
-        useExcel(data, "Combos", "Combos");
+        excel(data, "Combos", "Combos");
      };
 
     const handleActivar = (item) => {

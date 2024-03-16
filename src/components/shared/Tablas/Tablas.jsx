@@ -1,7 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import axios from 'axios';
-//Services
-import endPoints from '@services/api';
+
 //Hooks
 import useAlert from '@hooks/useAlert';
 //Components
@@ -10,9 +8,9 @@ import NuevoItem from '@components/shared/Formularios/Formularios';
 import Alertas from '@assets/Alertas';
 //CSS
 import styles from '@styles/Listar.module.css';
-import useExcel from '@hooks/useExcel';
+import excel from '@hooks/excel';
 
-export default function Tablas({ encabezados, actualizar, buscarItem, listar, paginar, crear, titulo, arrayList }) {
+export default function Tablas({ encabezados, actualizar, listar, paginar, crear, titulo, arrayList }) {
   const ItemdorRef = useRef();
   const [item, setItem] = useState(null);
   const [items, setItems] = useState([]);
@@ -57,7 +55,7 @@ export default function Tablas({ encabezados, actualizar, buscarItem, listar, pa
 
   const onDescargar = async () => {
     const data = await listar();
-    useExcel(data, "Proveedores", "Proveedores");
+    excel(data, "Proveedores", "Proveedores");
   };
 
   const handleActivar = (item) => {
@@ -109,7 +107,7 @@ export default function Tablas({ encabezados, actualizar, buscarItem, listar, pa
             <tr>
               <th><input type="checkbox" id="topping" name="topping" value="Paneer" /></th>
               {encabezados && Object.keys(encabezados).map(element => {
-                return (<th scope="col">{element}</th>);
+                return (<th key={element} >{element}</th>);
               })}
             </tr>
           </thead>
@@ -122,7 +120,7 @@ export default function Tablas({ encabezados, actualizar, buscarItem, listar, pa
                   <td><input type="checkbox" id="topping" name="topping" value="Paneer" /></td>
                   {Object.keys(newEncabezados).map((element, index) => {
                     if (element != "Activar") {
-                      return (<td key={index} scope="col">{item[newEncabezados[element]]}</td>);
+                      return (<td key={index} >{item[newEncabezados[element]]}</td>);
                     }
                   })
                   }

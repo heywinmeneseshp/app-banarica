@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { PDFViewer } from "@react-pdf/renderer";
 import MovimientoPDF from "@components/documentos/MovimientoPDF";
 import PedidoPDF from "@components/documentos/PedidoPDF";
@@ -7,11 +7,9 @@ import StockPDF from "@components/documentos/StockPDF";
 import BarcodePDF from "@components/documentos/BarcodePDF";
 
 export default function PDF( { movimiento, documento } ) {
-    const [client, setClient] = useState(false);
+
 
     useEffect(() => {
-        console.log(documento);
-        setClient(true);
     }, []);
 
     return (

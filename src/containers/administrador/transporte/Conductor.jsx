@@ -1,8 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import axios from 'axios';
-//Services
-import endPoints from '@services/api';
-import { actualizarConductor, buscarConductor, listarConductores, paginarConductores } from '@services/api/conductores';
+import { actualizarConductor,  listarConductores, paginarConductores } from '@services/api/conductores';
 //Hooks
 import useAlert from '@hooks/useAlert';
 //Components
@@ -11,7 +8,7 @@ import Alertas from '@assets/Alertas';
 import NuevoConductor from '@components/administrador/NuevoConductor';
 //CSS
 import styles from '@styles/Listar.module.css';
-import useExcel from '@hooks/useExcel';
+import excel from '@hooks/useExcel';
 
 const Conductor = () => {
     const buscardorRef = useRef(null);
@@ -51,7 +48,7 @@ const Conductor = () => {
 
     const onDescargar = async () => {
         const res = await listarConductores();
-        useExcel(res, "Conductores", "Conductores");
+        excel(res, "Conductores", "Conductores");
     };
 
     const handleActivar = (item) => {

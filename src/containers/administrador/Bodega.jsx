@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 //Services
 import endPoints from '@services/api';
-import { actualizarAlmacen, buscarAlmacen, listarAlmacenes } from '@services/api/almacenes';
+import { actualizarAlmacen, listarAlmacenes } from '@services/api/almacenes';
 //Components
 import NuevaBodega from '@components/administrador/NuevaBodega';
 import Alertas from '@assets/Alertas';
@@ -12,7 +12,7 @@ import useAlert from '@hooks/useAlert';
 //Bootstrap
 //CSS
 import styles from '@styles/Listar.module.css';
-import useExcel from '@hooks/useExcel';
+import excel from '@hooks/excel';
 
 const Bodega = () => {
     const buscardorRef = useRef(null);
@@ -59,7 +59,7 @@ const Bodega = () => {
 
     const onDescargar = async () => {
         const data = await listarAlmacenes();
-        useExcel(data, "Almacenes", "Almacenes");
+        excel(data, "Almacenes", "Almacenes");
     };
 
     const handleEnable = async () => {
@@ -135,7 +135,7 @@ const Bodega = () => {
                         {almacenes.map((almacen, index) => (
                             <tr key={index}>
                                 <td><input type="checkbox" id="topping" name="topping" value="Paneer" /></td>
-                                <td scope="row">{almacen.consecutivo}</td>
+                                <td>{almacen.consecutivo}</td>
                                 <td>{almacen.nombre}</td>
                                 <td>{almacen.razon_social}</td>
                                 <td>{almacen.direccion}</td>

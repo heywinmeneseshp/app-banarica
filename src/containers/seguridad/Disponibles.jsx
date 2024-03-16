@@ -8,7 +8,7 @@ import ConsultaDetallada from "@components/seguridad/ConsultaResumen";
 import { useAuth } from "@hooks/useAuth";
 import { listarProductosSeguridad, listarSeriales } from "@services/api/seguridad";
 import { useRef } from "react";
-import useExcel from "@hooks/useExcel";
+import excel from "@hooks/useExcel";
 import { filtrarCategorias } from "@services/api/categorias";
 import { buscarProducto } from "@services/api/productos";
 
@@ -75,7 +75,7 @@ export default function Disponibles() {
     const descargarExcel = async () => {
         if (!tablaConsulta) {
             const response = await listarSeriales(false, false, data);
-            useExcel(response, "seriales", "Artículos de seguridad");
+            excel(response, "seriales", "Artículos de seguridad");
         } else {
             const formData = new FormData(formRef.current);
             const cons_almacen = formData.get('almacen');
@@ -101,7 +101,7 @@ export default function Disponibles() {
                     "Cantidad": item.cantidad
                 };
             });
-            useExcel(newData, "Seguridad", "Stock seguridad");
+            excel(newData, "Seguridad", "Stock seguridad");
         }
 
     };

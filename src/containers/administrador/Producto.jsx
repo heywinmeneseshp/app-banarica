@@ -5,7 +5,7 @@ import endPoints from '@services/api';
 import { actualizarProducto, listarProductos } from '@services/api/productos';
 //Hooks
 import useAlert from '@hooks/useAlert';
-import useExcel from '@hooks/useExcel';
+import excel from '@hooks/useExcel';
 //Components
 import Alertas from '@assets/Alertas';
 import Paginacion from '@components/Paginacion';
@@ -59,7 +59,7 @@ const Producto = () => {
 
     const onDescargar = async ()  => {
         const data = await listarProductos();
-        useExcel(data, "Productos", "Productos");
+        excel(data, "Productos", "Productos");
     };
 
     const handleChangeBuscardor = async (e) => {

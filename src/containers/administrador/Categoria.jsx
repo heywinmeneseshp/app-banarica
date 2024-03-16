@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
-import axios from 'axios';
+
 //Services
-import endPoints from '@services/api';
-import { actualizarCategorias, buscarCategorias, filtrarCategorias, listarCategorias } from '@services/api/categorias';
+
+import { actualizarCategorias, filtrarCategorias, listarCategorias } from '@services/api/categorias';
 //Hooks
 import useAlert from '@hooks/useAlert';
 //Components
@@ -11,7 +11,7 @@ import Alertas from '@assets/Alertas';
 import Paginacion from '@components/Paginacion';
 //CSS
 import styles from '@styles/Listar.module.css';
-import useExcel from '@hooks/useExcel';
+import excel from '@hooks/excel';
 
 
 
@@ -63,7 +63,7 @@ const Categoria = () => {
 
     const onDescargar = async () => {
        const data = await listarCategorias();
-       useExcel(data, "Categorías", "Categorias");
+       excel(data, "Categorías", "Categorias");
     };
 
     const handleActivar = (item) => {

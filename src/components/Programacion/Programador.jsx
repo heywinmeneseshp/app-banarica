@@ -6,7 +6,7 @@ import Paginacion from '@components/shared/Tablas/Paginacion';
 import FormulariosProgramacion from '@components/shared/Formularios/FormularioProgramacion';
 import Alertas from '@assets/Alertas';
 
-import { listarProgramaciones, paginarProgramaciones } from '@services/api/programaciones';
+import { paginarProgramaciones } from '@services/api/programaciones';
 import { listarUbicaciones } from '@services/api/ubicaciones';
 import { listarConductores } from '@services/api/conductores';
 import useAlert from '@hooks/useAlert';

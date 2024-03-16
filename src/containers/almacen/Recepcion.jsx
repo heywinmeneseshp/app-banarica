@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
-import AppContext from "@context/AppContext";
+import React, { useState, useEffect, useRef } from "react";
 //Services
 import { filtrarProductos } from "@services/api/productos";
 import { sumar } from "@services/api/stock";
@@ -7,7 +6,7 @@ import { agregarRecepcion } from "@services/api/recepcion";
 import { agregarHistorial, filterHistorial } from "@services/api/historialMovimientos";
 import { agregarNotificaciones, filtrarNotificaciones } from "@services/api/notificaciones";
 //Hooks
-import useDate from "@hooks/useDate";
+import DateUse from "@hooks/useDate";
 import useAlert from "@hooks/useAlert";
 import generarSemana from "@hooks/useSemana";
 import { useAuth } from "@hooks/useAuth";
@@ -55,7 +54,7 @@ export default function Recepcion({ movimiento }) {
                 const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
                 const productlist = await filtrarProductos(data);
                 setProductos(productlist);
-                setDate(useDate());
+                setDate(DateUse());
                 encontrarModulo('Semana').then(res => setSemanaActual(res[0]));
             } else {
                 setBool(true);

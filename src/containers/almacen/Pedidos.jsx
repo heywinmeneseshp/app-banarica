@@ -69,7 +69,7 @@ export default function Pedidos() {
         const res = await agregarTablePedido(data);
         setConsPedido(res.data.consecutivo);
         const cons_pedido = res.data.consecutivo;
-        gestionPedido.listaPedido.map((item, index) => {
+        gestionPedido.listaPedido.map((item) => {
             const existe = almacenes.find(element => element == item.cons_almacen_destino);
             if (existe == null) almacenes = [...almacenes, item.cons_almacen_destino];
             agregarPedido(res.data.consecutivo, item);
@@ -84,7 +84,7 @@ export default function Pedidos() {
                 aprobado: false,
                 visto: false
             };
-            const res = await axios.post(endPoints.notificaciones.create, dataNotificacion);
+            await axios.post(endPoints.notificaciones.create, dataNotificacion);
         });
         setAlert({
             active: true,

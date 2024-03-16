@@ -293,7 +293,7 @@ export default function RealizarTraslado() {
                     <div className={styles.line}></div>
 
                     {products.map((item, key) => (
-                        <div item={item} key={key}>
+                        <div key={key}>
                             <div className={styles.contenedor2} >
 
                                 <span className={styles.display}>

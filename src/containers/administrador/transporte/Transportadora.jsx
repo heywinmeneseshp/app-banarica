@@ -1,8 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
-import axios from 'axios';
-//Services
-import endPoints from '@services/api';
-import { actualizarTransportadora, buscarTransportadora, listarTransportadoras, paginarTransportadora } from '@services/api/transportadoras';
+
+import { actualizarTransportadora,  listarTransportadoras, paginarTransportadora } from '@services/api/transportadoras';
 //Hooks
 import useAlert from '@hooks/useAlert';
 //Components
@@ -11,7 +9,7 @@ import Alertas from '@assets/Alertas';
 //CSS
 import styles from '@styles/Listar.module.css';
 import NuevoTransporte from '@components/administrador/NuevoTransporte';
-import useExcel from '@hooks/useExcel';
+import excel from '@hooks/useExcel';
 
 
 const Transportadora = () => {
@@ -52,7 +50,7 @@ const Transportadora = () => {
 
     const onDescargar = async () => {
        const data = await listarTransportadoras();
-       useExcel(data, "Transportadores", "Transportadores");
+       excel(data, "Transportadores", "Transportadores");
     };
 
     const handleActivar = (item) => {

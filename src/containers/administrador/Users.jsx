@@ -10,7 +10,7 @@ import Alertas from '@assets/Alertas';
 import Paginacion from '@components/Paginacion';
 //Hooks
 import useAlert from '@hooks/useAlert';
-import useExcel from "@hooks/useExcel";
+import excel from "@hooks/useExcel";
 //Bootstrap
 //CSS
 import styles from '@styles/Listar.module.css';
@@ -73,7 +73,7 @@ const Users = () => {
 
     const onDescargar = async () => {
         const { data } = await axios.get(endPoints.usuarios.list);
-        useExcel(data, "Usuarios", "Usuarios");
+        excel(data, "Usuarios", "Usuarios");
     };
 
     const handleActivar = (usuario) => {
@@ -133,7 +133,7 @@ const Users = () => {
                     {usuarios.map((usuario, index) => (
                         <tr key={index} >
                             <td><input type="checkbox" id="topping" name="topping" value="Paneer" /></td>
-                            <td scope="row">{usuario.id}</td>
+                            <td >{usuario.id}</td>
                             <td>{usuario.nombre + " " + usuario.apellido}</td>
                             <td>{usuario.username}</td>
                             <td>{usuario.id_rol}</td>

@@ -1,8 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
-import axios from 'axios';
-//Services
-import endPoints from '@services/api';
-import { actualizarProveedor, buscarProveedor, listarProveedores, paginarProveedores } from '@services/api/proveedores';
+
+import { actualizarProveedor, listarProveedores, paginarProveedores } from '@services/api/proveedores';
 //Hooks
 import useAlert from '@hooks/useAlert';
 //Components
@@ -11,7 +9,7 @@ import NuevoProveedor from '@components/administrador/NuevoProveedor';
 import Alertas from '@assets/Alertas';
 //CSS
 import styles from '@styles/Listar.module.css';
-import useExcel from '@hooks/useExcel';
+import excel from '@hooks/useExcel';
 
 
 
@@ -54,7 +52,7 @@ const Proveedor = () => {
 
     const onDescargar = async () => {
         const data = await listarProveedores();
-        useExcel(data, "Proveedores", "Proveedores");
+        excel(data, "Proveedores", "Proveedores");
     };
 
     const handleActivar = (item) => {

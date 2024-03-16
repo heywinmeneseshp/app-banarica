@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
-import axios from 'axios';
+
 //Services
-import endPoints from '@services/api';
-import { actualizarUbicacion, buscarUbicacion, listarUbicaciones, paginarUbicaciones } from '@services/api/ubicaciones';
+
+import { actualizarUbicacion, listarUbicaciones, paginarUbicaciones } from '@services/api/ubicaciones';
 //Hooks
 import useAlert from '@hooks/useAlert';
 //Components
@@ -11,7 +11,7 @@ import NuevoProveedor from '@components/administrador/NuevoProveedor';
 import Alertas from '@assets/Alertas';
 //CSS
 import styles from '@styles/Listar.module.css';
-import useExcel from '@hooks/useExcel';
+import excel from '@hooks/excel';
 
 
 export default function ListarTabla () {
@@ -55,7 +55,7 @@ export default function ListarTabla () {
 
     const onDescargar = async () => {
         const data = await listarUbicaciones();
-        useExcel(data, "Proveedores", "Proveedores");
+        excel(data, "Proveedores", "Proveedores");
     };
 
     const handleActivar = (item) => {

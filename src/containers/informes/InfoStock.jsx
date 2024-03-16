@@ -11,7 +11,7 @@ import { listarCategorias } from "@services/api/categorias";
 import { actualizarNoDisponibles, filtradoGeneralStock } from "@services/api/stock";
 //Hooks
 import { useAuth } from "@hooks/useAuth";
-import useDate from "@hooks/useDate";
+import dateUse from "@hooks/useDate";
 //Bootstrap
 import Table from 'react-bootstrap/Table';
 import { Button } from "react-bootstrap";
@@ -121,7 +121,7 @@ export default function InfoStock() {
         const book = XLSX.utils.book_new();
         const sheet = XLSX.utils.json_to_sheet(newData);
         XLSX.utils.book_append_sheet(book, sheet, "Stock");
-        XLSX.writeFile(book, `Stock ${cons_almacen == 0 ? "" : cons_almacen} ${useDate()}.xlsx`);
+        XLSX.writeFile(book, `Stock ${cons_almacen == 0 ? "" : cons_almacen} ${dateUse()}.xlsx`);
     };
 
     const editarNoDisponible = async (index, cons_almacen, cons_producto) => {
@@ -205,10 +205,8 @@ export default function InfoStock() {
                     </Button>
 
                     {false && <Link href="./documentos/StockPDF" className={styles.button} variant="success" size="sm">
-                        <a target="_blank" rel="noopener noreferrer">
-                            Descargar PDF
-                        </a>
-                    </Link>}
+                                               Descargar PDF
+                        </Link>}
 
                 </form>
 

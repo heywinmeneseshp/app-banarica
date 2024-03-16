@@ -38,11 +38,6 @@ const Header = () => {
     const almacenByUser = JSON.parse(localStorage.getItem("almacenByUser"));
     setAlmacenByUser(almacenByUser);
     const listar = async () => {
-      const body = {
-        "almacen_receptor": user.username,
-        "visto": false,
-        "aprobado": true
-      };
     };
     listar();
   }, [openProfile, initialMenu, initialAdminMenu, initialAlmacenMenu, initialInfoMenu]);

@@ -1,8 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import axios from "axios";
-import { saveAs } from "file-saver";
-//Services
-import endPoints from "@services/api";
+
 //Hooks
 import { useAuth } from "@hooks/useAuth";
 //Components
@@ -15,8 +12,7 @@ import styles from '@styles/informes/informes.module.css';
 import { Container } from "react-bootstrap";
 import { filtrarPedidos } from "@services/api/pedidos";
 import { listarCategorias } from "@services/api/categorias";
-import useExcel from "@hooks/useExcel";
-import useDate from "@hooks/useDate";
+import excel from "@hooks/useExcel";
 
 
 export default function InfoPedidos() {
@@ -82,7 +78,7 @@ export default function InfoPedidos() {
                 "Realizado por": item?.tabla?.usuario
             };
         });
-        useExcel(newData,"Pedidos", `Historial de pedidos`);
+        excel(newData,"Pedidos", `Historial de pedidos`);
     };
 
     return (

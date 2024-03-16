@@ -109,7 +109,7 @@ export default function NuevoAlmacenPedido({ formRef }) {
                 {
                     products.map((item, indexA) => {
                         return (
-                            <div item={item} key={indexA}>
+                            <div key={indexA}>
                                 <div className={styles.contenedor9} >
 
                                     <span className={styles.display}>

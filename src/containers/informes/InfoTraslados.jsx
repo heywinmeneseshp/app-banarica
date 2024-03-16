@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState, useContext } from "react";
-import { useRouter } from "next/router";
-import AppContext from "@context/AppContext";
+import React, { useEffect, useRef, useState } from "react";
+
 import axios from "axios";
 import * as XLSX from 'xlsx';
 //Services
@@ -8,7 +7,7 @@ import endPoints from "@services/api";
 import { filtrarTraslados, buscarTraslado } from "@services/api/traslados";
 //Hooks
 import { useAuth } from "@hooks/useAuth";
-import useDate from "@hooks/useDate";
+import dateUse from "@hooks/useDate";
 //Components
 import Paginacion from '@components/Paginacion';
 //Bootstrap
@@ -24,15 +23,14 @@ import { listarCategorias } from "@services/api/categorias";
 
 
 export default function InfoTraslados() {
-    const router = useRouter();
+   
     const formRef = useRef();
-    const movimientoRef = useRef();
-    const { gestionNotificacion } = useContext(AppContext);
+
     const { user, almacenByUser } = useAuth();
     const [traslados, setTraslados] = useState([1]);
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
-    const [productos, setProductos] = useState([1]);
+
     const [categorias, setCategorias] = useState([1]);
     const limit = 20;
 
@@ -103,7 +101,7 @@ export default function InfoTraslados() {
         const book = XLSX.utils.book_new();
         const sheet = XLSX.utils.json_to_sheet(newData);
         XLSX.utils.book_append_sheet(book, sheet, "Traslados");
-        XLSX.writeFile(book, `Historial de traslados ${useDate()}.xlsx`);
+        XLSX.writeFile(book, `Historial de traslados ${dateUse()}.xlsx`);
     };
 
     return (
