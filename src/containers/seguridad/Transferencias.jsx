@@ -11,7 +11,7 @@ import { agregarTraslado } from "@services/api/traslados";
 import useDate from "@hooks/useDate";
 import useAlert from "@hooks/useAlert";
 import Alertas from "@assets/Alertas";
-import semana from "@hooks/semana";
+import uSemana from "@hooks/semana";
 import { agregarNotificaciones } from "@services/api/notificaciones";
 import { agregarHistorial } from "@services/api/historialMovimientos";
 import { encontrarModulo } from "@services/api/configuracion";
@@ -152,7 +152,7 @@ export default function Transferencias() {
                 }
             });
             await actualizarSeriales(tranferencias);
-            const semana = await semana(formData.get("semana"));
+            const semana = await uSemana(formData.get("semana"));
             const data = {
                 transportadora: "No aplica",
                 conductor: "No aplica",
@@ -372,7 +372,7 @@ export default function Transferencias() {
                                     className="form-control form-control-sm"
                                     id="limit"
                                     name="limit"
-                                    typeof="number"
+                              
                                     min={1}
                                     max={total}
                                     ref={limitRef}
