@@ -185,9 +185,9 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
                                     <label htmlFor="unidad">Unidad de medida</label>
                                     <div>
                                         <select className="form-select form-select-sm" name="unidad" id="unidad">
-                                            <option>und</option>
-                                            <option>km</option>
-                                            <option>m</option>
+                                            <option>Unidad</option>
+                                            <option>Palet</option>
+                                            <option>Caja</option>
                                         </select>
                                     </div>
                                 </div>

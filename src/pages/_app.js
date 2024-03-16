@@ -45,8 +45,8 @@ function MyApp({ Component, pageProps }) {
                 }}>
 
                     <Head>
-                        <title>Banarica</title>
-                        <meta name="Banarica - App para gestión de inventario" content="Creado por Craken.com.co" />
+                        <title>Transmonsa</title>
+                        <meta name="Transmonsa - App de gestion logisitca" content="Creado por Craken.com.co" />
                         <link rel="icon" href="/favicon.ico" />
                     </Head>
 

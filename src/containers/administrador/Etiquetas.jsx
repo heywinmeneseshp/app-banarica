@@ -12,10 +12,10 @@ import styles from '@styles/admin/etiquetas.module.css';
 
 export default function Etiquetas() {
 
-    const [toggleEtiqueta, setToggleEtiqueta] = useState(1)
+    const [toggleEtiqueta, setToggleEtiqueta] = useState(1);
 
     useEffect(()=>{
-    },[])
+    },[]);
 
     const handleToggleEtiqueta = (number) => {
         setToggleEtiqueta(number);

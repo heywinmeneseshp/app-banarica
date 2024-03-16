@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useContext } from "react";
 import { useRouter } from "next/router";
 import AppContext from "@context/AppContext";
 import axios from "axios";
-import * as XLSX from 'xlsx'
+import * as XLSX from 'xlsx';
 //Services
 import endPoints from "@services/api";
 import { filtrarTraslados, buscarTraslado } from "@services/api/traslados";
@@ -24,9 +24,9 @@ import { listarCategorias } from "@services/api/categorias";
 
 
 export default function InfoTraslados() {
-    const router = useRouter()
-    const formRef = useRef()
-    const movimientoRef = useRef()
+    const router = useRouter();
+    const formRef = useRef();
+    const movimientoRef = useRef();
     const { gestionNotificacion } = useContext(AppContext);
     const { user, almacenByUser } = useAuth();
     const [traslados, setTraslados] = useState([1]);
@@ -39,49 +39,49 @@ export default function InfoTraslados() {
     useEffect(() => {
         async function listar() {
             const categorias = await axios.get(endPoints.categorias.list);
-            const categoria_lis = user.id_rol == "Seguridad" || user.id_rol == "Super seguridad" ? categorias.data.filter(item => item.nombre == "Seguridad") : categorias.data
+            const categoria_lis = user.id_rol == "Seguridad" || user.id_rol == "Super seguridad" ? categorias.data.filter(item => item.nombre == "Seguridad") : categorias.data;
             setCategorias(categoria_lis);
-            onBuscar()
+            onBuscar();
         }
         try {
-            listar()
+            listar();
         } catch (e) {
-            alert("Error al cargar los usuarios", "error")
+            alert("Error al cargar los usuarios", "error");
         }
-    }, [alert, pagination])
+    }, [alert, pagination]);
 
     const onBuscar = async () => {
-        const formData = new FormData(formRef.current)
-        let almacenes = formData.get("almacen")
-        const semana = formData.get("semana")
-        const producto = formData.get("articulo")
-        const seguridad = user.id_rol == "Seguridad" || user.id_rol == "Super seguridad" ? await listarCategorias() : false
-        const categoria = seguridad ? seguridad.find(item => item.nombre == "Seguridad").consecutivo : formData.get("categoria")
-        if (almacenes == 0) almacenes = almacenByUser.map(item => item.consecutivo)
-        if (almacenes != 0) almacenes = [almacenes]
-        const res = await filtrarTraslados(almacenes, semana, producto, categoria, pagination, limit)
+        const formData = new FormData(formRef.current);
+        let almacenes = formData.get("almacen");
+        const semana = formData.get("semana");
+        const producto = formData.get("articulo");
+        const seguridad = user.id_rol == "Seguridad" || user.id_rol == "Super seguridad" ? await listarCategorias() : false;
+        const categoria = seguridad ? seguridad.find(item => item.nombre == "Seguridad").consecutivo : formData.get("categoria");
+        if (almacenes == 0) almacenes = almacenByUser.map(item => item.consecutivo);
+        if (almacenes != 0) almacenes = [almacenes];
+        const res = await filtrarTraslados(almacenes, semana, producto, categoria, pagination, limit);
         setTotal(res.total);
-        setTraslados(res.data)
-    }
+        setTraslados(res.data);
+    };
 
     const onVerPDF = async () => {
-        const formData = new FormData(formRef.current)
-        const traslado = formData.get("movimiento")
-        if (traslado == "") return alert("Por favor, introduzca el consecutivo del traslado")
-        const res  = await buscarTraslado(traslado)
-        if(res.length == 0) return alert("El traslado no existe")
-        window.open(endPoints.document.traslados(traslado))
-    }
+        const formData = new FormData(formRef.current);
+        const traslado = formData.get("movimiento");
+        if (traslado == "") return alert("Por favor, introduzca el consecutivo del traslado");
+        const res  = await buscarTraslado(traslado);
+        if(res.length == 0) return alert("El traslado no existe");
+        window.open(endPoints.document.traslados(traslado));
+    };
 
     const onDescargarExcel = async () => {
-        const formData = new FormData(formRef.current)
-        let almacenes = formData.get("almacen")
-        const semana = formData.get("semana")
-        const producto = formData.get("articulo")
-        const categoria = formData.get("categoria")
-        if (almacenes == 0) almacenes = almacenByUser.map(item => item.consecutivo)
-        if (almacenes != 0) almacenes = [almacenes]
-        const res = await filtrarTraslados(almacenes, semana, producto, categoria, null, null)
+        const formData = new FormData(formRef.current);
+        let almacenes = formData.get("almacen");
+        const semana = formData.get("semana");
+        const producto = formData.get("articulo");
+        const categoria = formData.get("categoria");
+        if (almacenes == 0) almacenes = almacenByUser.map(item => item.consecutivo);
+        if (almacenes != 0) almacenes = [almacenes];
+        const res = await filtrarTraslados(almacenes, semana, producto, categoria, null, null);
         const newData = res.map(item => {
             return {
                 "Consecutivo": item?.traslado?.consecutivo,
@@ -98,13 +98,13 @@ export default function InfoTraslados() {
                 "Semana": item?.traslado?.semana,
                 "Fecha salida": item?.traslado?.fecha_salida,
                 "Fecha entrada": item?.traslado?.fecha_entrada
-            }
-        })
+            };
+        });
         const book = XLSX.utils.book_new();
-        const sheet = XLSX.utils.json_to_sheet(newData)
-        XLSX.utils.book_append_sheet(book, sheet, "Traslados")
-        XLSX.writeFile(book, `Historial de traslados ${useDate()}.xlsx`)
-    }
+        const sheet = XLSX.utils.json_to_sheet(newData);
+        XLSX.utils.book_append_sheet(book, sheet, "Traslados");
+        XLSX.writeFile(book, `Historial de traslados ${useDate()}.xlsx`);
+    };
 
     return (
         <>

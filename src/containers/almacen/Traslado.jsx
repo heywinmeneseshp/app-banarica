@@ -10,18 +10,18 @@ import styles from "@styles/almacen/almacen.module.css";
 import { Container } from "react-bootstrap";
 
 export default function Traslado() {
-    const router = useRouter()
+    const router = useRouter();
     const { gestionNotificacion } = useContext(AppContext);
     const [notificaciones, setNotificaciones] = useState([]);
 
     useEffect(() => {
-        const result = gestionNotificacion.notificaciones.filter(noti => noti.tipo_movimiento === "Traslado")
+        const result = gestionNotificacion.notificaciones.filter(noti => noti.tipo_movimiento === "Traslado");
         setNotificaciones(result);
-    }, [])
+    }, []);
 
     const nextPage = () => {
         router.push("/noti/traslado");
-    }
+    };
 
     return (
         <>

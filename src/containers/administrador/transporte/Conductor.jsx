@@ -18,62 +18,62 @@ const Conductor = () => {
     const [item, setItem] = useState(null);
     const [items, setItems] = useState([]);
     const { alert, setAlert, toogleAlert } = useAlert();
-    const [open, setOpen] = useState(false)
+    const [open, setOpen] = useState(false);
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
     const limit = 10;
 
     useEffect(() => {
-        listrasItems()
-    }, [alert, pagination])
+        listrasItems();
+    }, [alert, pagination]);
 
     async function listrasItems() {
-        const nombre = buscardorRef.current.value
-        const res = await paginarConductores(pagination, limit, nombre)
+        const nombre = buscardorRef.current.value;
+        const res = await paginarConductores(pagination, limit, nombre);
         setTotal(res.total);
-        setItems(res.data)
+        setItems(res.data);
     }
 
     const handleNuevo = () => {
         setOpen(true);
-        setItem(null)
+        setItem(null);
     };
 
     const handleEditar = (item) => {
         setOpen(true);
-        setItem(item)
+        setItem(item);
     };
 
     const buscar = async () => {
-        setPagination(1)
-        listrasItems()
-    }
+        setPagination(1);
+        listrasItems();
+    };
 
     const onDescargar = async () => {
-        const res = await listarConductores()
-        useExcel(res, "Conductores", "Conductores")
-    }
+        const res = await listarConductores();
+        useExcel(res, "Conductores", "Conductores");
+    };
 
     const handleActivar = (item) => {
         try {
-            const changes = { isBlock: true }
-            if (item.isBlock === "1") changes.isBlock = false
+            const changes = { isBlock: true };
+            if (item.isBlock === "1") changes.isBlock = false;
             actualizarConductor(item.consecutivo, changes);
             setAlert({
                 active: true,
                 mensaje: 'El item "' + item.consecutivo + '" se ha actualizado',
                 color: "success",
                 autoClose: true
-            })
+            });
         } catch (e) {
             setAlert({
                 active: true,
                 mensaje: 'Se ha presentado un error',
                 color: "danger",
                 autoClose: true
-            })
+            });
         }
-    }
+    };
     return (
         <>
             <div>
@@ -137,7 +137,7 @@ const Conductor = () => {
             <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
             {open && <NuevoConductor setOpen={setOpen} setAlert={setAlert} item={item} />}
         </>
-    )
-}
+    );
+};
 
 export default Conductor;

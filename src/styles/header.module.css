@@ -92,3 +92,7 @@
 .itemMenuAdmin :last-child {
     padding-bottom: 0px;
 }
+
+.header {
+    z-index: 1000;
+}

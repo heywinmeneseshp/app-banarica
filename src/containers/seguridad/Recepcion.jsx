@@ -2,65 +2,65 @@ import React, { useEffect, useState } from "react";
 import readXlsxFile from "read-excel-file";
 import { useRef } from "react";
 
-import useDate from "@hooks/useDate";
+import uDate from "@hooks/uDate";
 
 
 //CSS
 import styles from "@styles/Seguridad.module.css";
 import { useAuth } from "@hooks/useAuth";
 import { cargarSeriales, listarProductosSeguridad } from "@services/api/seguridad";
-import useFile from "@hooks/useFile";
-import useExcel from "@hooks/useExcel";
+import file from "@hooks/file";
+import excel from "@hooks/excel";
 import Alertas from "@assets/Alertas";
 import useAlert from "@hooks/useAlert";
 import { InputGroup, Form } from "react-bootstrap";
-import useSemana from "@hooks/useSemana";
+import uSemana from "@hooks/uSemana";
 
 export default function Recepcion() {
-    const almacenRef = useRef()
-    const articuloRef = useRef()
-    const formRef = useRef()
-    const { almacenByUser, user } = useAuth()
-    const [archivoExcel, setArchivoExcel] = useState([])
-    const [tabla, setTabla] = useState([])
-    const [productos, setProductos] = useState([])
-    const [limit, setLimit] = useState(0)
+    const almacenRef = useRef();
+    const articuloRef = useRef();
+    const formRef = useRef();
+    const { almacenByUser, user } = useAuth();
+    const [archivoExcel, setArchivoExcel] = useState([]);
+    const [tabla, setTabla] = useState([]);
+    const [productos, setProductos] = useState([]);
+    const [limit, setLimit] = useState(0);
     const { alert, setAlert, toogleAlert } = useAlert();
     const [archivoBruto, setArchivoBruto] = useState(null);
-    const [bool, setBool] = useState(false)
-    const [nuevo, setNuevo] = useState(true)
+    const [bool, setBool] = useState(false);
+    const [nuevo, setNuevo] = useState(true);
 
     useEffect(() => {
         listarProductosSeguridad().then(res => {
-            setProductos(res.filter(item => item.serial == true))
-        })
-    }, [])
+            setProductos(res.filter(item => item.serial == true));
+        });
+    }, []);
 
     function subirExcel(e) {
-        const archivo = e.target.files[0]
+        const archivo = e.target.files[0];
         readXlsxFile(archivo).then((rows) => {
-            setArchivoBruto(rows)
+            setArchivoBruto(rows);
             const cons_almacen = almacenRef.current.value;
             const cons_prodcuto = articuloRef.current.value;
-            const response = useFile().ordenarExcelSerial(rows, cons_almacen, cons_prodcuto)
-            setArchivoExcel(response)
-            let tabla = response
-            const res = tabla.slice(0, 5)
-            setTabla(res)
-        })
-        setLimit(5)
+            const response = file().ordenarExcelSerial(rows, cons_almacen, cons_prodcuto);
+            setArchivoExcel(response);
+            let tabla = response;
+            const res = tabla.slice(0, 5);
+            setTabla(res);
+        });
+        setLimit(5);
     }
 
     function previsualizar() {
         if (archivoExcel.length != 0) {
             const cons_almacen = almacenRef.current.value;
             const cons_prodcuto = articuloRef.current.value;
-            const file = ["0"].concat(archivoBruto)
-            const response = useFile().ordenarExcelSerial(file, cons_almacen, cons_prodcuto)
-            setArchivoExcel(response)
-            let tabla = response
-            const res = tabla.slice(0, limit)
-            setTabla(res)
+            const file = ["0"].concat(archivoBruto);
+            const response = file().ordenarExcelSerial(file, cons_almacen, cons_prodcuto);
+            setArchivoExcel(response);
+            let tabla = response;
+            const res = tabla.slice(0, limit);
+            setTabla(res);
         }
     }
 
@@ -72,15 +72,15 @@ export default function Recepcion() {
             "Serial s_pack": null,
             "Serial m_pack": null,
             "Serial l_pack": null,
-        }
-        useExcel([data], "Plantilla", "Plantilla seriales")
+        };
+        excel([data], "Plantilla", "Plantilla seriales");
     }
 
     function limitPaginacion(e) {
-        setLimit(e.target.value)
-        let tabla = archivoExcel
-        const res = tabla.slice(0, e.target.value)
-        setTabla(res)
+        setLimit(e.target.value);
+        let tabla = archivoExcel;
+        const res = tabla.slice(0, e.target.value);
+        setTabla(res);
     }
 
     async function cargarDatos(e) {
@@ -89,25 +89,25 @@ export default function Recepcion() {
             const formData = new FormData(formRef.current);
             const remision = formData.get("remision");
             const pedido = formData.get("pedido");
-            const semana = await useSemana(formData.get("semana"));
+            const semana = await uSemana(formData.get("semana"));
             const fecha = formData.get("fecha");
             const observaciones = formData.get("observaciones");
             const res = await cargarSeriales(archivoExcel, remision, pedido, semana, fecha, observaciones, user.username);
             if (res.bool == true) {
-                setBool(true)
+                setBool(true);
                 setAlert({
                     active: true,
                     mensaje: res.message,
                     color: "success",
                     autoClose: false
-                })
+                });
             } else {
                 setAlert({
                     active: true,
                     mensaje: res.message,
                     color: "danger",
                     autoClose: false
-                })
+                });
             }
 
 
@@ -117,20 +117,20 @@ export default function Recepcion() {
                 mensaje: "Error, quizá existan seriales repetidos.",
                 color: "danger",
                 autoClose: false
-            })
+            });
         }
     }
 
     function nuevoMovimiento() {
-        setArchivoExcel([])
-        setTabla([])
+        setArchivoExcel([]);
+        setTabla([]);
         setArchivoBruto(null);
-        setBool(false)
-        setNuevo(false)
-        setLimit(0)
+        setBool(false);
+        setNuevo(false);
+        setLimit(0);
         setTimeout(() => {
-            setNuevo(true)
-        }, 50)
+            setNuevo(true);
+        }, 50);
     }
 
     return (
@@ -151,7 +151,7 @@ export default function Recepcion() {
                                 {almacenByUser.map((item, index) => {
                                     return (
                                         <option key={index} selected={item.consecutivo == "BRC"} value={item.consecutivo}>{item.nombre}</option>
-                                    )
+                                    );
                                 })}
                             </select>
                         </div>
@@ -203,7 +203,7 @@ export default function Recepcion() {
                                 id="fecha"
                                 name="fecha"
                                 type="date"
-                                defaultValue={useDate()}
+                                defaultValue={uDate()}
                                 disabled={bool}
                             />
                         </InputGroup>
@@ -314,5 +314,5 @@ export default function Recepcion() {
             </section>
 
         </>
-    )
+    );
 }

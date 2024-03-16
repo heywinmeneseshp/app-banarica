@@ -21,61 +21,61 @@ const Proveedor = () => {
     const [item, setItem] = useState(null);
     const [items, setItems] = useState([]);
     const { alert, setAlert, toogleAlert } = useAlert();
-    const [open, setOpen] = useState(false)
+    const [open, setOpen] = useState(false);
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
     const limit = 10;
 
     useEffect(() => {
-        listrasItems()
-    }, [alert, pagination])
+        listrasItems();
+    }, [alert, pagination]);
 
     async function listrasItems() {
-        let nombre = buscardorRef.current.value
-        const res = await paginarProveedores(pagination, limit, nombre)
-        setItems(res.data)
-        setTotal(res.total)
+        let nombre = buscardorRef.current.value;
+        const res = await paginarProveedores(pagination, limit, nombre);
+        setItems(res.data);
+        setTotal(res.total);
     }
 
     const handleNuevo = () => {
         setOpen(true);
-        setItem(null)
+        setItem(null);
     };
 
     const handleEditar = (item) => {
         setOpen(true);
-        setItem(item)
+        setItem(item);
     };
 
     const buscar = async () => {
-        setPagination(1)
-        listrasItems()
-    }
+        setPagination(1);
+        listrasItems();
+    };
 
     const onDescargar = async () => {
-        const data = await listarProveedores()
-        useExcel(data, "Proveedores", "Proveedores")
-    }
+        const data = await listarProveedores();
+        useExcel(data, "Proveedores", "Proveedores");
+    };
 
     const handleActivar = (item) => {
         try {
-            const changes = { isBlock: !item.isBlock }
+            const changes = { isBlock: !item.isBlock };
             actualizarProveedor(item.id, changes);
             setAlert({
                 active: true,
                 mensaje: 'El item "' + item.consecutivo + '" se ha actualizado',
                 color: "success",
                 autoClose: true
-            })
+            });
         } catch (e) {
             setAlert({
                 active: true,
                 mensaje: 'Se ha presentado un error',
                 color: "danger",
                 autoClose: true
-            })
+            });
         }
-    }
+    };
 
     return (
         <>
@@ -140,7 +140,7 @@ const Proveedor = () => {
             <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
             {open && <NuevoProveedor setOpen={setOpen} setAlert={setAlert} item={item} />}
         </>
-    )
-}
+    );
+};
 
 export default Proveedor;

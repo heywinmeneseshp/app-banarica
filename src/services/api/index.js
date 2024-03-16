@@ -2,18 +2,18 @@ const API = process.env.NEXT_PUBLIC_API_URL;
 const VERSION = process.env.NEXT_PUBLIC_API_VERSION;
 const OWN_URL = process.env.NEXT_PUBLIC_OWN_URL;
 
-const endPoints = { 
+const endPoints = {
     auth: { //Crear
         login: `${API}/api/${VERSION}/auth/login`,
         profile: `${API}/api/${VERSION}/auth/profile`,
     },
-    usuarios: { 
+    usuarios: {
         list: `${API}/api/${VERSION}/usuarios`,
         findOne: (username) => `${API}/api/${VERSION}/usuarios/${username}`,
         pagination: (page, limit, username) => `${API}/api/${VERSION}/usuarios/paginar?page=${page}&limit=${limit}&username=${username}`,
         create: `${API}/api/${VERSION}/usuarios`,
         update: (username) => `${API}/api/${VERSION}/usuarios/${username}`,
-        delete: (username) =>`${API}/api/${VERSION}/usuarios/${username}`,
+        delete: (username) => `${API}/api/${VERSION}/usuarios/${username}`,
         almacenes: {
             list: (username) => `${API}/api/${VERSION}/usuarios/almacen/${username}`,
             findByUsername: (username) => `${API}/api/${VERSION}/usuarios/almacen/${username}`,
@@ -23,7 +23,7 @@ const endPoints = {
             delete: (username, almacen) => `${API}/api/${VERSION}/usuarios/almacen/${username}/${almacen}`
         }
     },
-    productos: { 
+    productos: {
         list: `${API}/api/${VERSION}/productos`,
         findOne: (id) => `${API}/api/${VERSION}/productos/${id}`,
         filter: `${API}/api/${VERSION}/productos/filter`,
@@ -33,7 +33,7 @@ const endPoints = {
         update: (id) => `${API}/api/${VERSION}/productos/${id}`,
         delete: (id) => `${API}/api/${VERSION}/productos/${id}`,
     },
-    combos: { 
+    combos: {
         list: `${API}/api/${VERSION}/combos`,
         findOne: (id) => `${API}/api/${VERSION}/combos/${id}`,
         listAsembled: `${API}/api/${VERSION}/combos/listar`,
@@ -52,7 +52,7 @@ const endPoints = {
         update: (id) => `${API}/api/${VERSION}/categorias/${id}`,
         delete: (id) => `${API}/api/${VERSION}/categorias/${id}`,
     },
-    proveedores: { 
+    proveedores: {
         list: `${API}/api/${VERSION}/proveedores`,
         findOne: (id) => `${API}/api/${VERSION}/proveedores/${id}`,
         create: `${API}/api/${VERSION}/proveedores`,
@@ -60,7 +60,7 @@ const endPoints = {
         update: (id) => `${API}/api/${VERSION}/proveedores/${id}`,
         delete: (id) => `${API}/api/${VERSION}/proveedores/${id}`,
     },
-    almacenes: { 
+    almacenes: {
         list: `${API}/api/${VERSION}/almacenes`,
         findOne: (id) => `${API}/api/${VERSION}/almacenes/${id}`,
         pagination: (page, limit, almacen) => `${API}/api/${VERSION}/almacenes/paginar?page=${page}&limit=${limit}&almacen=${almacen}`,
@@ -176,7 +176,7 @@ const endPoints = {
         barcodes: `${OWN_URL}/Documento/Barcodes`
     },
     seguridad: {
-        listarProductos:  `${API}/api/${VERSION}/seguridad/listar-articulos`,
+        listarProductos: `${API}/api/${VERSION}/seguridad/listar-articulos`,
         listarSeriales: `${API}/api/${VERSION}/seguridad/seriales`,
         listarUsuarios: `${API}/api/${VERSION}/seguridad/usuarios`,
         ActualizarSeriales: `${API}/api/${VERSION}/seguridad/actualizar-seriales`,
@@ -184,7 +184,7 @@ const endPoints = {
         encontrarSerial: `${API}/api/${VERSION}/seguridad/encontrar-serial`,
     },
     etiquetas: {
-        crearEtiqueta:  `${API}/api/${VERSION}/etiquetas`,
+        crearEtiqueta: `${API}/api/${VERSION}/etiquetas`,
         encontrarEtiqueta: (consecutivo) => `${API}/api/${VERSION}/etiquetas/${consecutivo}`,
         listarEtiquetas: `${API}/api/${VERSION}/etiquetas`,
         actualizarEtiqueta: (consecutivo) => `${API}/api/${VERSION}/etiquetas/${consecutivo}`,
@@ -192,7 +192,96 @@ const endPoints = {
     confi: {
         buscarModulo: (modulo) => `${API}/api/${VERSION}/confi/encontrar/${modulo}`,
         actualizarModulo: `${API}/api/${VERSION}/confi/actualizar`
-    }
-}
+    },
+    //TRANSPOTER
+    ubicaciones: {
+        list: `${API}/api/${VERSION}/ubicaciones`,
+        findOne: (id) => `${API}/api/${VERSION}/ubicaciones/${id}`,
+        pagination: (page, limit, item) => `${API}/api/${VERSION}/ubicaciones/paginar?page=${page}&limit=${limit}&item=${item}`,
+        create: `${API}/api/${VERSION}/ubicaciones`,
+        update: (id) => `${API}/api/${VERSION}/ubicaciones/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/ubicaciones/${id}`,
+    },
+    clientes: {
+        list: `${API}/api/${VERSION}/clientes`,
+        findOne: (id) => `${API}/api/${VERSION}/clientes/${id}`,
+        pagination: (page, limit, item) => `${API}/api/${VERSION}/clientes/paginar?page=${page}&limit=${limit}&item=${item}`,
+        create: `${API}/api/${VERSION}/clientes`,
+        update: (id) => `${API}/api/${VERSION}/clientes/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/clientes/${id}`,
+    },
+    galonesPorRuta: {
+        list: `${API}/api/${VERSION}/galonesPorRuta`,
+        findOne: (id) => `${API}/api/${VERSION}/galonesPorRuta/${id}`,
+        pagination: (page, limit, item) => `${API}/api/${VERSION}/cliengalonesPorRutates/paginar?page=${page}&limit=${limit}&item=${item}`,
+        create: `${API}/api/${VERSION}/galonesPorRuta`,
+        update: (id) => `${API}/api/${VERSION}/galonesPorRuta/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/galonesPorRuta/${id}`,
+        consultar:  `${API}/api/${VERSION}/galonesPorRuta/consultar`,
+    },
+    record_consumo: {
+        list: `${API}/api/${VERSION}/record_consumo`,
+        findOne: `${API}/api/${VERSION}/record_consumo/encontrar-uno`,
+        pagination: (page, limit, item) => `${API}/api/${VERSION}/record_consumo/paginar?page=${page}&limit=${limit}&item=${item}`,
+        create: `${API}/api/${VERSION}/record_consumo`,
+        update: (id) => `${API}/api/${VERSION}/record_consumo/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/record_consumo/${id}`,
+        consultarConsumo: `${API}/api/${VERSION}/record_consumo/sin-liquidar`,
+        liquidar: `${API}/api/${VERSION}/record_consumo/liquidar`,
+    },
+    programaciones: {
+        list: `${API}/api/${VERSION}/programaciones`,
+        findOne: (id) => `${API}/api/${VERSION}/programaciones/${id}`,
+        pagination: (page, limit, item) => `${API}/api/${VERSION}/programaciones/paginar?page=${page}&limit=${limit}&item=${item}`,
+        create: `${API}/api/${VERSION}/programaciones`,
+        update: (id) => `${API}/api/${VERSION}/programaciones/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/programaciones/${id}`,
+    },
+    rutas: {
+        list: `${API}/api/${VERSION}/rutas`,
+        findOne: (id) => `${API}/api/${VERSION}/rutas/${id}`,
+        findWhere: `${API}/api/${VERSION}/rutas/buscar`,
+        pagination: (page, limit, item) => `${API}/api/${VERSION}/rutas/paginar?page=${page}&limit=${limit}&item=${item}`,
+        create: `${API}/api/${VERSION}/rutas`,
+        update: (id) => `${API}/api/${VERSION}/rutas/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/rutas/${id}`,
+    },
+    vehiculos: {
+        list: `${API}/api/${VERSION}/vehiculos`,
+        findOne: (id) => `${API}/api/${VERSION}/vehiculos/${id}`,
+        pagination: (page, limit, item) => `${API}/api/${VERSION}/vehiculos/paginar?page=${page}&limit=${limit}&item=${item}`,
+        create: `${API}/api/${VERSION}/vehiculos`,
+        update: (id) => `${API}/api/${VERSION}/vehiculos/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/vehiculos/${id}`,
+    },
+    ProductosViaje: {
+        list: `${API}/api/${VERSION}/productos-viaje`,
+        findOne: (id) => `${API}/api/${VERSION}/productos-viaje/${id}`,
+        findWhere: `${API}/api/${VERSION}/productos-viaje/buscar`,
+        pagination: (page, limit) => `${API}/api/${VERSION}/productos-viaje/paginar?page=${page}&limit=${limit}`,
+        create: `${API}/api/${VERSION}/productos-viaje`,
+        update: (id) => `${API}/api/${VERSION}/productos-viaje/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/productos-viaje/${id}`,
+    },
+    categoriaVehiculos: {
+        list: `${API}/api/${VERSION}/categoriaVehiculos`,
+        findOne: (id) => `${API}/api/${VERSION}/categoriaVehiculos/${id}`,
+        pagination: (page, limit, item) => `${API}/api/${VERSION}/categoriaVehiculos/paginar?page=${page}&limit=${limit}&item=${item}`,
+        create: `${API}/api/${VERSION}/categoriaVehiculos`,
+        update: (id) => `${API}/api/${VERSION}/categoriaVehiculos/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/categoriaVehiculos/${id}`,
+    },
+    tanqueo: {
+        list: `${API}/api/${VERSION}/tanqueo`,
+        findOne: (id) => `${API}/api/${VERSION}/tanqueo/${id}`,
+        findAll: `${API}/api/${VERSION}/tanqueo/encontrar`,
+        pagination: (page, limit, item) => `${API}/api/${VERSION}/tanqueo/paginar?page=${page}&limit=${limit}&item=${item}`,
+        create: `${API}/api/${VERSION}/tanqueo`,
+        update: (id) => `${API}/api/${VERSION}/tanqueo/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/tanqueo/${id}`,
+    },
+
+
+};
 
 export default endPoints;

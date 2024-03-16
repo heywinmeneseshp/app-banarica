@@ -9,9 +9,9 @@ import { useAuth } from "@hooks/useAuth";
 
 
 export default function InfoMovimientos() {
-    const { user } = useAuth()
-    const titulo = { general: "Informe de movimientos", reporte: "Reporte semanal" }
-    const [toggle, setToggle] = useState(1)
+    const { user } = useAuth();
+    const titulo = { general: "Informe de movimientos", reporte: "Reporte semanal" };
+    const [toggle, setToggle] = useState(1);
 
     return (
         <>

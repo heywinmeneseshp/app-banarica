@@ -6,10 +6,10 @@ const initialMenu = {
     administrador: false,
     almacen: false,
     informes: false
-}
+};
 
 const useMenu = () => {
-    const [navBar, setNavBar] = useState(true)
+    const [navBar, setNavBar] = useState(true);
     const [menu, setMenu] = useState(initialMenu);
 
     const handleInicio = () => {
@@ -19,8 +19,8 @@ const useMenu = () => {
             administrador: false,
             almacen: false,
             informes: false
-        })
-    }
+        });
+    };
 
     const handleAdministrador = () => {
         setMenu({
@@ -29,10 +29,10 @@ const useMenu = () => {
             administrador: true,
             almacen: false,
             informes: false
-        })
+        });
 
 
-    }
+    };
 
     const handleAlmacen = () => {
         setMenu({
@@ -41,8 +41,8 @@ const useMenu = () => {
             administrador: false,
             almacen: true,
             informes: false
-        })
-    }
+        });
+    };
 
     const handleInformes = () => {
         setMenu({
@@ -51,12 +51,12 @@ const useMenu = () => {
             administrador: false,
             almacen: false,
             informes: true
-        })
-    }
+        });
+    };
 
     const toggleNavBar = (bool) => {
-        setNavBar(bool)
-    }
+        setNavBar(bool);
+    };
 
     return {
         menu, 

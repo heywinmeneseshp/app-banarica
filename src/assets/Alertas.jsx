@@ -14,7 +14,7 @@ export default function Alertas({ alert, handleClose }) {
     if (alert && alert?.autoClose) {
         setTimeout(() => {
             handleClose();
-        }, 2000)
+        }, 2000);
     }
 
     return (
@@ -27,5 +27,5 @@ export default function Alertas({ alert, handleClose }) {
                 </Alert>
             }
         </>
-    )
+    );
 }

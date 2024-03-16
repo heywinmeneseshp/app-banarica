@@ -4,7 +4,7 @@ import editarPick from '@public/images/editar.png';
 import guardarPick from '@public/images/guardar.png';
 import Link from "next/link";
 import axios from "axios";
-import * as XLSX from 'xlsx'
+import * as XLSX from 'xlsx';
 //Services
 import endPoints from "@services/api";
 import { listarCategorias } from "@services/api/categorias";
@@ -30,7 +30,7 @@ export default function InfoStock() {
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
     const [categorias, setCategorias] = useState([]);
-    const [bools, setBools] = useState([])
+    const [bools, setBools] = useState([]);
     const limit = 20;
 
 
@@ -38,21 +38,21 @@ export default function InfoStock() {
         try {
             listarCategorias().then((res) => {
                 if (user.id_rol == "Super seguridad" || user.id_rol == "Seguridad") {
-                    setCategorias(res.filter(item => item.nombre == "Seguridad"))
+                    setCategorias(res.filter(item => item.nombre == "Seguridad"));
                 } else {
-                    setCategorias(res)
+                    setCategorias(res);
                 }
-            })
-            listar()
+            });
+            listar();
         } catch (e) {
-            alert("Error al cargar items", "error")
+            alert("Error al cargar items", "error");
         }
-    }, [alert, pagination, setStock])
+    }, [alert, pagination, setStock]);
 
     async function listar() {
         const formData = new FormData(formRef.current);
         const cons_almacen = formData.get('almacen');
-        const cons_cat_rol = user.id_rol == "Seguridad" || user.id_rol == "Super seguridad" ? await listarCategorias() : false
+        const cons_cat_rol = user.id_rol == "Seguridad" || user.id_rol == "Super seguridad" ? await listarCategorias() : false;
         const cons_categoria = cons_cat_rol ? cons_cat_rol.find(item => item.nombre == "Seguridad").consecutivo : formData.get('categoria');
         const product_name = formData.get('articulo');
         let body = {
@@ -67,34 +67,34 @@ export default function InfoStock() {
                 "offset": pagination,
                 "limit": limit
             }
-        }
-        if (cons_almacen == 0) body.almacen.consecutivo = almacenByUser.map(item => item.consecutivo)
-        const res = await filtradoGeneralStock(body)
+        };
+        if (cons_almacen == 0) body.almacen.consecutivo = almacenByUser.map(item => item.consecutivo);
+        const res = await filtradoGeneralStock(body);
         setTotal(res.total);
         setStock(res.data);
-        setBools(new Array(res.data.length).fill(false))
+        setBools(new Array(res.data.length).fill(false));
 
     }
 
     const onBuscar = () => {
-        setPagination(1)
-        listar()
-    }
+        setPagination(1);
+        listar();
+    };
 
     const onDescargarPDF = async () => {
         const formData = new FormData(formRef.current);
         const cons_almacen = formData.get('almacen');
         const cons_categoria = formData.get('categoria');
-        if (cons_almacen == 0) return alert("Por favor, seleccione un almacen")
-        if (cons_categoria == "") return alert("Por favor, seleccione una categoria")
-        window.open(endPoints.document.stock(cons_almacen, cons_categoria))
-    }
+        if (cons_almacen == 0) return alert("Por favor, seleccione un almacen");
+        if (cons_categoria == "") return alert("Por favor, seleccione una categoria");
+        window.open(endPoints.document.stock(cons_almacen, cons_categoria));
+    };
 
     const onDescargarExcel = async () => {
         const formData = new FormData(formRef.current);
         const cons_almacen = formData.get('almacen');
         const cons_categoria = formData.get('categoria');
-        const cons_producto = formData.get('articulo')
+        const cons_producto = formData.get('articulo');
         let body = {
             "producto": {
                 "name": cons_producto,
@@ -103,8 +103,8 @@ export default function InfoStock() {
             "almacen": {
                 "consecutivo": cons_almacen
             }
-        }
-        if (cons_almacen == 0) body.almacen.consecutivo = almacenByUser.map(item => item.consecutivo)
+        };
+        if (cons_almacen == 0) body.almacen.consecutivo = almacenByUser.map(item => item.consecutivo);
         const { data } = await axios.post(endPoints.stock.filter, body);
         const newData = data.map((item) => {
             return {
@@ -116,32 +116,32 @@ export default function InfoStock() {
                 "No disponible": item?.no_disponible || 0,
                 "Disponible": item.cantidad - (item?.no_disponible || 0),
                 "Cantidad Total": item.cantidad
-            }
-        })
+            };
+        });
         const book = XLSX.utils.book_new();
-        const sheet = XLSX.utils.json_to_sheet(newData)
-        XLSX.utils.book_append_sheet(book, sheet, "Stock")
-        XLSX.writeFile(book, `Stock ${cons_almacen == 0 ? "" : cons_almacen} ${useDate()}.xlsx`)
-    }
+        const sheet = XLSX.utils.json_to_sheet(newData);
+        XLSX.utils.book_append_sheet(book, sheet, "Stock");
+        XLSX.writeFile(book, `Stock ${cons_almacen == 0 ? "" : cons_almacen} ${useDate()}.xlsx`);
+    };
 
     const editarNoDisponible = async (index, cons_almacen, cons_producto) => {
-        let newBools = [...bools]
+        let newBools = [...bools];
         if (newBools[index] == true) {
             try {
-                const formData = new FormData(formEdit.current)
-                const no_disponible = formData.get(`no-disponible-${index}`)
-                await actualizarNoDisponibles(cons_almacen, cons_producto, parseFloat(no_disponible))
-                let newStock = [...stock]
-                newStock[index] = { ...newStock[index], no_disponible: no_disponible }
-                setStock(newStock)
+                const formData = new FormData(formEdit.current);
+                const no_disponible = formData.get(`no-disponible-${index}`);
+                await actualizarNoDisponibles(cons_almacen, cons_producto, parseFloat(no_disponible));
+                let newStock = [...stock];
+                newStock[index] = { ...newStock[index], no_disponible: no_disponible };
+                setStock(newStock);
             }
             catch {
-                window.alert("Se ha presentado un error al guardar no disponibles")
+                window.alert("Se ha presentado un error al guardar no disponibles");
             }
         }
-        newBools[index] = !newBools[index]
-        setBools(newBools)
-    }
+        newBools[index] = !newBools[index];
+        setBools(newBools);
+    };
 
     return (
         <>
@@ -227,7 +227,7 @@ export default function InfoStock() {
                     </thead>
                     <tbody>
                         {stock.map((item, index) => {
-                            console.log(bools[index])
+                            console.log(bools[index]);
                             return (
                                 <tr key={index}>
                                     <td>{item?.cons_almacen}</td>
@@ -256,7 +256,7 @@ export default function InfoStock() {
                                     </td>}
                                     <td>{item?.cantidad - item?.no_disponible || 0 }</td>
                                 </tr>
-                            )
+                            );
                         })}
                     </tbody>
                 </Table>

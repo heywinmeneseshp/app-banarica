@@ -12,36 +12,36 @@ const agregarAlmacen = async (almacen) => {
     const response = await axios.post(url, almacen, config);
     return response.data;
    }catch(e){
-    alert("Error al ingresar datos")
+    alert("Error al ingresar datos");
    }
-}
+};
 
 const eliminarAlmacen = async(consecutivo) => {
     const res = await axios.delete(endPoints.almacenes.delete(consecutivo));
-    return res.data
-}
+    return res.data;
+};
 
 const actualizarAlmacen = async(consecutivo, changes) => {
-    const res = await axios.patch(endPoints.almacenes.update(consecutivo), changes)
-    return res.data
-}
+    const res = await axios.patch(endPoints.almacenes.update(consecutivo), changes);
+    return res.data;
+};
 
 const buscarAlmacen = async(consecutivo) => {
     try {
     const res = await axios.get(endPoints.almacenes.findOne(consecutivo));
-    return res.data
+    return res.data;
     } catch (e) {
-        alert("Error al buscar almacen")
+        alert("Error al buscar almacen");
     } 
-}
+};
 
 const listarAlmacenes = async() => {
     try {
         const res = await axios.get(endPoints.almacenes.list);
-        return res.data
+        return res.data;
     } catch (e){
-        alert("Error al listar almacenes")
+        alert("Error al listar almacenes");
     }
-}
+};
 
 export { agregarAlmacen, eliminarAlmacen, actualizarAlmacen, buscarAlmacen, listarAlmacenes };

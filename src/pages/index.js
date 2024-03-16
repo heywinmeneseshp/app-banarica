@@ -13,12 +13,17 @@ import Informes from '@containers/informes';
 import styles from '@styles/Layout.module.css';
 
 export default function Home() {
-    const { user } = useAuth();
+    const { user, setUser, setAlmacenByUser } = useAuth();
     const { initialMenu } = useContext(AppContext);
     const router = useRouter();
     useEffect(() => {
-        if (!user) router.push('/login');
-    }, [user]);
+        const usuario = JSON.parse(localStorage.getItem("usuario"));
+        setUser(usuario);
+        const almacenByUser = JSON.parse(localStorage.getItem("almacenByUser"));
+    
+        setAlmacenByUser(almacenByUser);
+        if (!usuario) router.push('/login');
+    }, []);
     if (user) {
         return (
             <div>

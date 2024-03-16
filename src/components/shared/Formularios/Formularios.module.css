@@ -1,0 +1,50 @@
+.fondo {
+    position: fixed; /* Se posiciona fijamente en la ventana del navegador */
+    top: 0; /* Se coloca en la parte superior */
+    left: 0; /* Se coloca en el lado izquierdo */
+    background-color: rgba(0, 0, 0, 0.336);
+    z-index: 2; /* Asegura que el fondo esté detrás del contenido */
+    height: 100vh; /* Ocupa toda la altura de la ventana */
+    width: 100%; /* Ocupa toda la anchura de la ventana */
+}
+
+.floatingform {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    display: flex;
+    justify-content: start;
+    align-items: start;
+    height: 80vh; /* Ocupa el 90% del alto */
+    overflow-y: auto; /* Añade un scroll vertical si se supera el alto */
+    margin-top: 10px;
+}
+
+.ventana {
+    width: max-content;
+
+}
+
+/* Media query para dispositivos móviles */
+@media (max-width: 767px) {
+    .floatingform {
+        width: 100%; /* Ancho del 90% en dispositivos móviles */
+        height: auto; /* Altura automática */
+        max-height: 90vh; /* Altura máxima del 90% del viewport height */
+        padding: 20px; /* Añade un poco de espacio alrededor del contenido */
+        justify-content: start;
+        align-items: start;
+    }
+}
+
+
+  
+  .card {
+    border-radius: 15px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    width: 400px; /* Puedes ajustar el ancho según tus necesidades */
+  }
+  
+  

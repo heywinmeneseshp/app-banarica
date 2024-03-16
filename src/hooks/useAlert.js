@@ -6,22 +6,22 @@ const useAlert = (options) => {
         mensaje: "",
         color: '',
         autoClose: true
-    }
+    };
 
     const [alert, setAlert] = useState({
         ...defaultOptions,
         ...options,
-    })
+    });
 
     const toogleAlert = () => {
         setAlert(!alert.active);
-    }
+    };
 
     return {
        alert,
        setAlert,
        toogleAlert 
-    }
-}
+    };
+};
 
-export default useAlert
+export default useAlert;

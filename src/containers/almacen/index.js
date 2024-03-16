@@ -19,5 +19,5 @@ export default function Almacen() {
             {initialAlmacenMenu.almacenMenu.recepcion && <Recepcion />}
             {initialAlmacenMenu.almacenMenu.traslados && <Traslado />}
         </>
-    )
+    );
 } 

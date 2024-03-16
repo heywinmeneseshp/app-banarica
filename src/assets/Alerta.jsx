@@ -1,6 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import endPoints from "@services/api";
 import AppContext from "@context/AppContext";
 
 //Bootstrap
@@ -15,28 +14,28 @@ export default function Alerta({ data }) {
     const router = useRouter();
     const { gestionNotificacion } = useContext(AppContext);
     const [color, setColor] = useState(null);
-    const [texto, setTexto] = useState("")
+    const [texto, setTexto] = useState("");
 
     const onButton = () => {
-        gestionNotificacion.ingresarNotificacion(data)
+        gestionNotificacion.ingresarNotificacion(data);
         if (data.tipo_movimiento == "Pedido") {
-            window.open(process.env.NEXT_PUBLIC_OWN_URL + "/Documento/Pedido/" + data.cons_movimiento)
+            window.open(process.env.NEXT_PUBLIC_OWN_URL + "/Documento/Pedido/" + data.cons_movimiento);
         } else {
-            router.push(`/Movimiento/${data.tipo_movimiento}/${data.cons_movimiento}`)
+            router.push(`/Movimiento/${data.tipo_movimiento}/${data.cons_movimiento}`);
         }
-    }
+    };
 
     useEffect(() => {
-        setColor("warning")
+        setColor("warning");
         let texto = data.tipo_movimiento;
-        if (data.tipo_movimiento == "Pedido") setColor("success")
+        if (data.tipo_movimiento == "Pedido") setColor("success");
         if (data.tipo_movimiento == "Liquidacion") {
-            setColor("danger")
-            texto = "Liquidación"
+            setColor("danger");
+            texto = "Liquidación";
         }
-        if (data.tipo_movimiento == "Devolucion") texto = "Devolución"
-        setTexto(texto)
-    })
+        if (data.tipo_movimiento == "Devolucion") texto = "Devolución";
+        setTexto(texto);
+    });
 
     return (
         <>
@@ -50,10 +49,22 @@ export default function Alerta({ data }) {
                     </div>
                 </div>
 
-                <div className={styles.boton_mobile} onClick={onButton}>
+                <div
+  key=""
+  className={styles.boton_mobile}
+  onClick={() => onButton()}
+  onKeyDown={(event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      onButton();
+    }
+  }}
+  role="button"
+  tabIndex={0}
+>
+
                     <b>| {`${data.almacen_receptor}`} | </b> {` ${texto}`} {`${data.cons_movimiento}`} {data.descripcion}
                 </div>
             </Alert>
         </>
-    )
+    );
 }

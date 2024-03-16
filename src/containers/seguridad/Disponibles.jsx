@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import endPoints from "@services/api";
 import axios from "axios";
 //CSS
-import styles from "@styles/Seguridad.module.css"
+import styles from "@styles/Seguridad.module.css";
 import ConsultaResumen from "@components/seguridad/ConsultaDetallada";
 import ConsultaDetallada from "@components/seguridad/ConsultaResumen";
 import { useAuth } from "@hooks/useAuth";
@@ -13,11 +13,11 @@ import { filtrarCategorias } from "@services/api/categorias";
 import { buscarProducto } from "@services/api/productos";
 
 export default function Disponibles() {
-    const { almacenByUser, user } = useAuth()
-    const formRef = useRef()
+    const { almacenByUser, user } = useAuth();
+    const formRef = useRef();
     const [tablaConsulta, setTablaConsultal] = useState(true);
-    const [productos, setProductos] = useState([])
-    const [data, setData] = useState({})
+    const [productos, setProductos] = useState([]);
+    const [data, setData] = useState({});
     const [pagination, setPagination] = useState(1);
     const [limit, setLimit] = useState(10);
     const [results, setResults] = useState(0);
@@ -25,32 +25,32 @@ export default function Disponibles() {
     useEffect(() => {
         if (!tablaConsulta) {
             listarProductosSeguridad().then(res => {
-                setProductos(res.filter(item => item.serial == true))
-            })
-            buscarArticulos()
+                setProductos(res.filter(item => item.serial == true));
+            });
+            buscarArticulos();
         } else {
             listarProductosSeguridad().then(res => {
-                setProductos(res)
-            })
-            buscarArticulos()
+                setProductos(res);
+            });
+            buscarArticulos();
         }
-    }, [tablaConsulta])
+    }, [tablaConsulta]);
 
     const handleTableConsulta = (bool) => {
-        setTablaConsultal(bool)
-        setLimit(10)
-        setPagination(1)
-        setResults(0)
-    }
+        setTablaConsultal(bool);
+        setLimit(10);
+        setPagination(1);
+        setResults(0);
+    };
 
     const buscarArticulos = () => {
-        setPagination(1)
-        const formData = new FormData(formRef.current)
-        let estado = formData.get("estado")
+        setPagination(1);
+        const formData = new FormData(formRef.current);
+        let estado = formData.get("estado");
         if (estado == "All") {
-            estado = [true, false]
+            estado = [true, false];
         } else {
-            estado = estado == 1 ? [true] : [false]
+            estado = estado == 1 ? [true] : [false];
         }
         const almacen = formData.get("almacen");
         const producto = formData.get("producto");
@@ -63,19 +63,19 @@ export default function Disponibles() {
             l_pack: formData.get("l_pack"),
             cons_almacen: almacen == 0 ? "" : almacen,
             available: estado
-        }
-        setData(data)
-    }
+        };
+        setData(data);
+    };
 
     const onChangeLimit = (e) => {
-        setLimit(e.target.value)
-        setPagination(1)
-    }
+        setLimit(e.target.value);
+        setPagination(1);
+    };
 
     const descargarExcel = async () => {
         if (!tablaConsulta) {
             const response = await listarSeriales(false, false, data);
-            useExcel(response, "seriales", "Artículos de seguridad")
+            useExcel(response, "seriales", "Artículos de seguridad");
         } else {
             const formData = new FormData(formRef.current);
             const cons_almacen = formData.get('almacen');
@@ -89,7 +89,7 @@ export default function Disponibles() {
                 "almacen": {
                     "consecutivo": cons_almacen == 0 ? almacenByUser.map(item => item.consecutivo) : cons_almacen
                 }
-            }
+            };
             const { data } = await axios.post(endPoints.stock.filter, body);
             const newData = data.map((item) => {
                 return {
@@ -99,12 +99,12 @@ export default function Disponibles() {
                     "Cod artículo": item.cons_producto,
                     "Artículo": item.producto.name,
                     "Cantidad": item.cantidad
-                }
-            })
-            useExcel(newData, "Seguridad", "Stock seguridad")
+                };
+            });
+            useExcel(newData, "Seguridad", "Stock seguridad");
         }
 
-    }
+    };
 
     return (
         <>
@@ -256,5 +256,5 @@ export default function Disponibles() {
 
 
         </>
-    )
+    );
 }

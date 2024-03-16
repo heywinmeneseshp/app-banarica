@@ -6,72 +6,72 @@ const config = {
         accept: 'application/json',
         'Content-Type': 'application/json'
     }
-}
+};
 
 const agregarHistorial = async (data) => {
     try {
         const response = await axios.post(endPoints.historial.create, data, config);
         return response.data;
     } catch (err) {
-        throw {message: "Se ha presentado un error"}
+        throw {message: "Se ha presentado un error"};
     }
-}
+};
 
 
 const eliminarHistorial = async (id) => {
     const res = await axios.delete(endPoints.historial.delete(id));
-    return res.data
-}
+    return res.data;
+};
 
 const actualizarHistorial = async (id, changes) => {
-    const res = await axios.patch(endPoints.historial.update(id), changes)
-    return res.data
-}
+    const res = await axios.patch(endPoints.historial.update(id), changes);
+    return res.data;
+};
 
 const buscarHistorial = async (consecutivo) => {
     try {
         const res = await axios.get(endPoints.historial.findOne(consecutivo));
-        return res.data
+        return res.data;
     } catch (e) {
-        alert("Se ha presentado un erro al buscar el historial")
+        alert("Se ha presentado un erro al buscar el historial");
     }
-}
+};
 
 const listarHistorial = async () => {
     try {
         const res = await axios.get(endPoints.historial.list);
-        return res.data
+        return res.data;
     } catch {
-        alert("Se ha presentado un error al listar el historial")
+        alert("Se ha presentado un error al listar el historial");
     }
-}
+};
 
 const filterHistorial = async (consMovimiento) => {
     try {
         const res = await axios.get(endPoints.historial.filter(consMovimiento));
-        return res.data
+        return res.data;
     } catch {
-        alert("Se ha presentado un error al filtrar el historial")
+        alert("Se ha presentado un error al filtrar el historial");
     }
-}
+};
 
 const listarHistorialMovimientoPaginado = async (page, limit) => {
     try {
         const res = await axios.get(endPoints.historial.pagination(page, limit));
-        return res.data
+        return res.data;
     } catch {
-        alert("Error al listar Movimientos")
+        alert("Error al listar Movimientos");
     }
-}
+};
 
 const filtrarHistorialenGeneral = async (body) => {
     try{
         const res = await axios.post(endPoints.historial.generalFilter, body);
-        return res.data
+        return res.data;
     }catch{
-        alert("Error al realizar el filtrado")
+        alert("Error al realizar el filtrado");
     }
-}
+};
 
 export { agregarHistorial, 
     eliminarHistorial, 

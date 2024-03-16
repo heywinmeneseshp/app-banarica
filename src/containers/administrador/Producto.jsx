@@ -16,91 +16,91 @@ import styles from '@styles/Listar.module.css';
 
 const Producto = () => {
 
-    const refBuscador = useRef()
+    const refBuscador = useRef();
     const [producto, setProducto] = useState(null);
     const [items, setItems] = useState([]);
     const { alert, setAlert, toogleAlert } = useAlert();
-    const [open, setOpen] = useState(false)
+    const [open, setOpen] = useState(false);
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
-    const [changeAll, setChangeAll ] = useState(false)
-    const [checkbox, setCheckbox] = useState(new Array(10).fill(false))
+    const [changeAll, setChangeAll ] = useState(false);
+    const [checkbox, setCheckbox] = useState(new Array(10).fill(false));
     const limit = 10;
 
 
     useEffect(() => {
         async function listrasItems() {
-            const buscador = refBuscador.current.value
+            const buscador = refBuscador.current.value;
             const res = await axios.get(endPoints.productos.pagination(pagination, limit, buscador)); //Debo crearlo
             setTotal(res.data.total);
-            setItems(res.data.data)           
+            setItems(res.data.data);           
         }
         try {
-            listrasItems()
+            listrasItems();
         } catch (e) {
-            alert("Error al cargar los productos", "error")
+            alert("Error al cargar los productos", "error");
         }
-    }, [alert, pagination])
+    }, [alert, pagination]);
 
 
     const handleNuevo = () => {
         setOpen(true);
-        setProducto(null)
+        setProducto(null);
     };
     
     const handleEnable = () => {
-        console.log("Aja")
+        console.log("Aja");
     };
 
     const handleEditar = (item) => {
         setOpen(true);
-        setProducto(item)
+        setProducto(item);
     };
 
     const onDescargar = async ()  => {
-        const data = await listarProductos()
-        useExcel(data, "Productos", "Productos")
-    }
+        const data = await listarProductos();
+        useExcel(data, "Productos", "Productos");
+    };
 
     const handleChangeBuscardor = async (e) => {
-        setPagination(1)
+        setPagination(1);
         const name = e.target.value;
         const res = await axios.get(endPoints.productos.pagination(pagination, limit, name)); //Debo crearlo
         setTotal(res.data.total);
-        setItems(res.data.data)  
-    }
+        setItems(res.data.data);  
+    };
 
     const onChangeAll = () => {
-        setChangeAll(!changeAll)
-        setCheckbox(new Array(checkbox.length).fill(!changeAll)) 
-    }
+        setChangeAll(!changeAll);
+        setCheckbox(new Array(checkbox.length).fill(!changeAll)); 
+    };
 
     const onChangeCheckBox = (position) => {
         const updatedCheckedState = checkbox.map((item, index) =>
             index === position ? !item : item
         );
         setCheckbox(updatedCheckedState);
-    }
+    };
 
     const handleActivar = (item) => {
         try {
-            const changes = { isBlock: !item.isBlock }
+            const changes = { isBlock: !item.isBlock };
             actualizarProducto(item.id, changes);
             setAlert({
                 active: true,
                 mensaje: 'El item "' + item.consecutivo + '" se ha actualizado',
                 color: "success",
                 autoClose: true
-            })
+            });
         } catch (e) {
             setAlert({
                 active: true,
                 mensaje: 'Se ha presentado un error',
                 color: "danger",
                 autoClose: true
-            })
+            });
         }
-    }
+    };
 
     return (
         <div>
@@ -169,7 +169,7 @@ const Producto = () => {
             <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
             {open && <NuevoProducto setOpen={setOpen} setAlert={setAlert} producto={producto} />}
         </div>
-    )
-}
+    );
+};
 
 export default Producto;

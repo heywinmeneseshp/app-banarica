@@ -23,6 +23,7 @@ import AsideNotificaciones from '@assets/AsideNotificaciones';
 import { buscarUsuario } from '@services/api/usuarios';
 import Image from 'next/image';
 import Configuracion from './administrador/Configuracion';
+import Link from 'next/link';
 
 const Header = () => {
     const router = useRouter();
@@ -87,6 +88,37 @@ const Header = () => {
 
     return (
         <>
+
+
+            <nav className="navbar navbar-dark bg-dark">
+                <div className={styles.container}>
+                    <Link className={styles.brand} href="#">
+                        LogiCrak
+                    </Link>
+                    
+                    <div >
+                        <ul className={styles.menu}>
+                            <li><Link className={styles.link} href="#">Inicio</Link></li>
+                            <li><Link className={styles.link} href="#">Maestros</Link>
+                                <ul className={styles.submenu}>
+                                    <li><Link className={styles.link} href="#">Ubicaciones</Link></li>
+                                    <li><Link className={styles.link} href="#">Conductores</Link></li>
+                                    <li><Link className={styles.link} href="#">Vehiculos</Link></li>
+                                    <li><Link className={styles.link} href="#">Rutas</Link></li>
+                                    <li><Link className={styles.link} href="#">Productos</Link></li>
+                                    <li><Link className={styles.link} href="#">Categorias Vehiculos</Link></li>
+                                </ul>
+                            </li>
+                            <li><Link className={styles.link} href="#">Administrador</Link></li>
+                            <li><Link className={styles.link} href="#">Informes</Link></li>
+                        </ul>
+                    </div>
+                    <button className="btn btn-outline-light my-2 my-sm-0 btn-sm" type="submit">Cerrar</button>
+                </div>
+
+            </nav>
+
+
             <div className="header">
                 <Navbar className='justify' bg="primary" variant="dark">
 
@@ -131,7 +163,7 @@ const Header = () => {
                     </div>
 
                     <span className='display-desktop'>
-                        <Navbar.Brand onClick={inicio}>LogiCrack</Navbar.Brand>
+                        <Navbar.Brand onClick={inicio}>Transmonsa</Navbar.Brand>
                         {initialMenu.navBar &&
                             <Nav className="me-auto">
                                 {(user?.id_rol == "Super administrador") &&

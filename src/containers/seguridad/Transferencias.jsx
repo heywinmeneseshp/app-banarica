@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { useAuth } from "@hooks/useAuth";
 
 //CSS
-import styles from "@styles/Seguridad.module.css"
+import styles from "@styles/Seguridad.module.css";
 import { useEffect } from "react";
 import { listarAlmacenes } from "@services/api/almacenes";
 import { actualizarSeriales, listarProductosSeguridad, listarSeriales } from "@services/api/seguridad";
@@ -11,7 +11,7 @@ import { agregarTraslado } from "@services/api/traslados";
 import useDate from "@hooks/useDate";
 import useAlert from "@hooks/useAlert";
 import Alertas from "@assets/Alertas";
-import useSemana from "@hooks/useSemana";
+import semana from "@hooks/semana";
 import { agregarNotificaciones } from "@services/api/notificaciones";
 import { agregarHistorial } from "@services/api/historialMovimientos";
 import { encontrarModulo } from "@services/api/configuracion";
@@ -20,25 +20,25 @@ import { restar, sumar } from "@services/api/stock";
 
 
 export default function Transferencias() {
-    const limitRef = useRef()
-    const formRef = useRef()
-    const checkRef = useRef()
+    const limitRef = useRef();
+    const formRef = useRef();
+    const checkRef = useRef();
     const { almacenByUser } = useAuth();
     const [almacenes, setAlmacenes] = useState([]);
     const [tabla, setTabla] = useState([1]);
     const [total, setTotal] = useState(0);
-    const [checkAll, setCheckAll] = useState(false)
-    const [checKs, setChecks] = useState([])
+    const [checkAll, setCheckAll] = useState(false);
+    const [checKs, setChecks] = useState([]);
     const [limit, setLimit] = useState(20);
     const [productos, setProductos] = useState([]);
     const [pagination, setPagination] = useState(1);
     const { alert, setAlert, toogleAlert } = useAlert();
-    const [semana, setSemana] = useState(null)
-    const [bool, setBool] = useState(false)
+    const [semana, setSemana] = useState(null);
+    const [bool, setBool] = useState(false);
 
     useEffect(() => {
         const listar = async () => {
-            const formData = new FormData(formRef.current)
+            const formData = new FormData(formRef.current);
             const data = {
                 cons_producto: formData.get("producto"),
                 serial: formData.get("serial"),
@@ -48,26 +48,26 @@ export default function Transferencias() {
                 l_pack: formData.get("l_pack"),
                 cons_almacen: formData.get("origen"),
                 available: [true]
-            }
+            };
             listarSeriales(pagination, limit, data).then(res => {
                 setTabla(res.data);
                 setTotal(res.total);
                 const array = res.data.map(() => {
-                    return false
-                })
-                setChecks(array)
+                    return false;
+                });
+                setChecks(array);
             });
-        }
+        };
         listarAlmacenes().then(res => setAlmacenes(res));
-        listarProductosSeguridad().then(res => setProductos(res.filter(item => item.serial == true)))
+        listarProductosSeguridad().then(res => setProductos(res.filter(item => item.serial == true)));
         buscarArticulos();
         encontrarModulo("Semana").then(res => setSemana(res[0]));
-        listar()
-    }, [limit, pagination])
+        listar();
+    }, [limit, pagination]);
 
     const buscarArticulos = async () => {
-        setCheckAll(false)
-        const formData = new FormData(formRef.current)
+        setCheckAll(false);
+        const formData = new FormData(formRef.current);
         const data = {
             cons_producto: formData.get("producto"),
             serial: formData.get("serial"),
@@ -77,45 +77,45 @@ export default function Transferencias() {
             l_pack: formData.get("l_pack"),
             cons_almacen: formData.get("origen"),
             available: [true]
-        }
+        };
         listarSeriales(pagination, limit, data).then(res => {
             setTabla(res.data);
             setTotal(res.total);
             const array = res.data.map(() => {
-                return false
-            })
-            setChecks(array)
+                return false;
+            });
+            setChecks(array);
         });
-    }
+    };
 
     const onChanageBuscar = () => {
-        setPagination(1)
-        buscarArticulos()
-    }
+        setPagination(1);
+        buscarArticulos();
+    };
 
     const handleLimit = () => {
-        setPagination(1)
-        const limit = limitRef.current.value ? limitRef.current.value : 1
-        setLimit(limit)
-        setCheckAll(false)
-    }
+        setPagination(1);
+        const limit = limitRef.current.value ? limitRef.current.value : 1;
+        setLimit(limit);
+        setCheckAll(false);
+    };
 
     const handleCheckAll = () => {
-        checKs.fill(!checkAll)
-        const newChecks = checKs.map((item, index) => {
-            return !checkAll
+        checKs.fill(!checkAll);
+        const newChecks = checKs.map(() => {
+            return !checkAll;
         });
-        setChecks(newChecks)
+        setChecks(newChecks);
         setCheckAll(!checkAll);
-    }
+    };
 
     const hadleChecks = (position) => {
-        setCheckAll(false)
+        setCheckAll(false);
         const newChecks = checKs.map((item, index) =>
             index === position ? !item : item
         );
         setChecks(newChecks);
-    }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -125,33 +125,34 @@ export default function Transferencias() {
             mensaje: "No ha seleccionado ningun artículo.",
             color: "danger",
             autoClose: true
-        })
+        });
         try {
-            const formData = new FormData(formRef.current)
+            const formData = new FormData(formRef.current);
             if (formData.get("destino") == formData.get("origen")) {
                 return setAlert({
                     active: true,
                     mensaje: "El origen y el destin no pueden ser el mismo.",
                     color: "danger",
                     autoClose: true
-                })
+                });
             }
             let tranferencias = [];
-            let claves = {}
+            let claves = {};
             checKs.forEach((item, index) => {
                 if (item == true) {
+                    // eslint-disable-next-line no-prototype-builtins
                     if (claves.hasOwnProperty(tabla[index].cons_producto)) {
-                        claves[tabla[index].cons_producto] = claves[tabla[index].cons_producto] + 1
+                        claves[tabla[index].cons_producto] = claves[tabla[index].cons_producto] + 1;
                     } else {
-                        claves[tabla[index].cons_producto] = 1
+                        claves[tabla[index].cons_producto] = 1;
                     }
                     let tranferencia = tabla[index];
                     tranferencia["cons_almacen"] = formData.get("destino");
                     tranferencias.push(tabla[index]);
                 }
-            })
+            });
             await actualizarSeriales(tranferencias);
-            const semana = await useSemana(formData.get("semana"))
+            const semana = await semana(formData.get("semana"));
             const data = {
                 transportadora: "No aplica",
                 conductor: "No aplica",
@@ -164,7 +165,7 @@ export default function Transferencias() {
                 observaciones: `Precintos tranferidos al almacén ${formData.get("destino")}`,
                 semana: semana
             };
-            const traslado = await agregarTraslado(data)
+            const traslado = await agregarTraslado(data);
             const cons_traslado = traslado.data.consecutivo;
             for (const property in claves) {
                 const dataHistorial = {
@@ -196,27 +197,27 @@ export default function Transferencias() {
                 mensaje: "Transferencia realizada",
                 color: "success",
                 autoClose: false
-            })
+            });
             window.open(endPoints.document.traslados(cons_traslado));
-            setBool(true)
+            setBool(true);
         } catch (e) {
             setAlert({
                 active: true,
                 mensaje: "Error en la transferencia",
                 color: "danger",
                 autoClose: false
-            })
+            });
         }
-    }
+    };
 
     const nuevaTranferencia = async () => {
-        setBool(false)
+        setBool(false);
         setAlert({
             active: false,
-        })
-        checKs.fill(false)
-        await buscarArticulos()
-    }
+        });
+        checKs.fill(false);
+        await buscarArticulos();
+    };
 
     return (
         <>
@@ -436,7 +437,7 @@ export default function Transferencias() {
                                             <td>{item?.l_pack}</td>
                                             <td className={styles.display}>{item?.available == true ? "Disponible" : "Usado"}</td>
                                         </tr>
-                                    )
+                                    );
                                 })}
                             </tbody>
                         </table>
@@ -447,5 +448,5 @@ export default function Transferencias() {
                 </div>
             </form>
         </>
-    )
+    );
 }

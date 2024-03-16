@@ -32,48 +32,48 @@ export default function Pedidos() {
     const formRef = useRef(null);
     const [consPedido, setConsPedido] = useState(null);
     const { alert, setAlert, toogleAlert } = useAlert();
-    const [bool, setBool] = useState(false)
+    const [bool, setBool] = useState(false);
     const [observaciones, setObservaciones] = useState(null);
     const [semanaActual, setSemanaActual] = useState(null);
 
     useEffect(() => {
-        gestionPedido.initialize(almacenByUser)
-        setDate(generarFecha)
-        encontrarModulo('Semana').then(res => setSemanaActual(res[0]))
-    }, [])
+        gestionPedido.initialize(almacenByUser);
+        setDate(generarFecha);
+        encontrarModulo('Semana').then(res => setSemanaActual(res[0]));
+    }, []);
 
     function addDeposit() {
         setDeposits([...deposits, deposits.length + 1]);
     }
 
     function removeDeposit() {
-        const array = deposits.slice(0, -1)
+        const array = deposits.slice(0, -1);
         setDeposits(array);
     }
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const formData = new FormData(formRef.current)
-        const observaciones = formData.get("observaciones")
+        const formData = new FormData(formRef.current);
+        const observaciones = formData.get("observaciones");
         const week = formData.get("semana");
         const semanaR = await generarSemana(week);
-        setObservaciones(observaciones)
+        setObservaciones(observaciones);
         const data = {
             pendiente: true,
             observaciones: observaciones,
             fecha: formData.get('fecha'),
             cons_semana: semanaR,
             usuario: user.username
-        }
-        let almacenes = []
-        const res = await agregarTablePedido(data)
-        setConsPedido(res.data.consecutivo)
-        const cons_pedido = res.data.consecutivo
+        };
+        let almacenes = [];
+        const res = await agregarTablePedido(data);
+        setConsPedido(res.data.consecutivo);
+        const cons_pedido = res.data.consecutivo;
         gestionPedido.listaPedido.map((item, index) => {
-            const existe = almacenes.find(element => element == item.cons_almacen_destino)
-            if (existe == null) almacenes = [...almacenes, item.cons_almacen_destino]
-            agregarPedido(res.data.consecutivo, item)
-        })
+            const existe = almacenes.find(element => element == item.cons_almacen_destino);
+            if (existe == null) almacenes = [...almacenes, item.cons_almacen_destino];
+            agregarPedido(res.data.consecutivo, item);
+        });
         almacenes.map(async (cons_alamcen) => {
             const dataNotificacion = {
                 almacen_emisor: cons_alamcen,
@@ -83,17 +83,17 @@ export default function Pedidos() {
                 descripcion: "pendiente por recibir",
                 aprobado: false,
                 visto: false
-            }
+            };
             const res = await axios.post(endPoints.notificaciones.create, dataNotificacion);
-        })
+        });
         setAlert({
             active: true,
             mensaje: "Se ha cargado el pedido con éxito",
             color: "success",
             autoClose: false
-        })
-        setBool(true)
-    }
+        });
+        setBool(true);
+    };
 
     const nuevoMovimiento = () => {
         setDeposits([]);
@@ -102,11 +102,11 @@ export default function Pedidos() {
         setObservaciones(null);
         setAlert({
             active: false
-        })
+        });
         setTimeout(() => {
-            setDeposits([1])
-        }, 50)
-    }
+            setDeposits([1]);
+        }, 50);
+    };
 
     return (
         <>

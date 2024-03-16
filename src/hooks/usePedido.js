@@ -10,21 +10,21 @@ const usePedido = () => {
         setListaPedido([]);
         const almacenes = almacenByUser.map(item => item.consecutivo);
         const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
-        const productlist = await filtrarProductos(data)
+        const productlist = await filtrarProductos(data);
         setProductos(productlist);
         setAlmacenes(almacenByUser);
-    }
+    };
 
 
     const agregar = (data) => {
-        const newListaPedido = listaPedido.concat(data)
-        setListaPedido(newListaPedido)
+        const newListaPedido = listaPedido.concat(data);
+        setListaPedido(newListaPedido);
     };
 
     const eliminarAlmacen = (cons) => {
-        const newAlmacenes = almacenes.filter((item) => item.consecutivo !== cons)
+        const newAlmacenes = almacenes.filter((item) => item.consecutivo !== cons);
         setAlmacenes(newAlmacenes);
-    }
+    };
 
     return {
         listaPedido,

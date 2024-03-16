@@ -7,7 +7,7 @@ import styles from '@styles/Tablero.module.css';
 const BotonDespliegue = ({ funcion, nombreBoton, items }) => {
 
     useEffect(() => {
-    }, [items])
+    }, [items]);
 
     return (
         <>
@@ -24,14 +24,14 @@ const BotonDespliegue = ({ funcion, nombreBoton, items }) => {
                         let texto = item;
                         if (item == "Devolucion") texto = "Devolución";
                         if (item == "Liquidacion") texto = "Liquidación";
-                        return (<Dropdown.Item onClick={() => funcion(item)} key={index} value={item}>{texto}</Dropdown.Item>)
+                        return (<Dropdown.Item onClick={() => funcion(item)} key={index} value={item}>{texto}</Dropdown.Item>);
                     })}
                 </DropdownButton>
             }
         </>
 
-    )
+    );
 
-}
+};
 
 export default BotonDespliegue;

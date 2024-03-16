@@ -6,7 +6,7 @@ const initialAlmacenMenu = {
     pedidos: false,
     traslados: false,
     movimientos: true
-}
+};
 
 const useAdminMenu = () => {
     const [almacenMenu, setAlmacenMenu] = useState(initialAlmacenMenu);
@@ -19,8 +19,8 @@ const useAdminMenu = () => {
             pedidos: false,
             traslados: false,
             movimientos: false
-        })
-    }
+        });
+    };
 
     const handlePedidos = () => {
         setAlmacenMenu({
@@ -29,8 +29,8 @@ const useAdminMenu = () => {
             pedidos: true,
             traslados: false,
             movimientos: false
-        })
-    }
+        });
+    };
 
     const handleTraslados = () => {
         setAlmacenMenu({
@@ -39,8 +39,8 @@ const useAdminMenu = () => {
             pedidos: false,
             traslados: true,
             movimientos: false
-        })
-    }
+        });
+    };
 
     const handleMovimientos = () => {
         setAlmacenMenu({
@@ -49,8 +49,8 @@ const useAdminMenu = () => {
             pedidos: false,
             traslados: false,
             movimientos: true
-        })
-    }
+        });
+    };
 
 
     return {

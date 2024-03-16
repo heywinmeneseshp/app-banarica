@@ -17,18 +17,24 @@ export const useAuth = () => {
 
 function useProviderAuth() {
     const [user, setUser] = useState(null);
-    const [almacenByUser, setAlmacenByUser] = useState([])
+    const [almacenByUser, setAlmacenByUser] = useState([]);
     const router = useRouter();
 
     const login = async (username, password) => {
         try {
-            const { data } = await axios.post(endPoints.auth.login, { username: username, password: password })
-            const expire = 1
+            const { data } = await axios.post(endPoints.auth.login, { username: username, password: password });
+            const expire = 1;
             Cookie.set('token', data.token, { expires: expire });
-            axios.defaults.headers.Authorization = 'Bearer ' + data.token
+            axios.defaults.headers.Authorization = 'Bearer ' + data.token;
             const res = await axios.get(endPoints.auth.profile);
-            if (res.data.usuario.isBlock == true) return window.alert("El usuario esta deshabilitado, por favor comuníquese con el administrador")
-            setUser(res.data.usuario)
+            if (res.data.usuario.isBlock == true) return window.alert("El usuario esta deshabilitado, por favor comuníquese con el administrador");
+            setUser(res.data.usuario);
+
+            //Guardar usuario en local storage
+            const usuario = res.data.usuario;
+            const usuarioComoCadena = JSON.stringify(usuario);
+            localStorage.setItem('usuario', usuarioComoCadena);
+
             const almacenes = res.data.almacenes.sort((a, b) => {
                 if (a.nombre == b.nombre) {
                   return 0;
@@ -39,12 +45,14 @@ function useProviderAuth() {
                 return 1;
               });
             setAlmacenByUser(almacenes);
+            const almacenesComoCadena = JSON.stringify(almacenes);
+            localStorage.setItem('almacenByUser', almacenesComoCadena);
             router.push('/');
         } catch (e) {
             alert('Contraseña o usuario incorrecto');
         }
 
 
-    }
-    return { user, login, almacenByUser, setUser };
+    };
+    return { user, login, almacenByUser, setAlmacenByUser, setUser };
 }

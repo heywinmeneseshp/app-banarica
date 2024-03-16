@@ -33,23 +33,23 @@ export default function Recepcion({ movimiento }) {
     const { alert, setAlert, toogleAlert } = useAlert();
     const [consAlmacen, setConsAlmacen] = useState(null);
     const [consecutivo, setConsecutivo] = useState(null);
-    const [semana, setSemana] = useState(null)
-    const [observaciones, setObservaciones] = useState(null)
-    const [remision, setRemision] = useState(null)
+    const [semana, setSemana] = useState(null);
+    const [observaciones, setObservaciones] = useState(null);
+    const [remision, setRemision] = useState(null);
     const [pedido, setPedido] = useState(null);
-    const [notificaciones, setNotificaciones] = useState([])
+    const [notificaciones, setNotificaciones] = useState([]);
     const [change, setChange] = useState(false);
     const [semanaActual, setSemanaActual] = useState(null);
 
     useEffect(() => {
         async function listrasItems() {
-            const almacenes = almacenByUser.map(item => item.consecutivo)
+            const almacenes = almacenByUser.map(item => item.consecutivo);
             const notiData = {
                 "almacen_receptor": almacenes,
                 "tipo_movimiento": "Pedido",
                 "aprobado": false
-            }
-            const result = await filtrarNotificaciones(notiData)
+            };
+            const result = await filtrarNotificaciones(notiData);
             setNotificaciones(result);
             if (!movimiento) {
                 const data = { "stock": { "isBlock": false, "cons_almacen": almacenes } };
@@ -58,9 +58,9 @@ export default function Recepcion({ movimiento }) {
                 setDate(useDate());
                 encontrarModulo('Semana').then(res => setSemanaActual(res[0]));
             } else {
-                setBool(true)
+                setBool(true);
                 filterHistorial(movimiento.consecutivo).then(res => {
-                    setProducts(res)
+                    setProducts(res);
                     const movimiento = res[0].movimiento;
                     setConsecutivo(movimiento.consecutivo);
                     setSemana(movimiento.cons_semana);
@@ -68,23 +68,23 @@ export default function Recepcion({ movimiento }) {
                     setRemision(movimiento.remision);
                     setPedido(res[0].cons_pedido);
                     setConsAlmacen(res[0].cons_almacen_receptor);
-                    setDate(movimiento.fecha)
-                })
+                    setDate(movimiento.fecha);
+                });
             }
         }
         try {
-            listrasItems()
+            listrasItems();
         } catch (e) {
             alert("Error al cargar los productos");
         }
-    }, [bool, change, movimiento?.consecutivo])
+    }, [bool, change, movimiento?.consecutivo]);
 
     function addProduct() {
         setProducts([...products, products.length + 1]);
     }
 
     function removeProduct() {
-        const array = products.slice(0, -1)
+        const array = products.slice(0, -1);
         setProducts(array);
     }
 
@@ -95,26 +95,26 @@ export default function Recepcion({ movimiento }) {
 
             const formData = new FormData(formRef.current);
 
-            let existe = []
+            let existe = [];
             products.map((product, index) => {
 
-                let res = existe.find(item => formData.get(`producto-${index}`) == item)
+                let res = existe.find(item => formData.get(`producto-${index}`) == item);
                 if (res) {
-                    existe.push("Stop")
+                    existe.push("Stop");
                 }
-                existe.push(formData.get(`producto-${index}`))
-            })
+                existe.push(formData.get(`producto-${index}`));
+            });
 
-            if (existe.find(item => item == "Stop") ) return window.alert("No puede seleccionar más de 1 vez el mismo artículo")
+            if (existe.find(item => item == "Stop") ) return window.alert("No puede seleccionar más de 1 vez el mismo artículo");
 
 
-            const nombreAlmacen = formData.get("almacen")
-            const almacen = almacenByUser.find((almacen) => almacen.nombre == nombreAlmacen).consecutivo
+            const nombreAlmacen = formData.get("almacen");
+            const almacen = almacenByUser.find((almacen) => almacen.nombre == nombreAlmacen).consecutivo;
             const pedido = formData.get("pedido");
             setConsAlmacen(nombreAlmacen);
             const week = formData.get("semana");
             const semanaR = await generarSemana(week);
-            setSemana(semanaR)
+            setSemana(semanaR);
             const body = {
                 remision: formData.get("remision"),
                 fecha: formData.get("fecha"),
@@ -122,18 +122,18 @@ export default function Recepcion({ movimiento }) {
                 observaciones: formData.get("observaciones"),
                 aprobado_por: user.username,
                 realizado_por: user.username
-            }
+            };
             agregarRecepcion(body).then((res) => {
                 const consMovimiento = res.data.consecutivo;
-                setConsecutivo(consMovimiento)
-                let array = []
+                setConsecutivo(consMovimiento);
+                let array = [];
                 products.map((product, index) => {
-                    const consecutiveProdcut = formData.get(`producto-${index}`)
+                    const consecutiveProdcut = formData.get(`producto-${index}`);
                     let dataPedido = {
                         cons_producto: consecutiveProdcut,
                         cons_almacen_destino: almacen,
                         cantidad: formData.get("cantidad-" + index)
-                    }
+                    };
                     const dataHistorial = {
                         cons_movimiento: consMovimiento,
                         cons_producto: consecutiveProdcut,
@@ -143,11 +143,11 @@ export default function Recepcion({ movimiento }) {
                         tipo_movimiento: "Entrada",
                         cantidad: formData.get("cantidad-" + index),
                         cons_pedido: pedido
-                    }
+                    };
                     sumar(almacen, dataHistorial.cons_producto, dataHistorial.cantidad);
-                    agregarHistorial(dataHistorial)
-                    array.push(dataPedido)
-                })
+                    agregarHistorial(dataHistorial);
+                    array.push(dataPedido);
+                });
                 const dataNotificacion = {
                     almacen_emisor: almacen,
                     almacen_receptor: "BRC",
@@ -156,26 +156,26 @@ export default function Recepcion({ movimiento }) {
                     descripcion: "realizada",
                     aprobado: true,
                     visto: false
-                }
-                agregarNotificaciones(dataNotificacion)
-                setProducts(array)
-            })
-            setBool(true)
+                };
+                agregarNotificaciones(dataNotificacion);
+                setProducts(array);
+            });
+            setBool(true);
             setAlert({
                 active: true,
                 mensaje: "Se han cargado los datos con éxito",
                 color: "success",
                 autoClose: false
-            })
+            });
         } catch (e) {
             setAlert({
                 active: true,
                 mensaje: "Error al cargar datos",
                 color: "danger",
                 autoClose: false
-            })
+            });
         }
-    }
+    };
 
     const nuevoMovimiento = () => {
         setProducts([1]);
@@ -188,8 +188,8 @@ export default function Recepcion({ movimiento }) {
         setPedido(null);
         setAlert({
             active: false,
-        })
-    }
+        });
+    };
     return (
         <>
             <form ref={formRef} onSubmit={handleSubmit}>
@@ -343,7 +343,7 @@ export default function Recepcion({ movimiento }) {
                                         <InputGroup.Text id="inputGroup-sizing-sm">Artículo</InputGroup.Text>
                                         <Form.Select className={styles.select} id={"producto-" + key} name={"producto-" + key} size="sm" disabled={bool}>
                                             {productos.map((item, index) => {
-                                                return <option key={index} value={item.consecutivo}>{item.name}</option>
+                                                return <option key={index} value={item.consecutivo}>{item.name}</option>;
                                             })}
                                             {bool && <option >{product?.Producto?.name ? product?.Producto?.name : product?.name}</option>}
                                         </Form.Select>
@@ -365,7 +365,7 @@ export default function Recepcion({ movimiento }) {
                                     </InputGroup>
                                 </div>
                             </div>
-                        )
+                        );
                     })}
                     <div>
                         <InputGroup size="sm" className="mb-3">

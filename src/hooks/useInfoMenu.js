@@ -6,7 +6,7 @@ const initialInfoMenu = {
     stock: false,
     traslados: false,
     pedidos: false
-}
+};
 
 const useInfoMenu = () => {
     const [infoMenu, setInfoMenu] = useState(initialInfoMenu);
@@ -18,8 +18,8 @@ const useInfoMenu = () => {
             stock: false,
             traslados: false,
             pedidos: false
-        })
-    }
+        });
+    };
 
     const handleStock = () => {
         setInfoMenu({
@@ -28,8 +28,8 @@ const useInfoMenu = () => {
             stock: true,
             traslados: false,
             pedidos: false
-        })
-    }
+        });
+    };
 
     const handleTraslados = () => {
         setInfoMenu({
@@ -38,8 +38,8 @@ const useInfoMenu = () => {
             stock: false,
             traslados: true,
             pedidos: false
-        })
-    }
+        });
+    };
 
     const handlePedidos = () => {
         setInfoMenu({
@@ -48,8 +48,8 @@ const useInfoMenu = () => {
             stock: false,
             traslados: false,
             pedidos: true
-        })
-    }
+        });
+    };
 
 
     return {

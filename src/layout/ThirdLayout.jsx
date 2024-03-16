@@ -14,7 +14,7 @@ export default function ThirdLayout({ children }) {
     const { user } = useAuth();
     useEffect(() => {
         if (!user) router.push('/login');
-    }, [])
+    }, []);
     if (user) {
         return (
             <>

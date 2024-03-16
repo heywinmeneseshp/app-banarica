@@ -19,72 +19,72 @@ const Bodega = () => {
     const [almacen, setAlmacen] = useState(null);
     const [almacenes, setAlmacenes] = useState([]);
     const { alert, setAlert, toogleAlert } = useAlert();
-    const [open, setOpen] = useState(false)
+    const [open, setOpen] = useState(false);
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
     const limit = 10;
 
     useEffect(() => {
         async function listarAlmacenes() {
-            const buscador = buscardorRef.current.value
+            const buscador = buscardorRef.current.value;
             const res = await axios.get(endPoints.almacenes.pagination(pagination, limit, buscador)); //Debo crearlo
             setTotal(res.data.total);
             setAlmacenes(res.data.data);
         }
         try {
-            listarAlmacenes()
+            listarAlmacenes();
         } catch (e) {
             alert("Se ha producido un error al listar los almacenes");
         }
-    }, [alert, pagination])
+    }, [alert, pagination]);
 
 
     const handleNuevo = () => {
         setOpen(true);
-        setAlmacen(null)
+        setAlmacen(null);
     };
 
     const handleEditar = (almacen) => {
         setOpen(true);
-        setAlmacen(almacen)
+        setAlmacen(almacen);
     };
 
     const handleChangeBuscardor = async () => {
-        setPagination(1)
-        const buscador = buscardorRef.current.value
-        const res = await axios.get(endPoints.almacenes.pagination(pagination, limit, buscador))
+        setPagination(1);
+        const buscador = buscardorRef.current.value;
+        const res = await axios.get(endPoints.almacenes.pagination(pagination, limit, buscador));
         setTotal(res.data.total);
         setAlmacenes(res.data.data);
-    }
+    };
 
     const onDescargar = async () => {
         const data = await listarAlmacenes();
-        useExcel(data, "Almacenes", "Almacenes")
-    }
+        useExcel(data, "Almacenes", "Almacenes");
+    };
 
     const handleEnable = async () => {
-        alert("Boton inhabilitado")
-    }
+        alert("Boton inhabilitado");
+    };
 
     const handleActivar = (almacen) => {
         try {
-            const changes = { isBlock: !almacen.isBlock }
+            const changes = { isBlock: !almacen.isBlock };
             actualizarAlmacen(almacen.consecutivo, changes);
             setAlert({
                 active: true,
                 mensaje: 'El almacen "' + almacen.consecutivo + '" se ha actualizado',
                 color: "success",
                 autoClose: true
-            })
+            });
         } catch (e) {
             setAlert({
                 active: true,
                 mensaje: 'Se ha presentado un error',
                 color: "danger",
                 autoClose: true
-            })
+            });
         }
-    }
+    };
 
     return (
         <>
@@ -156,7 +156,7 @@ const Bodega = () => {
             <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
             {open && <NuevaBodega setOpen={setOpen} setAlert={setAlert} almacen={almacen} />}
         </>
-    )
-}
+    );
+};
 
 export default Bodega;

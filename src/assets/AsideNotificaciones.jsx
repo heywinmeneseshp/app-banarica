@@ -13,29 +13,29 @@ import endPoints from '@services/api';
 import { actualizarNotificaciones } from '@services/api/notificaciones';
 
 const AsideNotificaciones = ({ notificaciones, setNotificaciones }) => {
-    const router = useRouter()
+    const router = useRouter();
     const { gestionNotificacion } = useContext(AppContext);
 
     const abrirNoti = (data) => {
-        gestionNotificacion.ingresarNotificacion(data)
+        gestionNotificacion.ingresarNotificacion(data);
         if (data.tipo_movimiento == "Pedido") {
-            window.open(endPoints.document.pedido + "/" + data.cons_movimiento)
+            window.open(endPoints.document.pedido + "/" + data.cons_movimiento);
         } else {
-            router.push(`/Movimiento/${data.tipo_movimiento}/${data.cons_movimiento}`)
+            router.push(`/Movimiento/${data.tipo_movimiento}/${data.cons_movimiento}`);
         }
-        actualizarNotificaciones(data.id, { visto: true })
-    }
+        actualizarNotificaciones(data.id, { visto: true });
+    };
 
 
     useEffect(() => {
-    }, [])
+    }, []);
 
     const marcarTodoComoVisto = () => {
         notificaciones.map(item => {
-            actualizarNotificaciones(item.id, { visto: true })
-        })
-        setNotificaciones([])
-    }
+            actualizarNotificaciones(item.id, { visto: true });
+        });
+        setNotificaciones([]);
+    };
 
     return (
         <>
@@ -45,8 +45,8 @@ const AsideNotificaciones = ({ notificaciones, setNotificaciones }) => {
                         <div>
                             <h5 className={styles3.plus}>+ Notificaciones</h5>
                             {notificaciones.map((noti, index) => {
-                                let newData = noti
-                                newData.almacen_receptor = noti.almacen_emisor
+                                let newData = noti;
+                                newData.almacen_receptor = noti.almacen_emisor;
                                 return (
                                     <div key={index}>
                                         <div className={styles2.alert} variant="success">
@@ -59,7 +59,7 @@ const AsideNotificaciones = ({ notificaciones, setNotificaciones }) => {
                                         </div>
                                     </ div>
 
-                                )
+                                );
                             })}
                         </div>
                     </div>

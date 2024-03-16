@@ -19,65 +19,65 @@ const Combo = () => {
     const [item, setItem] = useState(null);
     const [items, setItems] = useState([]);
     const { alert, setAlert, toogleAlert } = useAlert();
-    const [open, setOpen] = useState(false)
+    const [open, setOpen] = useState(false);
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
     const limit = 10;
 
     useEffect(() => {
         try {
-            listarItems(pagination, limit)
+            listarItems(pagination, limit);
         } catch (e) {
-            alert("Error al cargar los combos", "error")
+            alert("Error al cargar los combos", "error");
         }
-    }, [alert, pagination])
+    }, [alert, pagination]);
 
     async function listarItems(page, limit) {
-        const nombre = buscardorRef.current.value
-        const res = await paginarCombos(page, limit, nombre)
+        const nombre = buscardorRef.current.value;
+        const res = await paginarCombos(page, limit, nombre);
         setTotal(res.total);
-        setItems(res.data)
+        setItems(res.data);
     }
 
     const handleNuevo = () => {
         setOpen(true);
-        setItem(null)
+        setItem(null);
     };
 
     const handleEditar = (item) => {
         setOpen(true);
-        setItem(item)
+        setItem(item);
     };
 
     const buscar = async () => {
-        setPagination(1)
-        listarItems(pagination, limit)
-    }
+        setPagination(1);
+        listarItems(pagination, limit);
+    };
 
     const onDescargar = async () => {
-        const data = await listarCombos()
-        useExcel(data, "Combos", "Combos")
-     }
+        const data = await listarCombos();
+        useExcel(data, "Combos", "Combos");
+     };
 
     const handleActivar = (item) => {
         try {
-            const changes = { isBlock: !item.isBlock }
+            const changes = { isBlock: !item.isBlock };
             actualizarCombos(item.consecutivo, changes);
             setAlert({
                 active: true,
                 mensaje: 'El item "' + item.consecutivo + '" se ha actualizado',
                 color: "success",
                 autoClose: true
-            })
+            });
         } catch (e) {
             setAlert({
                 active: true,
                 mensaje: 'Se ha presentado un error',
                 color: "danger",
                 autoClose: true
-            })
+            });
         }
-    }
+    };
 
     return (
         <div>
@@ -135,7 +135,7 @@ const Combo = () => {
             <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
             {open && <NuevoCombo setOpen={setOpen} setAlert={setAlert} item={item} />}
         </div>
-    )
-}
+    );
+};
 
 export default Combo;

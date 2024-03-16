@@ -20,7 +20,7 @@ const Categoria = () => {
     const [item, setItem] = useState(null);
     const [items, setItems] = useState([]);
     const { alert, setAlert, toogleAlert } = useAlert();
-    const [open, setOpen] = useState(false)
+    const [open, setOpen] = useState(false);
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
     const limit = 10;
@@ -29,62 +29,62 @@ const Categoria = () => {
         try {
             listrasItems(pagination, limit).then((res) => {
                 setTotal(res.total);
-                setItems(res.data)
-            })
+                setItems(res.data);
+            });
         } catch (e) {
             alert("Se ha producido un error al listar las categorías");
         }
-    }, [alert, pagination])
+    }, [alert, pagination]);
 
     async function listrasItems(page, limit) {
-        const nombre = buscardorRef.current.value
-        const res = await filtrarCategorias(page, limit, nombre)
-        return res
+        const nombre = buscardorRef.current.value;
+        const res = await filtrarCategorias(page, limit, nombre);
+        return res;
     }
 
 
     const handleNuevo = () => {
         setOpen(true);
-        setItem(null)
+        setItem(null);
     };
 
     const handleEditar = (item) => {
         setOpen(true);
-        setItem(item)
+        setItem(item);
     };
 
     const buscar = async () => {
-        setPagination(1)
+        setPagination(1);
         listrasItems(pagination, limit).then((res) => {
             setTotal(res.total);
-            setItems(res.data)
-        })
-    }
+            setItems(res.data);
+        });
+    };
 
     const onDescargar = async () => {
-       const data = await listarCategorias()
-       useExcel(data, "Categorías", "Categorias")
-    }
+       const data = await listarCategorias();
+       useExcel(data, "Categorías", "Categorias");
+    };
 
     const handleActivar = (item) => {
         try {
-            const changes = { isBlock: !item.isBlock }
+            const changes = { isBlock: !item.isBlock };
             actualizarCategorias(item.consecutivo, changes);
             setAlert({
                 active: true,
                 mensaje: 'El item "' + item.consecutivo + '" se ha actualizado',
                 color: "success",
                 autoClose: true
-            })
+            });
         } catch (e) {
             setAlert({
                 active: true,
                 mensaje: 'Se ha presentado un error',
                 color: "danger",
                 autoClose: true
-            })
+            });
         }
-    }
+    };
     return (
         <>
             <div>
@@ -143,7 +143,7 @@ const Categoria = () => {
             <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
             {open && <NuevaCategoria setOpen={setOpen} setAlert={setAlert} item={item} />}
         </>
-    )
-}
+    );
+};
 
 export default Categoria;

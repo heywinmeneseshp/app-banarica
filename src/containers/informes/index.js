@@ -21,5 +21,5 @@ export default function Informes() {
             {initialInfoMenu.infoMenu.traslados && <InfoTraslados />}
             {initialInfoMenu.infoMenu.pedidos && <InfoPedidos />}
         </>
-    )
+    );
 }

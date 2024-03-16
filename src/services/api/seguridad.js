@@ -1,5 +1,3 @@
-import Almacen from '@containers/almacen';
-import useDate from '@hooks/useDate';
 import axios from 'axios';
 import { agregarHistorial } from './historialMovimientos';
 import endPoints from './index';
@@ -11,48 +9,48 @@ const config = {
         accept: 'application/json',
         'Content-Type': 'application/json'
     }
-}
+};
 
 
 const encontrarUnSerial = async (data) => {
-    const res = await axios.post(endPoints.seguridad.encontrarSerial, data)
-    return res.data
-}
+    const res = await axios.post(endPoints.seguridad.encontrarSerial, data);
+    return res.data;
+};
 
 const listarSeriales = async (offset, limit, body) => {
     try {
-        let data = { data: body }
-        if (limit) data = { ...data, pagination: { offset: offset, limit: limit } }
+        let data = { data: body };
+        if (limit) data = { ...data, pagination: { offset: offset, limit: limit } };
         const response = await axios.post(endPoints.seguridad.listarSeriales, data, config);
         return response.data;
     } catch (err) {
-        alert("Error al listar seriales")
+        alert("Error al listar seriales");
     }
-}
+};
 
 const listarUsuariosSeguridad = async (offset, limit, username) => {
     try {
         const response = await axios.post(endPoints.seguridad.listarUsuarios, { offset, limit, username }, config);
         return response.data;
     } catch (err) {
-        alert("Error al listar usuario seguridad")
+        alert("Error al listar usuario seguridad");
     }
-}
+};
 
 const cargarSeriales = async (dataExcel, remision, pedido, semana, fecha, observaciones, username) => {
     try {
-        const res = dataExcel.find(item => item.cons_producto == null)
-        if (res?.cons_producto === null) return { message: "Existen artículos sin código ID.", bool: false }
-        await axios.post(endPoints.seguridad.CargarSeriales, dataExcel)
-        let data = {}
+        const res = dataExcel.find(item => item.cons_producto == null);
+        if (res?.cons_producto === null) return { message: "Existen artículos sin código ID.", bool: false };
+        await axios.post(endPoints.seguridad.CargarSeriales, dataExcel);
+        let data = {};
         dataExcel.map((item) => {
             if (data?.[item.cons_producto]) {
-                data[item.cons_producto] = data?.[item.cons_producto] + 1
+                data[item.cons_producto] = data?.[item.cons_producto] + 1;
             } else {
-                data[item.cons_producto] = 1
+                data[item.cons_producto] = 1;
             }
-        })
-        const productList = Object.keys(data)
+        });
+        const productList = Object.keys(data);
         const body = {
             remision: remision,
             fecha: fecha,
@@ -60,10 +58,10 @@ const cargarSeriales = async (dataExcel, remision, pedido, semana, fecha, observ
             observaciones: observaciones,
             aprobado_por: username,
             realizado_por: username
-        }
+        };
 
         agregarRecepcion(body).then((res) => {
-            console.log(res)
+            console.log(res);
             productList.map(item => {
                 const almacen = dataExcel[1].cons_almacen;
                 const cons_producto = item;
@@ -78,66 +76,66 @@ const cargarSeriales = async (dataExcel, remision, pedido, semana, fecha, observ
                     tipo_movimiento: "Entrada",
                     cantidad: cantidad,
                     cons_pedido: pedido
-                }
+                };
                 sumar(almacen, cons_producto, cantidad);
-                agregarHistorial(dataHistorial)
-            })
-        })
-        return { message: "Se han cargado los datos con éxito.", bool: true }
+                agregarHistorial(dataHistorial);
+            });
+        });
+        return { message: "Se han cargado los datos con éxito.", bool: true };
     } catch (e) {
-        console.log(e)
-        throw e
+        console.log(e);
+        throw e;
     }
 
-}
+};
 
 const actualizarSeriales = async (dataList) => {
     try {
         const response = await axios.patch(endPoints.seguridad.ActualizarSeriales, dataList);
-        return response.data
+        return response.data;
     } catch (e) {
-        alert("Error al actualizar data list")
+        alert("Error al actualizar data list");
     }
-}
+};
 
 const listarProductosSeguridad = async () => {
     try {
         const response = await axios.get(endPoints.seguridad.listarProductos);
-        return response.data
+        return response.data;
     } catch (e) {
-        alert("Error al listar productos de seguridad")
+        alert("Error al listar productos de seguridad");
     }
-}
+};
 
 const verificarAndActualizarSeriales = async (data, cons_almacen) => {
-    let updatedData = []
+    let updatedData = [];
     for (let property in data) {
         if (data[property]) {
             let newData = {
                 serial: data[property],
                 available: false,
                 cons_almacen: cons_almacen
-            }
-            property = property.includes("Precinto plástico") ? "Precinto plástico" : property
-            const existe = await encontrarUnSerial({ serial: newData.serial, producto: { name: property } })
-            console.log(existe)
+            };
+            property = property.includes("Precinto plástico") ? "Precinto plástico" : property;
+            const existe = await encontrarUnSerial({ serial: newData.serial, producto: { name: property } });
+            console.log(existe);
             if (existe == null) {
                 if (confirm(`No existe ${property} con serial ${newData.serial} ¿Desea corregir el serial?`)) {
-                    newData.serial = prompt(`Por favor, corrija el serial, ${property}:`, newData.serial)
-                    const res = await encontrarUnSerial({ producto: { name: property } })
-                    newData['cons_producto'] = res?.producto.consecutivo
+                    newData.serial = prompt(`Por favor, corrija el serial, ${property}:`, newData.serial);
+                    const res = await encontrarUnSerial({ producto: { name: property } });
+                    newData['cons_producto'] = res?.producto.consecutivo;
                 } else {
-                    const { producto } = await encontrarUnSerial({ producto: { name: property } })
-                    newData['cons_producto'] = producto.consecutivo
+                    const { producto } = await encontrarUnSerial({ producto: { name: property } });
+                    newData['cons_producto'] = producto.consecutivo;
                 }
             } else {
-                newData['cons_producto'] = existe.producto.consecutivo
+                newData['cons_producto'] = existe.producto.consecutivo;
             }
-            updatedData.push(newData)
+            updatedData.push(newData);
         }
     };
-    return updatedData
-}
+    return updatedData;
+};
 
 const exportarArticulosConSerial = async (updatedSeriales, cons_almacen, cons_movimiento) => {
     const res = await actualizarSeriales(updatedSeriales);
@@ -153,11 +151,11 @@ const exportarArticulosConSerial = async (updatedSeriales, cons_almacen, cons_mo
                  razon_movimiento: "Exportación",
                  cantidad: 1
              };
-             agregarHistorial(dataHistorial)
-             restar(element.previous.cons_almacen, dataHistorial.cons_producto, dataHistorial.cantidad)
+             agregarHistorial(dataHistorial);
+             restar(element.previous.cons_almacen, dataHistorial.cons_producto, dataHistorial.cantidad);
          }
      });
-}
+};
 
 
 

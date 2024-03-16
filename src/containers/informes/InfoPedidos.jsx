@@ -23,52 +23,52 @@ export default function InfoPedidos() {
     const formRef = useRef();
     const { almacenByUser } = useAuth();
     const [pedidos, setPedidos] = useState([1]);
-    const [categorias, setCategorias] = useState([])
+    const [categorias, setCategorias] = useState([]);
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
     const limit = 20;
 
     useEffect(() => {
         try {
-            listarCategorias().then(res => setCategorias(res))
-            listarItems(pagination, limit)
+            listarCategorias().then(res => setCategorias(res));
+            listarItems(pagination, limit);
 
 
         } catch (e) {
-            alert("Error al cargar los pedidos en la tabla", "error")
+            alert("Error al cargar los pedidos en la tabla", "error");
         }
-    }, [pagination])
+    }, [pagination]);
 
     const listarItems = async (page, limit) => {
-        const formData = new FormData(formRef.current)
-        const categoria = formData.get("categoria")
-        const producto = formData.get("articulo")
-        let semana = formData.get("semana")
+        const formData = new FormData(formRef.current);
+        const categoria = formData.get("categoria");
+        const producto = formData.get("articulo");
+        let semana = formData.get("semana");
         const anho = formData.get("anho");
         if (semana) {
-            semana = `S${semana}-${anho}`
+            semana = `S${semana}-${anho}`;
         } else {
-            semana = anho
+            semana = anho;
         }
-        let almacen = formData.get("almacen")
-        if (almacen == "All") almacen = almacenByUser.map(item => item.consecutivo)
+        let almacen = formData.get("almacen");
+        if (almacen == "All") almacen = almacenByUser.map(item => item.consecutivo);
         if (page && limit) {
-            const { total, data } = await filtrarPedidos(page, limit, almacen, categoria, producto, semana)
-            setTotal(total)
-            setPedidos(data)
+            const { total, data } = await filtrarPedidos(page, limit, almacen, categoria, producto, semana);
+            setTotal(total);
+            setPedidos(data);
         } else {
-            return await filtrarPedidos(null, null, almacen, categoria, producto, semana)
+            return await filtrarPedidos(null, null, almacen, categoria, producto, semana);
         }
-    }
+    };
 
     const onDescargar = async () => {
-        const formData = new FormData(formRef.current)
-        const consecutivo = formData.get("consecutivo")
-        window.open(process.env.NEXT_PUBLIC_OWN_URL + "/Documento/Pedido/" + consecutivo)
-    }
+        const formData = new FormData(formRef.current);
+        const consecutivo = formData.get("consecutivo");
+        window.open(process.env.NEXT_PUBLIC_OWN_URL + "/Documento/Pedido/" + consecutivo);
+    };
 
     const onDescargarExcel = async () => {
-        const data = await listarItems()
+        const data = await listarItems();
         const newData = data.map(item => {
             return {
                 "Consecutivo": item?.tabla?.consecutivo,
@@ -80,10 +80,10 @@ export default function InfoPedidos() {
                 "Fecha": item?.tabla?.fecha,
                 "Estado": item?.tabla?.pendiente ? "Abierto" : "Cerrado",
                 "Realizado por": item?.tabla?.usuario
-            }
-        })
-        useExcel(newData,"Pedidos", `Historial de pedidos`)
-    }
+            };
+        });
+        useExcel(newData,"Pedidos", `Historial de pedidos`);
+    };
 
     return (
         <>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import Cookie from 'js-cookie';
 //Services
 import { actualizarUsuario } from '@services/api/usuarios';
 import endPoints from '@services/api';
@@ -9,7 +10,7 @@ import Alertas from '@assets/Alertas';
 import Paginacion from '@components/Paginacion';
 //Hooks
 import useAlert from '@hooks/useAlert';
-import useExcel from "@hooks/useExcel"
+import useExcel from "@hooks/useExcel";
 //Bootstrap
 //CSS
 import styles from '@styles/Listar.module.css';
@@ -19,65 +20,81 @@ const Users = () => {
     const [user, setUser] = useState(null);
     const [usuarios, setUsuarios] = useState([]);
     const { alert, setAlert, toogleAlert } = useAlert();
-    const [open, setOpen] = useState(false)
+    const [open, setOpen] = useState(false);
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
     const limit = 10;
 
+
     useEffect(() => {
-        try {
-            listarUsurios()
-        } catch (e) {
-            alert("Error al cargar los usuarios", "error")
-        }
-    }, [alert, pagination])
+        const fetchData = async () => {
+            try {
+                var token = Cookie.get('token');
+                axios.defaults.headers.Authorization = 'Bearer ' + token;
+                const res = await axios.get(endPoints.auth.profile);
+                if (res.data.usuario.isBlock) {
+                    window.alert("El usuario está deshabilitado, por favor comuníquese con el administrador");
+                    return;
+                }
+                setUser(res.data.usuario);
+                listarUsurios();
+            } catch (error) {
+                window.alert("Error al cargar los usuarios: " + error.message);
+            }
+        };
+    
+        fetchData();
+    }, [alert, pagination]);
+    
+
+    
 
     async function listarUsurios() {
-        const username = buscardorRef.current.value
+        const username = buscardorRef.current.value;
         const res = await axios.get(endPoints.usuarios.pagination(pagination, limit, username));
         setTotal(res.data.total);
         setUsuarios(res.data.data);
     }
 
     const onChangeBuscador = () => {
-        setPagination(1)
-        listarUsurios()
-    } 
+        setPagination(1);
+        listarUsurios();
+    }; 
 
     const handleNuevo = async () => {
         setOpen(true);
-        setUser(null)
+        setUser(null);
     };
 
     const handleEditar = async (usuario) => {
         setOpen(true);
-        setUser(usuario)
+        setUser(usuario);
     };
 
     const onDescargar = async () => {
         const { data } = await axios.get(endPoints.usuarios.list);
-        useExcel(data, "Usuarios", "Usuarios")
-    }
+        useExcel(data, "Usuarios", "Usuarios");
+    };
 
     const handleActivar = (usuario) => {
         try {
-            const changes = { isBlock: !usuario.isBlock }
+            const changes = { isBlock: !usuario.isBlock };
             actualizarUsuario(usuario.username, changes);
             setAlert({
                 active: true,
                 mensaje: 'El usuario "' + usuario.username + '" se ha actualizado',
                 color: "success",
                 autoClose: true
-            })
+            });
         } catch (e) {
             setAlert({
                 active: true,
                 mensaje: 'Se ha presentado un error',
                 color: "danger",
                 autoClose: true
-            })
+            });
         }
-    }
+    };
 
     return (
         <div className='container'>
@@ -138,7 +155,7 @@ const Users = () => {
             {open && <NuevoUsuario setOpen={setOpen} setAlert={setAlert} user={user} />}
 
         </div>
-    )
-}
+    );
+};
 
 export default Users;

@@ -23,7 +23,7 @@ const useAdminMenu = () => {
             codigos.push(`${concat}${pallet}${digitoControl}`);
         }
         return codigos;
-    }
+    };
 
 
     return {

@@ -10,58 +10,58 @@ const agregarCombos = async (body) => {
     };
     const response = await axios.post(endPoints.combos.create, body, config);
     return response.data;
-}
+};
 
 const eliminarCombos = async (consecutivo) => {
     const res = await axios.delete(endPoints.combos.delete(consecutivo));
-    return res.data
-}
+    return res.data;
+};
 
 const actualizarCombos = async (id, changes) => {
-    const res = await axios.patch(endPoints.combos.update(id), changes)
-    return res.data
-}
+    const res = await axios.patch(endPoints.combos.update(id), changes);
+    return res.data;
+};
 
 const buscarCombos = async (consecutivo) => {
     try {
         const res = await axios.get(endPoints.combos.findOne(consecutivo));
-        return res.data
+        return res.data;
     } catch (e) {
-        alert("Se ha presentado un error al buscar el combo")
+        alert("Se ha presentado un error al buscar el combo");
     }
-}
+};
 
 const buscarComboArmado = async (consecutivo) => {
     try {
-        const res = await axios.get(endPoints.combos.findOneAsembled(consecutivo))
-        return res.data
+        const res = await axios.get(endPoints.combos.findOneAsembled(consecutivo));
+        return res.data;
     } catch (e) {
-        alert("Se ha presentado un erro al buscar el combo armado")
+        alert("Se ha presentado un erro al buscar el combo armado");
     }
-}
+};
 
 const listarCombos = async () => {
     try {
         const res = await axios.get(endPoints.combos.list);
-        return res.data
+        return res.data;
     } catch {
-        alert("Se ha presentado un erro al listar los combos")
+        alert("Se ha presentado un erro al listar los combos");
     }
-}
+};
 
 const armarCombo = async (cons_combo, cons_producto) => {
     const res = await axios.post(endPoints.combos.assemble, { cons_combo, cons_producto });
-    return res.data
-}
+    return res.data;
+};
 
 const paginarCombos = async (page, limit, nombre) => {
     try {
-        const res = await axios.get(endPoints.combos.pagination(page,limit,nombre))
-        return res.data
+        const res = await axios.get(endPoints.combos.pagination(page,limit,nombre));
+        return res.data;
     } catch {
-        alert("Error al paginar combos")
+        alert("Error al paginar combos");
     }
-}
+};
 
 export {
     agregarCombos,

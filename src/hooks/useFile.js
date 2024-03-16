@@ -5,7 +5,7 @@ export default function useFile() {
 
     const ordenarExcelSerial = (data, cons_almacen, cons_producto) => {
         if (cons_producto == 0) {
-            data.shift()
+            data.shift();
             const newList = data.map(item => {
                 const data = {
                     cons_producto: item[0],
@@ -16,12 +16,12 @@ export default function useFile() {
                     l_pack: item[5] ? item[5] : "null",
                     cons_almacen: cons_almacen,
                     available: true
-                }
-                return data
-            })
-            return newList
+                };
+                return data;
+            });
+            return newList;
         } else {
-            data.shift()
+            data.shift();
             const newList = data.map(item => {
                 const data = {
                     cons_producto: cons_producto,
@@ -32,16 +32,16 @@ export default function useFile() {
                     l_pack: item[5] ? item[5] : "null",
                     cons_almacen: cons_almacen,
                     available: true
-                }
-                return data
-            })
-            return newList
+                };
+                return data;
+            });
+            return newList;
         }
 
-    }
+    };
 
     return {
         ordenarExcelSerial
-    }
+    };
 }
 

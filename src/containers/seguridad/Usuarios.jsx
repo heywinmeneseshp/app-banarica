@@ -9,7 +9,7 @@ import Alertas from '@assets/Alertas';
 import Paginacion from '@components/Paginacion';
 //Hooks
 import useAlert from '@hooks/useAlert';
-import useExcel from "@hooks/useExcel"
+import excel from "@hooks/useExcel";
 //Bootstrap
 //CSS
 import styles from '@styles/Listar.module.css';
@@ -20,7 +20,7 @@ const Usuarios = () => {
     const [user, setUser] = useState(null);
     const [usuarios, setUsuarios] = useState([]);
     const { alert, setAlert, toogleAlert } = useAlert();
-    const [open, setOpen] = useState(false)
+    const [open, setOpen] = useState(false);
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
     const [autorizacion, setAutorizacion] = useState(null);
@@ -28,61 +28,61 @@ const Usuarios = () => {
 
     useEffect(() => {
         try {
-            listarUsurios()
+            listarUsurios();
         } catch (e) {
-            alert("Error al cargar los usuarios", "error")
+            alert("Error al cargar los usuarios", "error");
         }
-    }, [alert, pagination])
+    }, [alert, pagination]);
 
 
     async function listarUsurios() {
-        const username = buscardorRef.current.value
-        const res = await listarUsuariosSeguridad(pagination, limit, username)
+        const username = buscardorRef.current.value;
+        const res = await listarUsuariosSeguridad(pagination, limit, username);
         setTotal(res.total);
         setUsuarios(res.data);
     }
 
     const onChangeBuscador = () => {
-        setPagination(1)
-        listarUsurios()
-    } 
+        setPagination(1);
+        listarUsurios();
+    }; 
 
     const handleNuevo = async () => {
         setOpen(true);
         setUser(null);
-        setAutorizacion("Super seguridad")
+        setAutorizacion("Super seguridad");
     };
 
     const handleEditar = async (usuario) => {
         setOpen(true);
-        setUser(usuario)
-        setAutorizacion("Super seguridad")
+        setUser(usuario);
+        setAutorizacion("Super seguridad");
     };
 
     const onDescargar = async () => {
         const { data } = await axios.get(endPoints.usuarios.list);
-        useExcel(data, "Usuarios", "Usuarios")
-    }
+        excel(data, "Usuarios", "Usuarios");
+    };
 
     const handleActivar = (usuario) => {
         try {
-            const changes = { isBlock: !usuario.isBlock }
+            const changes = { isBlock: !usuario.isBlock };
             actualizarUsuario(usuario.username, changes);
             setAlert({
                 active: true,
                 mensaje: 'El usuario "' + usuario.username + '" se ha actualizado',
                 color: "success",
                 autoClose: true
-            })
+            });
         } catch (e) {
             setAlert({
                 active: true,
                 mensaje: 'Se ha presentado un error',
                 color: "danger",
                 autoClose: true
-            })
+            });
         }
-    }
+    };
 
     return (
         <div className='container'>
@@ -121,7 +121,7 @@ const Usuarios = () => {
                     {usuarios.map((usuario, index) => (
                         <tr key={index} >
                             <td><input type="checkbox" id="topping" name="topping" value="Paneer" /></td>
-                            <td scope="row">{usuario.id}</td>
+                            <td >{usuario.id}</td>
                             <td>{usuario.nombre + " " + usuario.apellido}</td>
                             <td>{usuario.username}</td>
                             <td>{usuario.id_rol}</td>
@@ -143,7 +143,7 @@ const Usuarios = () => {
             {open && <NuevoUsuario setOpen={setOpen} setAlert={setAlert} user={user}autorizacion={autorizacion}/>}
 
         </div>
-    )
-}
+    );
+};
 
 export default Usuarios;
