@@ -32,7 +32,7 @@ const consultarConsumo = async () => {
         const res = await axios.get(endPoints.record_consumo.consultarConsumo);
         return res.data;
     } catch {
-        alert("Consulta de consumo exitosa");
+        return [];
     }
 };
 

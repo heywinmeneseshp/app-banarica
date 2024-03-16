@@ -143,7 +143,7 @@ const FuelConsumptionDashboard = () => {
         <div className="row">
           {vehiculos.map((item, index) => {
             const stockTeorico = item.programacion[0].vehiculo.combustible - item.consumo + (item.tanqueo ? item.tanqueo : 0);
-            if (item) {
+        
               return (
                 <Card
                   key={index}
@@ -162,7 +162,7 @@ const FuelConsumptionDashboard = () => {
                   vehiculos={vehiculos}
                 />
               );
-            }
+            
           }
           )}
         </div>
