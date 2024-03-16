@@ -11,7 +11,7 @@ import { agregarTraslado } from "@services/api/traslados";
 import useDate from "@hooks/useDate";
 import useAlert from "@hooks/useAlert";
 import Alertas from "@assets/Alertas";
-import uSemana from "@hooks/semana";
+import uSemana from "@hooks/useSemana";
 import { agregarNotificaciones } from "@services/api/notificaciones";
 import { agregarHistorial } from "@services/api/historialMovimientos";
 import { encontrarModulo } from "@services/api/configuracion";
