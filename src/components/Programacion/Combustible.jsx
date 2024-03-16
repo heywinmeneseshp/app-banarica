@@ -7,7 +7,7 @@ import FormulariosProgramacion from '@components/shared/Formularios/FormularioPr
 import RutasEnCero from '@assets/RutasEnCero';
 import Alertas from '@assets/Alertas';
 
-import { listarProgramaciones, paginarProgramaciones } from '@services/api/programaciones';
+import { paginarProgramaciones } from '@services/api/programaciones';
 import { listarUbicaciones } from '@services/api/ubicaciones';
 import { listarConductores } from '@services/api/conductores';
 import useAlert from '@hooks/useAlert';

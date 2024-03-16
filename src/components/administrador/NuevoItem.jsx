@@ -8,7 +8,7 @@ import { Button } from 'react-bootstrap';
 //CSS
 import styles from '@styles/NuevoCombo.module.css';
 
-export default function NuevoCombo({ setAlert, setOpen, item }) {
+export default function NuevoCombo({ setAlert, setOpen, element }) {
     const formRef = useRef(null);
     const [item, setItems] = useState([]);
     const [productos, setProductos] = useState([]);
@@ -20,7 +20,7 @@ export default function NuevoCombo({ setAlert, setOpen, item }) {
                 const productosResponse = await listarProductos();
                 setProductos(productosResponse);
     
-                if (item) {
+                if (element) {
                     const comboArmadoResponse = await buscarComboArmado(item.consecutivo);
                     comboArmadoResponse.forEach((comboItem) => {
                         const producto = comboItem.cons_producto;
@@ -137,7 +137,7 @@ export default function NuevoCombo({ setAlert, setOpen, item }) {
 
                         {!item &&
                             item.map((item, key) => (
-                                <div item={item} key={key} className={styles.contenedor2}>
+                                <div key={key} className={styles.contenedor2}>
                                     <div className="mb-3 input-group input-group-sm">
                                         <label htmlFor={'cons_product-' + key} className="input-group-text" id="inputGroup-sizing-sm">Cod</label>
                                         <input id={'cons_product-' + key} name={'cons_product-' + key} aria-label="Small" aria-describedby="inputGroup-sizing-sm" className="form-control" disabled></input>

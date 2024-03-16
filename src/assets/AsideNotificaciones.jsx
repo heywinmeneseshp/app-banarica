@@ -26,6 +26,12 @@ const AsideNotificaciones = ({ notificaciones, setNotificaciones }) => {
         actualizarNotificaciones(data.id, { visto: true });
     };
 
+    const handleKeyDown = (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            marcarTodoComoVisto();
+        }
+    };
+
 
     useEffect(() => {
     }, []);
@@ -49,7 +55,7 @@ const AsideNotificaciones = ({ notificaciones, setNotificaciones }) => {
                                 newData.almacen_receptor = noti.almacen_emisor;
                                 return (
                                     <div key={index}>
-                                        <div className={styles2.alert} variant="success">
+                                        <div className={styles2.alert} >
                                             <div >
                                                 <b>{noti.almacen_emisor} -</b> {noti.tipo_movimiento} <b>{noti.cons_movimiento}</b> {noti.descripcion}
                                             </div>
@@ -64,7 +70,14 @@ const AsideNotificaciones = ({ notificaciones, setNotificaciones }) => {
                         </div>
                     </div>
                     <div className={styles.marcar_leido}>
-                        <h6 onClick={marcarTodoComoVisto}>Marcar todo como visto</h6>                      
+                        <h6 
+                 
+                         onKeyDown={handleKeyDown}
+                         tabIndex={0} // Hace que el elemento sea enfocable
+                         // eslint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role
+                         role="button" // Indica que el elemento es interactivo
+                         style={{ cursor: 'pointer' }} //
+                        onClick={marcarTodoComoVisto}>Marcar todo como visto</h6>                      
                     </div>
 
                 </div>

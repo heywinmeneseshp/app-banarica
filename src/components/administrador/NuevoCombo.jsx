@@ -134,7 +134,7 @@ export default function NuevoCombo({ setAlert, setOpen, item }) {
 
                         {!item &&
                             products.map((item, key) => (
-                                <div item={item} key={key} className={styles.contenedor2}>
+                                <div key={key} className={styles.contenedor2}>
                                     <div className="mb-3 input-group input-group-sm">
                                         <label htmlFor={'cons_product-' + key} className="input-group-text" id="inputGroup-sizing-sm">Cod</label>
                                         <input id={'cons_product-' + key} name={'cons_product-' + key} aria-label="Small" aria-describedby="inputGroup-sizing-sm" className="form-control" disabled></input>

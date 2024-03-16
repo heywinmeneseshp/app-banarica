@@ -6,10 +6,8 @@ import Paginacion from '@components/shared/Tablas/Paginacion';
 import FormulariosProgramacion from '@components/shared/Formularios/FormularioProgramacion';
 import Alertas from '@assets/Alertas';
 
-import { listarProgramaciones, paginarProgramaciones } from '@services/api/programaciones';
-import { listarUbicaciones } from '@services/api/ubicaciones';
 import { listarConductores } from '@services/api/conductores';
-import { listarRecord_consumo, paginarRecord_consumo } from '@services/api/record_consumo';
+import {  paginarRecord_consumo } from '@services/api/record_consumo';
 import useAlert from '@hooks/useAlert';
 
 
@@ -18,7 +16,6 @@ export default function Programador() {
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
     const [limit, setLimit] = useState(25);
-    const [ubicaciones, setUbicaciones] = useState([]);
     const [itemList, setItemsList] = useState([]);
     const [conductores, setConductores] = useState([]);
     const [open, setOpen] = useState(false);
@@ -35,9 +32,7 @@ export default function Programador() {
 
     const listar = async () => {
         const formData = new FormData(formRef.current);
-        const newUbicaciones = await listarUbicaciones();
         const newConductores = await listarConductores();
-        setUbicaciones(newUbicaciones);
         setConductores(newConductores);
 
 
