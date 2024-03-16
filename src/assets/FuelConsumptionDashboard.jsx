@@ -18,15 +18,15 @@ const Card = ({ setChange, change, vehiculos, rutasSinLiquidar, record_consumo_i
 
   useEffect(() => {
   }, []);
-  
+
   const liquidar = async () => {
 
     const routesWithoutConsumption = rutasSinLiquidar.filter(item => item.ruta.galones_por_ruta[0].galones_por_ruta === null);
     if (routesWithoutConsumption.length > 0) {
       return alert("Error: existen rutas sin consumo asignado.");
     }
-   
-   const filteredVehicles = vehiculos
+
+    const filteredVehicles = vehiculos
       .filter(item => item.placa === title && new Date(item.fecha) < new Date(date));
     if (filteredVehicles.length > 0) {
       return alert("Aún hay pendientes de liquidación de días anteriores.");
@@ -140,32 +140,32 @@ const FuelConsumptionDashboard = () => {
       <Alertas alert={alert} handleClose={toogleAlert} />
       <div className="container" style={{ minWidth: '90vw' }}>
         <h1 className="text-center mb-4">Consumo por Vehículo</h1>
-       { (vehiculos.length > 0) && <div className="row">
+        <div className="row">
           {vehiculos.map((item, index) => {
             const stockTeorico = item.programacion[0].vehiculo.combustible - item.consumo + (item.tanqueo ? item.tanqueo : 0);
-  
-            return (
-              <Card
-                key={index}
-                vehiculo_id={item.vehiculo_id}
-                title={item.placa}
-                refueling={item.tanqueo || 0}
-                initialStock={item.programacion[0].vehiculo.combustible}
-                stockTeorico={stockTeorico}
-                rutasSinLiquidar={item.programacion}
-                record_consumo_id={item.record_consumo[0].id}
-                consumo={item.consumo}
-                date={item.fecha}
-                setChange={setChange}
-                change={change}
-                setAlert={setAlert}
-                vehiculos={vehiculos}
-              />
-            );
-
+            if (item) {
+              return (
+                <Card
+                  key={index}
+                  vehiculo_id={item.vehiculo_id}
+                  title={item.placa}
+                  refueling={item.tanqueo || 0}
+                  initialStock={item.programacion[0].vehiculo.combustible}
+                  stockTeorico={stockTeorico}
+                  rutasSinLiquidar={item.programacion}
+                  record_consumo_id={item.record_consumo[0].id}
+                  consumo={item.consumo}
+                  date={item.fecha}
+                  setChange={setChange}
+                  change={change}
+                  setAlert={setAlert}
+                  vehiculos={vehiculos}
+                />
+              );
+            }
           }
           )}
-        </div> }
+        </div>
       </div>
     </span>
   );
