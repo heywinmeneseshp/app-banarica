@@ -12,7 +12,7 @@ import useAlert from '@hooks/useAlert';
 //Bootstrap
 //CSS
 import styles from '@styles/Listar.module.css';
-import excel from '@hooks/excel';
+import excel from '@hooks/useExcel';
 
 const Bodega = () => {
     const buscardorRef = useRef(null);

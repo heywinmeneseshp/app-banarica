@@ -11,7 +11,7 @@ import Alertas from '@assets/Alertas';
 import Paginacion from '@components/Paginacion';
 //CSS
 import styles from '@styles/Listar.module.css';
-import excel from '@hooks/excel';
+import excel from '@hooks/useExcel';
 
 
 
