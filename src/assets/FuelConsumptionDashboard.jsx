@@ -140,7 +140,7 @@ const FuelConsumptionDashboard = () => {
       <Alertas alert={alert} handleClose={toogleAlert} />
       <div className="container" style={{ minWidth: '90vw' }}>
         <h1 className="text-center mb-4">Consumo por Vehículo</h1>
-        <div className="row">
+       { (vehiculos.length > 0) && <div className="row">
           {vehiculos.map((item, index) => {
             const stockTeorico = item.programacion[0].vehiculo.combustible - item.consumo + (item.tanqueo ? item.tanqueo : 0);
   
@@ -165,7 +165,7 @@ const FuelConsumptionDashboard = () => {
 
           }
           )}
-        </div>
+        </div> }
       </div>
     </span>
   );
