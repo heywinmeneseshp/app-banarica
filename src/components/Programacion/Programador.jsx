@@ -10,6 +10,8 @@ import { paginarProgramaciones } from '@services/api/programaciones';
 import { listarUbicaciones } from '@services/api/ubicaciones';
 import { listarConductores } from '@services/api/conductores';
 import useAlert from '@hooks/useAlert';
+import FormulariosProgramacionEditar from '@components/shared/Formularios/FormularioProgramacionEditar';
+
 
 
 export default function Programador() {
@@ -23,6 +25,9 @@ export default function Programador() {
     const [open, setOpen] = useState(false);
     const { alert, setAlert, toogleAlert } = useAlert();
     const formRef = useRef();
+    const [element, setElement] = useState();
+    const [openEditar, setOpenEditar] = useState(false);
+   
 
     const handleNuevoMovi = async () => {
         setOpen(true);
@@ -48,11 +53,15 @@ export default function Programador() {
             fecha: formData.get("fecha"),
             movimiento: formData.get("movimiento"),
         };
-        console.log(body);
         const res = await paginarProgramaciones(pagination, limit, body);
         setItemsList(res.data);
         setTotal(res.total);
         setLimit(25);
+    };
+
+    const onEditar = (item) => {
+        setElement(item);
+        setOpenEditar(true);
     };
 
     return (
@@ -202,23 +211,24 @@ export default function Programador() {
                             <th className='bg-primary text-white text-center col d-none d-lg-block'>Llegada</th>
                             <th className='bg-primary text-white text-center'>Salida</th>
                             <th>Movimiento</th>
+                            <th>Editar</th>
                         </tr>
                     </thead>
                     <tbody>
                         {itemList.map((item, index) => {
-
                             return (<tr key={index}>
                                 <td>{item?.fecha}</td>
-                                <td className='col d-none d-lg-block'>{item?.semana}</td>
+                                <td className=''>{item?.semana}</td>
                                 <td>{item?.vehiculo?.placa}</td>
-                                <td className='col d-none d-lg-block'>{item?.conductor?.conductor}</td>
+                                <td className=''>{item?.conductor?.conductor}</td>
                                 <td className='table-success text-center'>{item?.ruta?.ubicacion_1?.ubicacion}</td>
-                                <td className='table-success text-center col d-none d-lg-block'>{0}</td>
-                                <td className='table-success text-center'></td>
+                                <td className='table-success text-center'>{item.llegada_origen}</td>
+                                <td className='table-success text-center'>{item.salida_origen}</td>
                                 <td className='table-primary text-center'>{item?.ruta?.ubicacion_2?.ubicacion}</td>
-                                <td className='table-primary text-center col d-none d-lg-block'>{0}</td>
-                                <td className='table-primary text-center'></td>
+                                <td className='table-primary text-center'>{item.llegada_destino}</td>
+                                <td className='table-primary text-center'>{item.salida_destino}</td>
                                 <td>{item?.movimiento}</td>
+                                <td className='table- text-center'><button onClick={() => onEditar(item)} className='btn-primary btn-warning btn btn-sm'>Editar</button></td>
                             </tr>);
 
                         })}
@@ -230,6 +240,7 @@ export default function Programador() {
                 <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
             </div>
             {open && <FormulariosProgramacion setOpen={setOpen} setAlert={setAlert} />}
+            {openEditar && <FormulariosProgramacionEditar element={element} setOpen={setOpenEditar} setAlert={setAlert}/>}
         </>
     );
 }

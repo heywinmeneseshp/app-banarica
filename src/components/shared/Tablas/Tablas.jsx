@@ -10,7 +10,7 @@ import Alertas from '@assets/Alertas';
 import styles from '@styles/Listar.module.css';
 import excel from '@hooks/useExcel';
 
-export default function Tablas({ encabezados, actualizar, listar, paginar, crear, titulo, arrayList }) {
+export default function Tablas({ encabezados, actualizar, listas, listar, paginar, crear, titulo, arrayList }) {
   const ItemdorRef = useRef();
   const [item, setItem] = useState(null);
   const [items, setItems] = useState([]);
@@ -138,7 +138,16 @@ export default function Tablas({ encabezados, actualizar, listar, paginar, crear
         </table>
       </div>
       <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
-      {open && <NuevoItem crear={crear} actualizar={actualizar} setOpen={setOpen} setAlert={setAlert} element={item} encabezados={labelForm} arrayList={arrayList}/>}
+      {open && <NuevoItem 
+        crear={crear}
+        listas={listas}
+        actualizar={actualizar}
+        setOpen={setOpen}
+        setAlert={setAlert}
+        element={item}
+        encabezados={labelForm}
+        arrayList={arrayList} />
+      }
     </>
   );
 }

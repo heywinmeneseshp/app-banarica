@@ -127,15 +127,17 @@ const Header = () => {
             <Nav variant="dark" className="me-auto">
 
               <DropdownButton onClick={() => openMenu("admin")} variant="dark" id="dropdown-basic-button" title="Maestros">
-                <Dropdown.Item onClick={() => openWindow("usuarios")} >Usuarios</Dropdown.Item>
-                <Dropdown.Item onClick={() => openWindow("ubicaciones")}>Ubicaciones</Dropdown.Item>
+                <Dropdown.Item onClick={() => openWindow("categorias")}>Categoria productos</Dropdown.Item>
+                <Dropdown.Item onClick={() => openWindow("categoriaVehiculos")}>Categoria vehiculos</Dropdown.Item>
                 <Dropdown.Item onClick={() => openWindow("clientes")}>Clientes</Dropdown.Item>
-                <Dropdown.Item onClick={() => openWindow("conductores")}>Conductores</Dropdown.Item>
-                <Dropdown.Item onClick={() => openWindow("vehiculos")}>Vehiculos</Dropdown.Item>
-                <Dropdown.Item onClick={() => openWindow("rutas")}>Rutas</Dropdown.Item>
                 <Dropdown.Item onClick={() => openWindow("productos")}>Productos</Dropdown.Item>
-                <Dropdown.Item onClick={() => openWindow("categoriaVehiculos")}>Categorias Vehiculos</Dropdown.Item>
+                <Dropdown.Item onClick={() => openWindow("rutas")}>Rutas</Dropdown.Item>
+                <Dropdown.Item onClick={() => openWindow("transporte")}>Transporte</Dropdown.Item>
+                <Dropdown.Item onClick={() => openWindow("ubicaciones")}>Ubicaciones</Dropdown.Item>
+                <Dropdown.Item onClick={() => openWindow("usuarios")}>Usuarios</Dropdown.Item>
+                <Dropdown.Item onClick={() => openWindow("vehiculos")}>Vehiculos</Dropdown.Item>
               </DropdownButton>
+
 
               <DropdownButton onClick={() => openMenu("admin")} variant="dark" id="dropdown-basic-button" title="Programaciones">
                 <Dropdown.Item onClick={() => openWindow("programador")} >Programador</Dropdown.Item>
@@ -144,7 +146,7 @@ const Header = () => {
                 <Dropdown.Item onClick={() => openWindow("historico")}>Historico</Dropdown.Item>
               </DropdownButton>
 
-
+{false && <span>
               <DropdownButton variant="dark" className={styles.itemMenuAdmin} onClick={() => openMenu("admin")} id="dropdown-basic-button" title="Administrador">
                 <Dropdown.Item onClick={() => openWindow("usuarios")} >Usuarios</Dropdown.Item>
                 <Dropdown.Item onClick={() => openWindow("productos")}>Productos</Dropdown.Item>
@@ -180,7 +182,7 @@ const Header = () => {
                 <Dropdown.Item onClick={initialInfoMenu.handleTraslados}>Traslados</Dropdown.Item>
                 <Dropdown.Item onClick={initialInfoMenu.handlePedidos}>Pedidos</Dropdown.Item>
               </DropdownButton>
-
+              </span>}
             </Nav>
 
             <ButtonGroup variant="dark" size="sm">

@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import styles from "@components/shared/Formularios/Formularios.module.css";
 
-function Formularios({ setAlert, element, setOpen, encabezados, actualizar, crear, onlyRead, valorPredeterminado }) {
+function Formularios({ setAlert, listas, element, setOpen, encabezados, actualizar, crear, onlyRead, valorPredeterminado }) {
 
   const formRef = useRef();
 
@@ -13,9 +13,12 @@ function Formularios({ setAlert, element, setOpen, encabezados, actualizar, crea
     e.preventDefault();
     const formData = new FormData(formRef.current);
     let objeto = {};
+    var validar = true;
     formData.forEach((value, key) => {
+      if (value == "" && key != "id") validar = false;
       objeto[key] = value;
     });
+    if (!validar) return alert("Error, todas las casillas deben estar diligenciadas");
     if (element) {
       const id = objeto.id;
       delete objeto.id;
@@ -55,23 +58,58 @@ function Formularios({ setAlert, element, setOpen, encabezados, actualizar, crea
                 <form ref={formRef} onSubmit={handleSubmit} className="col-md-12 row" method="POST" action="/crear-conductor">
                   {Object.keys(encabezados).map((item, key) => {
                     var read = encabezados[item] == "id" ? true : false;
-                    if(onlyRead) {
-                     read = onlyRead.includes(encabezados[item]);
-                    } 
-                    return (
-                      <div key={key} className="mb-3 col-md-3">
-                        <label htmlFor={encabezados[item]} className="form-label mb-1">{`${item}:`}</label>
-                        <input
-                          type={encabezados[item] == "fecha" ? "date" : "text"}
-                          id={encabezados[item]}
-                          name={encabezados[item]}
-                          className="form-control form-control-sm"
-                          defaultValue={(encabezados[item] == onlyRead) ? valorPredeterminado : (element ? element[encabezados[item]] : null)}
-                          required
-                          readOnly={read}
-                        /> 
-                      </div>
-                    );
+                    if (onlyRead) {
+                      read = onlyRead.includes(encabezados[item]);
+                    }
+                    var lista = null;
+                    try {
+                      lista = listas[item];
+                    } catch {
+                      lista = null;
+                    }
+
+                    if (lista != null) {
+
+                      return (
+                        <div key={key} className="mb-3 col-md-3">
+                          <label htmlFor={encabezados[item]} className="form-label mb-1">{`${item}:`}</label>
+                          <select
+                            id={encabezados[item]}
+                            name={encabezados[item]}
+                            className="form-control form-control-sm"
+
+                          >
+                            <option value={""}></option>
+                            {listas[item].map((item2) => {
+                              var ItemSeleted = false;
+                              try {
+                                ItemSeleted = element[encabezados[item]] == item2.id;
+                              } catch {
+                                ItemSeleted = false;
+                              }
+                              return (
+                                <option key={item2.id} value={item2.id} selected={ItemSeleted}>{item2.nombre}</option>
+                              );
+                            })}
+                          </select>
+                        </div>);
+                    } else {
+                      return (
+                        <div key={key} className="mb-3 col-md-3">
+                          <label htmlFor={encabezados[item]} className="form-label mb-1">{`${item}:`}</label>
+                          <input
+                            type={encabezados[item] == "fecha" ? "date" : "text"}
+                            id={encabezados[item]}
+                            name={encabezados[item]}
+                            className="form-control form-control-sm"
+                            defaultValue={(encabezados[item] == onlyRead) ? valorPredeterminado : (element ? element[encabezados[item]] : null)}
+                            required
+                            readOnly={read}
+                          />
+                        </div>
+                      );
+                    }
+
                   })}
                   <div className="mb-3 mt-3 col-md-12 align-items-end justify-content-end">
                     <div className="text-center text-lg-end">

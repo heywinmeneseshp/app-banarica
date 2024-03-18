@@ -10,8 +10,29 @@ import {
   agregarVehiculo
 } from '@services/api/vehiculos';
 
+import { listarcategoriaVehiculos } from "@services/api/CategoriaVehiculos";
+import { listarConductores } from "@services/api/conductores";
+
+import { useEffect, useState } from "react";
+
 export default function Vehiculo() {
 
+  const [categoryV, setCategoryV] = useState();
+  const [conductoresL, setConductoresL] = useState();
+
+  useEffect(() => {
+    listar();
+  }, []);
+
+  const listar = async () => {
+    const categorias = await listarcategoriaVehiculos();
+    const conductores = await listarConductores();
+    const listaCategorias = categorias.map(item => { return { id: item.id, nombre: item.categoria }; });
+    const listaConductores = conductores.map(item => { return { id: item.id, nombre: item.conductor }; });
+    setCategoryV(listaCategorias);
+    setConductoresL(listaConductores);
+    console.log(conductores);
+  };
 
   return (
     <>
@@ -32,8 +53,13 @@ export default function Vehiculo() {
           "Combustible": "combustible",
           "Editar": "",
           "Activar": "activo"
-        }} 
-        />
+        }}
+        listas={{
+          "Categoria": categoryV,
+          "Conductor": conductoresL
+        }}
+
+      />
 
     </>
   );

@@ -8,8 +8,14 @@ import {
   paginarcategoriaVehiculos,
   agregarcategoriaVehiculos
 } from '@services/api/CategoriaVehiculos';
+import { useEffect } from "react";
 
 export default function Ubicaciones() {
+
+  useEffect(()=>{
+
+  },[]);
+  
 
 
   return (
@@ -22,8 +28,14 @@ export default function Ubicaciones() {
         paginar={paginarcategoriaVehiculos}
         crear={agregarcategoriaVehiculos}
         encabezados={{
-          "ID": "id", "Categoria": "categoria", "Galones por Km": "galones_por_kilometro", "Editar": "", "Activar": "activo"
+          "ID": "id", 
+          "Categoria": "categoria", 
+          "Galones por Km": "galones_por_kilometro", 
+          "Editar": "",
+          "Activar": "activo"
         }}
+
+      
     />
     </>
   );

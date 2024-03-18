@@ -9,8 +9,25 @@ import {
   agregarRutas
 } from '@services/api/rutas';
 
+import { listarUbicaciones } from '@services/api/ubicaciones';
+import { useEffect, useState } from 'react';
+
 export default function Rutas() {
 
+  const [ubicaciones, setUbicaciones ] = useState();
+
+  useEffect(() => {
+    listar();
+  }, []);
+
+  const listar = async () => {
+    const categorias = await listarUbicaciones();
+    const listaUbicaciones = categorias.map(item => { return { id: item.id, nombre: item.ubicacion }; });
+
+    console.log(listaUbicaciones);
+    setUbicaciones(listaUbicaciones);
+
+  };
 
   return (
     <>
@@ -28,6 +45,11 @@ export default function Rutas() {
           "Kms": "km",
           "Detalles": "detalles",
           "Activar": "activo"
+        }}
+
+        listas={{
+          "Origen": ubicaciones,
+          "Destino": ubicaciones
         }}
       />
     </>
