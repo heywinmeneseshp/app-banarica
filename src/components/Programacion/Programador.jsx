@@ -5,12 +5,15 @@ import style from "@components/Programacion/camiones.module.css";
 import Paginacion from '@components/shared/Tablas/Paginacion';
 import FormulariosProgramacion from '@components/shared/Formularios/FormularioProgramacion';
 import Alertas from '@assets/Alertas';
+import menos from '@public/images/menos.png';
 
-import { paginarProgramaciones } from '@services/api/programaciones';
+import { paginarProgramaciones, eliminarProgramaciones } from '@services/api/programaciones';
 import { listarUbicaciones } from '@services/api/ubicaciones';
 import { listarConductores } from '@services/api/conductores';
 import useAlert from '@hooks/useAlert';
 import FormulariosProgramacionEditar from '@components/shared/Formularios/FormularioProgramacionEditar';
+import Image from 'next/image';
+import excel from '@hooks/useExcel';
 
 
 
@@ -27,7 +30,8 @@ export default function Programador() {
     const formRef = useRef();
     const [element, setElement] = useState();
     const [openEditar, setOpenEditar] = useState(false);
-   
+    const [change, setChange] = useState(false);
+
 
     const handleNuevoMovi = async () => {
         setOpen(true);
@@ -35,7 +39,7 @@ export default function Programador() {
 
     useEffect(() => {
         listar();
-    }, [pagination, alert],);
+    }, [pagination, alert, change],);
 
     const listar = async () => {
         const formData = new FormData(formRef.current);
@@ -63,6 +67,34 @@ export default function Programador() {
         setElement(item);
         setOpenEditar(true);
     };
+
+    const eliminar = async (id) => {
+        await eliminarProgramaciones(id);
+        setChange(!change);
+        setAlert({
+            active: true,
+            mensaje: "El item ha sido eliminado",
+            color: "success",
+            autoClose: true
+        });
+    };
+
+    const descargarExel = async () => {
+        const formData = new FormData(formRef.current);
+        const body = {
+            ubicacion1: formData.get("origen"),
+            ubicacion2: formData.get("destino"),
+            semana: formData.get("semana"),
+            vehiculo: formData.get("vehiculo"),
+            conductor: formData.get("conductor") ? formData.get("conductor") : "",
+            fecha: formData.get("fecha"),
+            movimiento: formData.get("movimiento"),
+        };
+        const { data } = await paginarProgramaciones(pagination, limit, body);
+        const fecha = new Date().getDate();
+        excel(data, `Programacion ${fecha}`, "Programacion");
+
+    }
 
     return (
         <>
@@ -187,7 +219,7 @@ export default function Programador() {
                     </div>
 
                     <div className='col-md-3 col-lg-2 mt-4'>
-                        <button type="button" className={`btn btn-success text-center w-100`}>
+                        <button onClick={() => descargarExel()} type="button" className={`btn btn-success text-center w-100`}>
                             Descargar Excel
                         </button>
                     </div>
@@ -212,6 +244,7 @@ export default function Programador() {
                             <th className='bg-primary text-white text-center'>Salida</th>
                             <th>Movimiento</th>
                             <th>Editar</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -229,6 +262,10 @@ export default function Programador() {
                                 <td className='table-primary text-center'>{item.salida_destino}</td>
                                 <td>{item?.movimiento}</td>
                                 <td className='table- text-center'><button onClick={() => onEditar(item)} className='btn-primary btn-warning btn btn-sm'>Editar</button></td>
+                                <th className='text-center align-middle'>
+                                    {item.activo && <Image style={{ cursor: 'pointer' }} onClick={() => eliminar(item.id)} width="20" height="20" src={menos} alt="menos" />
+                                    }
+                                </th>
                             </tr>);
 
                         })}
@@ -240,7 +277,7 @@ export default function Programador() {
                 <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
             </div>
             {open && <FormulariosProgramacion setOpen={setOpen} setAlert={setAlert} />}
-            {openEditar && <FormulariosProgramacionEditar element={element} setOpen={setOpenEditar} setAlert={setAlert}/>}
+            {openEditar && <FormulariosProgramacionEditar element={element} setOpen={setOpenEditar} setAlert={setAlert} />}
         </>
     );
 }

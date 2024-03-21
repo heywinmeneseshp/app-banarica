@@ -125,6 +125,7 @@ function Interior({ rutaBool, change, setChange,
     });
   };
 
+
   return (
 
     <form ref={formRef} >
@@ -213,16 +214,16 @@ function Interior({ rutaBool, change, setChange,
                 />
               </div>}
               {!guardado && <div className="col" >
-                <Image onClick={() => handleAgregar()} width="20" height="20" src={mas} alt="mas" />
+                <Image style={{ cursor: 'pointer' }} onClick={() => handleAgregar()} width="20" height="20" src={mas} alt="mas" />
               </div>}
               {!guardado && <div className="col" >
-                <Image onClick={() => handleEliminar()} width="20" height="20" src={menos} alt="menos" />
+                <Image style={{ cursor: 'pointer' }} onClick={() => handleEliminar()} width="20" height="20" src={menos} alt="menos" />
               </div>}
               <div className="col" >
-                {!guardado && <Image onClick={() => handleSubmit()} width="20" height="20" src={guardar} alt="guardar" />
+                {!guardado && <Image style={{ cursor: 'pointer' }} onClick={() => handleSubmit()} width="20" height="20" src={guardar} alt="guardar" />
 
                 }
-                {guardado && <Image width="20" height="20" src={hecho} alt="hecho" />
+                {guardado && <Image style={{ cursor: 'pointer' }} width="20" height="20" src={hecho} alt="hecho" />
                 }
               </div>
             </div>
@@ -351,6 +352,9 @@ export default function FormulariosProgramacion({ element, setOpen, setAlert }) 
         color: "success",
         autoClose: true
       });
+    } else {
+      alert("Para salir se deben guardas todas las rutas programdas.");
+
     }
   };
 
@@ -390,6 +394,8 @@ export default function FormulariosProgramacion({ element, setOpen, setAlert }) 
   };
 
 
+
+
   return (
     <>
       <div className={styles.fondo}>
@@ -397,7 +403,7 @@ export default function FormulariosProgramacion({ element, setOpen, setAlert }) 
           <div style={{ minWidth: "100%" }} className="card">
             <span style={{ minWidth: "100%" }} className={styles.ventana}>
               <div className="card-header text-end">
-                <button type="button" onClick={() => setOpen(false)} className="btn-close" aria-label="Close"></button>
+                <button type="button" onClick={() => handleSubmit()} className="btn-close" aria-label="Close"></button>
               </div>
               <div className="card-body">
                 <div className="row">

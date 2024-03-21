@@ -66,9 +66,9 @@ export default function FormulariosProgramacionEditar({ element, setOpen, setAle
       salida_destino: formData.get("salida_destino"),
     };
 
-    const { data } = await actualizarProgramaciones(element.id, objetoProgramacion);
-    console.log(data);
+    await actualizarProgramaciones(element.id, objetoProgramacion);
     setChange(!change);
+    setOpen(false);
     setAlert({
       active: true,
       mensaje: "La ruta ha sido programada con éxito",
@@ -108,9 +108,9 @@ export default function FormulariosProgramacionEditar({ element, setOpen, setAle
   return (
     <>
       <div className={styles.fondo}>
-        <div style={{ minWidth: "70%" }} className={styles.floatingform}>
-          <div style={{ minWidth: "100%" }} className="card">
-            <span style={{ minWidth: "100%" }} className={styles.ventana}>
+        <div style={{ maxWidth: "90%" }} className={styles.floatingform}>
+          <div style={{ maxWidth: "100%" }} className="card">
+            <span style={{ maxWidth: "100%" }} className={styles.ventana}>
               <div className="card-header text-end">
                 <button type="button" onClick={() => setOpen(false)} className="btn-close" aria-label="Close"></button>
               </div>

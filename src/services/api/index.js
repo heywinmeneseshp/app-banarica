@@ -232,7 +232,7 @@ const endPoints = {
     programaciones: {
         list: `${API}/api/${VERSION}/programaciones`,
         findOne: (id) => `${API}/api/${VERSION}/programaciones/${id}`,
-        pagination: (page, limit, item) => `${API}/api/${VERSION}/programaciones/paginar?page=${page}&limit=${limit}&item=${item}`,
+        pagination: (page, limit) => `${API}/api/${VERSION}/programaciones/paginar?page=${page}&limit=${limit}`,
         create: `${API}/api/${VERSION}/programaciones`,
         update: (id) => `${API}/api/${VERSION}/programaciones/${id}`,
         delete: (id) => `${API}/api/${VERSION}/programaciones/${id}`,
