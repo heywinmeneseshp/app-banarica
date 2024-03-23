@@ -94,7 +94,7 @@ export default function Programador() {
         const fecha = new Date().getDate();
         excel(data, `Programacion ${fecha}`, "Programacion");
 
-    }
+    };
 
     return (
         <>
