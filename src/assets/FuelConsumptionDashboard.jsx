@@ -6,12 +6,11 @@ import Formularios from '@components/shared/Formularios/Formularios';
 import { consultarConsumo, liquidarConsumoRutas } from '@services/api/record_consumo';
 import { agregarTanqueo, actualizarTanqueo } from '@services/api/tanqueo';
 import useAlert from '@hooks/useAlert';
-import RutasEnCero from '@assets/RutasEnCero';
 import Alertas from '@assets/Alertas';
 
 
 
-const Card = ({ setChange, change, vehiculos, rutasSinLiquidar, record_consumo_id, consumo, title, initialStock, refueling, stockTeorico, date, setAlert }) => {
+const Card = ({ setChange, change, vehiculos, record_consumo_id,  title, initialStock, refueling,  date, setAlert }) => {
 
   const [tanquar, setTanquear] = useState(false);
 
@@ -20,11 +19,6 @@ const Card = ({ setChange, change, vehiculos, rutasSinLiquidar, record_consumo_i
   }, []);
 
   const liquidar = async () => {
-
-    const routesWithoutConsumption = rutasSinLiquidar.filter(item => item.ruta.galones_por_ruta[0].galones_por_ruta === null);
-    if (routesWithoutConsumption.length > 0) {
-      return alert("Error: existen rutas sin consumo asignado.");
-    }
 
     const filteredVehicles = vehiculos
       .filter(item => item.placa === title && new Date(item.fecha) < new Date(date));
@@ -36,13 +30,28 @@ const Card = ({ setChange, change, vehiculos, rutasSinLiquidar, record_consumo_i
       alert("Operación cancelada por el usuario.");
       return;
     }
+
     stockReal = parseFloat(stockReal);
     if (isNaN(stockReal)) {
       alert("Debe introducir un valor numérico válido.");
       return;
     }
+
+
+    let kmRecorrido = prompt(`Por favor, introduce la cantidad km recorridos en el vehículo ${title}:`, "0");
+    if (kmRecorrido === null) {
+      alert("Operación cancelada por el usuario.");
+      return;
+    }
+
+    kmRecorrido = parseFloat(kmRecorrido);
+    if (isNaN(kmRecorrido)) {
+      alert("Debe introducir un valor numérico válido.");
+      return;
+    }
+
     try {
-      await liquidarConsumoRutas(record_consumo_id, stockReal);
+      await liquidarConsumoRutas(record_consumo_id, stockReal, kmRecorrido);
       setChange(!change);
     } catch (error) {
       console.error("Error al liquidar consumo de rutas:", error);
@@ -72,7 +81,7 @@ const Card = ({ setChange, change, vehiculos, rutasSinLiquidar, record_consumo_i
         onlyRead={["record_consumo_id"]} /*Solo lectura es este el valor predeteminado*/
         valorPredeterminado={record_consumo_id} /*Colocar el valorPredeterminado como defecto*/
       />}
-      <div className="col-md-4 mb-4">
+      <div className="col-md-3 mb-4">
         <div className="card border-0 rounded-3 shadow">
           <div className="card-header bg-success text-white border-0 rounded-top d-flex justify-content-between align-items-center text-center">
             <span onClick={() => tanquear(true)} style={{
@@ -93,18 +102,10 @@ const Card = ({ setChange, change, vehiculos, rutasSinLiquidar, record_consumo_i
               <p className="card-text"> Stock Inicial: {initialStock} gal</p>
             </strong>
             <strong>
-              <p className="card-text text-danger">Consumo: {consumo} gal</p>
-            </strong>
-            <strong>
               <p className="card-text text-success">Tanqueo: {refueling} gal</p>
             </strong>
             <div className='mb-3 mt-1'>
-              <div className='mb-1'><strong>Stock</strong></div>
-              <span className='alert alert-secondary p-1 mt-1 col-lg-8'>
-                <strong>
-                  <span className="card-text text-secondary m-2 mt-0 mb-0">Teorico: {stockTeorico} gal</span>
-                </strong>
-              </span>
+
             </div>
             <p className="card-text">Fecha: {date}</p>
           </div>
@@ -136,33 +137,26 @@ const FuelConsumptionDashboard = () => {
 
   return (
     <span>
-      <RutasEnCero setAlert={setAlert} />
       <Alertas alert={alert} handleClose={toogleAlert} />
-      <div className="container" style={{ minWidth: '90vw' }}>
-        <h1 className="text-center mb-4">Consumo por Vehículo</h1>
-        <div className="row">
+      <div className="container" style={{ minWidth: '90vw', minHeight: '100vh' }}>
+        <h1 className="text-center mb-4">Pendientes por liquidar</h1>
+        <div className="row align-items-center justify-content-center">
           {vehiculos.map((item, index) => {
-            const stockTeorico = item.programacion[0].vehiculo.combustible - item.consumo + (item.tanqueo ? item.tanqueo : 0);
-        
-              return (
-                <Card
-                  key={index}
-                  vehiculo_id={item.vehiculo_id}
-                  title={item.placa}
-                  refueling={item.tanqueo || 0}
-                  initialStock={item.programacion[0].vehiculo.combustible}
-                  stockTeorico={stockTeorico}
-                  rutasSinLiquidar={item.programacion}
-                  record_consumo_id={item.record_consumo[0].id}
-                  consumo={item.consumo}
-                  date={item.fecha}
-                  setChange={setChange}
-                  change={change}
-                  setAlert={setAlert}
-                  vehiculos={vehiculos}
-                />
-              );
-            
+            return (
+              <Card
+                key={index}
+                vehiculo_id={item.vehiculo_id}
+                title={item.placa}
+                refueling={item.tanqueo || 0}
+                initialStock={item.programacion[0].vehiculo.combustible}
+                record_consumo_id={item.record_consumo[0].id}
+                date={item.fecha}
+                setChange={setChange}
+                change={change}
+                setAlert={setAlert}
+                vehiculos={vehiculos}
+              />
+            );
           }
           )}
         </div>

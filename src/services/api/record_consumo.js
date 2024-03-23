@@ -69,9 +69,9 @@ const actualizarRecord_consumo = async (consecutivo, changes) => {
     return res.data;
 };
 
-const liquidarConsumoRutas = async (record_consumo_id, stock_real) => {
+const liquidarConsumoRutas = async (record_consumo_id, stock_real, km_recorridos) => {
     try {
-        const res = await axios.post(endPoints.record_consumo.liquidar, { record_consumo_id, stock_real });
+        const res = await axios.post(endPoints.record_consumo.liquidar, { record_consumo_id, stock_real, km_recorridos });
         return res.data;
     } catch {
         alert("Consulta de consumo exitosa");

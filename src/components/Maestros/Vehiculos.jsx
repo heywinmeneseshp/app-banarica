@@ -51,6 +51,7 @@ export default function Vehiculo() {
           "Conductor": "conductor_id",
           "Categoria": "categoria_id",
           "Combustible": "combustible",
+          "Gal por Km": "gal_por_km",
           "Editar": "",
           "Activar": "activo"
         }}

@@ -134,8 +134,11 @@ export default function Programador() {
                             <th>Vehiculo</th>
                             <th className='col d-none d-lg-block'>Conductor</th>
                             <th className='text-center'>Stock Inicial</th>
+                            <th className='text-center'>Recorrido</th>
+                            <th className='text-center'>Gal por Km</th>
                             <th className='bg-danger text-white text-center'>Consumo</th>
                             <th className='bg-success text-white text-center'>Tanqueo</th>
+                           
                             <th className='text-center'>Stock Final</th>
                             <th className='bg-info  text-center'>Stock Real</th>
                       
@@ -151,8 +154,11 @@ export default function Programador() {
                                 <td>{item?.vehiculo?.placa}</td>
                                 <td className='col d-none d-lg-block'>{item?.conductore?.conductor}</td>
                                 <td className=' text-center'>{item?.stock_inicial}</td>
+                                <td className='text-center'>{`${item?.km_recorridos} Km`}</td>
+                                <td className='text-center'>{`${item?.gal_por_km}`}</td>
                                 <td className='table-danger text-center'>{item?.stock_final - item?.stock_inicial - item?.tanqueo}</td>
                                 <td className='table-success text-center'>{item?.tanqueo}</td>
+                      
                                 <td className=' text-center'>{item?.stock_final}</td>
                                 <td className='table-info  text-center'>{item?.stock_real}</td>
                                 <td className='table-warning text-center'>{item?.stock_real - item?.stock_final}</td>
