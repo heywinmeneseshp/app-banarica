@@ -131,6 +131,7 @@ const Header = () => {
                 <Dropdown.Item onClick={() => openWindow("categoriaVehiculos")}>Categoria vehiculos</Dropdown.Item>
                 <Dropdown.Item onClick={() => openWindow("clientes")}>Clientes</Dropdown.Item>
                 <Dropdown.Item onClick={() => openWindow("productos")}>Productos</Dropdown.Item>
+                <Dropdown.Item onClick={() => openWindow("proveedores")}>Proveedores</Dropdown.Item>
                 <Dropdown.Item onClick={() => openWindow("rutas")}>Rutas</Dropdown.Item>
                 <Dropdown.Item onClick={() => openWindow("transporte")}>Transporte</Dropdown.Item>
                 <Dropdown.Item onClick={() => openWindow("ubicaciones")}>Ubicaciones</Dropdown.Item>
