@@ -410,7 +410,7 @@ export default function FormulariosProgramacion({ element, setOpen, setAlert }) 
           <div style={{ minWidth: "100%" }} className="card">
             <span style={{ minWidth: "100%" }} className={styles.ventana}>
               <div className="card-header text-end">
-                <button type="button" onClick={() => setOpen(false)} className="btn-close" aria-label="Close"></button>
+                <button type="button" onClick={() => handleCerrar()} className="btn-close" aria-label="Close"></button>
               </div>
               <div className="card-body">
                 <div className="row">
