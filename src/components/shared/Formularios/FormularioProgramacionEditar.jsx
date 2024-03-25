@@ -14,6 +14,8 @@ import { agregarRutas, buscarRutaPost } from "@services/api/rutas";
 
 
 
+
+
 export default function FormulariosProgramacionEditar({ element, setOpen, setAlert }) {
 
   const formRef = useRef();
@@ -25,12 +27,9 @@ export default function FormulariosProgramacionEditar({ element, setOpen, setAle
   const [listaUbicaciones, setListaUbicaciones] = useState([]);
   const [listaClientes, setListaClientes] = useState([]);
 
-
-
   useEffect(() => {
     setIsChecked(element.cobrar);
     listar();
-
   }, [change]);
 
 
@@ -138,7 +137,7 @@ export default function FormulariosProgramacionEditar({ element, setOpen, setAle
                           id="semana"
                           name="semana"
                           className="form-control form-control-sm"
-                          defaultValue={element.semana}
+                          defaultValue={element.semana }
                           min={1}
                           max={53}
 

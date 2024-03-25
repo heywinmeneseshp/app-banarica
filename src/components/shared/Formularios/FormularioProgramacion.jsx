@@ -16,6 +16,7 @@ import { listarClientes } from "@services/api/clientes";
 import { agregarProgramaciones } from "@services/api/programaciones";
 import { agregarRutas, buscarRutaPost } from "@services/api/rutas";
 import { agregarProductosViaje } from "@services/api/productos_viaje";
+import { encontrarModulo } from "@services/api/configuracion";
 
 
 
@@ -29,6 +30,7 @@ function Interior({ rutaBool, change, setChange,
   const [listaProductos, setListaProductos] = useState([]);
   const [listaClientes, setListaClientes] = useState([]);
   const [guardado, setGuardado] = useState(false);
+ 
 
 
   useEffect(() => {
@@ -151,7 +153,7 @@ function Interior({ rutaBool, change, setChange,
         </div>
 
         <div className={`mb-2 col-md-${isCheckedContenedor ? 2 : 3}`}>
-          <label htmlFor="semana" className="form-label mb-1">Destino</label>
+          <label htmlFor="destino" className="form-label mb-1">Destino</label>
           <select
             id="destino"
             name="destino"
@@ -327,6 +329,7 @@ export default function FormulariosProgramacion({ element, setOpen, setAlert }) 
   const [body, setBody] = useState({});
   const [dataList, setDataList] = useState([]);
   const [onlyRead, setOnlyRead] = useState(false);
+  const [semana, setSemana] = useState();
 
 
   useEffect(() => {
@@ -339,7 +342,11 @@ export default function FormulariosProgramacion({ element, setOpen, setAlert }) 
     listar();
     const res = ruta.find((item, key) => item[key + 1] == true);
     res ? setOnlyRead(true) : setOnlyRead(false);
+    encontrarModulo("Semana").then(res => setSemana(res[0].semana_actual));
+    console.log(semana);
   }, [change, body, ruta]);
+
+
 
 
   const handleSubmit = async () => {
@@ -358,6 +365,9 @@ export default function FormulariosProgramacion({ element, setOpen, setAlert }) 
     }
   };
 
+  const handleCerrar = async () => {
+      setOpen(false);
+  };
 
   const listar = async () => {
     let conductores = await listarConductores();
@@ -393,9 +403,6 @@ export default function FormulariosProgramacion({ element, setOpen, setAlert }) 
     setChange(!change);
   };
 
-
-
-
   return (
     <>
       <div className={styles.fondo}>
@@ -403,7 +410,7 @@ export default function FormulariosProgramacion({ element, setOpen, setAlert }) 
           <div style={{ minWidth: "100%" }} className="card">
             <span style={{ minWidth: "100%" }} className={styles.ventana}>
               <div className="card-header text-end">
-                <button type="button" onClick={() => handleSubmit()} className="btn-close" aria-label="Close"></button>
+                <button type="button" onClick={() => setOpen(false)} className="btn-close" aria-label="Close"></button>
               </div>
               <div className="card-body">
                 <div className="row">
@@ -433,7 +440,7 @@ export default function FormulariosProgramacion({ element, setOpen, setAlert }) 
                           id="semana"
                           name="semana"
                           className="form-control form-control-sm"
-                          defaultValue={0}
+                          defaultValue={semana}
                           min={1}
                           max={53}
                           required

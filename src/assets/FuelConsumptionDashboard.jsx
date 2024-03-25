@@ -19,7 +19,6 @@ const Card = ({ setChange, change, vehiculos, record_consumo_id,  title, initial
   }, []);
 
   const liquidar = async () => {
-
     const filteredVehicles = vehiculos
       .filter(item => item.placa === title && new Date(item.fecha) < new Date(date));
     if (filteredVehicles.length > 0) {
@@ -30,34 +29,18 @@ const Card = ({ setChange, change, vehiculos, record_consumo_id,  title, initial
       alert("Operación cancelada por el usuario.");
       return;
     }
-
     stockReal = parseFloat(stockReal);
     if (isNaN(stockReal)) {
       alert("Debe introducir un valor numérico válido.");
       return;
     }
-
-
-    let kmRecorrido = prompt(`Por favor, introduce la cantidad km recorridos en el vehículo ${title}:`, "0");
-    if (kmRecorrido === null) {
-      alert("Operación cancelada por el usuario.");
-      return;
-    }
-
-    kmRecorrido = parseFloat(kmRecorrido);
-    if (isNaN(kmRecorrido)) {
-      alert("Debe introducir un valor numérico válido.");
-      return;
-    }
-
     try {
-      await liquidarConsumoRutas(record_consumo_id, stockReal, kmRecorrido);
+      await liquidarConsumoRutas(record_consumo_id, stockReal);
       setChange(!change);
     } catch (error) {
       console.error("Error al liquidar consumo de rutas:", error);
     }
   };
-
   const tanquear = async (bool) => {
     setTanquear(bool);
     setChange(!change);
