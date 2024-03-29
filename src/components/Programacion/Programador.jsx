@@ -57,10 +57,10 @@ export default function Programador() {
             fecha: formData.get("fecha"),
             movimiento: formData.get("movimiento"),
         };
-        const res = await paginarProgramaciones(pagination, limit, body);
+        const res = await paginarProgramaciones(pagination, 50, body);
         setItemsList(res.data);
         setTotal(res.total);
-        setLimit(25);
+        setLimit(50);
     };
 
     const onEditar = (item) => {

@@ -10,7 +10,7 @@ import Alertas from '@assets/Alertas';
 
 
 
-const Card = ({ setChange, change, vehiculos, record_consumo_id,  title, initialStock, refueling,  date, setAlert }) => {
+const Card = ({ setChange, change, km_recorridos, vehiculos, record_consumo_id,  title, initialStock, refueling,  date, setAlert }) => {
 
   const [tanquar, setTanquear] = useState(false);
 
@@ -19,6 +19,10 @@ const Card = ({ setChange, change, vehiculos, record_consumo_id,  title, initial
   }, []);
 
   const liquidar = async () => {
+    if(!km_recorridos) {
+      return alert("Aún no se ha ingresado los Kms recorridos.");
+    }
+
     const filteredVehicles = vehiculos
       .filter(item => item.placa === title && new Date(item.fecha) < new Date(date));
     if (filteredVehicles.length > 0) {
@@ -87,6 +91,9 @@ const Card = ({ setChange, change, vehiculos, record_consumo_id,  title, initial
             <strong>
               <p className="card-text text-success">Tanqueo: {refueling} gal</p>
             </strong>
+            <strong>
+              <p className="card-text text-danger">Recorrido: {km_recorridos  || 0} Kms</p>
+            </strong>
             <div className='mb-3 mt-1'>
 
             </div>
@@ -133,6 +140,7 @@ const FuelConsumptionDashboard = () => {
                 refueling={item.tanqueo || 0}
                 initialStock={item.programacion[0].vehiculo.combustible}
                 record_consumo_id={item.record_consumo[0].id}
+                km_recorridos={item.record_consumo[0].km_recorridos} 
                 date={item.fecha}
                 setChange={setChange}
                 change={change}

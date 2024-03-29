@@ -78,4 +78,21 @@ const filtrarNotificaciones = async (data) => {
     }
 };
 
-export { agregarNotificaciones, eliminarNotificaciones, actualizarNotificaciones, buscarNotificaciones, listarNotificaciones, filtrarNotificaciones };
+const paginarNotificaciones = async (page, limit, data) => {
+    try {
+        const res = await axios.post(endPoints.notificaciones.pagination(page, limit), data);
+        return res.data;
+    } catch (e) {
+        alert("No se han encontrado notificaciones");
+    }
+};
+
+export {
+    agregarNotificaciones,
+    eliminarNotificaciones,
+    actualizarNotificaciones,
+    buscarNotificaciones,
+    listarNotificaciones,
+    filtrarNotificaciones,
+    paginarNotificaciones
+};

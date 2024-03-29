@@ -147,46 +147,46 @@ const Header = () => {
               <DropdownButton onClick={() => openMenu("admin")} variant="dark" id="dropdown-basic-button" title="Programaciones">
                 <Dropdown.Item onClick={() => openWindow("programador")} >Programador</Dropdown.Item>
                 <Dropdown.Item onClick={() => openWindow("contenedores")}>Contenedores</Dropdown.Item>
-                <Dropdown.Item onClick={() => openWindow("combustible")}>Combustible</Dropdown.Item>
                 <Dropdown.Item onClick={() => openWindow("historico")}>Historico</Dropdown.Item>
+                <Dropdown.Item onClick={() => openWindow("notificaciones")}>Notificaciones</Dropdown.Item>
               </DropdownButton>
 
-{false && <span>
-              <DropdownButton variant="dark" className={styles.itemMenuAdmin} onClick={() => openMenu("admin")} id="dropdown-basic-button" title="Administrador">
-                <Dropdown.Item onClick={() => openWindow("usuarios")} >Usuarios</Dropdown.Item>
-                <Dropdown.Item onClick={() => openWindow("productos")}>Productos</Dropdown.Item>
-                <Dropdown.Item onClick={() => openWindow("combos")}>Combos</Dropdown.Item>
-                <Dropdown.Item onClick={() => openWindow("categorias")}>Categorias</Dropdown.Item>
-                <Dropdown.Item onClick={() => openWindow("proveedores")}>Proveedores</Dropdown.Item>
-                <Dropdown.Item onClick={() => openWindow("bodegas")}>Almacenes</Dropdown.Item>
-                <Dropdown.Item onClick={() => openWindow("transporte")}>Transporte</Dropdown.Item>
-                <Dropdown.Item onClick={() => openWindow("etiquetas")}>Etiquetas</Dropdown.Item>
-                <Dropdown.Item onClick={() => setOpenConfig(true)} className={styles.configButton}>
-                  <Image className={styles.imgConfig} width="15" height="15" src={config} alt="configuración" />
-                  <span className={styles.textConfig}>Configuración</span>
-                </Dropdown.Item>
-              </DropdownButton>
+              {false && <span>
+                <DropdownButton variant="dark" className={styles.itemMenuAdmin} onClick={() => openMenu("admin")} id="dropdown-basic-button" title="Administrador">
+                  <Dropdown.Item onClick={() => openWindow("usuarios")} >Usuarios</Dropdown.Item>
+                  <Dropdown.Item onClick={() => openWindow("productos")}>Productos</Dropdown.Item>
+                  <Dropdown.Item onClick={() => openWindow("combos")}>Combos</Dropdown.Item>
+                  <Dropdown.Item onClick={() => openWindow("categorias")}>Categorias</Dropdown.Item>
+                  <Dropdown.Item onClick={() => openWindow("proveedores")}>Proveedores</Dropdown.Item>
+                  <Dropdown.Item onClick={() => openWindow("bodegas")}>Almacenes</Dropdown.Item>
+                  <Dropdown.Item onClick={() => openWindow("transporte")}>Transporte</Dropdown.Item>
+                  <Dropdown.Item onClick={() => openWindow("etiquetas")}>Etiquetas</Dropdown.Item>
+                  <Dropdown.Item onClick={() => setOpenConfig(true)} className={styles.configButton}>
+                    <Image className={styles.imgConfig} width="15" height="15" src={config} alt="configuración" />
+                    <span className={styles.textConfig}>Configuración</span>
+                  </Dropdown.Item>
+                </DropdownButton>
 
-              <DropdownButton variant="dark" id="dropdown-basic-button" title="Seguridad">
-                <Dropdown.Item onClick={() => onSeguridad("/Recepcion")}>Recepción</Dropdown.Item>
-                <Dropdown.Item onClick={() => onSeguridad("/Transferencias")}>Transferencias</Dropdown.Item>
-                <Dropdown.Item onClick={() => onSeguridad("/Disponibles")}>Disponibles</Dropdown.Item>
-                <Dropdown.Item onClick={() => onSeguridad("/Usuarios")}>Usuarios</Dropdown.Item>
-              </DropdownButton>
+                <DropdownButton variant="dark" id="dropdown-basic-button" title="Seguridad">
+                  <Dropdown.Item onClick={() => onSeguridad("/Recepcion")}>Recepción</Dropdown.Item>
+                  <Dropdown.Item onClick={() => onSeguridad("/Transferencias")}>Transferencias</Dropdown.Item>
+                  <Dropdown.Item onClick={() => onSeguridad("/Disponibles")}>Disponibles</Dropdown.Item>
+                  <Dropdown.Item onClick={() => onSeguridad("/Usuarios")}>Usuarios</Dropdown.Item>
+                </DropdownButton>
 
-              <DropdownButton variant="dark" onClick={() => openMenu("almacen")} className={styles.itemMenu} id="dropdown-basic-button" title="Almacén">
-                <Dropdown.Item onClick={initialAlmacenMenu.handleRecepcion}>Recepción</Dropdown.Item>
-                <Dropdown.Item onClick={initialAlmacenMenu.handleTraslados}>Traslados</Dropdown.Item>
-                <Dropdown.Item onClick={initialAlmacenMenu.handlePedidos}>Pedidos</Dropdown.Item>
-                <Dropdown.Item onClick={initialAlmacenMenu.handleMovimientos}>Movimientos</Dropdown.Item>
-              </DropdownButton>
+                <DropdownButton variant="dark" onClick={() => openMenu("almacen")} className={styles.itemMenu} id="dropdown-basic-button" title="Almacén">
+                  <Dropdown.Item onClick={initialAlmacenMenu.handleRecepcion}>Recepción</Dropdown.Item>
+                  <Dropdown.Item onClick={initialAlmacenMenu.handleTraslados}>Traslados</Dropdown.Item>
+                  <Dropdown.Item onClick={initialAlmacenMenu.handlePedidos}>Pedidos</Dropdown.Item>
+                  <Dropdown.Item onClick={initialAlmacenMenu.handleMovimientos}>Movimientos</Dropdown.Item>
+                </DropdownButton>
 
-              <DropdownButton variant="dark" onClick={() => openMenu("info")} className={styles.itemMenu} id="dropdown-basic-button" title="Informes">
-                <Dropdown.Item onClick={initialInfoMenu.handleMovimientos}>Movimientos</Dropdown.Item>
-                <Dropdown.Item onClick={initialInfoMenu.handleStock}>Stock</Dropdown.Item>
-                <Dropdown.Item onClick={initialInfoMenu.handleTraslados}>Traslados</Dropdown.Item>
-                <Dropdown.Item onClick={initialInfoMenu.handlePedidos}>Pedidos</Dropdown.Item>
-              </DropdownButton>
+                <DropdownButton variant="dark" onClick={() => openMenu("info")} className={styles.itemMenu} id="dropdown-basic-button" title="Informes">
+                  <Dropdown.Item onClick={initialInfoMenu.handleMovimientos}>Movimientos</Dropdown.Item>
+                  <Dropdown.Item onClick={initialInfoMenu.handleStock}>Stock</Dropdown.Item>
+                  <Dropdown.Item onClick={initialInfoMenu.handleTraslados}>Traslados</Dropdown.Item>
+                  <Dropdown.Item onClick={initialInfoMenu.handlePedidos}>Pedidos</Dropdown.Item>
+                </DropdownButton>
               </span>}
             </Nav>
 
