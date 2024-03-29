@@ -18,6 +18,7 @@ const Card = ({ setChange, change, km_recorridos, vehiculos, record_consumo_id, 
   useEffect(() => {
   }, []);
 
+
   const liquidar = async () => {
     if(!km_recorridos) {
       return alert("Aún no se ha ingresado los Kms recorridos.");
@@ -105,7 +106,7 @@ const Card = ({ setChange, change, km_recorridos, vehiculos, record_consumo_id, 
   );
 };
 
-const FuelConsumptionDashboard = () => {
+const FuelConsumptionDashboard = ( {handleChange} ) => {
   const [vehiculos, setVehiculos] = useState([]);
   const [change, setChange] = useState(false);
   const { alert, setAlert, toogleAlert } = useAlert();
@@ -146,6 +147,7 @@ const FuelConsumptionDashboard = () => {
                 change={change}
                 setAlert={setAlert}
                 vehiculos={vehiculos}
+                handleChange={handleChange}
               />
             );
           }
