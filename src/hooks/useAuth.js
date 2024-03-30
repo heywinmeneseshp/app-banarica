@@ -24,9 +24,7 @@ function useProviderAuth() {
         try {
             const { data } = await axios.post(endPoints.auth.login, { username: username, password: password });
 
-            const expireMinutes = 30;
-            const expireMilliseconds = expireMinutes * 60 * 1000; // Convertir minutos a milisegundos
-            const expire = new Date(Date.now() + expireMilliseconds);
+            const expire = 1/48;
                    
             Cookie.set('token', data.token, { expires: expire });
             axios.defaults.headers.Authorization = 'Bearer ' + data.token;
@@ -36,10 +34,7 @@ function useProviderAuth() {
 
             //Guardar usuario en local storage
             const usuario = res.data.usuario;
-            const usuarioComoCadena = JSON.stringify({
-                usuario: usuario,
-                expiresAt: Date.now() + (30 * 60 * 1000) // 30 minutos en milisegundos
-            });
+            const usuarioComoCadena = JSON.stringify(usuario);
             
             localStorage.setItem('usuario', usuarioComoCadena);
 

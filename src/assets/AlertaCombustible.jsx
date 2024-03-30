@@ -10,7 +10,7 @@ export default function AlertaCombustible({ data, setChange }) {
 
 
     const onCerrar = () => {
-        actualizarNotificaciones(data.id, { visto: true, aprobado: true, descripcion: "completado" });
+        actualizarNotificaciones(data.id, { visto: true, aprobado: true });
         setChange(true);
         setTimeout(() => {
             setChange(data.id);
