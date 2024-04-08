@@ -107,6 +107,7 @@ export default function Programador() {
                 "Diferencia %": (!item?.stock_real || !item?.stock_final ) ? 0 : (((item.stock_real - item.stock_final) / item.stock_real) * 100).toFixed(2) || 0,
                };         
         });
+        console.log(newData);
         excel(newData, "Historial consumo", "Historial consumo");
     };
 
