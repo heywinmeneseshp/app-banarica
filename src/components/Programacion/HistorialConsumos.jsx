@@ -92,19 +92,19 @@ export default function Programador() {
 
         const newData = data.map(item => {
             return {
-                "Fecha": item.fecha || "",
-                "Semana": item.semana || "",
-                "Vehiculo": item.vehiculo.placa || "",
-                "Conductor": item.conductore.conductor || "",
-                "Stock incial": item.stock_inicial || 0,
-                "Gal por Km": item.gal_por_km || 0,
-                "Km recorridos": item.km_recorridos || 0,
-                "Consumo": (item.km_recorridos * item.gal_por_km) || 0,
+                "Fecha": item?.fecha || "",
+                "Semana": item?.semana || "",
+                "Vehiculo": item?.vehiculo?.placa || "",
+                "Conductor": item?.conductore?.conductor || "",
+                "Stock incial": item?.stock_inicial || 0,
+                "Gal por Km": item?.gal_por_km || 0,
+                "Km recorridos": item?.km_recorridos || 0,
+                "Consumo": (!item?.km_recorridos || !item?.gal_por_km) ? 0 : (item?.km_recorridos * item?.gal_por_km),
                 "Tanqueo": item.tanqueo || 0,
-                "Stock final": item.stock_final|| 0,
-                "Stock real": item.stock_real || 0,
-                "Diferencia": (item.stock_real - item.stock_final).toFixed(2) || 0,
-                "Diferencia %":  (((item.stock_real - item.stock_final) / item.stock_real) * 100).toFixed(2) || 0,
+                "Stock final": item?.stock_final|| 0,
+                "Stock real": item?.stock_real || 0,
+                "Diferencia": (!item?.stock_real || !item?.stock_final ) ? 0 : (item.stock_real - item.stock_final).toFixed(2),
+                "Diferencia %": (!item?.stock_real || !item?.stock_final ) ? 0 : (((item.stock_real - item.stock_final) / item.stock_real) * 100).toFixed(2) || 0,
                };         
         });
         excel(newData, "Historial consumo", "Historial consumo");
