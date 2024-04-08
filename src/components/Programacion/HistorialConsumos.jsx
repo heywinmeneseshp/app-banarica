@@ -8,7 +8,7 @@ import FormulariosProgramacion from '@components/shared/Formularios/FormularioPr
 import Alertas from '@assets/Alertas';
 
 import { listarConductores } from '@services/api/conductores';
-import { actualizarRecord_consumo, paginarRecord_consumo, encontrarUnConsumo } from '@services/api/record_consumo';
+import { actualizarRecord_consumo, paginarRecord_consumo } from '@services/api/record_consumo';
 import useAlert from '@hooks/useAlert';
 
 import editar from '@public/images/editar.png';
