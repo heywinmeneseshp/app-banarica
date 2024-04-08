@@ -4,13 +4,12 @@ import React, { useEffect, useState } from 'react';
 import Formularios from '@components/shared/Formularios/Formularios';
 //SERVICES
 import { consultarConsumo, liquidarConsumoRutas } from '@services/api/record_consumo';
-import { agregarTanqueo, actualizarTanqueo } from '@services/api/tanqueo';
 import useAlert from '@hooks/useAlert';
 import Alertas from '@assets/Alertas';
 
 
 
-const Card = ({ setChange, change, km_recorridos, vehiculos, record_consumo_id,  title, initialStock, refueling,  date, setAlert }) => {
+const Card = ({ setChange, km_recorridos, record_consumo_id, title, initialStock, refueling, date, setAlert }) => {
 
   const [tanquar, setTanquear] = useState(false);
 
@@ -18,53 +17,30 @@ const Card = ({ setChange, change, km_recorridos, vehiculos, record_consumo_id, 
   useEffect(() => {
   }, []);
 
-
-  const liquidar = async () => {
-    if(!km_recorridos) {
-      return alert("Aún no se ha ingresado los Kms recorridos.");
+  const liquidar = () => {
+    if (km_recorridos == 0 || km_recorridos == null) {
+      return alert("Por favor, ingrese una cantidad válida de kilómetros recorridos.");
     }
-
-    const filteredVehicles = vehiculos
-      .filter(item => item.placa === title && new Date(item.fecha) < new Date(date));
-    if (filteredVehicles.length > 0) {
-      return alert("Aún hay pendientes de liquidación de días anteriores.");
-    }
-    let stockReal = prompt(`Por favor, introduce la cantidad en galones del combustible existente en el vehículo ${title}:`, "0");
-    if (stockReal === null) {
-      alert("Operación cancelada por el usuario.");
-      return;
-    }
-    stockReal = parseFloat(stockReal);
-    if (isNaN(stockReal)) {
-      alert("Debe introducir un valor numérico válido.");
-      return;
-    }
-    try {
-      await liquidarConsumoRutas(record_consumo_id, stockReal);
-      setChange(!change);
-    } catch (error) {
-      console.error("Error al liquidar consumo de rutas:", error);
-    }
+    openLiquidar(true);
   };
-  const tanquear = async (bool) => {
+
+  const openLiquidar = (bool) => {
     setTanquear(bool);
-    setChange(!change);
+    setChange(bool);
   };
 
   return (
     <>
       {tanquar && <Formularios
-        crear={agregarTanqueo}
-        actualizar={actualizarTanqueo}
-        setOpen={tanquear}
+        crear={liquidarConsumoRutas}
+        actualizar={liquidarConsumoRutas}
+        setOpen={openLiquidar}
         element={false}
         setAlert={setAlert}
         encabezados={{
           "Record id": "record_consumo_id",
-          "Fecha": "fecha",
-          "No. factura": "factura",
-          "Galones": "tanqueo",
-          "Costo total": "costo",
+          "Tanqueo": "tanqueo",
+          "Stock real": "stock_real",
         }}
         onlyRead={["record_consumo_id"]} /*Solo lectura es este el valor predeteminado*/
         valorPredeterminado={record_consumo_id} /*Colocar el valorPredeterminado como defecto*/
@@ -72,17 +48,12 @@ const Card = ({ setChange, change, km_recorridos, vehiculos, record_consumo_id, 
       <div className="col-md-3 mb-4">
         <div className="card border-0 rounded-3 shadow">
           <div className="card-header bg-success text-white border-0 rounded-top d-flex justify-content-between align-items-center text-center">
-            <span onClick={() => tanquear(true)} style={{
-              width: '20px',
-              height: '20px',
-            }} className="rounded-circle border text-black border-white bg-white d-flex justify-content-center align-items-center"><b>+</b>
-            </span>
             <span>
               <b>{title}</b> </span>
-            <span onClick={() => liquidar()} style={{
-              width: '20px',
-              height: '20px',
-            }} className="rounded-circle border text-black border-warning bg-warning d-flex justify-content-center align-items-center"><b>+</b>
+            <span onClick={() => liquidar()}
+              style={{ width: '20px', height: '20px', }}
+              className="rounded-circle border text-black border-warning bg-warning d-flex justify-content-center align-items-center">
+              <b>+</b>
             </span>
           </div>
           <div className="card-body text-center text-sm">
@@ -93,7 +64,7 @@ const Card = ({ setChange, change, km_recorridos, vehiculos, record_consumo_id, 
               <p className="card-text text-success">Tanqueo: {refueling} gal</p>
             </strong>
             <strong>
-              <p className="card-text text-danger">Recorrido: {km_recorridos  || 0} Kms</p>
+              <p className="card-text text-danger">Recorrido: {km_recorridos || 0} Kms</p>
             </strong>
             <div className='mb-3 mt-1'>
 
@@ -106,7 +77,7 @@ const Card = ({ setChange, change, km_recorridos, vehiculos, record_consumo_id, 
   );
 };
 
-const FuelConsumptionDashboard = ( {handleChange} ) => {
+const FuelConsumptionDashboard = ({ handleChange }) => {
   const [vehiculos, setVehiculos] = useState([]);
   const [change, setChange] = useState(false);
   const { alert, setAlert, toogleAlert } = useAlert();
@@ -141,7 +112,7 @@ const FuelConsumptionDashboard = ( {handleChange} ) => {
                 refueling={item.tanqueo || 0}
                 initialStock={item.programacion[0].vehiculo.combustible}
                 record_consumo_id={item.record_consumo[0].id}
-                km_recorridos={item.record_consumo[0].km_recorridos} 
+                km_recorridos={item.record_consumo[0].km_recorridos}
                 date={item.fecha}
                 setChange={setChange}
                 change={change}

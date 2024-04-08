@@ -8,11 +8,12 @@ import FormulariosProgramacion from '@components/shared/Formularios/FormularioPr
 import Alertas from '@assets/Alertas';
 
 import { listarConductores } from '@services/api/conductores';
-import { actualizarRecord_consumo, paginarRecord_consumo } from '@services/api/record_consumo';
+import { actualizarRecord_consumo, paginarRecord_consumo, encontrarUnConsumo } from '@services/api/record_consumo';
 import useAlert from '@hooks/useAlert';
 
 import editar from '@public/images/editar.png';
 import guardar from '@public/images/guardar.png';
+import Formularios from '@components/shared/Formularios/Formularios';
 
 
 export default function Programador() {
@@ -25,6 +26,8 @@ export default function Programador() {
     const [open, setOpen] = useState(false);
     const [boolEdit, setBoolEdit] = useState([]);
     const [boolKm, setBoolKm] = useState([]);
+    const [openConsumo, setOpenConsumo] = useState(false);
+    const [element, setElement] = useState({});
     const { alert, setAlert, toogleAlert } = useAlert();
     const formRef = useRef();
     const formEdit = useRef();
@@ -61,20 +64,12 @@ export default function Programador() {
         setLimit(50);
     };
 
-    const editarConsumo = async (index, id) => {
-        const formData = new FormData(formEdit.current);
-        const valorInput = formData.get(`${id}-consumo`);
-        if (valorInput != null) {
-            await actualizarRecord_consumo(id, { stock_real: valorInput });
-        };
-        setBoolEdit(prevState => {
-            const newArray = [...prevState];
-            newArray[index] = !newArray[index];
-            return newArray;
-        });
+    const editarConsumo = async (item) => {
+        setElement(item);
+        setOpenConsumo(true);
     };
 
-    const editarKm = async (index, id,) => {
+    const editarKm = async (index, id) => {
         const formData = new FormData(formEdit.current);
         const valorInput = formData.get(`${id}-km`);
         if (valorInput != null) {
@@ -228,7 +223,7 @@ export default function Programador() {
                                 <td className='text-center'>{`${(item?.gal_por_km || 0).toFixed(3)}`}</td>
                                 <td className='table-danger text-center'>{(stock_final - item?.stock_inicial - item?.tanqueo).toFixed(2)}</td>
                                 <td className='table-success text-center'>{(item?.tanqueo || 0).toFixed(2)}</td>
-                                <td className=' text-center'>{(stock_final).toFixed(2)}</td>
+                                <td className=' text-center'>{stock_final}</td>
                                 <td className='table-info text-center'>
                                     <div className='d-flex justify-content-center align-items-start'>
                                         <div className='col-9'>
@@ -246,9 +241,9 @@ export default function Programador() {
                                         </div>
                                         <div className='col-3' style={{ alignSelf: 'center' }}>
                                             {item.liquidado && <Image
-                                                onClick={() => editarConsumo(index, item.id)}
+                                                onClick={() => editarConsumo(item)}
                                                 style={{ cursor: 'pointer' }}
-                                                src={!boolEdit[index] ? editar : guardar} height={15} width={15} alt="editar" />
+                                                src={editar} height={15} width={15} alt="editar" />
                                             }
                                         </div>
                                     </div>
@@ -264,6 +259,21 @@ export default function Programador() {
                 <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
             </form>
             {open && <FormulariosProgramacion setOpen={setOpen} setAlert={setAlert} />}
+            {openConsumo && <Formularios
+                actualizar={actualizarRecord_consumo}
+                setOpen={setOpenConsumo}
+                element={element}
+                setAlert={setAlert}
+                encabezados={{
+                    "Id": "id",
+                    "Stock inicial": "stock_inicial",
+                    "Gal por km": "gal_por_km",
+                    "Kms recorridos": "km_recorridos",
+                    "Tanqueo": "tanqueo",
+                    "Stock final": "stock_final",
+                    "Stock real": "stock_real",
+                }}
+            />}
         </>
     );
 }
