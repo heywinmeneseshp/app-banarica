@@ -14,7 +14,7 @@ import useAlert from '@hooks/useAlert';
 import editar from '@public/images/editar.png';
 import guardar from '@public/images/guardar.png';
 import Formularios from '@components/shared/Formularios/Formularios';
-
+import excel from '@hooks/useExcel';
 
 export default function Programador() {
 
@@ -31,8 +31,6 @@ export default function Programador() {
     const { alert, setAlert, toogleAlert } = useAlert();
     const formRef = useRef();
     const formEdit = useRef();
-
-
 
     const handleNuevoMovi = async () => {
         setOpen(true);
@@ -80,6 +78,36 @@ export default function Programador() {
             newArray[index] = !newArray[index];
             return newArray;
         });
+    };
+
+    const onDescargarExcel = async () => {
+        const formData = new FormData(formRef.current);
+        const body = {
+            semana: formData.get("semana"),
+            vehiculo: formData.get("vehiculo"),
+            conductor: formData.get("conductor") ? formData.get("conductor") : "",
+            fecha: formData.get("fecha")
+        };
+        const { data } = await paginarRecord_consumo(null, null, body);
+
+        const newData = data.map(item => {
+            return {
+                "Fecha": item.fecha,
+                "Semana": item.semana,
+                "Vehiculo": item.vehiculo.placa,
+                "Conductor": item.conductore.conductor,
+                "Stock incial": item.stock_inicial,
+                "Gal por Km": item.gal_por_km,
+                "Km recorridos": item.km_recorridos,
+                "Consumo": item.km_recorridos * item.gal_por_km,
+                "Tanqueo": item.tanqueo,
+                "Stock final": item.stock_final,
+                "Stock real": item.stock_real,
+                "Diferencia": (item.stock_real - item.stock_final).toFixed(2),
+                "Diferencia %":  (((item.stock_real - item.stock_final) / item.stock_real) * 100).toFixed(2),
+               };         
+        });
+        excel(newData, "Historial consumo", "Historial consumo");
     };
 
     return (
@@ -149,7 +177,7 @@ export default function Programador() {
                     </div>
 
                     <div className='col-md-3 col-lg-2 mt-4'>
-                        <button type="button" className={`btn btn-success text-center w-100`}>
+                        <button onClick={() => onDescargarExcel()} type="button" className={`btn btn-success text-center w-100`}>
                             Descargar Excel
                         </button>
                     </div>
@@ -175,6 +203,7 @@ export default function Programador() {
                             <th className='text-center'>Stock Final</th>
                             <th className='bg-info  text-center'>Stock Real</th>
                             <th className='bg-warning text-black text-center'>Diferencia</th>
+                            <th className='bg-warning text-black text-center'>%</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -249,6 +278,7 @@ export default function Programador() {
                                     </div>
                                 </td>
                                 <td className={`${colorDif} text-center`}>{diferencia}</td>
+                                <td className={`${colorDif} text-center`}>{variacionPorcentual.toFixed(2)} %</td>
                             </tr>);
                         })}
 
