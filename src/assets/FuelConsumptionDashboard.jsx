@@ -86,14 +86,23 @@ const FuelConsumptionDashboard = ({ handleChange }) => {
     async function fetchData() {
       try {
         let vehiculosList = await consultarConsumo();
-
-        console.log(vehiculosList);
-
         vehiculosList.sort((a, b) => {
-          // Convertir las placas a minúsculas para asegurar una comparación insensible a mayúsculas
+          // Convertir las fechas a objetos de fecha y ordenar por fecha
+          const fechaA = new Date(a.fecha);
+          const fechaB = new Date(b.fecha);
+          
+          // Comparar las fechas
+          if (fechaA < fechaB) {
+            return -1;
+          }
+          if (fechaA > fechaB) {
+            return 1;
+          }
+        
+          // Si las fechas son iguales, ordenar por placa
           const placaA = a.placa.toLowerCase();
           const placaB = b.placa.toLowerCase();
-        
+          
           // Comparar las placas
           if (placaA !== placaB) {
             return placaA.localeCompare(placaB);
@@ -102,22 +111,10 @@ const FuelConsumptionDashboard = ({ handleChange }) => {
           // Si las placas son iguales, ordenar por categoría
           const categoriaA = a.programacion[0].vehiculo.categoria_id.toLowerCase();
           const categoriaB = b.programacion[0].vehiculo.categoria_id.toLowerCase(); 
-        
+          
           // Comparar las categorías
-          if (categoriaA !== categoriaB) {
-            return categoriaA.localeCompare(categoriaB);
-          }
-        
-          // Si las categorías son iguales, convertir las fechas a objetos de fecha y ordenar por fecha
-          const fechaA = new Date(a.fecha);
-          const fechaB = new Date(b.fecha);
-        
-          return fechaA - fechaB;
+          return categoriaA.localeCompare(categoriaB);
         });
-        
-        
-
-
         setVehiculos(vehiculosList);
       } catch (error) {
         console.error('Error fetching data:', error);
