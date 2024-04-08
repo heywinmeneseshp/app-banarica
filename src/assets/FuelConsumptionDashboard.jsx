@@ -87,29 +87,34 @@ const FuelConsumptionDashboard = ({ handleChange }) => {
       try {
         let vehiculosList = await consultarConsumo();
 
+        console.log(vehiculosList);
+
         vehiculosList.sort((a, b) => {
           // Convertir las placas a minúsculas para asegurar una comparación insensible a mayúsculas
           const placaA = a.placa.toLowerCase();
           const placaB = b.placa.toLowerCase();
+        
           // Comparar las placas
-          if (placaA < placaB) {
-            return -1; // a viene antes que b
+          if (placaA !== placaB) {
+            return placaA.localeCompare(placaB);
           }
-          if (placaA > placaB) {
-            return 1; // b viene antes que a
-          }     
+        
           // Si las placas son iguales, ordenar por categoría
           const categoriaA = a.programacion[0].vehiculo.categoria_id.toLowerCase();
           const categoriaB = b.programacion[0].vehiculo.categoria_id.toLowerCase(); 
+        
           // Comparar las categorías
-          if (categoriaA < categoriaB) {
-            return -1; // a viene antes que b
+          if (categoriaA !== categoriaB) {
+            return categoriaA.localeCompare(categoriaB);
           }
-          if (categoriaA > categoriaB) {
-            return 1; // b viene antes que a
-          }
-          return 0; // son iguales
+        
+          // Si las categorías son iguales, convertir las fechas a objetos de fecha y ordenar por fecha
+          const fechaA = new Date(a.fecha);
+          const fechaB = new Date(b.fecha);
+        
+          return fechaA - fechaB;
         });
+        
         
 
 
