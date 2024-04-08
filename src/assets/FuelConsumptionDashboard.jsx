@@ -99,22 +99,22 @@ const FuelConsumptionDashboard = ({ handleChange }) => {
             return 1;
           }
         
-          // Si las fechas son iguales, ordenar por placa
-          const placaA = a.placa.toLowerCase();
-          const placaB = b.placa.toLowerCase();
-          
-          // Comparar las placas
-          if (placaA !== placaB) {
-            return placaA.localeCompare(placaB);
-          }
-        
-          // Si las placas son iguales, ordenar por categoría
+          // Si las fechas son iguales, ordenar por categoría
           const categoriaA = a.programacion[0].vehiculo.categoria_id.toLowerCase();
           const categoriaB = b.programacion[0].vehiculo.categoria_id.toLowerCase(); 
           
           // Comparar las categorías
-          return categoriaA.localeCompare(categoriaB);
-        });
+          if (categoriaA !== categoriaB) {
+            return categoriaA.localeCompare(categoriaB);
+          }
+        
+          // Si las categorías son iguales, ordenar por placa
+          const placaA = a.placa.toLowerCase();
+          const placaB = b.placa.toLowerCase();
+          
+          // Comparar las placas
+          return placaA.localeCompare(placaB);
+        });        
         setVehiculos(vehiculosList);
       } catch (error) {
         console.error('Error fetching data:', error);
