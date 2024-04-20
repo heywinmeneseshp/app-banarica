@@ -57,10 +57,12 @@ export default function Programador() {
             fecha: formData.get("fecha"),
             movimiento: formData.get("movimiento"),
         };
-        const res = await paginarProgramaciones(pagination, 50, body);
+        const res = await paginarProgramaciones(pagination, limit, body);
+        console.log(res.total);
+        console.log(res.total / 25);
         setItemsList(res.data);
         setTotal(res.total);
-        setLimit(50);
+        setLimit(25);
     };
 
     const onEditar = (item) => {
@@ -277,7 +279,9 @@ export default function Programador() {
                 <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
             </div>
             {open && <FormulariosProgramacion setOpen={setOpen} setAlert={setAlert} />}
-            {openEditar && <FormulariosProgramacionEditar element={element} setOpen={setOpenEditar} setAlert={setAlert} />}
+            {openEditar &&
+                <FormulariosProgramacionEditar
+                    element={element} setOpen={setOpenEditar} setAlert={setAlert} />}
         </>
     );
 }

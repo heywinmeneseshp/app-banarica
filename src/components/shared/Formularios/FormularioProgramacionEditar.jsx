@@ -29,6 +29,7 @@ export default function FormulariosProgramacionEditar({ element, setOpen, setAle
 
   useEffect(() => {
     setIsChecked(element.cobrar);
+    setIsCheckedContenedor(element?.movimiento == "Contenedor");
     listar();
   }, [change]);
 
@@ -272,11 +273,11 @@ export default function FormulariosProgramacionEditar({ element, setOpen, setAle
                           required
                           onChange={() => isContainter()}
                         >
-                          <option value="Local">Local</option>
-                          <option value="Puerto">Puerto</option>
-                          <option value="Contenedor">Contenedor</option>
-                          <option value="Transitorio">Transitorio</option>
-                          <option value="Transitorio">Otro</option>
+                          <option selected={element?.movimiento == "Local"} value="Local">Local</option>
+                          <option selected={element?.movimiento == "Puerto"} value="Puerto">Puerto</option>
+                          <option selected={element?.movimiento == "Contenedor"} value="Contenedor">Contenedor</option>
+                          <option selected={element?.movimiento == "Transitorio"} value="Transitorio">Transitorio</option>
+                          <option selected={element?.movimiento == "Otro"} value="Otro">Otro</option>
                         </select>
                       </div>
 

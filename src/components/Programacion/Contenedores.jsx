@@ -5,18 +5,18 @@ import style from "@components/Programacion/camiones.module.css";
 import Paginacion from '@components/shared/Tablas/Paginacion';
 import Alertas from '@assets/Alertas';
 
-import {  paginarProgramaciones, agregarProgramaciones, actualizarProgramaciones } from '@services/api/programaciones';
+import {  paginarProgramaciones } from '@services/api/programaciones';
 import { listarUbicaciones } from '@services/api/ubicaciones';
 import { listarConductores } from '@services/api/conductores';
 import useAlert from '@hooks/useAlert';
-import Formularios from '@components/shared/Formularios/Formularios';
+import FormulariosProgramacionEditar from '@components/shared/Formularios/FormularioProgramacionEditar';
 
 
 
 export default function Programador() {
 
     const [pagination, setPagination] = useState(1);
-    const [total, setTotal] = useState(10);
+    const [total, setTotal] = useState();
     const [limit, setLimit] = useState(25);
     const [ubicaciones, setUbicaciones] = useState([]);
     const [itemList, setItemsList] = useState([]);
@@ -54,29 +54,16 @@ export default function Programador() {
         const res = await paginarProgramaciones(pagination, limit, body);
         setItemsList(res.data);
         setTotal(res.total);
-        setLimit(50);
+        setLimit(25);
     };
 
     return (
         <>
             <Alertas alert={alert} handleClose={toogleAlert} />
+         
             {open &&
-                <Formularios
-                    crear={agregarProgramaciones}
-                    actualizar={actualizarProgramaciones}
-                    setOpen={setOpen}
-                    element={element}
-                    setAlert={setAlert}
-                    encabezados={{
-                        "ID": "id",
-                        "Semana": "semana",
-                        "Fecha": "fecha",
-                        "Contenedor": "contenedor",
-                        "Detalles": "detalles",
-                    }}
-                    valorPredeterminado={element.id}
-                    onlyRead={["id"]} /*Solo lectura es este el valor predeteminado*/
-                />
+               <FormulariosProgramacionEditar 
+               element={element} setOpen={setOpen} setAlert={setAlert} />
 
             }
             <form ref={formRef} method="POST" className="container" action="/crear-conductor">
@@ -185,9 +172,9 @@ export default function Programador() {
                                 <td >{item?.semana}</td>
                                 <td>{item?.vehiculo?.placa}</td>
                                 <td className='table-success text-center'>{item?.ruta?.ubicacion_1?.ubicacion}</td>
-                                <td className='table-success text-center'>{0}</td>
-                                <td className='table-success text-center'></td>
-                                <td className='table-success text-center'></td>
+                                <td className='table-success text-center'>{item?.llegada_origen}</td>
+                                <td className='table-success text-center'>{item?.cierre}</td>
+                                <td className='table-success text-center'>{item?.salida_origen}</td>
                                 <td className='table-secondary text-center'><b>{item?.contenedor}</b></td>
                                 <td className='table-secondary text-center'><button onClick={()=>onEditar(item)} className='btn-primary btn-warning btn btn-sm'>Editar</button></td>
                             </tr>);
