@@ -15,6 +15,7 @@ import editar from '@public/images/editar.png';
 import guardar from '@public/images/guardar.png';
 import Formularios from '@components/shared/Formularios/Formularios';
 import excel from '@hooks/useExcel';
+import { actualizarVehiculo } from '@services/api/vehiculos';
 
 export default function Programador() {
 
@@ -101,14 +102,41 @@ export default function Programador() {
                 "Km recorridos": item?.km_recorridos || 0,
                 "Consumo": (!item?.km_recorridos || !item?.gal_por_km) ? 0 : (item?.km_recorridos * item?.gal_por_km),
                 "Tanqueo": item.tanqueo || 0,
-                "Stock final": item?.stock_final|| 0,
+                "Stock final": item?.stock_final || 0,
                 "Stock real": item?.stock_real || 0,
-                "Diferencia": (!item?.stock_real || !item?.stock_final ) ? 0 : (item.stock_real - item.stock_final).toFixed(2),
-                "Diferencia %": (!item?.stock_real || !item?.stock_final ) ? 0 : (((item.stock_real - item.stock_final) / item.stock_real) * 100).toFixed(2) || 0,
-               };         
+                "Diferencia": (!item?.stock_real || !item?.stock_final) ? 0 : (item.stock_real - item.stock_final).toFixed(2),
+                "Diferencia %": (!item?.stock_real || !item?.stock_final) ? 0 : (((item.stock_real - item.stock_final) / item.stock_real) * 100).toFixed(2) || 0,
+            };
         });
         console.log(newData);
         excel(newData, "Historial consumo", "Historial consumo");
+    };
+
+    const actualizar = async (id, item) => {
+        const consumo = (item.gal_por_km * item.km_recorridos);
+        const stock = parseFloat(item.stock_inicial) + parseFloat(item.tanqueo);
+        const stockFinal = stock - consumo;
+        let element = {
+            "stock_inicial": item.stock_inicial,
+            "gal_por_km": item.gal_por_km,
+            "km_recorridos": item.km_recorridos,
+            "tanqueo": item.tanqueo,
+            "stock_final": stockFinal,
+            "stock_real": item.stock_real,
+        };
+        const {data} = await actualizarRecord_consumo(id, element);
+        const newElement = data.nextItem;
+    
+        if (newElement.stock_final == null) {
+            await actualizarVehiculo(newElement.vehiculo_id, { "combustible": item.stock_real });
+        } else {
+            
+            const newStockFinal = (parseFloat(item.stock_real) + parseFloat(newElement.tanqueo)) - (newElement.gal_por_km * newElement.km_recorridos );
+            await actualizarRecord_consumo(newElement.id, {
+                "stock_inicial": item.stock_real,
+                "stock_final": newStockFinal,
+            });
+        }
     };
 
     return (
@@ -291,7 +319,7 @@ export default function Programador() {
             </form>
             {open && <FormulariosProgramacion setOpen={setOpen} setAlert={setAlert} />}
             {openConsumo && <Formularios
-                actualizar={actualizarRecord_consumo}
+                actualizar={actualizar}
                 setOpen={setOpenConsumo}
                 element={element}
                 setAlert={setAlert}
@@ -301,7 +329,6 @@ export default function Programador() {
                     "Gal por km": "gal_por_km",
                     "Kms recorridos": "km_recorridos",
                     "Tanqueo": "tanqueo",
-                    "Stock final": "stock_final",
                     "Stock real": "stock_real",
                 }}
             />}

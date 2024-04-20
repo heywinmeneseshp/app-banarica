@@ -120,11 +120,11 @@ export default function ListarTabla () {
                         {items.map((item, index) => (
                             <tr key={index}>
                                 <td><input type="checkbox" id="topping" name="topping" value="Paneer" /></td>
-                                <td>{item.consecutivo}</td>
-                                <td>{item.razon_social}</td>
-                                <td>{item.direccion}</td>
-                                <td>{item.email}</td>
-                                <td>{item.tel}</td>
+                                <td className='text-center'>{item.consecutivo}</td>
+                                <td className='text-center'>{item.razon_social}</td>
+                                <td className='text-center'>{item.direccion}</td>
+                                <td className='text-center'>{item.email}</td>
+                                <td className='text-center'>{item.tel}</td>
                                 <td>
                                     <button onClick={() => handleEditar(item)} type="button" className="btn btn-warning btn-sm w-80">Editar</button>
                                 </td>
