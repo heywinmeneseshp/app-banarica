@@ -6,22 +6,22 @@ import style from "@components/Programacion/camiones.module.css";
 import Paginacion from '@components/shared/Tablas/Paginacion';
 import FormulariosProgramacion from '@components/shared/Formularios/FormularioProgramacion';
 import Alertas from '@assets/Alertas';
+import menos from '@public/images/menos.png';
 
 import { listarConductores } from '@services/api/conductores';
-import { actualizarRecord_consumo, paginarRecord_consumo } from '@services/api/record_consumo';
+import { actualizarRecord_consumo, eliminarRecord_consumo, paginarRecord_consumo } from '@services/api/record_consumo';
 import useAlert from '@hooks/useAlert';
 
 import editar from '@public/images/editar.png';
 import guardar from '@public/images/guardar.png';
 import Formularios from '@components/shared/Formularios/Formularios';
-import excel from '@hooks/useExcel';
 import { actualizarVehiculo } from '@services/api/vehiculos';
 
 export default function Programador() {
 
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
-    const [limit, setLimit] = useState(25);
+    const [limit, setLimit] = useState(100);
     const [itemList, setItemsList] = useState([]);
     const [conductores, setConductores] = useState([]);
     const [open, setOpen] = useState(false);
@@ -33,9 +33,6 @@ export default function Programador() {
     const formRef = useRef();
     const formEdit = useRef();
 
-    const handleNuevoMovi = async () => {
-        setOpen(true);
-    };
 
     useEffect(() => {
         listar();
@@ -51,6 +48,10 @@ export default function Programador() {
             conductor: formData.get("conductor") ? formData.get("conductor") : "",
             fecha: formData.get("fecha")
         };
+
+        let fechaFin = formData.get("fecha_fin");
+        if (fechaFin) body.fechaFin = fechaFin;
+
         const res = await paginarRecord_consumo(pagination, limit, body);
         setItemsList(res.data);
         if (boolEdit.length == 0) {
@@ -60,7 +61,7 @@ export default function Programador() {
         }
 
         setTotal(res.total);
-        setLimit(50);
+        setLimit(100);
     };
 
     const editarConsumo = async (item) => {
@@ -81,37 +82,6 @@ export default function Programador() {
         });
     };
 
-    const onDescargarExcel = async () => {
-        const formData = new FormData(formRef.current);
-        const body = {
-            semana: formData.get("semana"),
-            vehiculo: formData.get("vehiculo"),
-            conductor: formData.get("conductor") ? formData.get("conductor") : "",
-            fecha: formData.get("fecha")
-        };
-        const { data } = await paginarRecord_consumo(null, null, body);
-
-        const newData = data.map(item => {
-            return {
-                "Fecha": item?.fecha || "",
-                "Semana": item?.semana || "",
-                "Vehiculo": item?.vehiculo?.placa || "",
-                "Conductor": item?.conductore?.conductor || "",
-                "Stock incial": item?.stock_inicial || 0,
-                "Gal por Km": item?.gal_por_km || 0,
-                "Km recorridos": item?.km_recorridos || 0,
-                "Consumo": (!item?.km_recorridos || !item?.gal_por_km) ? 0 : (item?.km_recorridos * item?.gal_por_km),
-                "Tanqueo": item.tanqueo || 0,
-                "Stock final": item?.stock_final || 0,
-                "Stock real": item?.stock_real || 0,
-                "Diferencia": (!item?.stock_real || !item?.stock_final) ? 0 : (item.stock_real - item.stock_final).toFixed(2),
-                "Diferencia %": (!item?.stock_real || !item?.stock_final) ? 0 : (((item.stock_real - item.stock_final) / item.stock_real) * 100).toFixed(2) || 0,
-            };
-        });
-        console.log(newData);
-        excel(newData, "Historial consumo", "Historial consumo");
-    };
-
     const actualizar = async (id, item) => {
         const consumo = (item.gal_por_km * item.km_recorridos);
         const stock = parseFloat(item.stock_inicial) + parseFloat(item.tanqueo);
@@ -124,6 +94,8 @@ export default function Programador() {
             "stock_final": stockFinal,
             "stock_real": item.stock_real,
         };
+
+        
         const {data} = await actualizarRecord_consumo(id, element);
         const newElement = data.nextItem;
     
@@ -137,6 +109,16 @@ export default function Programador() {
                 "stock_final": newStockFinal,
             });
         }
+    };
+
+    const eliminar = async (id) => {
+        await eliminarRecord_consumo(id);
+        setAlert({
+            active: true,
+            mensaje: "El item ha sido eliminado",
+            color: "success",
+            autoClose: true
+        });
     };
 
     return (
@@ -156,11 +138,21 @@ export default function Programador() {
                     </div>
 
                     <div className="mb-2 col-md-2">
-                        <label htmlFor="fecha" className="form-label mb-1">Fecha</label>
+                        <label htmlFor="fecha" className="form-label mb-1">Fecha inicial</label>
                         <input
                             type="date"
                             id="fecha"
                             name="fecha"
+                            onChange={() => listar()}
+                            className="form-control form-control-sm" />
+                    </div>
+
+                    <div className="mb-2 col-md-2">
+                        <label htmlFor="fecha" className="form-label mb-1">Fecha final</label>
+                        <input
+                            type="date"
+                            id="fecha_fin"
+                            name="fecha_fin"
                             onChange={() => listar()}
                             className="form-control form-control-sm" />
                     </div>
@@ -199,18 +191,6 @@ export default function Programador() {
                         </div>
                     </div>
 
-                    <div className='col-md-3 col-lg-2 mt-4'>
-                        <button onClick={() => handleNuevoMovi()} type="button" className={`btn btn-primary text-center w-100`}>
-                            Nuevo Movimiento
-                        </button>
-                    </div>
-
-                    <div className='col-md-3 col-lg-2 mt-4'>
-                        <button onClick={() => onDescargarExcel()} type="button" className={`btn btn-success text-center w-100`}>
-                            Descargar Excel
-                        </button>
-                    </div>
-
                 </div>
 
             </form>
@@ -232,7 +212,7 @@ export default function Programador() {
                             <th className='text-center'>Stock Final</th>
                             <th className='bg-info  text-center'>Stock Real</th>
                             <th className='bg-warning text-black text-center'>Diferencia</th>
-                            <th className='bg-warning text-black text-center'>%</th>
+                            <th>Eliminar</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -241,8 +221,7 @@ export default function Programador() {
                             const stock_final = item?.stock_final || 0;
 
                             const diferencia = (stock_real - stock_final).toFixed(2);
-                            const variacionPorcentual = ((stock_real - stock_final) / stock_real) * 100;
-                            const bgColor = variacionPorcentual > 5 ? "bg" : variacionPorcentual < -5 ? "bg" : "table";
+                            const bgColor = diferencia > 2 ? "bg" : diferencia < -2 ? "bg" : "table";
                             const text = bgColor == "bg" ? "text-white" : "text-black";
                             let colorDif = diferencia > 0 ? `${bgColor}-success ${text}` : (diferencia == 0 ? "" : `${bgColor}-danger ${text}`);
 
@@ -307,7 +286,10 @@ export default function Programador() {
                                     </div>
                                 </td>
                                 <td className={`${colorDif} text-center`}>{diferencia}</td>
-                                <td className={`${colorDif} text-center`}>{variacionPorcentual.toFixed(2)} %</td>
+                                <th className='text-center align-middle'>
+                                    {(item?.km_recorridos || 0) == 0 && <Image style={{ cursor: 'pointer' }} onClick={() => eliminar(item.id)} width="20" height="20" src={menos} alt="menos" />
+                                    }
+                                </th>
                             </tr>);
                         })}
 

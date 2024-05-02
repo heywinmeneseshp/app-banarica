@@ -48,7 +48,7 @@ export default function Programador() {
         setUbicaciones(newUbicaciones);
         setConductores(newConductores);
 
-        const body = {
+        let body = {
             ubicacion1: formData.get("origen"),
             ubicacion2: formData.get("destino"),
             semana: formData.get("semana"),
@@ -57,9 +57,14 @@ export default function Programador() {
             fecha: formData.get("fecha"),
             movimiento: formData.get("movimiento"),
         };
+
+        let fechaFin = formData.get("fecha_fin");
+
+        if (fechaFin) body.fechaFin = fechaFin;
+
+        console.log(body);
+
         const res = await paginarProgramaciones(pagination, limit, body);
-        console.log(res.total);
-        console.log(res.total / 25);
         setItemsList(res.data);
         setTotal(res.total);
         setLimit(25);
@@ -115,11 +120,21 @@ export default function Programador() {
                     </div>
 
                     <div className="mb-2 col-md-2">
-                        <label htmlFor="fecha" className="form-label mb-1">Fecha</label>
+                        <label htmlFor="fecha" className="form-label mb-1">Fecha inicial</label>
                         <input
                             type="date"
                             id="fecha"
                             name="fecha"
+                            onChange={() => listar()}
+                            className="form-control form-control-sm" />
+                    </div>
+
+                    <div className="mb-2 col-md-2">
+                        <label htmlFor="fecha" className="form-label mb-1">Fecha final</label>
+                        <input
+                            type="date"
+                            id="fecha_fin"
+                            name="fecha_fin"
                             onChange={() => listar()}
                             className="form-control form-control-sm" />
                     </div>
