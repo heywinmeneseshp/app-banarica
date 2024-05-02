@@ -150,7 +150,7 @@ const Header = () => {
                 <Dropdown.Item onClick={() => openWindow("historico")}>Historico</Dropdown.Item>
               </DropdownButton>
 
-              
+              {false && <span>
                 <DropdownButton variant="dark" className={styles.itemMenuAdmin} onClick={() => openMenu("admin")} id="dropdown-basic-button" title="Administrador">
                   <Dropdown.Item onClick={() => openWindow("usuarios")} >Usuarios</Dropdown.Item>
                   <Dropdown.Item onClick={() => openWindow("productos")}>Productos</Dropdown.Item>
@@ -186,7 +186,7 @@ const Header = () => {
                   <Dropdown.Item onClick={initialInfoMenu.handleTraslados}>Traslados</Dropdown.Item>
                   <Dropdown.Item onClick={initialInfoMenu.handlePedidos}>Pedidos</Dropdown.Item>
                 </DropdownButton>
-              
+              </span>}
             </Nav>
 
             <ButtonGroup variant="dark" size="sm">

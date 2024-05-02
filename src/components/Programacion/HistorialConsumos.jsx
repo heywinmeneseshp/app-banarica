@@ -7,6 +7,7 @@ import Paginacion from '@components/shared/Tablas/Paginacion';
 import FormulariosProgramacion from '@components/shared/Formularios/FormularioProgramacion';
 import Alertas from '@assets/Alertas';
 import menos from '@public/images/menos.png';
+import { DownloadTableExcel } from 'react-export-table-to-excel';
 
 import { listarConductores } from '@services/api/conductores';
 import { actualizarRecord_consumo, eliminarRecord_consumo, paginarRecord_consumo } from '@services/api/record_consumo';
@@ -16,9 +17,12 @@ import editar from '@public/images/editar.png';
 import guardar from '@public/images/guardar.png';
 import Formularios from '@components/shared/Formularios/Formularios';
 import { actualizarVehiculo } from '@services/api/vehiculos';
+import { Button } from 'react-bootstrap';
 
 export default function Programador() {
 
+
+      
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
     const [limit, setLimit] = useState(100);
@@ -30,6 +34,7 @@ export default function Programador() {
     const [openConsumo, setOpenConsumo] = useState(false);
     const [element, setElement] = useState({});
     const { alert, setAlert, toogleAlert } = useAlert();
+const tablaRef = useRef();
     const formRef = useRef();
     const formEdit = useRef();
 
@@ -95,15 +100,15 @@ export default function Programador() {
             "stock_real": item.stock_real,
         };
 
-        
-        const {data} = await actualizarRecord_consumo(id, element);
+
+        const { data } = await actualizarRecord_consumo(id, element);
         const newElement = data.nextItem;
-    
+
         if (newElement.stock_final == null) {
             await actualizarVehiculo(newElement.vehiculo_id, { "combustible": item.stock_real });
         } else {
-            
-            const newStockFinal = (parseFloat(item.stock_real) + parseFloat(newElement.tanqueo)) - (newElement.gal_por_km * newElement.km_recorridos );
+
+            const newStockFinal = (parseFloat(item.stock_real) + parseFloat(newElement.tanqueo)) - (newElement.gal_por_km * newElement.km_recorridos);
             await actualizarRecord_consumo(newElement.id, {
                 "stock_inicial": item.stock_real,
                 "stock_final": newStockFinal,
@@ -120,6 +125,9 @@ export default function Programador() {
             autoClose: true
         });
     };
+
+
+
 
     return (
         <>
@@ -191,13 +199,31 @@ export default function Programador() {
                         </div>
                     </div>
 
+
+                    <div className="mb-2 col-md-2">
+                                         
+                        <DownloadTableExcel
+                          filename="datos"
+                          sheetName="Datos"
+                          currentTableRef={tablaRef.current}
+                        >
+
+
+                            <Button className="w-100 mt-4" variant="success" size="sm">
+                                Descargar Excel
+                            </Button>
+
+                        </DownloadTableExcel>
+                    </div>
                 </div>
 
-            </form>
+
+
+            </form >
 
 
             <form ref={formEdit} className={style.texto}>
-                <table className="table table-striped table-bordered table-sm mt-4">
+                <table ref={tablaRef} className="table table-striped table-bordered table-sm mt-4">
                     <thead>
                         <tr>
                             <th>Fecha</th>
@@ -300,20 +326,22 @@ export default function Programador() {
                 <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
             </form>
             {open && <FormulariosProgramacion setOpen={setOpen} setAlert={setAlert} />}
-            {openConsumo && <Formularios
-                actualizar={actualizar}
-                setOpen={setOpenConsumo}
-                element={element}
-                setAlert={setAlert}
-                encabezados={{
-                    "Id": "id",
-                    "Stock inicial": "stock_inicial",
-                    "Gal por km": "gal_por_km",
-                    "Kms recorridos": "km_recorridos",
-                    "Tanqueo": "tanqueo",
-                    "Stock real": "stock_real",
-                }}
-            />}
+            {
+                openConsumo && <Formularios
+                    actualizar={actualizar}
+                    setOpen={setOpenConsumo}
+                    element={element}
+                    setAlert={setAlert}
+                    encabezados={{
+                        "Id": "id",
+                        "Stock inicial": "stock_inicial",
+                        "Gal por km": "gal_por_km",
+                        "Kms recorridos": "km_recorridos",
+                        "Tanqueo": "tanqueo",
+                        "Stock real": "stock_real",
+                    }}
+                />
+            }
         </>
     );
 }
