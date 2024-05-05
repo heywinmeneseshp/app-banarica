@@ -7,7 +7,7 @@ import Paginacion from '@components/shared/Tablas/Paginacion';
 import FormulariosProgramacion from '@components/shared/Formularios/FormularioProgramacion';
 import Alertas from '@assets/Alertas';
 import menos from '@public/images/menos.png';
-import { DownloadTableExcel } from 'react-export-table-to-excel';
+import * as XLSX from 'xlsx';
 
 import { listarConductores } from '@services/api/conductores';
 import { actualizarRecord_consumo, eliminarRecord_consumo, paginarRecord_consumo } from '@services/api/record_consumo';
@@ -37,6 +37,7 @@ export default function Programador() {
 const tablaRef = useRef();
     const formRef = useRef();
     const formEdit = useRef();
+    
 
 
     useEffect(() => {
@@ -126,6 +127,20 @@ const tablaRef = useRef();
         });
     };
 
+    const descargarExcel = async () => {
+
+        const data = [
+            { name: 'John', age: 30, city: 'New York' },
+            { name: 'Jane', age: 25, city: 'Los Angeles' },
+            { name: 'Doe', age: 40, city: 'Chicago' }
+          ];
+          
+        const book = XLSX.utils.book_new();
+        const sheet = XLSX.utils.json_to_sheet(data);
+        XLSX.utils.book_append_sheet(book, sheet, "Movimientos");
+        XLSX.writeFile(book, `Historial de movimientos.xlsx`);
+    };
+
 
 
 
@@ -202,18 +217,12 @@ const tablaRef = useRef();
 
                     <div className="mb-2 col-md-2">
                                          
-                        <DownloadTableExcel
-                          filename="datos"
-                          sheetName="Datos"
-                          currentTableRef={tablaRef.current}
-                        >
+             
 
-
-                            <Button className="w-100 mt-4" variant="success" size="sm">
+                            <Button type="button" onClick={() => descargarExcel()} className="w-100 mt-4" variant="success" size="sm">
                                 Descargar Excel
                             </Button>
 
-                        </DownloadTableExcel>
                     </div>
                 </div>
 
