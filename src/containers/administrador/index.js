@@ -24,6 +24,7 @@ import Contenedores from '@components/Programacion/Contenedores';
 import Notificaciones from '@components/Programacion/Notificaciones';
 import Clientes from '@components/Maestros/Clientes';
 import HistorialConsumo from "@components/Programacion/HistorialConsumos";
+import ReportesConsumo from '@components/Programacion/Reportes';
 
 
 export default function Adminsitrador() {
@@ -54,6 +55,7 @@ export default function Adminsitrador() {
         {initialAdminMenu.adminMenu.contenedores && <Contenedores />}
         {initialAdminMenu.adminMenu.notificaciones && <Notificaciones />}
         {initialAdminMenu.adminMenu.historico && <HistorialConsumo />}
+        {initialAdminMenu.adminMenu.reportesConsumo && <ReportesConsumo />}
       </div>
 
     </>

@@ -148,6 +148,7 @@ const Header = () => {
                 <Dropdown.Item onClick={() => openWindow("programador")} >Programador</Dropdown.Item>
                 <Dropdown.Item onClick={() => openWindow("contenedores")}>Contenedores</Dropdown.Item>
                 <Dropdown.Item onClick={() => openWindow("historico")}>Historico</Dropdown.Item>
+                <Dropdown.Item onClick={() => openWindow("reportesConsumo")}>Reportes</Dropdown.Item>
               </DropdownButton>
 
               {false && <span>
