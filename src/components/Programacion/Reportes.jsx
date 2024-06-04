@@ -30,6 +30,7 @@ export default function ReportesConsumo() {
         const listaVehiculos = await listarVehiculo();
         setVehiculosList(listaVehiculos);
         console.log(listaVehiculos);
+        console.log(vehiculosLista);
         setConductores(newConductores);
 
         const body = {
@@ -91,6 +92,7 @@ export default function ReportesConsumo() {
              });
         });
         console.log(graficaData);
+        console.log(newData);
 
     };
 
