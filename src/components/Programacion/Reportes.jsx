@@ -1,15 +1,22 @@
 // components/TablaViajes.tsx
 import React, { useEffect, useState, useRef } from 'react';
+
+
 import * as XLSX from 'xlsx';
 
 import { listarConductores } from '@services/api/conductores';
+import { listarVehiculo } from '@services/api/vehiculos';
 import { paginarRecord_consumo } from '@services/api/record_consumo';
 import { Button } from 'react-bootstrap';
+import Bars from './Bars';
+
 
 export default function ReportesConsumo() {
 
 
+
     const [conductores, setConductores] = useState([]);
+    const [vehiculosLista, setVehiculosList] = useState([]);
 
     const formRef = useRef();
 
@@ -20,6 +27,9 @@ export default function ReportesConsumo() {
     const listar = async () => {
         const formData = new FormData(formRef.current);
         const newConductores = await listarConductores();
+        const listaVehiculos = await listarVehiculo();
+        setVehiculosList(listaVehiculos);
+        console.log(listaVehiculos);
         setConductores(newConductores);
 
         const body = {
@@ -69,10 +79,38 @@ export default function ReportesConsumo() {
                 "Diferencia": diferencia ? diferencia.replace(".", ",") : null,
             };
         });
-
-        console.log(newData);
+        let graficaData = [];
+        listaVehiculos.map(item => {
+            const km = calcularRecorrido(item.placa, data);
+            graficaData.push({ 
+                vehiculo: item.placa, 
+                consumo_teorico: (item.recorridos * item.gal_por_km),
+                consumo_real: 0,
+                diferencia: 0,
+                km_recorrido: km,
+             });
+        });
+        console.log(graficaData);
 
     };
+
+    // Función para calcular el recorrido de cada vehículo
+    function calcularRecorrido(vehiculo, datos) {
+        let recorridoTotal = 0;
+        let conteo = 0
+        for (const registro of datos) {
+            console.log(registro)
+            if (registro.vehiculo.placa === vehiculo) {
+                const recorrido = registro.km_recorridos ? registro.km_recorridos : 0;
+                recorridoTotal = recorridoTotal + recorrido;
+                conteo = conteo + 1;
+            };
+        };
+        return recorridoTotal;
+    };
+
+
+
 
 
     const descargarExcel = async () => {
@@ -130,7 +168,7 @@ export default function ReportesConsumo() {
 
     return (
         <>
-           {false && <form ref={formRef} style={{ minWidth: '90vw' }} method="POST" className="container" action="/crear-conductor">
+            <form ref={formRef} style={{ minWidth: '90vw' }} method="POST" className="container" action="/crear-conductor">
                 <div className="row col-md-12 row">
                     <div className="mb-2 col-md-2 col-lg-2">
                         <label htmlFor="semana" className="form-label mb-1">Semana</label>
@@ -203,10 +241,37 @@ export default function ReportesConsumo() {
                         </Button>
                     </div>
                 </div>
-                            </form >}
+            </form >
 
-            <section style={{ minWidth: '90vw' }}>
-                <iframe title="Consumos Transmonsa" width="100%" height="573.5" src="https://app.powerbi.com/view?r=eyJrIjoiOGEzY2JjNmUtYmM5NC00YTE2LWFlNDgtOThiOGNiYWI4NmMwIiwidCI6ImZkNjljZTFiLTIwYzYtNDJlYy1iNTRlLTZkMWIzODcwYWM2ZSIsImMiOjR9"  allowFullScreen="true"></iframe>
+            <section className='container'>
+
+                <table className="table table-striped">
+                    <thead>
+                        <tr>
+                            <th scope="col">Vehiculo</th>
+                            <th scope="col">Consumo teorico</th>
+                            <th scope="col">Consumo real</th>
+                            <th scope="col">Diferencia</th>
+                            <th scope="col">Km recorridos</th>
+                            <th scope="col">Consumo por Km teorico</th>
+                            <th scope="col">Consumo por Km promedio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td> </td>
+                            <td>Mark</td>
+                            <td>Otto</td>
+                            <td>@mdo</td>
+                            <td>@mdo</td>
+                            <td>@mdo</td>
+                            <td>@mdo</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+
+                <Bars></Bars>
             </section>
         </>
     );
