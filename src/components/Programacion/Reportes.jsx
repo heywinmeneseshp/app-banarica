@@ -99,9 +99,9 @@ export default function ReportesConsumo() {
     // Función para calcular el recorrido de cada vehículo
     function calcularRecorrido(vehiculo, datos) {
         let recorridoTotal = 0;
-        let conteo = 0
+        let conteo = 0;
         for (const registro of datos) {
-            console.log(registro)
+            console.log(registro);
             if (registro.vehiculo.placa === vehiculo) {
                 const recorrido = registro.km_recorridos ? registro.km_recorridos : 0;
                 recorridoTotal = recorridoTotal + recorrido;
