@@ -9,7 +9,7 @@ import Alertas from '@assets/Alertas';
 
 
 
-const Card = ({ setChange, km_recorridos, record_consumo_id, title, initialStock, refueling, date, setAlert }) => {
+const Card = ({ setChange, km_recorridos, record_consumo_id, title, initialStock,  date, setAlert }) => {
 
   const [tanquar, setTanquear] = useState(false);
 
@@ -32,6 +32,7 @@ const Card = ({ setChange, km_recorridos, record_consumo_id, title, initialStock
   return (
     <>
       {tanquar && <Formularios
+      titulo={`${title} ${date}`}
         crear={liquidarConsumoRutas}
         actualizar={liquidarConsumoRutas}
         setOpen={openLiquidar}
@@ -61,9 +62,6 @@ const Card = ({ setChange, km_recorridos, record_consumo_id, title, initialStock
               <p className="card-text"> Stock Inicial: {initialStock} gal</p>
             </strong>
             <strong>
-              <p className="card-text text-success">Tanqueo: {refueling} gal</p>
-            </strong>
-            <strong>
               <p className="card-text text-danger">Recorrido: {km_recorridos || 0} Kms</p>
             </strong>
             <div className='mb-3 mt-1'>
@@ -85,7 +83,8 @@ const FuelConsumptionDashboard = ({ handleChange }) => {
   useEffect(() => {
     async function fetchData() {
       try {
-        let vehiculosList = await consultarConsumo();
+        let vehiculosList = await consultarConsumo({"activo": 1});
+        console.log(vehiculosList);
         vehiculosList.sort((a, b) => {
           // Convertir las fechas a objetos de fecha y ordenar por fecha
           const fechaA = new Date(a.fecha);
@@ -98,10 +97,9 @@ const FuelConsumptionDashboard = ({ handleChange }) => {
           if (fechaA > fechaB) {
             return 1;
           }
-        
           // Si las fechas son iguales, ordenar por categoría
-          const categoriaA = a.programacion[0].vehiculo.categoria_id.toLowerCase();
-          const categoriaB = b.programacion[0].vehiculo.categoria_id.toLowerCase(); 
+          const categoriaA = a?.vehiculo?.categoria_id.toLowerCase();
+          const categoriaB = b?.vehiculo?.categoria_id.toLowerCase(); 
           
           // Comparar las categorías
           if (categoriaA !== categoriaB) {
@@ -109,12 +107,12 @@ const FuelConsumptionDashboard = ({ handleChange }) => {
           }
         
           // Si las categorías son iguales, ordenar por placa
-          const placaA = a.placa.toLowerCase();
-          const placaB = b.placa.toLowerCase();
+          const placaA = a?.vehiculo?.placa.toLowerCase();
+          const placaB = b?.vehiculo?.placa.toLowerCase();
           
           // Comparar las placas
           return placaA.localeCompare(placaB);
-        });        
+        });    
         setVehiculos(vehiculosList);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -132,17 +130,17 @@ const FuelConsumptionDashboard = ({ handleChange }) => {
       <div className="container" style={{ minWidth: '90vw', minHeight: '100vh' }}>
         <h1 className="text-center mb-4">Pendientes por liquidar</h1>
         <div className="row align-items-center justify-content-center">
+       
           {vehiculos.map((item, index) => {
             return (
               <Card
                 key={index}
-                vehiculo_id={item.vehiculo_id}
-                title={item.placa}
-                refueling={item.tanqueo || 0}
-                initialStock={item.programacion[0].vehiculo.combustible}
-                record_consumo_id={item.record_consumo[0].id}
-                km_recorridos={item.record_consumo[0].km_recorridos}
-                date={item.fecha}
+                vehiculo_id={item?.vehiculo_id}
+                title={item?.vehiculo?.placa}
+                initialStock={item?.vehiculo?.combustible}
+                record_consumo_id={item?.id}
+                km_recorridos={item?.km_recorridos}
+                date={item?.fecha}
                 setChange={setChange}
                 change={change}
                 setAlert={setAlert}

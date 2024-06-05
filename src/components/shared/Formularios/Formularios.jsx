@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import styles from "@components/shared/Formularios/Formularios.module.css";
 
-function Formularios({ setAlert, listas, element, setOpen, encabezados, actualizar, crear, onlyRead, valorPredeterminado }) {
+function Formularios({ titulo, setAlert, listas, element, setOpen, encabezados, actualizar, crear, onlyRead, valorPredeterminado }) {
 
   const formRef = useRef();
 
@@ -49,7 +49,9 @@ function Formularios({ setAlert, listas, element, setOpen, encabezados, actualiz
     <div className={styles.fondo}>
       <div className={styles.floatingform}>
         <div className="card">
-          <div className="card-header text-end">
+
+          <div className="card-header d-flex justify-content-between">
+            <span className="fw-bold">{titulo ? titulo : ""}</span>
             <button type="button" onClick={() => setOpen(false)} className="btn-close" aria-label="Close"></button>
           </div>
           <div className="card-body">
@@ -67,9 +69,7 @@ function Formularios({ setAlert, listas, element, setOpen, encabezados, actualiz
                     } catch {
                       lista = null;
                     }
-
                     if (lista != null) {
-
                       return (
                         <div key={key} className="mb-3 col-md-3">
                           <label htmlFor={encabezados[item]} className="form-label mb-1">{`${item}:`}</label>
