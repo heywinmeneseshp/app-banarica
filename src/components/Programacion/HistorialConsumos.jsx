@@ -49,25 +49,25 @@ const tablaRef = useRef();
         const newConductores = await listarConductores();
         setConductores(newConductores);
         const body = {
-            semana: formData.get("semana"),
-            vehiculo: formData.get("vehiculo"),
+            semana: formData.get("semana") ? formData.get("semana") : "",
+            vehiculo: formData.get("vehiculo") ?  formData.get("vehiculo") : "",
             conductor: formData.get("conductor") ? formData.get("conductor") : "",
-            fecha: formData.get("fecha")
+            fecha: formData.get("fecha") ? formData.get("fecha") : ""
         };
 
         let fechaFin = formData.get("fecha_fin");
         if (fechaFin) body.fechaFin = fechaFin;
-
-        const res = await paginarRecord_consumo(pagination, limit, body);
+    
+        const res = await paginarRecord_consumo(pagination, 100, body);
+        console.log(res.data);
         setItemsList(res.data);
         if (boolEdit.length == 0) {
             let arrayBool = new Array(res.data.length).fill(false);
             setBoolKm(arrayBool);
             setBoolEdit(arrayBool);
         }
-
-        setTotal(res.total);
         setLimit(100);
+        setTotal(res.total);
     };
 
     const editarConsumo = async (item) => {
@@ -141,8 +141,6 @@ const tablaRef = useRef();
         if (fechaFin) body.fechaFin = fechaFin;
 
         const {data} = await paginarRecord_consumo(null, null, body);
-        console.log(data);
-
         const newData = data.map( (item) => {
             const stockInicial = parseFloat(item?.stock_inicial || 0).toFixed(2);
             const stockReal = parseFloat(item?.stock_real || 0).toFixed(2);

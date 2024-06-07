@@ -26,12 +26,6 @@ export default function ReportesConsumo() {
 
     const listar = async () => {
         const formData = new FormData(formRef.current);
-        const newConductores = await listarConductores();
-        const listaVehiculos = await listarVehiculo();
-        setVehiculosList(listaVehiculos);
-        console.log(listaVehiculos);
-        console.log(vehiculosLista);
-        setConductores(newConductores);
 
         const body = {
             semana: formData.get("semana"),
@@ -43,9 +37,8 @@ export default function ReportesConsumo() {
         let fechaFin = formData.get("fecha_fin");
         if (fechaFin) body.fechaFin = fechaFin;
 
-        const { data } = await paginarRecord_consumo(null, null, body);
-        let vehicleDifferences = {};
-        const newData = data.map((item) => {
+        const {data} = await paginarRecord_consumo(null, null, body);
+        const newData = data.map( (item) => {
             const stockInicial = parseFloat(item?.stock_inicial || 0).toFixed(2);
             const stockReal = parseFloat(item?.stock_real || 0).toFixed(2);
             const stockFinal = parseFloat(item?.stock_final || 0).toFixed(2);
@@ -56,14 +49,6 @@ export default function ReportesConsumo() {
             const gal_por_km_real = ((parseFloat(stockInicial) + parseFloat(tanqueo) - parseFloat(stockReal)) / recorridos).toFixed(4);
             const consumo_teorico = (recorridos * gal_por_km).toFixed(2);
             const diferencia = (stockReal - stockFinal).toFixed(2);
-
-            const vehiclePlate = item?.vehiculo?.placa;
-            if (vehicleDifferences[vehiclePlate]) {
-                vehicleDifferences[vehiclePlate] += parseFloat(diferencia);
-            } else {
-                vehicleDifferences[vehiclePlate] = parseFloat(diferencia);
-            }
-
             return {
                 "Fecha": { v: item.fecha, s: { fill: { fgColor: { rgb: "FFFF00" } } } },
                 "Vehículo": item?.vehiculo?.placa,
@@ -71,29 +56,20 @@ export default function ReportesConsumo() {
                 "Stock incial": stockInicial.replace(".", ","),
                 "Recorrido": recorridos.replace(".", ","),
                 "Gal por km teórico": gal_por_km.replace(".", ","),
-                "Gal por km real": stockReal != 0 ? gal_por_km_real.replace(".", ",") : null,
-                "Consumo teórico": stockReal != 0 ? consumo_teorico.replace(".", ",") : null,
-                "Consumo real": stockReal != 0 ? consumo_real.replace(".", ",") : null,
-                "Tanqueo": stockReal != 0 ? tanqueo.replace(".", ",") : null,
-                "Stock final": stockReal != 0 ? (stockFinal).replace(".", ",") : null,
-                "Stock real": stockReal != 0 ? (stockReal).replace(".", ",") : null,
+                "Gal por km real": stockReal !=0  ? gal_por_km_real.replace(".", ",") : null,
+                "Consumo teórico": stockReal !=0 ? consumo_teorico.replace(".", ",") : null,
+                "Consumo real": stockReal !=0 ? consumo_real.replace(".", ",") : null,
+                "Tanqueo": stockReal !=0 ? tanqueo.replace(".", ",") : null,
+                "Stock final": stockReal !=0 ? (stockFinal).replace(".", ",") : null,
+                "Stock real": stockReal !=0 ? (stockReal).replace(".", ",") : null,
                 "Diferencia": diferencia ? diferencia.replace(".", ",") : null,
             };
         });
-        let graficaData = [];
-        listaVehiculos.map(item => {
-            const km = calcularRecorrido(item.placa, data);
-            graficaData.push({ 
-                vehiculo: item.placa, 
-                consumo_teorico: (item.recorridos * item.gal_por_km),
-                consumo_real: 0,
-                diferencia: 0,
-                km_recorrido: km,
-             });
-        });
-        console.log(graficaData);
-        console.log(newData);
 
+        const book = XLSX.utils.book_new();
+        const sheet = XLSX.utils.json_to_sheet(newData);
+        XLSX.utils.book_append_sheet(book, sheet, "Consumos");
+        XLSX.writeFile(book, `Historial de consumos.xlsx`);
     };
 
     // Función para calcular el recorrido de cada vehículo

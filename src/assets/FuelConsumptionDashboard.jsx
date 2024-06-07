@@ -84,7 +84,6 @@ const FuelConsumptionDashboard = ({ handleChange }) => {
     async function fetchData() {
       try {
         let vehiculosList = await consultarConsumo({"activo": 1});
-        console.log(vehiculosList);
         vehiculosList.sort((a, b) => {
           // Convertir las fechas a objetos de fecha y ordenar por fecha
           const fechaA = new Date(a.fecha);
@@ -132,6 +131,7 @@ const FuelConsumptionDashboard = ({ handleChange }) => {
         <div className="row align-items-center justify-content-center">
        
           {vehiculos.map((item, index) => {
+            console.log(item);
             return (
               <Card
                 key={index}
