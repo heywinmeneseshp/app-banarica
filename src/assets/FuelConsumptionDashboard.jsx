@@ -148,9 +148,6 @@ const FuelConsumptionDashboard = ({ handleChange }) => {
           await actualizarModulo({ modulo: "Reporte", sem_reporte: semana });
           await correoReporte("hmeneses@banarica.com, transmonsatecnology@gmail.com, emonsalve@banarica.com, operaciones@transmonsa.com, tesorero@transmonsa.com, tesoreria@transmonsa.com", `Reporte combustibles semana ${semana} del ${anho}`, endPoints.reporteConsumo.semana(semana, anho));
         }
-
-         window.open(endPoints.reporteConsumo.semana(semana, anho));
-
       } catch (error) {
         console.error('Error fetching data:', error);
       }
