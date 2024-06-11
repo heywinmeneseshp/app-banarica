@@ -140,7 +140,7 @@ const tablaRef = useRef();
         let fechaFin = formData.get("fecha_fin");
         if (fechaFin) body.fechaFin = fechaFin;
 
-        const {data} = await paginarRecord_consumo(null, null, body);
+        const {data} = await paginarRecord_consumo("", "", body);
         const newData = data.map( (item) => {
             const stockInicial = parseFloat(item?.stock_inicial || 0).toFixed(2);
             const stockReal = parseFloat(item?.stock_real || 0).toFixed(2);
@@ -220,7 +220,6 @@ const tablaRef = useRef();
                             onChange={() => listar()}
                             className="form-control form-control-sm" />
                     </div>
-
                     <div className="mb-2 col-md-2">
                         <label htmlFor="articulo">Conductor</label>
                         <div>
@@ -241,19 +240,12 @@ const tablaRef = useRef();
                                     <option key={index} value={item.conductor} />
                                 ))}
                             </datalist>
-
                         </div>
                     </div>
-
-
                     <div className="mb-2 col-md-2">
-                                         
-             
-
                             <Button type="button" onClick={() => descargarExcel()} className="w-100 mt-4" variant="success" size="sm">
                                 Descargar Excel
                             </Button>
-
                     </div>
                 </div>
 

@@ -222,7 +222,7 @@ const endPoints = {
     record_consumo: {
         list: `${API}/api/${VERSION}/record_consumo`,
         findOne: `${API}/api/${VERSION}/record_consumo/encontrar-uno`,
-        pagination: (page, limit, item) => `${API}/api/${VERSION}/record_consumo/paginar?page=${page}&limit=${limit}&item=${item}`,
+        pagination: (page, limit) => `${API}/api/${VERSION}/record_consumo/paginar?page=${page}&limit=${limit}`,
         create: `${API}/api/${VERSION}/record_consumo`,
         update: (id) => `${API}/api/${VERSION}/record_consumo/${id}`,
         delete: (id) => `${API}/api/${VERSION}/record_consumo/${id}`,
@@ -280,6 +280,13 @@ const endPoints = {
         update: (id) => `${API}/api/${VERSION}/tanqueo/${id}`,
         delete: (id) => `${API}/api/${VERSION}/tanqueo/${id}`,
     },
+    reporteConsumo: {
+        semana: (sem, anho) => `${OWN_URL}/Documento/ReporteConsumo?anho=${anho}&sem=${sem}`,
+        mes: (mes, anho) => `${OWN_URL}/Documento/ReporteConsumo?mes=${mes}&anho=${anho}`,
+    },
+    email: {
+        send: `${API}/api/${VERSION}/email/send`,
+    }
 
 
 };

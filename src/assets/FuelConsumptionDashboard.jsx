@@ -6,10 +6,13 @@ import Formularios from '@components/shared/Formularios/Formularios';
 import { consultarConsumo, liquidarConsumoRutas } from '@services/api/record_consumo';
 import useAlert from '@hooks/useAlert';
 import Alertas from '@assets/Alertas';
+import endPoints from '@services/api';
+import { enviarEmail } from '@services/api/email';
+import { actualizarModulo, encontrarModulo } from '@services/api/configuracion';
 
 
 
-const Card = ({ setChange, km_recorridos, record_consumo_id, title, initialStock,  date, setAlert }) => {
+const Card = ({ setChange, km_recorridos, record_consumo_id, title, initialStock, date, setAlert }) => {
 
   const [tanquar, setTanquear] = useState(false);
 
@@ -32,7 +35,7 @@ const Card = ({ setChange, km_recorridos, record_consumo_id, title, initialStock
   return (
     <>
       {tanquar && <Formularios
-      titulo={`${title} ${date}`}
+        titulo={`${title} ${date}`}
         crear={liquidarConsumoRutas}
         actualizar={liquidarConsumoRutas}
         setOpen={openLiquidar}
@@ -83,12 +86,12 @@ const FuelConsumptionDashboard = ({ handleChange }) => {
   useEffect(() => {
     async function fetchData() {
       try {
-        let vehiculosList = await consultarConsumo({"activo": 1});
+        let vehiculosList = await consultarConsumo({ "activo": 1 });
         vehiculosList.sort((a, b) => {
           // Convertir las fechas a objetos de fecha y ordenar por fecha
           const fechaA = new Date(a.fecha);
           const fechaB = new Date(b.fecha);
-          
+
           // Comparar las fechas
           if (fechaA < fechaB) {
             return -1;
@@ -98,21 +101,56 @@ const FuelConsumptionDashboard = ({ handleChange }) => {
           }
           // Si las fechas son iguales, ordenar por categoría
           const categoriaA = a?.vehiculo?.categoria_id.toLowerCase();
-          const categoriaB = b?.vehiculo?.categoria_id.toLowerCase(); 
-          
+          const categoriaB = b?.vehiculo?.categoria_id.toLowerCase();
+
           // Comparar las categorías
           if (categoriaA !== categoriaB) {
             return categoriaA.localeCompare(categoriaB);
           }
-        
+
           // Si las categorías son iguales, ordenar por placa
           const placaA = a?.vehiculo?.placa.toLowerCase();
           const placaB = b?.vehiculo?.placa.toLowerCase();
-          
+
           // Comparar las placas
           return placaA.localeCompare(placaB);
-        });    
+        });
         setVehiculos(vehiculosList);
+
+        const oldestDateObject = vehiculosList.reduce((oldest, current) => {
+          const oldestDate = new Date(oldest.fecha);
+          const currentDate = new Date(current.fecha);
+          return currentDate < oldestDate ? current : oldest;
+        });
+
+        let semana = oldestDateObject.semana;
+        let anho = new Date(oldestDateObject.fecha).getFullYear();
+        if (semana == 1) {
+          semana = 52;
+          anho = anho - 1;
+        } else {
+          semana = semana - 1;
+        }
+        let mes = new Date(oldestDateObject.fecha);
+        mes = mes.setMonth(mes.getMonth() - 1);
+        mes = new Date(mes).getMonth() + 1;
+
+        const res = await encontrarModulo("Reporte");
+        const mesReporte = res[0].mes_reporte;
+        const semReporte = res[0].sem_reporte;
+
+        if (mesReporte != mes) {
+         await  actualizarModulo({ modulo: "Reporte", mes_reporte: mes });
+          await correoReporte("hmeneses@banarica.com, transmonsatecnology@gmail.com, emonsalve@banarica.com, operaciones@transmonsa.com, tesorero@transmonsa.com, tesoreria@transmonsa.com", `Reporte combustibles mes ${mes} del ${anho}`, endPoints.reporteConsumo.mes(mes, anho));
+        };
+
+        if (semReporte != semana) {
+          await actualizarModulo({ modulo: "Reporte", sem_reporte: semana });
+          await correoReporte("hmeneses@banarica.com, transmonsatecnology@gmail.com, emonsalve@banarica.com, operaciones@transmonsa.com, tesorero@transmonsa.com, tesoreria@transmonsa.com", `Reporte combustibles semana ${semana} del ${anho}`, endPoints.reporteConsumo.semana(semana, anho));
+        }
+
+         window.open(endPoints.reporteConsumo.semana(semana, anho));
+
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -121,7 +159,19 @@ const FuelConsumptionDashboard = ({ handleChange }) => {
     fetchData();
   }, [change]);
 
-
+  const correoReporte = async (destinatario, asunto, url) => {
+    let cuerpo = `<h3>Reporte de recorrido y consumo</h3>
+  <p>
+    <b>Observaciones:</b>
+  </p>
+  <p>
+   Para ver el reporte hacer 
+   <a href="${url}">
+      Clic Aquí
+    </a>
+ </p>`;
+    enviarEmail(destinatario, asunto, cuerpo);
+  };
 
   return (
     <span>
@@ -129,9 +179,8 @@ const FuelConsumptionDashboard = ({ handleChange }) => {
       <div className="container" style={{ minWidth: '90vw', minHeight: '100vh' }}>
         <h1 className="text-center mb-4">Pendientes por liquidar</h1>
         <div className="row align-items-center justify-content-center">
-       
+
           {vehiculos.map((item, index) => {
-            console.log(item);
             return (
               <Card
                 key={index}

@@ -1,73 +1,56 @@
 // components/TablaViajes.tsx
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { paginarRecord_consumo } from '@services/api/record_consumo';
-import Bars from './Bars';
+import Bars from '@components/Programacion/Bars';
 import Tabla from '@components/shared/Tablas/Tabla';
-import BarHorizontar from './BarsHorizonal';
+import BarHorizontar from '@components/Programacion/BarsHorizonal';
+import { useRouter } from 'next/router';
 
 
 
 export default function Reportes() {
 
+    const router = useRouter();
+    const { query } = router;
+
     const [dataTable, setDataTable] = useState([]);
     const [resTotal, setResTotal] = useState([]);
     const [dataBar, setDataBar] = useState([]);
-    const formRef = useRef();
-    const [initialDate, setInitialDate] = useState();
-    const [finalDate, setFinalDate] = useState();
-
-
 
     useEffect(() => {
         listar();
-    }, []);
+    }, [query?.anho]);
 
 
     const listar = async () => {
-        const formData = new FormData(formRef.current);
-        const date = new Date();
-        // Formatear la fecha a YYYY-MM-DD
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0'); // Los meses empiezan en 0
-        const day = String(date.getDate()).padStart(2, '0');
 
-
-        const formattedDate = `${year}-${month}-${day}`;
-
-        let fechaInicial = formData.get("fecha") ? formData.get("fecha") : `${year}-${month}-01`;
-
-
-        if (fechaInicial.includes('-')) {
-            const [year, month, day] = fechaInicial.split('-').map(Number);
-            // Crear una fecha en la zona horaria local
-            fechaInicial = new Date(year, month - 1, day);
-        } else {
-            fechaInicial = new Date(fechaInicial);
-        }
-        const anho = fechaInicial.getFullYear();
-        const mes = String(fechaInicial.getMonth() + 1).padStart(2, '0'); // Los meses empiezan en 0
-        const diaMes = String(fechaInicial.getDate()).padStart(2, '0');
-        fechaInicial = `${anho}-${mes}-${diaMes}`;
-        setInitialDate(fechaInicial);
-        setFinalDate(formattedDate);
         const body = {
-            semana: formData.get("semana"),
-            vehiculo: formData.get("vehiculo"),
-            conductor: formData.get("conductor") ? formData.get("conductor") : "",
-            fecha: fechaInicial,
             liquidado: true,
         };
-        let fechaFin = formData.get("fecha_fin") ? formData.get("fecha_fin") : formattedDate;
-        if (fechaFin) body.fechaFin = fechaFin;
 
+        if (query?.sem) {
+            body.semana = query?.sem;
+            body.fecha = `${query?.anho}-01-01`;
+            body.fechaFin = `${query?.anho}-12-31`;;
+        } else if (query?.anho) {
+            const years = query?.anho; // Obtén el año actual
+            const months = query?.mes; - 1; // Mayo es el mes 4 (0-indexed en JavaScript)
 
+            const firstDayOfMonth = new Date(years, months -1, 1);
+            const lastDayOfMonth = new Date(years, months, 0);
+            const formattedFirstDay = firstDayOfMonth.toISOString().split('T')[0];
+            const formattedLastDay = lastDayOfMonth.toISOString().split('T')[0];
+            body.fecha = formattedFirstDay;
+            body.fechaFin = formattedLastDay;
+            console.log(formattedFirstDay, formattedLastDay);
+        };
+if(query?.anho){
         const { data } = await paginarRecord_consumo("", "", body);
         let dataBar = {};
         let dia = {};
         data.map((item) => {
-            console.log(item);
             dia[item.fecha] = (dia[item.fecha] || 0) * 1 + parseFloat(item?.km_recorridos);
             const stockInicial = parseFloat(item?.stock_inicial);
             const stockReal = parseFloat(item?.stock_real);
@@ -121,72 +104,14 @@ export default function Reportes() {
         setDataBar(barList);
         setResTotal(total);
         setDataTable(newDataBar);
+    }
     };
 
     return (
         <>
-            <form ref={formRef} style={{ minWidth: '90vw' }} method="POST" className="container" action="/crear-conductor">
 
-                <div className="row col-md-12 row">
-                    <div className="mb-2 col-md-2 col-lg-2">
-                        <label htmlFor="semana" className="form-label mb-1">Semana</label>
-                        <input
-                            type="text"
-                            id="semana"
-                            name="semana"
-                            onChange={() => listar()}
-                            className="form-control form-control-sm" />
-                    </div>
-
-                    <div className="mb-2 col-md-2">
-                        <label htmlFor="fecha" className="form-label mb-1">Fecha inicial</label>
-                        <input
-                            type="date"
-                            id="fecha"
-                            name="fecha"
-                            onChange={() => listar()}
-                            defaultValue={initialDate}
-                            className="form-control form-control-sm" />
-                    </div>
-
-                    <div className="mb-2 col-md-2">
-                        <label htmlFor="fecha" className="form-label mb-1">Fecha final</label>
-                        <input
-                            type="date"
-                            id="fecha_fin"
-                            name="fecha_fin"
-                            onChange={() => listar()}
-                            defaultValue={finalDate}
-                            className="form-control form-control-sm" />
-                    </div>
-
-                    <div className="mb-2 col-md-2">
-                        <label htmlFor="vehiculo" className="form-label mb-1">Vehiculo</label>
-                        <input
-                            type="text"
-                            id="vehiculo"
-                            name="vehiculo"
-                            onChange={() => listar()}
-                            className="form-control form-control-sm" />
-                    </div>
-                    <div className="mb-2 col-md-2">
-                        <label htmlFor="articulo">Conductor</label>
-                        <div>
-                            <input
-                                id='conductor'
-                                name='conductor'
-                                type="text"
-                                list="conductorItems"
-                                className="form-control form-control-sm"
-                                onChange={() => listar()}
-                            />
-                        </div>
-                    </div>
-
-                </div>
-            </form >
-
-            <section className="mt-4">
+            <section className="mt-4 container">
+                <div className='container text-center mb-4'><h2>Reporte de recorrido y consumo</h2></div>
                 <div className="row">
                     <div className="col-md-8">
                         <div>
@@ -195,10 +120,8 @@ export default function Reportes() {
                         <div className="mt-4" >
                             <Bars data={dataBar} valores={"Fecha"} items={"Recorrido"} />
                         </div>
-
                     </div>
                     <div className="col-md-4">
-                        
                         <BarHorizontar data={dataTable} />
                     </div>
                 </div>
