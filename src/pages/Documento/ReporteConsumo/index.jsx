@@ -86,8 +86,8 @@ if(query?.anho){
                 "Consumo teorico": (dataBar[item].consumo_teorico).toFixed(2),
                 "Diferencia": (-dataBar[item].consumo_real + dataBar[item].consumo_teorico).toFixed(2),
                 "Kms recorridos": dataBar[item].recorrido.toFixed(2),
-                "Gal por km real": parseFloat(dataBar[item].gal_por_km_real / dataBar[item].conteo).toFixed(4),
-                "Gal por Km teorico": (dataBar[item].gal_por_km / dataBar[item].conteo).toFixed(4),
+                "Gal por km real": parseFloat(dataBar[item].consumo_real / dataBar[item].recorrido).toFixed(4),
+                "Gal por Km teorico": (dataBar[item].consumo_teorico / dataBar[item].recorrido).toFixed(4),
             }];
 
             total["Consumo real"] = ((total["Consumo real"] || 0) * 1 + dataBar[item].consumo_real * 1).toFixed(2);
