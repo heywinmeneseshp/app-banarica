@@ -111,7 +111,7 @@ if(query?.anho){
         <>
 
             <section className="mt-4 container">
-                <div className='container text-center mb-4'><h2>Reporte de recorrido y consumo</h2></div>
+                <div className='container text-center mb-4'><h2>{`Reporte de recorrido y consumo - ${query?.sem ? `Semana ${query?.sem} de ${query?.anho}` : `Mes ${query?.sem} de ${query?.anho}` }`}</h2></div>
                 <div className="row">
                     <div className="col-md-8">
                         <div>
