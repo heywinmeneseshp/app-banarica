@@ -12,7 +12,7 @@ import { actualizarModulo, encontrarModulo } from '@services/api/configuracion';
 
 
 
-const Card = ({ setChange, km_recorridos, record_consumo_id, title, initialStock, date, setAlert }) => {
+const Card = ({ vehiculos, setChange, km_recorridos, record_consumo_id, title, initialStock, date, setAlert }) => {
 
   const [tanquar, setTanquear] = useState(false);
 
@@ -21,12 +21,27 @@ const Card = ({ setChange, km_recorridos, record_consumo_id, title, initialStock
   }, []);
 
   const liquidar = () => {
-    if (km_recorridos == 0 || km_recorridos == null) {
+    const vehiculoDate = new Date(date);
+    let newDate = null;
+
+    vehiculos.forEach(item => {
+      const itemDate = new Date(item.fecha);
+      if (item.vehiculo.placa == title && itemDate < vehiculoDate) {
+        newDate = itemDate;
+      }
+    });
+
+    if (!km_recorridos || km_recorridos <= 0) {
       return alert("Por favor, ingrese una cantidad válida de kilómetros recorridos.");
     }
+
+    if (newDate && newDate < vehiculoDate) {
+      return alert("Existen fechas más antiguas sin liquidar!");
+    }
+
     openLiquidar(true);
   };
-
+  
   const openLiquidar = (bool) => {
     setTanquear(bool);
     setChange(bool);
@@ -140,7 +155,7 @@ const FuelConsumptionDashboard = ({ handleChange }) => {
         const semReporte = res[0].sem_reporte;
 
         if (mesReporte != mes) {
-         await  actualizarModulo({ modulo: "Reporte", mes_reporte: mes });
+          await actualizarModulo({ modulo: "Reporte", mes_reporte: mes });
           await correoReporte("hmeneses@banarica.com, transmonsatecnology@gmail.com, emonsalve@banarica.com, operaciones@transmonsa.com, tesorero@transmonsa.com, tesoreria@transmonsa.com", `Reporte combustibles mes ${mes} del ${anho}`, endPoints.reporteConsumo.mes(mes, anho));
         };
 
@@ -154,7 +169,7 @@ const FuelConsumptionDashboard = ({ handleChange }) => {
     }
 
     fetchData();
-  }, [change]);
+  }, [alert]);
 
   const correoReporte = async (destinatario, asunto, url) => {
     let cuerpo = `<h3>Reporte de recorrido y consumo</h3>

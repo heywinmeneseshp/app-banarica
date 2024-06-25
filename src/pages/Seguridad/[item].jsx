@@ -3,7 +3,6 @@ import { useRouter } from "next/router";
 
 
 //Layout
-import ThirdLayout from 'layout/ThirdLayout';
 import Usuarios from "@containers/seguridad/Usuarios";
 import Disponibles from "@containers/seguridad/Disponibles";
 import Transferencias from "@containers/seguridad/Transferencias";
