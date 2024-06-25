@@ -24,11 +24,15 @@ export default function Tabla({ data, total }) {
         }
     };
 
+    const abrirHistorial = () => {
+        window.open("http://localhost:3000/Documento/ReporteConsumo?mes=4&anho=2024");
+    };
+
     return (
         <>
 
             <table className="table table-sm">
-                <thead className={`text-center ${styles.letter}`}  style={{ fontSize: '12px' }}>
+                <thead className={`text-center ${styles.letter}`} style={{ fontSize: '12px' }}>
                     <tr>
                         {titles.map((item, index) => (
                             <th key={index} scope="col">{item}</th>
@@ -37,14 +41,18 @@ export default function Tabla({ data, total }) {
                 </thead>
                 <tbody className={`text-center ${styles.letter}`} style={{ fontSize: '14px' }}>
                     {info.map((item, index) => (
-                        <tr key={index}>
+                        <tr onClick={() => console.log(item[titles[0]])} key={index}>
                             {titles.map((element, key) => (
-                                <td key={key} className='text-center'>{item[element]}</td>
+                                <td key={key} className={`text-center ${item[titles[0]] == item[element] ? "text-primary fw-bold" : "" }`}>
+                                    <span style={item[titles[0]] == item[element] ? { cursor: "pointer" } : {}}>
+                                        {item[element]}
+                                    </span>
+                                </td>
                             ))}
                         </tr>
                     ))}
                 </tbody>
-                {total && <thead className={`text-center ${styles.letter}`}  style={{ fontSize: '14px' }}>
+                {total && <thead className={`text-center ${styles.letter}`} style={{ fontSize: '14px' }}>
                     <tr>
                         {titles.map((item, index) => (
                             <th key={index} scope="col">{total[item]}</th>
