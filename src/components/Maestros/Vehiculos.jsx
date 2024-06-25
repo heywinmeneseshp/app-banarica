@@ -31,7 +31,6 @@ export default function Vehiculo() {
     const listaConductores = conductores.map(item => { return { id: item.id, nombre: item.conductor }; });
     setCategoryV(listaCategorias);
     setConductoresL(listaConductores);
-    console.log(conductores);
   };
 
   return (

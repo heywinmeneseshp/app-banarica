@@ -62,8 +62,6 @@ export default function Programador() {
 
         if (fechaFin) body.fechaFin = fechaFin;
 
-        console.log(body);
-
         const res = await paginarProgramaciones(pagination, limit, body);
         setItemsList(res.data);
         setTotal(res.total);

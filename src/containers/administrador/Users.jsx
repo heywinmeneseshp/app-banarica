@@ -73,7 +73,6 @@ const Users = () => {
 
     const onDescargar = async () => {
         const { data } = await axios.get(endPoints.usuarios.list);
-        console.log(data);
         excel(data, "Usuarios", "Usuarios");
     };
 

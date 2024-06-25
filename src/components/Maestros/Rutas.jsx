@@ -24,7 +24,6 @@ export default function Rutas() {
     const categorias = await listarUbicaciones();
     const listaUbicaciones = categorias.map(item => { return { id: item.id, nombre: item.ubicacion }; });
 
-    console.log(listaUbicaciones);
     setUbicaciones(listaUbicaciones);
 
   };

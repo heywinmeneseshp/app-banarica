@@ -33,7 +33,6 @@ export default function Tablas({ encabezados, actualizar, listas, listar, pagina
   async function listrasItems() {
     let nombre = ItemdorRef.current.value;
     const res = await paginar(pagination, limit, nombre);
-    console.log(res);
     setItems(res.data);
     setTotal(res.total);
   }

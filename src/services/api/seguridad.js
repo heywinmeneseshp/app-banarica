@@ -61,7 +61,6 @@ const cargarSeriales = async (dataExcel, remision, pedido, semana, fecha, observ
         };
 
         agregarRecepcion(body).then((res) => {
-            console.log(res);
             productList.map(item => {
                 const almacen = dataExcel[1].cons_almacen;
                 const cons_producto = item;
@@ -118,7 +117,6 @@ const verificarAndActualizarSeriales = async (data, cons_almacen) => {
             };
             property = property.includes("Precinto plástico") ? "Precinto plástico" : property;
             const existe = await encontrarUnSerial({ serial: newData.serial, producto: { name: property } });
-            console.log(existe);
             if (existe == null) {
                 if (confirm(`No existe ${property} con serial ${newData.serial} ¿Desea corregir el serial?`)) {
                     newData.serial = prompt(`Por favor, corrija el serial, ${property}:`, newData.serial);

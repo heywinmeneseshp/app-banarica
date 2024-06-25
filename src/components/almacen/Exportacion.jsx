@@ -220,7 +220,6 @@ export default function Exportacion() {
 
     const sumarPrecitnos = () => {
         setNoPrecintos([...noPrecintos, noPrecintos.length + 1]);
-        console.log(noPrecintos);
     };
 
     const removerPrecitnos = () => {
@@ -474,7 +473,7 @@ export default function Exportacion() {
                                 </InputGroup>
 
                                 {noPrecintos.map((index, key) => {
-                                    console.log(index);
+                
                                     return (
                                         < InputGroup size="sm" key={key} >
                                             <InputGroup.Text id="inputGroup-sizing-sm">Precinto plástico {index}</InputGroup.Text>

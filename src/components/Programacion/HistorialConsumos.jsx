@@ -22,7 +22,7 @@ import { Button } from 'react-bootstrap';
 export default function Programador() {
 
 
-      
+
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
     const [limit, setLimit] = useState(100);
@@ -34,10 +34,10 @@ export default function Programador() {
     const [openConsumo, setOpenConsumo] = useState(false);
     const [element, setElement] = useState({});
     const { alert, setAlert, toogleAlert } = useAlert();
-const tablaRef = useRef();
+    const tablaRef = useRef();
     const formRef = useRef();
     const formEdit = useRef();
-    
+
 
 
     useEffect(() => {
@@ -50,16 +50,15 @@ const tablaRef = useRef();
         setConductores(newConductores);
         const body = {
             semana: formData.get("semana") ? formData.get("semana") : "",
-            vehiculo: formData.get("vehiculo") ?  formData.get("vehiculo") : "",
+            vehiculo: formData.get("vehiculo") ? formData.get("vehiculo") : "",
             conductor: formData.get("conductor") ? formData.get("conductor") : "",
             fecha: formData.get("fecha") ? formData.get("fecha") : ""
         };
 
         let fechaFin = formData.get("fecha_fin");
         if (fechaFin) body.fechaFin = fechaFin;
-    
+
         const res = await paginarRecord_consumo(pagination, 100, body);
-        console.log(res.data);
         setItemsList(res.data);
         if (boolEdit.length == 0) {
             let arrayBool = new Array(res.data.length).fill(false);
@@ -140,8 +139,8 @@ const tablaRef = useRef();
         let fechaFin = formData.get("fecha_fin");
         if (fechaFin) body.fechaFin = fechaFin;
 
-        const {data} = await paginarRecord_consumo("", "", body);
-        const newData = data.map( (item) => {
+        const { data } = await paginarRecord_consumo("", "", body);
+        const newData = data.map((item) => {
             const stockInicial = parseFloat(item?.stock_inicial || 0).toFixed(2);
             const stockReal = parseFloat(item?.stock_real || 0).toFixed(2);
             const stockFinal = parseFloat(item?.stock_final || 0).toFixed(2);
@@ -159,12 +158,12 @@ const tablaRef = useRef();
                 "Stock incial": stockInicial.replace(".", ","),
                 "Recorrido": recorridos.replace(".", ","),
                 "Gal por km teórico": gal_por_km.replace(".", ","),
-                "Gal por km real": stockReal !=0  ? gal_por_km_real.replace(".", ",") : null,
-                "Consumo teórico": stockReal !=0 ? consumo_teorico.replace(".", ",") : null,
-                "Consumo real": stockReal !=0 ? consumo_real.replace(".", ",") : null,
-                "Tanqueo": stockReal !=0 ? tanqueo.replace(".", ",") : null,
-                "Stock final": stockReal !=0 ? (stockFinal).replace(".", ",") : null,
-                "Stock real": stockReal !=0 ? (stockReal).replace(".", ",") : null,
+                "Gal por km real": stockReal != 0 ? gal_por_km_real.replace(".", ",") : null,
+                "Consumo teórico": stockReal != 0 ? consumo_teorico.replace(".", ",") : null,
+                "Consumo real": stockReal != 0 ? consumo_real.replace(".", ",") : null,
+                "Tanqueo": stockReal != 0 ? tanqueo.replace(".", ",") : null,
+                "Stock final": stockReal != 0 ? (stockFinal).replace(".", ",") : null,
+                "Stock real": stockReal != 0 ? (stockReal).replace(".", ",") : null,
                 "Diferencia": diferencia ? diferencia.replace(".", ",") : null,
             };
         });
@@ -243,9 +242,9 @@ const tablaRef = useRef();
                         </div>
                     </div>
                     <div className="mb-2 col-md-2">
-                            <Button type="button" onClick={() => descargarExcel()} className="w-100 mt-4" variant="success" size="sm">
-                                Descargar Excel
-                            </Button>
+                        <Button type="button" onClick={() => descargarExcel()} className="w-100 mt-4" variant="success" size="sm">
+                            Descargar Excel
+                        </Button>
                     </div>
                 </div>
 

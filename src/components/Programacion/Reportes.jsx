@@ -67,7 +67,6 @@ export default function Reportes() {
         let dataBar = {};
         let dia = {};
         data.map((item) => {
-            console.log(item);
             dia[item.fecha] = (dia[item.fecha] || 0) * 1 + parseFloat(item?.km_recorridos);
             const stockInicial = parseFloat(item?.stock_inicial);
             const stockReal = parseFloat(item?.stock_real);
@@ -193,13 +192,13 @@ export default function Reportes() {
                             <Tabla data={dataTable} total={resTotal} />
                         </div>
                         <div className="mt-4" >
-                            <Bars data={dataBar} valores={"Fecha"} items={"Recorrido"} />
+                            <Bars data={dataTable} valores={"Fecha"} items={"Recorrido"} />
                         </div>
 
                     </div>
                     <div className="col-md-4">
                         
-                        <BarHorizontar data={dataTable} />
+                        <BarHorizontar data={dataBar} />
                     </div>
                 </div>
             </section>

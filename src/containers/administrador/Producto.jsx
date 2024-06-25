@@ -49,7 +49,6 @@ const Producto = () => {
     };
     
     const handleEnable = () => {
-        console.log("Aja");
     };
 
     const handleEditar = (item) => {

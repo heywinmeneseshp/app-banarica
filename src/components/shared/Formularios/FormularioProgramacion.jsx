@@ -343,7 +343,6 @@ export default function FormulariosProgramacion({ element, setOpen, setAlert }) 
     const res = ruta.find((item, key) => item[key + 1] == true);
     res ? setOnlyRead(true) : setOnlyRead(false);
     encontrarModulo("Semana").then(res => setSemana(res[0].semana_actual));
-    console.log(semana);
   }, [change, body, ruta]);
 
 
@@ -389,7 +388,6 @@ export default function FormulariosProgramacion({ element, setOpen, setAlert }) 
 
   const agregarRuta = () => {
     let newRuta = [...ruta]; // Crear una copia del array existente
-    console.log(ruta.length + 1);
     newRuta.push({ [ruta.length + 1]: false }); // Agregar un nuevo objeto al array
     setRuta(newRuta);
     setChange(!change);

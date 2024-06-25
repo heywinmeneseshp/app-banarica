@@ -44,7 +44,6 @@ export default function Reportes() {
             const formattedLastDay = lastDayOfMonth.toISOString().split('T')[0];
             body.fecha = formattedFirstDay;
             body.fechaFin = formattedLastDay;
-            console.log(formattedFirstDay, formattedLastDay);
         };
 if(query?.anho){
         const { data } = await paginarRecord_consumo("", "", body);
@@ -118,11 +117,11 @@ if(query?.anho){
                             <Tabla data={dataTable} total={resTotal} />
                         </div>
                         <div className="mt-4" >
-                            <Bars data={dataBar} valores={"Fecha"} items={"Recorrido"} />
+                            <Bars data={dataTable} />
                         </div>
                     </div>
                     <div className="col-md-4">
-                        <BarHorizontar data={dataTable} />
+                        <BarHorizontar data={dataBar} valores={"Fecha"} items={"Recorrido"} />
                     </div>
                 </div>
             </section>

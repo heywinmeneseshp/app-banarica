@@ -29,12 +29,12 @@ export default function BarHorizontal({ data }) {
         }}
       >
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis type="number" domain={[-180, 180]} />
-        <YAxis type="category" dataKey="Item" />
+        <XAxis type="number" />
+        <YAxis type="category" dataKey="Fecha" />
         <Tooltip />
         <Legend />
         <ReferenceLine x={0} stroke="#000" />
-        <Bar dataKey="Diferencia" fill="#0d6efd" />
+        <Bar dataKey="Recorrido" fill="#0d6efd" />
       </BarChart>
     </ResponsiveContainer>
   );

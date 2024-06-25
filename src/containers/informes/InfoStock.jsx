@@ -225,7 +225,7 @@ export default function InfoStock() {
                     </thead>
                     <tbody>
                         {stock.map((item, index) => {
-                            console.log(bools[index]);
+
                             return (
                                 <tr key={index}>
                                     <td>{item?.cons_almacen}</td>

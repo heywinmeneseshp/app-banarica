@@ -33,11 +33,9 @@ export default function NuevaEtiqueta({ setOpen, etiqueta }) {
             'detalle_superior': detSup,
             'detalle_inferior': detInf
         };
-        console.log(etiqueta);
         if (!etiqueta) {
             await crearEtiqueta(body);
         } else {
-            console.log("------");
             await actualizarEtiqueta(etiqueta.id, body);
         }
         closeWindow();

@@ -27,7 +27,6 @@ export default function Notificaciones() {
 
     const listar = async () => {
         const res = await paginarNotificaciones(pagination, 50, {});
-        console.log(res.data);
         setItemsList(res.data);
         setTotal(res.total);
         setLimit(50);
