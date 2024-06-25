@@ -283,6 +283,7 @@ const endPoints = {
     reporteConsumo: {
         semana: (sem, anho) => `${OWN_URL}/Documento/ReporteConsumo?anho=${anho}&sem=${sem}`,
         mes: (mes, anho) => `${OWN_URL}/Documento/ReporteConsumo?mes=${mes}&anho=${anho}`,
+        consumoVehiculo: (query) => `${OWN_URL}/Documento/HistorialConsumo?${query}`,
     },
     email: {
         send: `${API}/api/${VERSION}/email/send`,

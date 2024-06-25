@@ -8,12 +8,11 @@ import { useAuth } from '@hooks/useAuth';
 import endPoints from '@services/api';
 //Components
 import Inicio from '@containers/inicio/Inicio';
-import SecondLayout from '@layout/SecondLayout';
 import Adminsitrador from '@containers/administrador';
 import Almacen from '@containers/almacen';
 import Informes from '@containers/informes';
 //CSS
-import styles from '@styles/Layout.module.css';
+import RootLayout from '@layout/RootLayout';
 
 export default function Home() {
     const { user, setUser, setAlmacenByUser } = useAuth();
@@ -56,15 +55,12 @@ export default function Home() {
     if (user) {
         return (
             <div>
-
-                <SecondLayout>
-                    <div className={styles.alto} >
+                <RootLayout>
                         {initialMenu.menu.inicio && <Inicio />}
                         {initialMenu.menu.administrador && <Adminsitrador />}
                         {initialMenu.menu.almacen && <Almacen />}
                         {initialMenu.menu.informes && <Informes />}
-                    </div>
-                </SecondLayout>
+                </RootLayout>
 
             </div>
         );

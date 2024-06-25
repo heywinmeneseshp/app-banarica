@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 
 //CSS
 import styles from '@styles/Listar.module.css';
+import endPoints from '@services/api';
 
 
 export default function Tabla({ data, total }) {
@@ -24,8 +25,8 @@ export default function Tabla({ data, total }) {
         }
     };
 
-    const abrirHistorial = () => {
-        window.open("http://localhost:3000/Documento/ReporteConsumo?mes=4&anho=2024");
+    const abrirHistorial = (res, item) => {
+        if (res == "Item") window.open(endPoints.reporteConsumo.consumoVehiculo(`item=${item}`));
     };
 
     return (
@@ -41,9 +42,9 @@ export default function Tabla({ data, total }) {
                 </thead>
                 <tbody className={`text-center ${styles.letter}`} style={{ fontSize: '14px' }}>
                     {info.map((item, index) => (
-                        <tr onClick={() => console.log(item[titles[0]])} key={index}>
+                        <tr key={index}>
                             {titles.map((element, key) => (
-                                <td key={key} className={`text-center ${item[titles[0]] == item[element] ? "text-primary fw-bold" : "" }`}>
+                                <td onClick={() => abrirHistorial(element, item[element])} key={key} className={`text-center ${item[titles[0]] == item[element] ? "text-primary fw-bold" : "" }`}>
                                     <span style={item[titles[0]] == item[element] ? { cursor: "pointer" } : {}}>
                                         {item[element]}
                                     </span>

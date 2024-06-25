@@ -173,7 +173,7 @@ const FuelConsumptionDashboard = ({ handleChange }) => {
   return (
     <span>
       <Alertas alert={alert} handleClose={toogleAlert} />
-      <div className="container" style={{ minWidth: '90vw', minHeight: '100vh' }}>
+      <div className="container">
         <h1 className="text-center mb-4">Pendientes por liquidar</h1>
         <div className="row align-items-center justify-content-center">
 
