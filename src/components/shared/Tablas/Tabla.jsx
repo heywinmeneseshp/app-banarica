@@ -6,12 +6,15 @@ import React, { useEffect, useState } from 'react';
 //CSS
 import styles from '@styles/Listar.module.css';
 import endPoints from '@services/api';
+import { useRouter } from 'next/router';
 
 
 export default function Tabla({ data, total }) {
 
     const [titles, setTitles] = useState([]);
     const [info, setInfo] = useState([]);
+    const router = useRouter();
+const { query } = router;
 
     useEffect(() => {
         listar();
@@ -26,7 +29,11 @@ export default function Tabla({ data, total }) {
     };
 
     const abrirHistorial = (res, item) => {
-        if (res == "Item") window.open(endPoints.reporteConsumo.consumoVehiculo(`item=${item}`));
+        var consulta;
+        if(query?.anho) consulta = `anho=${query?.anho}`;
+        if(query?.mes) consulta = `${consulta}&mes=${query?.mes}`;
+        if(query?.sem) consulta = `${consulta}&sem=${query?.sem}`;
+        if (res == "Item") window.open(endPoints.reporteConsumo.consumoVehiculo(`item=${item}&${consulta}`));
     };
 
     return (

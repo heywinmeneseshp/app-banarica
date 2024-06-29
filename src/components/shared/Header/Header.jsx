@@ -178,7 +178,7 @@ const Header = () => {
 
             <ButtonGroup variant="dark" size="sm">
 
-              <Button onClick={handleProfile}>{user.nombre} {user.apellido}</Button>
+              <Button onClick={handleProfile}>{user?.nombre} {user?.apellido}</Button>
             </ButtonGroup>
 
             <ButtonGroup variant="dark" size="sm">

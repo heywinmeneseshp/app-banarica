@@ -19,7 +19,6 @@ export default function Reportes() {
     const [finalDate, setFinalDate] = useState();
 
 
-
     useEffect(() => {
         listar();
     }, []);

@@ -19,7 +19,8 @@ import Formularios from '@components/shared/Formularios/Formularios';
 import { actualizarVehiculo } from '@services/api/vehiculos';
 import { Button } from 'react-bootstrap';
 
-export default function Programador() {
+
+export default function HistorialConsumos({placa, mes, sem, anho }) {
 
 
 
@@ -33,18 +34,33 @@ export default function Programador() {
     const [boolKm, setBoolKm] = useState([]);
     const [openConsumo, setOpenConsumo] = useState(false);
     const [element, setElement] = useState({});
+    const [rangoFecha, setRangoFecha] = useState();
     const { alert, setAlert, toogleAlert } = useAlert();
     const tablaRef = useRef();
     const formRef = useRef();
     const formEdit = useRef();
 
 
-
     useEffect(() => {
         listar();
-    }, [pagination, alert, boolEdit, boolKm],);
+    }, [pagination, alert, boolEdit, boolKm, mes],);
+
 
     const listar = async () => {
+
+        if (mes) {
+            const years = anho; // Obtén el año actual
+            const months = mes; - 1; // Mayo es el mes 4 (0-indexed en JavaScript)
+            const firstDayOfMonth = new Date(years, months - 1, 1);
+            const lastDayOfMonth = new Date(years, months, 0);
+            const formattedFirstDay = firstDayOfMonth.toISOString().split('T')[0];
+            const formattedLastDay = lastDayOfMonth.toISOString().split('T')[0];
+            setRangoFecha({ inicio: formattedFirstDay, fin: formattedLastDay });
+        } else {
+            const years = anho; // Obtén el año actual
+            setRangoFecha({ inicio: `${years}-01-01`, fin: `${years}-12-31` });  
+        };
+ 
         const formData = new FormData(formRef.current);
         const newConductores = await listarConductores();
         setConductores(newConductores);
@@ -186,6 +202,7 @@ export default function Programador() {
                             type="text"
                             id="semana"
                             name="semana"
+                            defaultValue={sem}
                             onChange={() => listar()}
                             className="form-control form-control-sm" />
                     </div>
@@ -197,6 +214,7 @@ export default function Programador() {
                             id="fecha"
                             name="fecha"
                             onChange={() => listar()}
+                            defaultValue={rangoFecha?.inicio}
                             className="form-control form-control-sm" />
                     </div>
 
@@ -206,6 +224,7 @@ export default function Programador() {
                             type="date"
                             id="fecha_fin"
                             name="fecha_fin"
+                            defaultValue={rangoFecha?.fin}
                             onChange={() => listar()}
                             className="form-control form-control-sm" />
                     </div>
@@ -216,6 +235,7 @@ export default function Programador() {
                             type="text"
                             id="vehiculo"
                             name="vehiculo"
+                            defaultValue={placa}
                             onChange={() => listar()}
                             className="form-control form-control-sm" />
                     </div>
@@ -284,9 +304,9 @@ export default function Programador() {
 
                             return (<tr key={index}>
                                 <td>{item?.fecha}</td>
-                                <td className='col d-none d-lg-block'>{item?.semana}</td>
+                                <td className='col'>{item?.semana}</td>
                                 <td>{item?.vehiculo?.placa}</td>
-                                <td className='col d-none d-lg-block'>{item?.conductore?.conductor}</td>
+                                <td className='col'>{item?.conductore?.conductor}</td>
                                 <td className=' text-center'>{item?.stock_inicial}</td>
                                 <td className='text-center'>
                                     <div className='d-flex justify-content-center align-items-start'>
