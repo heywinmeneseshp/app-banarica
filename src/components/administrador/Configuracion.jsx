@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 //Services
-import { actualizarModulo, encontrarModulo } from '@services/api/configuracion';
+import { actualizarEmpresa, actualizarModulo, encontrarEmpresa, encontrarModulo } from '@services/api/configuracion';
 //Boostrap
 import { Container, Form, InputGroup } from 'react-bootstrap';
 //Components
@@ -13,17 +13,20 @@ export default function Configuracion({ setOpen }) {
     const formRef = useRef();
     const [securityCheck, setSecurityCheck] = useState(false);
     const [semana, setSemana] = useState(null);
+    const [empresa, setEmpresa] = useState(null);
 
     useEffect(() => {
         encontrarModulo("Seguridad").then(res => setSecurityCheck(res[0].habilitado));
         encontrarModulo("Semana").then(res => setSemana(res[0]));
+        encontrarEmpresa().then(res => setEmpresa(res));
+
     }, []);
 
     let styleBoton = { color: "success", text: "Guardar configuración" };
 
     const closeWindow = () => {
         setOpen(false);
-    }; 
+    };
 
     function changeSecurity() {
         setSecurityCheck(!securityCheck);
@@ -43,6 +46,11 @@ export default function Configuracion({ setOpen }) {
                 "semana_siguiente": formData.get('siguiente'),
                 "semana_previa": formData.get('anterior'),
                 "anho_actual": formData.get('anho_actual')
+            });
+            actualizarEmpresa({
+                "razonSocial": formData.get('razon_social'),
+                "nombreComercial": formData.get('nombre_comercial'),
+                "nit": formData.get('nit')
             });
             setOpen(false);
         } catch (e) {
@@ -66,7 +74,50 @@ export default function Configuracion({ setOpen }) {
                             <div className='line'></div>
 
                             <div className={styles1.input_group}>
-                                <span className='mr-3' >Segurdiad:</span>
+
+                                <span  >Razon social:</span>
+                                <InputGroup size="sm">
+                                    <Form.Control
+                                        id="razon_social"
+                                        name='razon_social'
+                                        aria-label="Small"
+                                        aria-describedby="inputGroup-sizing-sm"
+                                        className={styles1.input_semana}
+                                        type='text'
+                                        defaultValue={empresa?.razonSocial}
+                                    />
+                                </InputGroup>
+
+
+                                <span  >Nombre comercial:</span>
+                                <InputGroup size="sm">
+                                    <Form.Control
+                                        id="nombre_comercial"
+                                        name='nombre_comercial'
+                                        aria-label="Small"
+                                        aria-describedby="inputGroup-sizing-sm"
+                                        className={styles1.input_semana}
+                                        type='text'
+                                        defaultValue={empresa?.nombreComercial}
+                                    />
+                                </InputGroup>
+
+                                <span  >Nit:</span>
+                                <InputGroup size="sm">
+                                    <Form.Control
+                                        id="nit"
+                                        name='nit'
+                                        aria-label="Small"
+                                        aria-describedby="inputGroup-sizing-sm"
+                                        className={styles1.input_semana}
+                                        type='text'
+                                        defaultValue={empresa?.nit}
+                                    />
+                                </InputGroup>
+
+
+
+                                <span  >Segurdiad:</span>
                                 <InputGroup size="sm">
                                     <input onChange={changeSecurity} type="checkbox" name="seguridad" id="seguridad" value={1} checked={securityCheck} />
                                 </InputGroup>

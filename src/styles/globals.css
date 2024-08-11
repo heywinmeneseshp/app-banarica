@@ -256,3 +256,62 @@ select {
 
 
 }
+.table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .table th, .table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+  }
+  
+  .table th {
+    background-color: #f2f2f2;
+    text-align: center;
+  }
+  
+  .table td {
+    text-align: left;
+  }
+  
+  .table td[contenteditable="true"]:focus {
+    outline: 2px solid rgb(121, 121, 121);
+  }
+  
+  .table input.custom-input {
+    width: 100%;
+    border: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+    background-color: transparent;
+    font-size: inherit;
+  
+        text-align: center; /* Centra el texto dentro del input */
+   
+  }
+  
+  .table input.custom-input:focus {
+    outline: none;
+  }
+
+  .text-custom-small {
+    font-size: 0.85rem; /* Tamaño de fuente pequeño */
+    
+  }
+
+  .mt-30px {
+    margin-top: 31px;
+  }
+
+  .line {
+    height: 2px;
+    background-color: gray;
+    margin-bottom: 15px;
+    border-radius: 50px;
+}
+
+input:invalid {
+    border-color: rgb(255, 151, 151);
+}

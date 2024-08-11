@@ -191,7 +191,9 @@ const endPoints = {
     },
     confi: {
         buscarModulo: (modulo) => `${API}/api/${VERSION}/confi/encontrar/${modulo}`,
-        actualizarModulo: `${API}/api/${VERSION}/confi/actualizar`
+        actualizarModulo: `${API}/api/${VERSION}/confi/actualizar`,
+        encontrarEmpresa:  `${API}/api/${VERSION}/empresa/1`,
+        actualizarEmpresa:  `${API}/api/${VERSION}/empresa/1`,
     },
     //TRANSPOTER
     ubicaciones: {
@@ -287,6 +289,13 @@ const endPoints = {
     },
     email: {
         send: `${API}/api/${VERSION}/email/send`,
+    },
+    //LOGISTICA
+    contenedores: {
+        create: `${API}/api/${VERSION}/contenedor`,
+        findOne: (id) => `${API}/api/${VERSION}/contenedor/${id}`,
+        update: (id) => `${API}/api/${VERSION}/contenedor/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/contenedor/${id}`,
     }
 
 

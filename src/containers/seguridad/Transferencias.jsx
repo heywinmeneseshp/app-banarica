@@ -1,10 +1,11 @@
 import React, { useRef, useState } from "react";
 import { useAuth } from "@hooks/useAuth";
+import { PropagateLoader } from "react-spinners";
 
 //CSS
 import styles from "@styles/Seguridad.module.css";
+import styles2 from "@styles/Config.module.css";
 import { useEffect } from "react";
-import { listarAlmacenes } from "@services/api/almacenes";
 import { actualizarSeriales, listarProductosSeguridad, listarSeriales } from "@services/api/seguridad";
 import Paginacion from "@components/Paginacion";
 import { agregarTraslado } from "@services/api/traslados";
@@ -23,8 +24,7 @@ export default function Transferencias() {
     const limitRef = useRef();
     const formRef = useRef();
     const checkRef = useRef();
-    const { almacenByUser } = useAuth();
-    const [almacenes, setAlmacenes] = useState([]);
+    const { almacenByUser, user } = useAuth();
     const [tabla, setTabla] = useState([1]);
     const [total, setTotal] = useState(0);
     const [checkAll, setCheckAll] = useState(false);
@@ -35,6 +35,9 @@ export default function Transferencias() {
     const { alert, setAlert, toogleAlert } = useAlert();
     const [semana, setSemana] = useState(null);
     const [bool, setBool] = useState(false);
+    const [loading, setLoading] = useState(false);  // Estado para manejar la carga
+    const [MostrarSerial, setMostrarSerial] = useState(false);
+
 
     useEffect(() => {
         const listar = async () => {
@@ -58,11 +61,11 @@ export default function Transferencias() {
                 setChecks(array);
             });
         };
-        listarAlmacenes().then(res => setAlmacenes(res));
         listarProductosSeguridad().then(res => setProductos(res.filter(item => item.serial == true)));
         buscarArticulos();
         encontrarModulo("Semana").then(res => setSemana(res[0]));
         listar();
+        setMostrarSerial(user.id_roll == "Super usuario");
     }, [limit, pagination]);
 
     const buscarArticulos = async () => {
@@ -119,6 +122,7 @@ export default function Transferencias() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
         const boolChecks = checKs.filter((item) => item == true);
         if (boolChecks.length == 0) return setAlert({
             active: true,
@@ -200,6 +204,7 @@ export default function Transferencias() {
             });
             window.open(endPoints.document.traslados(cons_traslado));
             setBool(true);
+            setLoading(false);
         } catch (e) {
             setAlert({
                 active: true,
@@ -221,6 +226,15 @@ export default function Transferencias() {
 
     return (
         <>
+
+            <div>
+                {loading && (
+                    <div className={styles2.spinnerContainer}>
+                        <PropagateLoader color="#0d6efd" />
+                    </div>
+                )}
+
+            </div>
             <form ref={formRef} onSubmit={handleSubmit}>
                 <h2>Transferencias</h2>
                 <div className={styles.grid_tranferencias}>
@@ -247,7 +261,7 @@ export default function Transferencias() {
                             id="destino"
                             disabled={bool}
                             name="destino">
-                            {almacenes.map((item, index) => (
+                            {almacenByUser.map((item, index) => (
                                 <option key={index} value={item.consecutivo}>{item.nombre}</option>
                             ))}
                         </select>
@@ -296,8 +310,8 @@ export default function Transferencias() {
                             aria-describedby="inputGroup-sizing-sm"></input>
                     </div>
 
-                    <div className="input-group input-group-sm">
-                        <span className="input-group-text" id="inputGroup-sizing-sm">Serial</span>
+                    <div className={`input-group input-group-sm ${MostrarSerial ? "" : "d-none"}`}>
+                        <span className="input-group-text" id="inputGroup-sizing-sm">Serial Int</span>
                         <input type="text"
                             className="form-control"
                             aria-label="Sizing example input"
@@ -305,11 +319,12 @@ export default function Transferencias() {
                             name="serial"
                             onChange={onChanageBuscar}
                             disabled={bool}
+                            readOnly={!MostrarSerial}
                             aria-describedby="inputGroup-sizing-sm"></input>
                     </div>
 
                     <div className="input-group input-group-sm">
-                        <span className="input-group-text" id="inputGroup-sizing-sm">Bag Pack</span>
+                        <span className="input-group-text" id="inputGroup-sizing-sm">Serial Ext</span>
                         <input type="text"
                             className="form-control"
                             aria-label="Sizing example input"
@@ -372,7 +387,7 @@ export default function Transferencias() {
                                     className="form-control form-control-sm"
                                     id="limit"
                                     name="limit"
-                              
+
                                     min={1}
                                     max={total}
                                     ref={limitRef}
@@ -407,8 +422,8 @@ export default function Transferencias() {
                                     </th>
                                     <th scope="col">Alm</th>
                                     <th scope="col">Artículo</th>
-                                    <th scope="col">Serial</th>
-                                    <th scope="col">Bag Pack</th>
+                                    {MostrarSerial && <th scope="col">Serial Int</th>}
+                                    <th scope="col">Serial Ext</th>
                                     <th scope="col">S Pack</th>
                                     <th scope="col">M Pack</th>
                                     <th scope="col">L Pack</th>
@@ -430,7 +445,7 @@ export default function Transferencias() {
                                             </th>
                                             <td>{item?.cons_almacen}</td>
                                             <td>{item?.cons_producto}</td>
-                                            <td>{item?.serial}</td>
+                                            {MostrarSerial && <td>{item?.serial}</td>}
                                             <td>{item?.bag_pack}</td>
                                             <td>{item?.s_pack}</td>
                                             <td>{item?.m_pack}</td>

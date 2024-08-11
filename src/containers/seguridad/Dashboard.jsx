@@ -11,8 +11,8 @@ export default function Dashboard() {
             <h2>Resumen diario</h2>
 
             <div className="row mt-3 align-items-center">
-                <div className="col-6 col-md-4 mb-2 mb-md-0">
-                    <div className="input-group">
+                <div className="col-12 col-md-6 d-flex align-items-center">
+                    <div className="input-group me-2">
                         <span className="input-group-text" id="date-addon">Desde:</span>
                         <input
                             type="date"
@@ -23,10 +23,8 @@ export default function Dashboard() {
                             aria-describedby="date-addon"
                         />
                     </div>
-                </div>
 
-                <div className="col-6 col-md-4 mb-2 mb-md-0">
-                    <div className="input-group">
+                    <div className="input-group ms-2">
                         <span className="input-group-text" id="date-addon">Hasta:</span>
                         <input
                             type="date"
@@ -39,8 +37,11 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                <div className="d-none d-md-block col-12 col-md-4 d-md-flex align-items-md-end justify-content-md-end">
-                    <button type="button" className="btn btn-success mb-2 col-md-12 m-1">Descargar</button>
+                <div className="col-12 col-md-6 d-flex justify-content-md-end mt-3 mt-md-0">
+                    <div className="d-flex flex-column flex-md-row">
+                        <button type="button" className="btn btn-primary mb-2 mb-md-0 me-md-2">Descargar Carrusel</button>
+                        <button type="button" className="btn btn-secondary mb-2 mb-md-0">Descargar Relación</button>
+                    </div>
                 </div>
             </div>
 
@@ -79,3 +80,4 @@ export default function Dashboard() {
         </div>
     );
 }
+

@@ -51,7 +51,6 @@ const useInfoMenu = () => {
         });
     };
 
-
     return {
         infoMenu,
         handleMovimientos,

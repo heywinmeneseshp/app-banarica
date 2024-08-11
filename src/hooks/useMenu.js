@@ -5,8 +5,12 @@ const initialMenu = {
     inicio: true,
     administrador: false,
     almacen: false,
-    informes: false
+    informes: false,
+    seguridad: false
+
+
 };
+
 
 const useMenu = () => {
     const [navBar, setNavBar] = useState(true);

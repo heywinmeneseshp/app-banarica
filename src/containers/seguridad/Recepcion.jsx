@@ -88,7 +88,10 @@ export default function Recepcion() {
         try {
             const formData = new FormData(formRef.current);
             const remision = formData.get("remision");
-            const pedido = formData.get("pedido");
+            if (remision && remision.length < 3) {
+                window.alert("La remisión debe tener al menos tres caracteres.");
+                return; // Detener la ejecución si la validación falla
+            }const pedido = formData.get("pedido");
             const semana = await uSemana(formData.get("semana"));
             const fecha = formData.get("fecha");
             const observaciones = formData.get("observaciones");
@@ -164,6 +167,7 @@ export default function Recepcion() {
                                 id="remision"
                                 name="remision"
                                 required
+                                minLength={2}
                                 disabled={bool}
                             />
                         </InputGroup>

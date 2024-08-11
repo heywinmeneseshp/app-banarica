@@ -8,7 +8,7 @@ import { actualizarUsuario, agregarUsuario, cargarAlmacenesPorUsuario } from '@s
 import styles from '@styles/admin/crearProducto.module.css';
 import axios from 'axios';
 
-export default function NuevoUsuario({ setAlert, setOpen, user, profile, autorizacion }) {
+export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
     const formRef = useRef(null);
     const [checkedState, setcheckedState] = useState([]);
     const [almacenes, setAlmacenes] = useState([]);
@@ -253,12 +253,12 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile, autoriz
                                     <label htmlFor="id_rol">Rol</label>
                                     <div>
                                         <select id="id_rol" name="id_rol" className="form-select form-select-sm">
-                                            {(autorizacion != "Super seguridad") && <option selected={user?.id_rol == "Super administrador"}>Super administrador</option>}
-                                            {(autorizacion != "Super seguridad") && <option selected={user?.id_rol == "Administrador"}>Administrador</option>}
-                                            {(autorizacion != "Super seguridad") && <option selected={user?.id_rol == "Oficinista"}>Oficinista</option>}
-                                            {(autorizacion != "Super seguridad") && <option selected={user?.id_rol == "Operador"}>Operador</option>}
-                                            {(autorizacion == "Super seguridad") && <option selected={user?.id_rol == "Super seguridad"}>Super seguridad</option>}
-                                            {(autorizacion == "Super seguridad") && <option selected={user?.id_rol == "Seguridad"}>Seguridad</option>}
+                                            { <option selected={user?.id_rol == "Super administrador"}>Super administrador</option>}
+                                            { <option selected={user?.id_rol == "Administrador"}>Administrador</option>}
+                                            { <option selected={user?.id_rol == "Oficinista"}>Oficinista</option>}
+                                            { <option selected={user?.id_rol == "Operador"}>Operador</option>}
+                                            { <option selected={user?.id_rol == "Super seguridad"}>Super seguridad</option>}
+                                            { <option selected={user?.id_rol == "Seguridad"}>Seguridad</option>}
                                         </select>
                                     </div>
                                 </div>}

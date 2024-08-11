@@ -61,6 +61,8 @@ const cargarSeriales = async (dataExcel, remision, pedido, semana, fecha, observ
         };
 
         agregarRecepcion(body).then((res) => {
+            window.alert(res);
+            console.log(res);
             productList.map(item => {
                 const almacen = dataExcel[1].cons_almacen;
                 const cons_producto = item;

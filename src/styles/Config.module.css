@@ -2,6 +2,7 @@
     display: grid;
     grid-template-columns: 1fr 4fr;
     row-gap: 10px;
+    column-gap: 10px;
     text-align: start;
     align-items: center;
 }
@@ -14,4 +15,17 @@
 
 .input_semana {
     width: 40px !important;
+}
+
+.spinnerContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;  /* Cambiado de relative a fixed */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);  /* Fondo semi-transparente */
+    z-index: 1000;  /* Ajusta según sea necesario */
 }

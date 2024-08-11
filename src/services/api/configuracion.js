@@ -11,7 +11,21 @@ const actualizarModulo = async (dataModulo) => {
     return res.data;
 }; 
 
+const encontrarEmpresa = async () => {
+    const res = await axios.get(endPoints.confi.encontrarEmpresa);
+    return res.data;
+};
+
+const actualizarEmpresa = async (body) => {
+    const res = await axios.patch(endPoints.confi.actualizarEmpresa, body);
+    return res.data;
+};
+
+
 export {
 encontrarModulo,
-actualizarModulo
+actualizarModulo,
+encontrarEmpresa,
+actualizarEmpresa
+
 };
