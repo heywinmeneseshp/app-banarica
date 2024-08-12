@@ -73,11 +73,8 @@ export default function Lector() {
 
     // Maneja los cambios en el formulario
     const handleChanges = () => {
-
         if (!formRef.current) return;
-
         const formData = new FormData(formRef.current);
-        console.log(formData.get('fecha'));
         const inputs = {
             contenedor: formData.get('contenedor'),
             fecha: formData.get('fecha'),
@@ -333,8 +330,6 @@ export default function Lector() {
                     </div>
                 </div>
             </div>
-
-
         </form>
     );
 }
