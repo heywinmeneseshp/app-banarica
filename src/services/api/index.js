@@ -296,6 +296,12 @@ const endPoints = {
         findOne: (id) => `${API}/api/${VERSION}/contenedor/${id}`,
         update: (id) => `${API}/api/${VERSION}/contenedor/${id}`,
         delete: (id) => `${API}/api/${VERSION}/contenedor/${id}`,
+    },
+    listado: {
+        create: `${API}/api/${VERSION}/listado`,
+        findOne: (id) => `${API}/api/${VERSION}/listado/${id}`,
+        update: (id) => `${API}/api/${VERSION}/listado/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/listado/${id}`,
     }
 
 

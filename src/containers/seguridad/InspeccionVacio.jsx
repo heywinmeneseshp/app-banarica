@@ -1,46 +1,22 @@
 import React, { useEffect, useRef, useState } from "react";
-import BarcodeReader from 'react-barcode-reader';
+import { useRouter } from 'next/router';
 
 import '@fortawesome/fontawesome-free/css/all.min.css'; // Importar los estilos de Font Awesome
 import 'bootstrap/dist/css/bootstrap.min.css'; // Importar los estilos de Bootstrap
+import { crearListado } from "@services/api/listado";
+import { encontrarUnSerial } from "@services/api/seguridad";
 
 export default function Lector() {
 
-    const [barcode, setBarcode] = useState('');
-    const [isScanning, setIsScanning] = useState(false);
-
-    // Maneja el código de barras leído
-    const handleScan = (data) => {
-        if (data) {
-            setBarcode(data);
-            setIsScanning(false); // Detener el escaneo después de capturar el código
-            console.log('Código de barras capturado:', data);
-        }
-    };
-
-    // Maneja el error de lectura
-    const handleError = (err) => {
-        console.error('Error de lectura de código de barras:', err);
-    };
-
-    // Maneja el cambio en el input manual
-    const handleManualChange = (event) => {
-        setBarcode(event.target.value);
-    };
-
-    // Inicia el escaneo
-    const startScanning = () => {
-        setIsScanning(true);
-    };
-
-    // Detiene el escaneo
-    const stopScanning = () => {
-        setIsScanning(false);
-    };
-
     const formRef = useRef();
+    const router = useRouter();
 
     // Estado de los campos del formulario
+    // Estado de los campos dinámicos
+    const [laminaInterna, setLaminaInterna] = useState([]);
+    const [parteFrontal, setParteFrontal] = useState([]);
+    const [observaciones, setObservaciones] = useState(null);
+    const [verificado, setVerificado] = useState(false);
     const [inputFields, setInputFields] = useState([
         { label: "Fecha", id: "fecha", placeholder: "Seleccione la fecha", type: "date", required: true },
         { label: "Contenedor", id: "contenedor", placeholder: "DUMMY000001", type: "text", pattern: "[A-Za-z]{4}[0-9]{7}", title: "Debe ser 4 letras seguidas de 7 números", required: true },
@@ -50,22 +26,31 @@ export default function Lector() {
         { label: "Sello plástico", id: "selloPlastico", placeholder: "TERM20000", type: "text" }
     ]);
 
-    // Estado de los campos dinámicos
-    const [laminaInterna, setLaminaInterna] = useState([]);
-    const [parteFrontal, setParteFrontal] = useState([]);
+
 
     useEffect(() => {
+        //2024-08-14
+        const date = new Date();
+        const mes = (date.getMonth() + 1) < 10 ? "0"+(date.getMonth() + 1)  : (date.getMonth() + 1);
+        const dia = (date.getDate() + 1) < 10 ? "0"+(date.getDate() + 1)  : (date.getDate() + 1) ;
+        const now = `${date.getFullYear()}-${mes}-${dia}`;
+        let inputStatic = inputFields;
+        inputStatic[0] = { ...inputStatic[0], defaultValue: now };
         const inputs = JSON.parse(localStorage.getItem("inspecVacio"));
         if (inputs) {
             setInputFields(prevFields => prevFields.map(item => ({
                 ...item,
-                defaultValue: inputs[item.id]
+                defaultValue: item.id == "fecha" ? now : inputs[item.id]
             })));
-        }
+        } else {
+            setInputFields(inputStatic);
+        };
         const interna = JSON.parse(localStorage.getItem("interna"));
-        if (interna) setLaminaInterna(interna);     
+        if (interna) setLaminaInterna(interna);
         const frontal = JSON.parse(localStorage.getItem("frontal"));
         if (frontal) setParteFrontal(frontal);
+        const observaciones = localStorage.getItem("observaciones");
+        if (observaciones) setObservaciones(observaciones);
     }, []);
 
     // Añade un nuevo campo dinámico
@@ -88,9 +73,11 @@ export default function Lector() {
 
     // Maneja los cambios en el formulario
     const handleChanges = () => {
+
         if (!formRef.current) return;
 
         const formData = new FormData(formRef.current);
+        console.log(formData.get('fecha'));
         const inputs = {
             contenedor: formData.get('contenedor'),
             fecha: formData.get('fecha'),
@@ -98,7 +85,6 @@ export default function Lector() {
             termografo: formData.get('termografo'),
             selloCable: formData.get('selloCable'),
             selloPlastico: formData.get('selloPlastico'),
-            observaciones: formData.get('observaciones')
         };
 
         // Guardar los valores de los campos dinámicos
@@ -110,13 +96,14 @@ export default function Lector() {
             defaultValue: formData.get(`parteFrontal${index}`)
         }));
 
+        localStorage.setItem('observaciones', formData.get('observaciones'));
         localStorage.setItem('inspecVacio', JSON.stringify(inputs));
         localStorage.setItem('interna', JSON.stringify(interna));
         localStorage.setItem('frontal', JSON.stringify(frontal));
     };
 
     // Maneja el envío del formulario
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
 
         if (!formRef.current) return;
@@ -129,19 +116,101 @@ export default function Lector() {
             termografo: formData.get('termografo'),
             selloCable: formData.get('selloCable'),
             selloPlastico: formData.get('selloPlastico'),
-            observaciones: formData.get('observaciones')
+            observacion: formData.get('observaciones')
         };
 
-        const interna = laminaInterna.map((_, index) => ({
-            defaultValue: formData.get(`laminaInterna${index}`)
+        const interna = laminaInterna.map((_, index) => formData.get(`laminaInterna${index}`));
+        const frontal = parteFrontal.map((_, index) => formData.get(`parteFrontal${index}`));
+
+        const allItems = [
+            { label: 'Kit', value: inputs.kit, ubicacion_en_contenedor: "Exterior" },
+            { label: 'Termógrafo', value: inputs.termografo, ubicacion_en_contenedor: "Interior" },
+            { label: 'Sello de Cable', value: inputs.selloCable, ubicacion_en_contenedor: "Exterior" },
+            { label: 'Sello Plástico', value: inputs.selloPlastico, ubicacion_en_contenedor: "Exterior" },
+            ...interna.map((item, index) => ({ label: `Lámina Interna ${index + 1}`, value: item, ubicacion_en_contenedor: "Interior" })),
+            ...frontal.map((item, index) => ({ label: `Parte Frontal ${index + 1}`, value: item, ubicacion_en_contenedor: "Exterior" }))
+        ];
+
+        const existingItemsMap = new Map();
+        const duplicatesMap = new Map();
+        let isVerified = true;
+
+        for (const item of allItems) {
+            try {
+                const res = await encontrarUnSerial({ bag_pack: item.value });
+
+                if (!res) {
+                    isVerified = false;
+                    const proceed = confirm(`El serial ${item.value} en el campo "${item.label}" no existe. ¿Deseas continuar?`);
+                    if (!proceed) return; // Exit the function if the user chooses not to continue
+                } else {
+                    if (existingItemsMap.has(item.value)) {
+                        if (!duplicatesMap.has(item.value)) {
+                            duplicatesMap.set(item.value, []);
+                        }
+                        duplicatesMap.get(item.value).push(item.label);
+                    } else {
+                        existingItemsMap.set(item.value, item.ubicacion_en_contenedor);
+                    }
+                }
+            } catch (error) {
+                isVerified = false;
+                alert(`Error al verificar el serial ${item.value} en el campo "${item.label}": ${error.message}`);
+                return;
+            }
+        }
+
+        if (duplicatesMap.size > 0) {
+            const duplicatesMessage = Array.from(duplicatesMap).map(([value, labels]) =>
+                `Serial: ${value} se repite en los siguientes campos: ${labels.join(', ')}`
+            ).join('\n');
+            isVerified = false;
+            alert(`Los siguientes seriales se repiten:\n${duplicatesMessage}`);
+            return; // Exit the function if there are duplicates
+        }
+
+        const seriales = Array.from(existingItemsMap, ([value, ubicacion_en_contenedor]) => ({
+            value,
+            ubicacion_en_contenedor
         }));
 
-        const frontal = parteFrontal.map((_, index) => ({
-            defaultValue: formData.get(`parteFrontal${index}`)
-        }));
+        setVerificado(isVerified);
 
-        console.log(inputs, interna, frontal);
+        if (isVerified) {
+            try {
+                crearListado({
+                    fecha: inputs.fecha,
+                    contenedor: inputs.contenedor,
+                    observaciones: inputs.observacion,
+                    seriales
+                });
+                formRef.current.reset(); // Clear the form fields
+                setLaminaInterna([]); // Clear dynamic fields
+                setParteFrontal([]);
+                setObservaciones(null);
+                setInputFields(prevFields => prevFields.map(field => ({
+                    ...field,
+                    defaultValue: ''
+                })));
+                localStorage.removeItem("inspecVacio");
+                localStorage.removeItem("interna");
+                localStorage.removeItem("frontal");
+                localStorage.removeItem("observaciones");
+                setVerificado(false); // Reset verification state
+                const continuar = confirm(`Desea cargar otro contenedor?`);
+                if (!continuar) router.push(`/Seguridad/Dashboard`);
+            } catch {
+                setVerificado(false);
+                alert("Lo siento, ocurrió un problema inesperado. Por favor, inténtalo de nuevo.");
+            }
+
+        } else {
+            alert("Corrija todos los errores para poder continuar");
+        }
     };
+
+
+
 
     return (
         <form ref={formRef} onSubmit={handleSubmit}>
@@ -251,8 +320,8 @@ export default function Lector() {
                                 placeholder="Escriba aquí sus observaciones"
                                 aria-label="Observaciones"
                                 aria-describedby="observaciones-addon"
-                                value={barcode}
-                                onChange={handleManualChange}
+                                defaultValue={observaciones}
+                                onChange={handleChanges}
                             ></textarea>
                         </div>
                     </div>
@@ -260,31 +329,12 @@ export default function Lector() {
 
                 <div className="row">
                     <div className="col-12 mb-2">
-                        <button type="submit" className="btn btn-success w-100">Guardar</button>
+                        <button type="submit" className={`btn btn-${verificado ? "success" : "warning"} w-100`}>{verificado ? "Guardar" : "Verificar"}</button>
                     </div>
                 </div>
             </div>
 
-            {/* Escaneo */}
-            <div className="text-center mb-3">
-                {isScanning ? (
-                    <button type="button" className="btn btn-danger" onClick={stopScanning}>
-                        <i className="fas fa-stop"></i> Detener Escaneo
-                    </button>
-                ) : (
-                    <button type="button" className="btn btn-primary" onClick={startScanning}>
-                        <i className="fas fa-camera"></i> Escanear Código
-                    </button>
-                )}
-            </div>
 
-            {isScanning && (
-                <BarcodeReader
-                    onError={handleError}
-                    onScan={handleScan}
-                    style={{ display: 'none' }} // Ocultamos el video de la cámara
-                />
-            )}
         </form>
     );
 }

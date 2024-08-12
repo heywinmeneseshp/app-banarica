@@ -2,7 +2,7 @@ import axios from "axios";
 import endPoints from "@services/api/index";
 
 const crearContenedor = async (body) => {
-    const res = await axios.post(endPoints.contenedores.create(body));
+    const res = await axios.post(endPoints.contenedores.create, body);
     return res.data;
 };
 
