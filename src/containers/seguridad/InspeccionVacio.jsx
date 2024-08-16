@@ -51,7 +51,7 @@ export default function Lector() {
         if (frontal) setParteFrontal(frontal);
         const observaciones = localStorage.getItem("observaciones");
         if (observaciones) setObservaciones(observaciones);
-    }, []);
+    }, [inputFields]);
 
     // Añade un nuevo campo dinámico
     const addField = (type) => {
