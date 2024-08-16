@@ -71,7 +71,7 @@ const Card = ({ vehiculos, setChange, km_recorridos, record_consumo_id, title, i
             <span>
               <b>{title}</b> </span>
             <span onClick={() => liquidar()}
-              style={{ width: '20px', height: '20px', }}
+              style={{ width: '20px', height: '20px', cursor: 'pointer'}}
               className="rounded-circle border text-black border-warning bg-warning d-flex justify-content-center align-items-center">
               <b>+</b>
             </span>
