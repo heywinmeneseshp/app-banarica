@@ -18,7 +18,7 @@ const agregarClientes = async (cliente) => {
     }
 };
 
-const eliminarClientes = async(id) => {
+const eliminarClientes = async (id) => {
     try {
         const res = await axios.delete(endPoints.clientes.delete(id));
         return res.data;
@@ -27,7 +27,7 @@ const eliminarClientes = async(id) => {
     }
 };
 
-const actualizarClientes = async(consecutivo, changes) => {
+const actualizarClientes = async (consecutivo, changes) => {
     try {
         const res = await axios.patch(endPoints.clientes.update(consecutivo), changes);
         return res.data;
@@ -36,7 +36,7 @@ const actualizarClientes = async(consecutivo, changes) => {
     }
 };
 
-const buscarClientes = async(consecutivo) => {
+const buscarClientes = async (consecutivo) => {
     try {
         const res = await axios.get(endPoints.clientes.findOne(consecutivo));
         return res.data;
@@ -45,7 +45,7 @@ const buscarClientes = async(consecutivo) => {
     }
 };
 
-const listarClientes = async() => {
+const listarClientes = async () => {
     try {
         const res = await axios.get(endPoints.clientes.list);
         return res.data;
@@ -53,6 +53,7 @@ const listarClientes = async() => {
         throw new Error("Error al listar cliente: " + error.message);
     }
 };
+
 
 const paginarClientes = async (page, limit, nombre) => {
     try {
@@ -63,11 +64,11 @@ const paginarClientes = async (page, limit, nombre) => {
     }
 };
 
-export { 
-    agregarClientes, 
-    eliminarClientes, 
+export {
+    agregarClientes,
+    eliminarClientes,
     actualizarClientes,
-    buscarClientes, 
-    listarClientes, 
-    paginarClientes 
+    buscarClientes,
+    listarClientes,
+    paginarClientes
 };

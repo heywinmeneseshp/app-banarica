@@ -3,7 +3,6 @@ import Tablas from "@components/shared/Tablas/Tablas";
 
 import {
   actualizarcategoriaVehiculos,
-  buscarcategoriaVehiculos,
   listarcategoriaVehiculos,
   paginarcategoriaVehiculos,
   agregarcategoriaVehiculos
@@ -23,10 +22,10 @@ export default function Ubicaciones() {
       <Tablas
         titulo={"Categoria Vehiculos"}
         actualizar={actualizarcategoriaVehiculos}
-        buscarItem={buscarcategoriaVehiculos}
         listar={listarcategoriaVehiculos}
         paginar={paginarcategoriaVehiculos}
         crear={agregarcategoriaVehiculos}
+        cargueMasivo={null}
         encabezados={{
           "ID": "id", 
           "Categoria": "categoria", 
@@ -34,8 +33,6 @@ export default function Ubicaciones() {
           "Editar": "",
           "Activar": "activo"
         }}
-
-      
     />
     </>
   );

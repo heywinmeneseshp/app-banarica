@@ -34,6 +34,7 @@
     "react-data-grid": "^7.0.0-beta.44",
     "react-dom": "^18.1.0",
     "react-export-table-to-excel": "^1.0.6",
+    "react-icons": "^5.4.0",
     "react-router-dom": "^6.3.0",
     "react-spinners": "^0.14.1",
     "read-excel-file": "^5.5.0",

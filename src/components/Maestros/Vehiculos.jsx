@@ -27,8 +27,8 @@ export default function Vehiculo() {
   const listar = async () => {
     const categorias = await listarcategoriaVehiculos();
     const conductores = await listarConductores();
-    const listaCategorias = categorias.map(item => { return { id: item.id, nombre: item.categoria }; });
-    const listaConductores = conductores.map(item => { return { id: item.id, nombre: item.conductor }; });
+    const listaCategorias = categorias.map(item => { return { id: item?.id, nombre: item?.categoria }; });
+    const listaConductores = conductores.map(item => { return { id: item?.id, nombre: item?.conductor }; });
     setCategoryV(listaCategorias);
     setConductoresL(listaConductores);
   };

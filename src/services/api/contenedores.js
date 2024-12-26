@@ -21,10 +21,15 @@ const eliminarContenedor = async (body) => {
     return res.data;
 };
 
+const filtrarContenedor = async (body) => {
+    const res = await axios.post(endPoints.contenedores.create, body);
+    return res.data;
+};
 
 export {
     crearContenedor,
     actualizarContenedor,
     encontrarContenedor,
-    eliminarContenedor
+    eliminarContenedor,
+    filtrarContenedor
 };

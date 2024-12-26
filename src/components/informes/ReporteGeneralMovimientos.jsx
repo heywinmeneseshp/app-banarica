@@ -76,6 +76,7 @@ export default function ReporteGeneralMovimientos() {
         if (cons_movimiento != 0) body.historial = { ...body.historial, cons_lista_movimientos: cons_movimiento };
         body.pagination = { limit: limit, offset: pagination };
         const res = await axios.post(url, { ...body, producto: { name: producto, cons_categoria: cons_categoria } });
+        console.log(res.data.data);
         setTotal(res.data.total);
         setHistorial(res.data.data);
     };

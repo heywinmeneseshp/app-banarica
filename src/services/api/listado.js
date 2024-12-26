@@ -6,6 +6,11 @@ const crearListado = async (body) => {
     return res.data;
 };
 
+const duplicarListado =  async (id) => {
+    const res = await axios.get(endPoints.listado.duplicar(id));
+    return res.data;
+};
+
 const actualizarListado = async (id, body) => {
     const res = await axios.patch(endPoints.listado.update(id), body);
     return res.data;
@@ -16,15 +21,22 @@ const encontrarListado = async (id) => {
     return res.data;
 };
 
-const eliminarListado = async (body) => {
-    const res = await axios.delete(endPoints.listado.delete(body));
+const paginarListado = async (offset, limit, body) => {
+    const res = await axios.post(endPoints.listado.paginar(offset,limit), body);
+    return res.data;
+};
+
+const eliminarListado = async (id) => {
+    const res = await axios.delete(endPoints.listado.delete(id));
     return res.data;
 };
 
 
 export {
     crearListado,
+    duplicarListado,
     actualizarListado,
+    paginarListado,
     encontrarListado,
     eliminarListado
 };

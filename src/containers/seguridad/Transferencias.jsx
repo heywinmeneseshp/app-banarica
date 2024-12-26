@@ -65,7 +65,7 @@ export default function Transferencias() {
         buscarArticulos();
         encontrarModulo("Semana").then(res => setSemana(res[0]));
         listar();
-        setMostrarSerial(user.id_roll == "Super usuario");
+        setMostrarSerial(user.id_roll != "Super usuario");
     }, [limit, pagination]);
 
     const buscarArticulos = async () => {
@@ -155,6 +155,7 @@ export default function Transferencias() {
                     tranferencias.push(tabla[index]);
                 }
             });
+            console.log(tranferencias);
             await actualizarSeriales(tranferencias);
             const semana = await uSemana(formData.get("semana"));
             const data = {

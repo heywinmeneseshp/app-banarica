@@ -96,3 +96,23 @@
 .header {
     z-index: 1000;
 }
+
+.navDropdownTitle .dropdown-toggle::after {
+    display: none; /* Opcional: Ocultar el ícono de flecha del dropdown */
+    color: #0d6efd !important;
+  }
+  
+  .navDropdownTitle .dropdown-menu {
+    background-color: #343a40; /* Cambia el color de fondo del menú desplegable */
+    color: #0d6efd !important;
+  }
+  
+  .navDropdownTitle .dropdown-item {
+    color: #0d6efd !important;
+  }
+  
+  .navDropdownTitle .dropdown-item:hover {
+    background-color: #495057; /* Cambia el color de fondo del ítem cuando se pasa el cursor */
+    color: #0d6efd !important;
+  }
+  

@@ -4,12 +4,19 @@ import { useRouter } from 'next/router';
 import '@fortawesome/fontawesome-free/css/all.min.css'; // Importar los estilos de Font Awesome
 import 'bootstrap/dist/css/bootstrap.min.css'; // Importar los estilos de Bootstrap
 import { crearListado } from "@services/api/listado";
-import { encontrarUnSerial } from "@services/api/seguridad";
+import { encontrarUnSerial  } from "@services/api/seguridad";
+import { filtrarSemanaRangoMes } from "@services/api/semanas";
+import { encontrarModulo } from "@services/api/configuracion";
 
 export default function Lector() {
 
     const formRef = useRef();
     const router = useRouter();
+
+
+    const today = new Date();
+    today.setDate(today.getDate() - 1); // Restar un día
+    const now = today.toISOString().split('T')[0];
 
     // Estado de los campos del formulario
     // Estado de los campos dinámicos
@@ -17,23 +24,27 @@ export default function Lector() {
     const [parteFrontal, setParteFrontal] = useState([]);
     const [observaciones, setObservaciones] = useState(null);
     const [verificado, setVerificado] = useState(false);
+    const [semana, setSemana] = useState();
     const [inputFields, setInputFields] = useState([
-        { label: "Fecha", id: "fecha", placeholder: "Seleccione la fecha", type: "date", required: true },
+        { label: "Fecha", id: "fecha", defaultValue: now, type: "date", required: true },
         { label: "Contenedor", id: "contenedor", placeholder: "DUMMY000001", type: "text", pattern: "[A-Za-z]{4}[0-9]{7}", title: "Debe ser 4 letras seguidas de 7 números", required: true },
         { label: "Kit", id: "kit", placeholder: "ABC0000", type: "text" },
         { label: "Termógrafo", id: "termografo", placeholder: "ABC0000", type: "text" },
         { label: "Sello cable", id: "selloCable", placeholder: "TERM20000", type: "text" },
         { label: "Sello plástico", id: "selloPlastico", placeholder: "TERM20000", type: "text" }
     ]);
+    
 
 
 
-    useEffect(() => {
-        //2024-08-14
-        const date = new Date();
-        const mes = (date.getMonth() + 1) < 10 ? "0"+(date.getMonth() + 1)  : (date.getMonth() + 1);
-        const dia = (date.getDate() + 1) < 10 ? "0"+(date.getDate() + 1)  : (date.getDate() + 1) ;
-        const now = `${date.getFullYear()}-${mes}-${dia}`;
+    useEffect( () => {
+        filtrarSemanaRangoMes(1,1).then(res => {
+            encontrarModulo("Semana").then(res2 => {
+                const sem = res.filter(item => item.semana == res2[0].semana_actual);
+                setSemana(sem[0].consecutivo);   
+            });
+        });
+       
         let inputStatic = inputFields;
         inputStatic[0] = { ...inputStatic[0], defaultValue: now };
         const inputs = JSON.parse(localStorage.getItem("inspecVacio"));
@@ -51,7 +62,7 @@ export default function Lector() {
         if (frontal) setParteFrontal(frontal);
         const observaciones = localStorage.getItem("observaciones");
         if (observaciones) setObservaciones(observaciones);
-    }, [inputFields]);
+    }, []);
 
     // Añade un nuevo campo dinámico
     const addField = (type) => {
@@ -102,9 +113,7 @@ export default function Lector() {
     // Maneja el envío del formulario
     const handleSubmit = async (event) => {
         event.preventDefault();
-
         if (!formRef.current) return;
-
         const formData = new FormData(formRef.current);
         const inputs = {
             contenedor: formData.get('contenedor'),
@@ -119,8 +128,16 @@ export default function Lector() {
         const interna = laminaInterna.map((_, index) => formData.get(`laminaInterna${index}`));
         const frontal = parteFrontal.map((_, index) => formData.get(`parteFrontal${index}`));
 
+        const kit = await encontrarUnSerial({
+            bag_pack: inputs.kit,
+            available: [true],
+        });
+        const newKits = kit.map(item => {
+            return { label: 'Kit', value: item.serial, ubicacion_en_contenedor: "Exterior" };
+        });
+
         const allItems = [
-            { label: 'Kit', value: inputs.kit, ubicacion_en_contenedor: "Exterior" },
+            ...newKits,
             { label: 'Termógrafo', value: inputs.termografo, ubicacion_en_contenedor: "Interior" },
             { label: 'Sello de Cable', value: inputs.selloCable, ubicacion_en_contenedor: "Exterior" },
             { label: 'Sello Plástico', value: inputs.selloPlastico, ubicacion_en_contenedor: "Exterior" },
@@ -131,12 +148,10 @@ export default function Lector() {
         const existingItemsMap = new Map();
         const duplicatesMap = new Map();
         let isVerified = true;
-
         for (const item of allItems) {
             try {
-                const res = await encontrarUnSerial({ bag_pack: item.value });
-
-                if (!res) {
+                const res = await encontrarUnSerial({ serial: item.value, available: [true] });
+                if (!res[0]) {
                     isVerified = false;
                     const proceed = confirm(`El serial ${item.value} en el campo "${item.label}" no existe. ¿Deseas continuar?`);
                     if (!proceed) return; // Exit the function if the user chooses not to continue
@@ -168,18 +183,23 @@ export default function Lector() {
 
         const seriales = Array.from(existingItemsMap, ([value, ubicacion_en_contenedor]) => ({
             value,
-            ubicacion_en_contenedor
+            ubicacion_en_contenedor,
         }));
 
         setVerificado(isVerified);
 
         if (isVerified) {
             try {
+                const usuarioString = localStorage.getItem("usuario");
+                const usuario = JSON.parse(usuarioString);
+                //Crear listado
                 crearListado({
                     fecha: inputs.fecha,
                     contenedor: inputs.contenedor,
                     observaciones: inputs.observacion,
-                    seriales
+                    usuario: usuario,
+                    seriales,
+                    semana
                 });
                 formRef.current.reset(); // Clear the form fields
                 setLaminaInterna([]); // Clear dynamic fields

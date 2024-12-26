@@ -23,6 +23,15 @@ const endPoints = {
             delete: (username, almacen) => `${API}/api/${VERSION}/usuarios/almacen/${username}/${almacen}`
         }
     },
+    semanas: {
+        list: `${API}/api/${VERSION}/semanas`,
+        findOne: (id) => `${API}/api/${VERSION}/semanas/${id}`,
+        filter:  `${API}/api/${VERSION}/semanas/filter`,
+        findAllByCategory: (category) => `${API}/api/${VERSION}/semanas/categoria/${category}`,
+        create: `${API}/api/${VERSION}/productos`,
+        update: (id) => `${API}/api/${VERSION}/semanas/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/semanas/${id}`,
+    },
     productos: {
         list: `${API}/api/${VERSION}/productos`,
         findOne: (id) => `${API}/api/${VERSION}/productos/${id}`,
@@ -180,8 +189,10 @@ const endPoints = {
         listarSeriales: `${API}/api/${VERSION}/seguridad/seriales`,
         listarUsuarios: `${API}/api/${VERSION}/seguridad/usuarios`,
         ActualizarSeriales: `${API}/api/${VERSION}/seguridad/actualizar-seriales`,
+        ActualizarSerial: `${API}/api/${VERSION}/seguridad/actualizar-serial`,
         CargarSeriales: `${API}/api/${VERSION}/seguridad/cargar-seriales`,
         encontrarSerial: `${API}/api/${VERSION}/seguridad/encontrar-serial`,
+        inspeccionAntinarcoticos: `${API}/api/${VERSION}/seguridad/inspeccion-antinarcoticos`
     },
     etiquetas: {
         crearEtiqueta: `${API}/api/${VERSION}/etiquetas`,
@@ -297,12 +308,56 @@ const endPoints = {
         update: (id) => `${API}/api/${VERSION}/contenedor/${id}`,
         delete: (id) => `${API}/api/${VERSION}/contenedor/${id}`,
     },
+    //http://localhost:3000/api/v1/listados/paginar?offset=1&limit=4
     listado: {
         create: `${API}/api/${VERSION}/listado`,
+        duplicar: (id) => `${API}/api/${VERSION}/listado/duplicar/${id}`,
         findOne: (id) => `${API}/api/${VERSION}/listado/${id}`,
+        paginar: (offset, limit) => `${API}/api/${VERSION}/listado/paginar?offset=${offset}&limit=${limit}`,
         update: (id) => `${API}/api/${VERSION}/listado/${id}`,
         delete: (id) => `${API}/api/${VERSION}/listado/${id}`,
+    },
+    Navieras: {
+        list: `${API}/api/${VERSION}/naviera`,
+        create: `${API}/api/${VERSION}/naviera`,
+        findOne: (id) => `${API}/api/${VERSION}/naviera/${id}`,
+        paginar: (offset, limit) => `${API}/api/${VERSION}/naviera/paginar?offset=${offset}&limit=${limit}`,
+        update: (id) => `${API}/api/${VERSION}/naviera/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/naviera/${id}`,
+    },
+    Buques: {
+        list: `${API}/api/${VERSION}/buque`,
+        create: `${API}/api/${VERSION}/buque`,
+        findOne: (id) => `${API}/api/${VERSION}/buque/${id}`,
+        paginar: (offset, limit, buque) => `${API}/api/${VERSION}/buque/paginar?offset=${offset}&limit=${limit}&buque=${buque}`,
+        update: (id) => `${API}/api/${VERSION}/buque/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/buque/${id}`,
+    },
+    Embarques: {
+        list: `${API}/api/${VERSION}/embarque`,
+        create: `${API}/api/${VERSION}/embarque`,
+        findOne: (id) => `${API}/api/${VERSION}/embarque/${id}`,
+        paginar: (offset, limit) => `${API}/api/${VERSION}/embarque/paginar?offset=${offset}&limit=${limit}`,
+        update: (id) => `${API}/api/${VERSION}/embarque/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/embarque/${id}`,
+    },
+    Destinos: {
+        list: `${API}/api/${VERSION}/destino`,
+        create: `${API}/api/${VERSION}/destino`,
+        findOne: (id) => `${API}/api/${VERSION}/destino/${id}`,
+        paginar: (offset, limit, nombre) => `${API}/api/${VERSION}/destino/paginar?offset=${offset}&limit=${limit}&destino=${nombre}`,
+        update: (id) => `${API}/api/${VERSION}/destino/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/destino/${id}`,
+    },
+    Transbordo: {
+        list: `${API}/api/${VERSION}/transbordo`,
+        create: `${API}/api/${VERSION}/transbordo`,
+        findOne: (id) => `${API}/api/${VERSION}/transbordo/${id}`,
+        paginar: (offset, limit, nombre) => `${API}/api/${VERSION}/transbordo/paginar?offset=${offset}&limit=${limit}&destino=${nombre}`,
+        update: (id) => `${API}/api/${VERSION}/transbordo/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/transbordo/${id}`,
     }
+
 
 
 };

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import endPoints from "@services/api";
 import axios from "axios";
 //CSS
-import styles from "@styles/Seguridad.module.css";
 import ConsultaResumen from "@components/seguridad/ConsultaDetallada";
 import ConsultaDetallada from "@components/seguridad/ConsultaResumen";
 import { useAuth } from "@hooks/useAuth";
@@ -13,7 +12,7 @@ import { filtrarCategorias } from "@services/api/categorias";
 import { buscarProducto } from "@services/api/productos";
 
 export default function Disponibles() {
-    const { almacenByUser, user } = useAuth();
+    const { almacenByUser } = useAuth();
     const formRef = useRef();
     const [tablaConsulta, setTablaConsultal] = useState(true);
     const [productos, setProductos] = useState([]);
@@ -110,142 +109,181 @@ export default function Disponibles() {
         <>
             <section>
                 <h2>Consulta de disponibles</h2>
-                <form ref={formRef} className={styles.grid_tranferencias}>
-                    <div className="input-group input-group-sm ">
-                        <span className="input-group-text" id="inputGroup-sizing-sm">Almacen</span>
-                        <select
-                            className="form-select form-select-sm"
-                            aria-label=".form-select-sm example"
-                            id="almacen"
-                            onChange={buscarArticulos}
-                            name="almacen">
-                            <option value={0}>All</option>
-                            {almacenByUser.map((item, index) => (
-                                <option key={index} value={item.consecutivo}>{item.nombre}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="input-group input-group-sm ">
-                        <span className="input-group-text" id="inputGroup-sizing-sm">Artículo</span>
-                        <select
-                            className="form-select form-select-sm"
-                            aria-label=".form-select-sm example"
-                            id="producto"
-                            onChange={buscarArticulos}
-                            name="producto">
-                            <option value={""}>{"All"}</option>
-                            {productos.map((item, index) => (
-                                <option key={index} value={item.consecutivo}>{item.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    {!tablaConsulta &&
-                        <div className="input-group input-group-sm ">
-                            <span className="input-group-text" id="inputGroup-sizing-sm">Estado</span>
+                <form ref={formRef} className="row g-3 mb-4 mt-3">
+                    <div className="col-md-3">
+                        <div className="input-group input-group-sm">
+                            <span className="input-group-text" id="inputGroup-sizing-sm">Almacen</span>
                             <select
                                 className="form-select form-select-sm"
                                 aria-label=".form-select-sm example"
-                                id="estado"
+                                id="almacen"
                                 onChange={buscarArticulos}
-                                name="estado">
-                                <option value={1}>Disponible</option>
-                                <option value={0}>No disponible</option>
-                                <option value={"All"}>All</option>
-
+                                name="almacen">
+                                <option value={0}>All</option>
+                                {almacenByUser.map((item, index) => (
+                                    <option key={index} value={item.consecutivo}>{item.nombre}</option>
+                                ))}
                             </select>
                         </div>
-                    }
-                    {!tablaConsulta &&
-                        <div className="input-group input-group-sm">
-                            <span className="input-group-text" id="inputGroup-sizing-sm">Serial</span>
-                            <input type="text"
-                                className="form-control"
-                                aria-label="Sizing example input"
-                                id="serial"
-                                name="serial"
-                                onChange={buscarArticulos}
-                                aria-describedby="inputGroup-sizing-sm"></input>
-                        </div>
-                    }
-                    {!tablaConsulta &&
-                        <div className="input-group input-group-sm">
-                            <span className="input-group-text" id="inputGroup-sizing-sm">Bag Pack</span>
-                            <input type="text"
-                                className="form-control"
-                                aria-label="Sizing example input"
-                                aria-describedby="inputGroup-sizing-sm"
-                                id="bag_pack"
-                                onChange={buscarArticulos}
-                                name="bag_pack"></input>
-                        </div>
-                    }
-                    {!tablaConsulta &&
-                        <div className="input-group input-group-sm">
-                            <span className="input-group-text" id="inputGroup-sizing-sm">S Pack</span>
-                            <input type="text"
-                                className="form-control"
-                                aria-label="Sizing example input"
-                                aria-describedby="inputGroup-sizing-sm"
-                                id="s_pack"
-                                onChange={buscarArticulos}
-                                name="s_pack"></input>
-                        </div>
-                    }
-                    {!tablaConsulta &&
-                        <div className="input-group input-group-sm">
-                            <span className="input-group-text" id="inputGroup-sizing-sm">M Pack</span>
-                            <input type="text"
-                                className="form-control"
-                                aria-label="Sizing example input"
-                                aria-describedby="inputGroup-sizing-sm"
-                                onChange={buscarArticulos}
-                                id="m_pack"
-                                name="m_pack"></input>
-                        </div>
-                    }
-                    {!tablaConsulta &&
-                        <div className="input-group input-group-sm">
-                            <span className="input-group-text" id="inputGroup-sizing-sm">L Pack</span>
-                            <input type="text"
-                                className="form-control"
-                                aria-label="Sizing example input"
-                                aria-describedby="inputGroup-sizing-sm"
-                                onChange={buscarArticulos}
-                                id="l_pack"
-                                name="l_pack"></input>
-                        </div>
-                    }
-                    <span className={styles.lastChild}>
+                    </div>
 
+                    <div className="col-md-3">
+                        <div className="input-group input-group-sm">
+                            <span className="input-group-text" id="inputGroup-sizing-sm">Artículo</span>
+                            <select
+                                className="form-select form-select-sm"
+                                aria-label=".form-select-sm example"
+                                id="producto"
+                                onChange={buscarArticulos}
+                                name="producto">
+                                <option value={""}>All</option>
+                                {productos.map((item, index) => (
+                                    <option key={index} value={item.consecutivo}>{item.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {!tablaConsulta && (
+                        <>
+                            <div className="col-md-3">
+                                <div className="input-group input-group-sm">
+                                    <span className="input-group-text" id="inputGroup-sizing-sm">Estado</span>
+                                    <select
+                                        className="form-select form-select-sm"
+                                        aria-label=".form-select-sm example"
+                                        id="estado"
+                                        onChange={buscarArticulos}
+                                        name="estado">
+                                        <option value={1}>Disponible</option>
+                                        <option value={0}>No disponible</option>
+                                        <option value={"All"}>All</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="col-md-3">
+                                <div className="input-group input-group-sm">
+                                    <span className="input-group-text" id="inputGroup-sizing-sm">Serial</span>
+                                    <input type="text"
+                                        className="form-control"
+                                        aria-label="Sizing example input"
+                                        id="serial"
+                                        name="serial"
+                                        onChange={buscarArticulos}
+                                        aria-describedby="inputGroup-sizing-sm"></input>
+                                </div>
+                            </div>
+
+                            <div className="col-md-3">
+                                <div className="input-group input-group-sm">
+                                    <span className="input-group-text" id="inputGroup-sizing-sm">Bag Pack</span>
+                                    <input type="text"
+                                        className="form-control"
+                                        aria-label="Sizing example input"
+                                        aria-describedby="inputGroup-sizing-sm"
+                                        id="bag_pack"
+                                        onChange={buscarArticulos}
+                                        name="bag_pack"></input>
+                                </div>
+                            </div>
+
+                            <div className="col-md-3">
+                                <div className="input-group input-group-sm">
+                                    <span className="input-group-text" id="inputGroup-sizing-sm">S Pack</span>
+                                    <input type="text"
+                                        className="form-control"
+                                        aria-label="Sizing example input"
+                                        aria-describedby="inputGroup-sizing-sm"
+                                        id="s_pack"
+                                        onChange={buscarArticulos}
+                                        name="s_pack"></input>
+                                </div>
+                            </div>
+
+                            <div className="col-md-3">
+                                <div className="input-group input-group-sm">
+                                    <span className="input-group-text" id="inputGroup-sizing-sm">M Pack</span>
+                                    <input type="text"
+                                        className="form-control"
+                                        aria-label="Sizing example input"
+                                        aria-describedby="inputGroup-sizing-sm"
+                                        onChange={buscarArticulos}
+                                        id="m_pack"
+                                        name="m_pack"></input>
+                                </div>
+                            </div>
+
+                            <div className="col-md-3">
+                                <div className="input-group input-group-sm">
+                                    <span className="input-group-text" id="inputGroup-sizing-sm">L Pack</span>
+                                    <input type="text"
+                                        className="form-control"
+                                        aria-label="Sizing example input"
+                                        aria-describedby="inputGroup-sizing-sm"
+                                        onChange={buscarArticulos}
+                                        id="l_pack"
+                                        name="l_pack"></input>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    <div className={`col-md-${tablaConsulta ? 3 : 9}`}>
+
+                    </div>
+
+                    <div className="col-md-3">
                         <button type="button" onClick={descargarExcel} className="btn btn-success btn-sm w-100">Descargar Excel</button>
-                    </span>
-
+                    </div>
                 </form>
+
 
                 <div className="line"></div>
                 <div >
 
-                    <div className={styles.grid_result}>
-                        <div className={styles.botonesTrans}>
-                            {user.id_rol == "Super seguridad" && <button type="button" onClick={() => handleTableConsulta(true)} className="btn btn-primary btn-sm">Resumen</button>}
-                            {user.id_rol == "Super seguridad" && <button type="button" onClick={() => handleTableConsulta(false)} className="btn btn-primary btn-sm ">Detallado</button>}
-                            {user.id_rol != "Super seguridad" && <span className="display"></span>}
-                            {user.id_rol != "Super seguridad" && <span className="display"></span>}
-                            <span className="display"></span>
-                            <span className={styles.grid_result_child2}>
-                                <input onChange={onChangeLimit}
-                                    type="number" className="form-control 
-                                form-control-sm" id="exampleFormControlInput1"
-                                    min={0}
-                                    max={results}
-                                    placeholder={limit}></input>
-                                <span className="mb-2 mt-2">Resultados de {results}</span>
-                            </span>
+                    <div >
+                        <div className="row">
+                            <div className="col-md-3 mb-3">
+                                <button
+                                    type="button"
+                                    onClick={() => handleTableConsulta(true)}
+                                    className="btn btn-primary btn-sm w-100"
+                                >
+                                    Resumen
+                                </button>
+                            </div>
+                            <div className="col-md-3 mb-3">
+                                <button
+                                    type="button"
+                                    onClick={() => handleTableConsulta(false)}
+                                    className="btn btn-primary btn-sm w-100"
+                                >
+                                    Detallado
+                                </button>
+                            </div>
+                            <div className="col-md-3 mb-3 d-none d-md-flex align-items-center">
 
+                            </div>
+                            <div className="col-md-3 mb-3 row d-flex justify-content-end">
+                                <div className="col-6 mb-3 d-flex align-items-center">
+                                    <input
+                                        onChange={onChangeLimit}
+                                        type="number"
+                                        className="form-control form-control-sm"
+                                        min={0}
+                                        max={results}
+                                        placeholder={limit}
+                                    />
+                                </div>
+                                <div className="col-6 mb-3 d-flex align-items-center">
+                                    <span>Resultados de {results}</span>
+                                </div>
+                            </div>
 
                         </div>
                     </div>
+
 
                     {!tablaConsulta && <ConsultaResumen setPagination={setPagination} limit={limit} setLimit={setLimit} pagination={pagination} data={data} setResults={setResults} />}
                     {tablaConsulta && <ConsultaDetallada setPagination={setPagination} limit={limit} setLimit={setLimit} pagination={pagination} data={data} setResults={setResults} />}

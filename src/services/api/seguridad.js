@@ -1,8 +1,7 @@
 import axios from 'axios';
 import { agregarHistorial } from './historialMovimientos';
 import endPoints from './index';
-import { agregarRecepcion } from './recepcion';
-import { restar, sumar } from './stock';
+import { restar } from './stock';
 
 const config = {
     headers: {
@@ -41,46 +40,8 @@ const cargarSeriales = async (dataExcel, remision, pedido, semana, fecha, observ
     try {
         const res = dataExcel.find(item => item.cons_producto == null);
         if (res?.cons_producto === null) return { message: "Existen artículos sin código ID.", bool: false };
-        await axios.post(endPoints.seguridad.CargarSeriales, dataExcel);
-        let data = {};
-        dataExcel.map((item) => {
-            if (data?.[item.cons_producto]) {
-                data[item.cons_producto] = data?.[item.cons_producto] + 1;
-            } else {
-                data[item.cons_producto] = 1;
-            }
-        });
-        const productList = Object.keys(data);
-        const body = {
-            remision: remision,
-            fecha: fecha,
-            cons_semana: semana,
-            observaciones: observaciones,
-            aprobado_por: username,
-            realizado_por: username
-        };
-
-        agregarRecepcion(body).then((res) => {
-            window.alert(res);
-            console.log(res);
-            productList.map(item => {
-                const almacen = dataExcel[1].cons_almacen;
-                const cons_producto = item;
-                const cantidad = data[item];
-                const consMovimiento = res.data.consecutivo;
-                const dataHistorial = {
-                    cons_movimiento: consMovimiento,
-                    cons_producto: item,
-                    cons_almacen_gestor: almacen,
-                    cons_almacen_receptor: almacen,
-                    cons_lista_movimientos: "RC",
-                    tipo_movimiento: "Entrada",
-                    cantidad: cantidad,
-                    cons_pedido: pedido
-                };
-                sumar(almacen, cons_producto, cantidad);
-                agregarHistorial(dataHistorial);
-            });
+        await axios.post(endPoints.seguridad.CargarSeriales, {data: dataExcel,
+            remision, pedido, semana, fecha, observaciones, username
         });
         return { message: "Se han cargado los datos con éxito.", bool: true };
     } catch (e) {
@@ -93,6 +54,15 @@ const cargarSeriales = async (dataExcel, remision, pedido, semana, fecha, observ
 const actualizarSeriales = async (dataList) => {
     try {
         const response = await axios.patch(endPoints.seguridad.ActualizarSeriales, dataList);
+        return response.data;
+    } catch (e) {
+        alert("Error al actualizar data list");
+    }
+};
+
+const actualizarSerial = async (body) => {
+    try {
+        const response = await axios.patch(endPoints.seguridad.ActualizarSerial, body);
         return response.data;
     } catch (e) {
         alert("Error al actualizar data list");
@@ -157,10 +127,18 @@ const exportarArticulosConSerial = async (updatedSeriales, cons_almacen, cons_mo
      });
 };
 
+const inspeccionAntinarcoticos = async (Formulario, rechazos) => {
+    try {
+        const response = await axios.post(endPoints.seguridad.inspeccionAntinarcoticos, {formulario: Formulario, rechazos: rechazos});
+        return response.data;
+    } catch (e) {
+        alert("Error al actualizar data list");
+    }
+};
 
 
 export {
     listarSeriales, listarUsuariosSeguridad, cargarSeriales,
     actualizarSeriales, listarProductosSeguridad, exportarArticulosConSerial, encontrarUnSerial,
-    verificarAndActualizarSeriales
+    verificarAndActualizarSeriales, actualizarSerial, inspeccionAntinarcoticos
 };

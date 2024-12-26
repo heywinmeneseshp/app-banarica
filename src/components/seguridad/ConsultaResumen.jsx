@@ -49,24 +49,24 @@ export default function ConsultaDetallada({ data, setPagination, limit, paginati
     return (
         <>
             <span className={styles.tabla_text}>
-                <table className="table mb-1 table-striped">
+                <table className="table table-striped table-bordered table-sm mb-1">
                     <thead>
                         <tr>
-                            <th scope="col">Alm</th>
-                            <th scope="col"></th>
-                            <th scope="col">Cod</th>
-                            <th scope="col">Artículo</th>
-                            <th scope="col">Cantidad</th>
+                            <th className="text-custom-small text-center" scope="col">Alm</th>
+                            <th className="text-custom-small text-center"></th>
+                            <th className="text-custom-small text-center">Cod</th>
+                            <th className="text-custom-small text-center">Artículo</th>
+                            <th className="text-custom-small text-center">Cantidad</th>
                         </tr>
                     </thead>
                     <tbody>
                         {tabla.map((item, index) => (
                             <tr key={index} >
-                                <td>{item.cons_almacen}</td>
-                                <td>{item.almacen.nombre}</td>
-                                <td>{item.cons_producto}</td>
-                                <td>{item.producto.name}</td>
-                                <td>{item.cantidad}</td>
+                                <td className="text-custom-small text-center">{item.cons_almacen}</td>
+                                <td className="text-custom-small text-center">{item.almacen.nombre}</td>
+                                <td className="text-custom-small text-center">{item.cons_producto}</td>
+                                <td className="text-custom-small text-center">{item.producto.name}</td>
+                                <td className="text-custom-small text-center">{item.cantidad}</td>
                             </tr>
                         ))}
 

@@ -52,6 +52,12 @@ export default function Configuracion({ setOpen }) {
                 "nombreComercial": formData.get('nombre_comercial'),
                 "nit": formData.get('nit')
             });
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+            const configUsurario = JSON.stringify({ inicio: formData.get('pantalla_inicio') });
+            actualizarModulo({
+                "modulo": usuario.username,
+                "detalles": configUsurario,
+            });
             setOpen(false);
         } catch (e) {
             setOpen(false);
@@ -120,6 +126,18 @@ export default function Configuracion({ setOpen }) {
                                 <span  >Segurdiad:</span>
                                 <InputGroup size="sm">
                                     <input onChange={changeSecurity} type="checkbox" name="seguridad" id="seguridad" value={1} checked={securityCheck} />
+                                </InputGroup>
+
+                                <span  >Pantalla de inicio:</span>
+                                <InputGroup size="sm">
+                                    <Form.Control
+                                        as="select"
+                                        name="pantalla_inicio"
+                                        id="pantalla_inicio"
+                                    >
+                                        <option value="Dashboard Combustible">Dashboard Combustible</option>
+                                        <option value="Dashboard Contenedores">Dashboard Contenedores</option>
+                                    </Form.Control>
                                 </InputGroup>
 
                                 <span>Semana:</span>

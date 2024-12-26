@@ -117,6 +117,7 @@ const Header = () => {
               <Dropdown.Item onClick={() => openWindow("rutas")}>Rutas</Dropdown.Item>
               <Dropdown.Item onClick={() => openWindow("transporte")}>Transporte</Dropdown.Item>
               <Dropdown.Item onClick={() => openWindow("ubicaciones")}>Ubicaciones</Dropdown.Item>
+              <Dropdown.Item onClick={() => openWindow("usuarios")}>Usuarios</Dropdown.Item>
               <Dropdown.Item onClick={() => openWindow("vehiculos")}>Vehiculos</Dropdown.Item>
               <Dropdown.Item onClick={() => setOpenConfig(true)} className={styles.configButton}>
                 <Image className={styles.imgConfig} width="15" height="15" src={config} alt="configuración" />

@@ -7,7 +7,7 @@ import { useAuth } from '@hooks/useAuth';
 import endPoints from '@services/api';
 //Component
 import Footer from "@components/Footer";
-import Header from '@components/Header';
+import Header from '@components/shared/Header/Header';
 //CSS
 import styles from '@styles/Layout.module.css';
 import { useEffect } from 'react';

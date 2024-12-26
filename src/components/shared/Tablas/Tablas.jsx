@@ -1,21 +1,22 @@
 import React, { useRef, useState, useEffect } from 'react';
 
-//Hooks
+// Hooks
 import useAlert from '@hooks/useAlert';
-//Components
+// Components
 import Paginacion from '@components/shared/Tablas/Paginacion';
 import NuevoItem from '@components/shared/Formularios/Formularios';
 import Alertas from '@assets/Alertas';
-//CSS
+// CSS
 import styles from '@styles/Listar.module.css';
 import excel from '@hooks/useExcel';
+import { Button, ButtonGroup, Col, Row } from 'react-bootstrap';
 
-export default function Tablas({ encabezados, actualizar, listas, listar, paginar, crear, titulo, arrayList }) {
+export default function Tablas({ encabezados, actualizar, listas, listar, paginar, crear, cargueMasivo, titulo }) {
   const ItemdorRef = useRef();
   const [item, setItem] = useState(null);
   const [items, setItems] = useState([]);
-  const [labelForm, setLabelForm] = useState();
-
+  const [selectedItems, setSelectedItems] = useState([]); // Para manejar los ítems seleccionados
+  const [labelForm, setLabelForm] = useState({});
   const { alert, setAlert, toogleAlert } = useAlert();
   const [open, setOpen] = useState(false);
   const [pagination, setPagination] = useState(1);
@@ -23,18 +24,27 @@ export default function Tablas({ encabezados, actualizar, listas, listar, pagina
   const limit = 10;
 
   useEffect(() => {
-    let labels = Object.assign({}, encabezados);
+    const labels = { ...encabezados };
     delete labels.Editar;
     delete labels.Activar;
     setLabelForm(labels);
-    listrasItems();
+    listarItems();
   }, [alert, pagination, open]);
 
-  async function listrasItems() {
-    let nombre = ItemdorRef.current.value;
-    const res = await paginar(pagination, limit, nombre);
-    setItems(res.data);
-    setTotal(res.total);
+  async function listarItems() {
+    const nombre = ItemdorRef.current.value;
+    try {
+      const res = await paginar(pagination, limit, nombre);
+      setItems(res.data);
+      setTotal(res.total);
+    } catch (error) {
+      setAlert({
+        active: true,
+        mensaje: 'Error al listar items',
+        color: 'danger',
+        autoClose: true,
+      });
+    }
   }
 
   const handleNuevo = () => {
@@ -47,32 +57,88 @@ export default function Tablas({ encabezados, actualizar, listas, listar, pagina
     setItem(item);
   };
 
-  const Item = async () => {
+  const handleSearch = () => {
     setPagination(1);
-    listrasItems();
+    listarItems();
   };
 
   const onDescargar = async () => {
-    const data = await listar();
-    excel(data, "Proveedores", "Proveedores");
-  };
-
-  const handleActivar = (item) => {
     try {
-      const changes = { activo: !item.activo };
-      actualizar(item.id, changes);
+      const fileName = titulo ? titulo : "Listado";
+      const data = await listar();
+      excel(data, fileName, fileName);
+    } catch (error) {
       setAlert({
         active: true,
-        mensaje: 'El item "' + item.id + '" se ha actualizado',
-        color: "success",
-        autoClose: true
+        mensaje: 'Error al descargar lista',
+        color: 'danger',
+        autoClose: true,
+      });
+    }
+  };
+
+  const handleActivar = async (item) => {
+    try {
+      let bool = item[encabezados['Activar']] === null ? false : item[encabezados['Activar']];
+      const changes = { [encabezados["Activar"]]: !bool };
+      await actualizar(item.id, changes);
+      setAlert({
+        active: true,
+        mensaje: `El item "${item.id}" se ha actualizado`,
+        color: 'success',
+        autoClose: true,
       });
     } catch (e) {
       setAlert({
         active: true,
         mensaje: 'Se ha presentado un error',
-        color: "danger",
-        autoClose: true
+        color: 'danger',
+        autoClose: true,
+      });
+    }
+  };
+
+  // Manejar selección de todos los ítems
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedItems(items.map((item) => item.id)); // Seleccionar todos los ítems
+    } else {
+      setSelectedItems([]); // Deseleccionar todos
+    }
+  };
+
+  // Manejar selección individual
+  const handleSelectItem = (id) => {
+    if (selectedItems.includes(id)) {
+      setSelectedItems(selectedItems.filter((itemId) => itemId !== id));
+    } else {
+      setSelectedItems([...selectedItems, id]);
+    }
+  };
+
+  // Desactivar ítems seleccionados
+  const handleDesactivarMasivo = async () => {
+    try {
+      for (const id of selectedItems) {
+        const item = items.find((i) => i.id === id);
+        let bool = item[encabezados['Activar']] === null ? false : item[encabezados['Activar']];
+        const changes = { [encabezados["Activar"]]: !bool };
+        await actualizar(id, changes);
+      }
+      setAlert({
+        active: true,
+        mensaje: 'Items desactivados exitosamente',
+        color: 'success',
+        autoClose: true,
+      });
+      listarItems(); // Actualizar la lista
+      setSelectedItems([]); // Limpiar la selección
+    } catch (error) {
+      setAlert({
+        active: true,
+        mensaje: 'Error al desactivar ítems',
+        color: 'danger',
+        autoClose: true,
       });
     }
   };
@@ -80,73 +146,117 @@ export default function Tablas({ encabezados, actualizar, listas, listar, pagina
   return (
     <>
       <div>
-        <Alertas alert={alert} handleClose={toogleAlert}></Alertas>
-        <h3>{titulo}</h3>
-        <div className={styles.cajaBotones}>
-          <div className={styles.botones}>
-            <button onClick={handleNuevo} type="button" className="btn btn-success btn-sm w-100">Nuevo</button>
-          </div>
-          <div className={styles.botones}>
-            <button type="button" className="btn btn-danger btn-sm w-100">Eliminar</button>
-          </div>
-          <div className={styles.Item}>
-            <input ref={ItemdorRef}
-              className="form-control form-control-sm"
-              type="text"
-              placeholder="Item"
-              onChange={Item}></input>
-          </div>
-          <div className={styles.botones}>
-            <button onClick={onDescargar} type="button" className="btn btn-light btn-sm w-100">Descargar lista</button>
-          </div>
+        <Alertas alert={alert} handleClose={toogleAlert} />
+        <h2>{titulo}</h2>
+        {titulo && <div className="line"></div>}
+        <div>
+          <Row className="mb-3">
+            <Col md={5} lg={3} className="mb-2">
+              <ButtonGroup className="w-100">
+                <Button onClick={handleNuevo} variant="success" className="btn-sm w-100 m-1 mt-0 mb-0">
+                  Nuevo
+                </Button>
+                <Button onClick={handleDesactivarMasivo} variant="danger" className="btn-sm w-100 m-1 mt-0 mb-0" >
+                  Desactivar
+                </Button>
+              </ButtonGroup>
+            </Col>
+            <Col md={6} lg={6} className="mb-2">
+              <input
+                ref={ItemdorRef}
+                className="form-control form-control-sm"
+                type="text"
+                placeholder="Item"
+                onChange={handleSearch}
+              />
+            </Col>
+            <Col md={12} lg={3} className="mb-2">
+              <ButtonGroup className="w-100">
+                {cargueMasivo && <Button type="button" className="btn btn-primary btn-sm m-1 mt-0 mb-0">
+                  Cargue Masivo
+                </Button>}
+                <Button onClick={onDescargar} type="button" className="btn btn-secondary btn-sm m-1 mt-0 mb-0 ">
+                  Descargar lista
+                </Button>
+              </ButtonGroup>
+            </Col>
+          </Row>
         </div>
 
-        <table className="table">
+        <table className="table table-striped table-bordered table-sm">
           <thead className={styles.letter}>
             <tr>
-              <th><input type="checkbox" id="topping" name="topping" value="Paneer" /></th>
-              {encabezados && Object.keys(encabezados).map(element => {
-                return (<th key={element} >{element}</th>);
+              <th>
+                <input type="checkbox" onChange={handleSelectAll} />
+              </th>
+              {encabezados && Object.keys(encabezados).map((key) => {
+                return (
+                  <th key={key}>{key}</th>
+                );
               })}
             </tr>
           </thead>
           <tbody className={styles.letter}>
             {items.map((item, index) => {
-              let newEncabezados = Object.assign({}, encabezados);
-              delete newEncabezados.Editar;
+              const filteredHeaders = { ...encabezados };
+              delete filteredHeaders.Editar;
               return (
                 <tr key={index}>
-                  <td><input type="checkbox" id="topping" name="topping" value="Paneer" /></td>
-                  {Object.keys(newEncabezados).map((element, index) => {
-                    if (element != "Activar") {
-                      return (<td key={index} >{item[newEncabezados[element]]}</td>);
-                    }
-                  })
-                  }
-                  <td>
-                    <button onClick={() => handleEditar(item)} type="button" className="btn btn-warning btn-sm w-80">Editar</button>
+                  <td className="text-custom-small text-center align-middle">
+                    <input
+                      type="checkbox"
+                      checked={selectedItems.includes(item.id)}
+                      onChange={() => handleSelectItem(item.id)}
+                    />
                   </td>
-                  <td>
-                    <button onClick={() => handleActivar(item)} type="button" className={`btn btn-${item.activo ? "success" : "danger"} btn-sm w-80`}>{item.activo ? "Desactivar" : "Activar"}</button>
+                  {Object.keys(filteredHeaders).map((headerKey) => {
+
+                    let itemName = item[filteredHeaders[headerKey]];
+                    const nuevaLista = listas?.[headerKey];
+                    if (nuevaLista) {
+                      itemName = nuevaLista.find((newI) => newI.id === itemName)?.nombre || itemName;
+                    }
+                    if (headerKey !== "Activar")
+                      return (
+                        <td key={headerKey} className="text-custom-small text-center align-middle">
+                          {itemName}
+                        </td>
+                      );
+                  })}
+
+                  <td key="Editar" className="text-custom-small text-center align-middle">
+                    <button onClick={() => handleEditar(item)} type="button" className="btn btn-warning btn-sm w-80">
+                      Editar
+                    </button>
+                  </td>
+
+                  <td className="text-custom-small text-center align-middle">
+                    <button
+                      onClick={() => handleActivar(item)}
+                      type="button"
+                      className={`btn btn-${item[encabezados['Activar']] ? 'success' : 'danger'} btn-sm w-80`}
+                    >
+                      {item[encabezados['Activar']] ? 'Desactivar' : 'Activar'}
+                    </button>
                   </td>
                 </tr>
               );
             })}
-
           </tbody>
         </table>
       </div>
       <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
-      {open && <NuevoItem 
-        crear={crear}
-        listas={listas}
-        actualizar={actualizar}
-        setOpen={setOpen}
-        setAlert={setAlert}
-        element={item}
-        encabezados={labelForm}
-        arrayList={arrayList} />
-      }
+      {open && (
+        <NuevoItem
+          crear={crear}
+          listas={listas}
+          actualizar={actualizar}
+          setOpen={setOpen}
+          setAlert={setAlert}
+          element={item}
+          encabezados={labelForm}
+        />
+      )}
     </>
   );
 }
