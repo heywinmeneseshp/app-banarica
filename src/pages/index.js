@@ -61,7 +61,6 @@ export default function Home() {
                         {initialMenu.menu.almacen && <Almacen />}
                         {initialMenu.menu.informes && <Informes />}
                 </RootLayout>
-
             </div>
         );
     }

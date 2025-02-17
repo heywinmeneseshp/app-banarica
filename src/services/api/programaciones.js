@@ -49,7 +49,7 @@ const paginarProgramaciones = async (page, limit, body) => {
         const res = await axios.post(endPoints.programaciones.pagination(page, limit), body);
         return res.data;
     } catch {
-        alert("Error al paginar proveedores");
+        console.log("Error al paginar programación");
     }
 };
 

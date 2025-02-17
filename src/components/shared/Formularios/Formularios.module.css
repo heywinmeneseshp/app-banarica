@@ -2,48 +2,57 @@
     position: fixed; /* Se posiciona fijamente en la ventana del navegador */
     top: 0; /* Se coloca en la parte superior */
     left: 0; /* Se coloca en el lado izquierdo */
-    background-color: rgba(0, 0, 0, 0.336);
-    z-index: 2; /* Asegura que el fondo esté detrás del contenido */
-    height: 100vh; /* Ocupa toda la altura de la ventana */
+    background-color: rgba(0, 0, 0, 0.336); /* Fondo oscuro semi-transparente */
+    z-index: 1052; /* Asegura que el fondo esté detrás del contenido */
+    height: 100%; /* Ocupa toda la altura de la ventana */
     width: 100%; /* Ocupa toda la anchura de la ventana */
+    display: flex; /* Centrado con flexbox */
+    justify-content: center; /* Centra horizontalmente */
+    align-items: center; /* Centra verticalmente */
 }
 
 .floatingform {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1000;
+    position: relative;
+    z-index: 1055; /* Asegura que el contenido flotante esté por encima del fondo */
     display: flex;
-    justify-content: start;
-    align-items: start;
-    height: 80vh; /* Ocupa el 90% del alto */
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch; /* Alinea los elementos a la izquierda */
+    height: auto; /* Altura automática para ajustarse al contenido */
+    max-height: 80vh; /* Limita la altura máxima */
+    width: 90%; /* Ocupa el 90% del ancho */
+    max-width: 500px; /* Ancho máximo para pantallas grandes */
+    background-color: #fff; /* Fondo blanco para el formulario */
+    border-radius: 10px;
+    box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.2); /* Sombra sutil */
     overflow-y: auto; /* Añade un scroll vertical si se supera el alto */
-    margin-top: 10px;
 }
 
-.ventana {
-    width: max-content;
+.card {
+    width: 100%; /* Asegura que la tarjeta ocupe todo el espacio disponible */
+    border-radius: 0px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
 }
 
-/* Media query para dispositivos móviles */
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+    padding: 10px 15px;
+}
+
+.card-body {
+    padding: 15px;
+}
+
 @media (max-width: 767px) {
     .floatingform {
-        width: 100%; /* Ancho del 90% en dispositivos móviles */
+        width: 100%; /* Ancho del 100% en dispositivos móviles */
+        max-width: 100%; /* Ancho máximo del 100% */
         height: auto; /* Altura automática */
         max-height: 90vh; /* Altura máxima del 90% del viewport height */
-        padding: 20px; /* Añade un poco de espacio alrededor del contenido */
-        justify-content: start;
-        align-items: start;
+    }
+
+    .card {
+        width: 100%; /* Asegura que la tarjeta ocupe todo el ancho disponible */
     }
 }
-
-
-  
-  .card {
-    border-radius: 15px;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-    width: 400px; /* Puedes ajustar el ancho según tus necesidades */
-  }
-  
-  

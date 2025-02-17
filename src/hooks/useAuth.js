@@ -34,6 +34,7 @@ function useProviderAuth() {
 
             //Guardar usuario en local storage
             const usuario = res.data.usuario;
+          
             const usuarioComoCadena = JSON.stringify(usuario);
             
             localStorage.setItem('usuario', usuarioComoCadena);

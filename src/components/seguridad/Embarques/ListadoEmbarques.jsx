@@ -12,6 +12,8 @@ import { listarNavieras } from '@services/api/navieras';
 import { filtrarSemanaRangoMes } from '@services/api/semanas';
 import { listarClientes } from '@services/api/clientes';
 import { listarDestinos } from '@services/api/destinos';
+import CargueMasivo from '@assets/Seguridad/Listado/CargueMasivo';
+import endPoints from '@services/api';
 
 const inputs = [
   { id: 'semana', label: 'Semana', type: 'text', placeholder: 'Ingrese Sem' },
@@ -41,13 +43,14 @@ const ListadoEmbarques = () => {
   const [destinos, setDestinos] = useState([]);
   const [clientes, setCliente] = useState([]);
   const [semanas, setSemanas] = useState();
+  const [cargueMasivo, setCargueMasivo] = useState(false);
 
 
   const handleCellEdit = async (id, field, value) => {
     setTableData(prevData => prevData.map(row =>
       row.id === id ? { ...row, [field]: value } : row
     ));
-    await actualizarEmbarques(id, { [field] : value});
+    await actualizarEmbarques(id, { [field]: value });
   };
 
 
@@ -131,10 +134,10 @@ const ListadoEmbarques = () => {
 
 
   const listar = useCallback(async () => {
-   
+
     const dataObject = inputs.reduce((acc, field) => {
       const inputElement = document.getElementById(field.id);
-      acc[field.id] = inputElement.value || '';
+      acc[field.id] = inputElement?.value || '';
       console.log(acc[field.id]);
       return acc;
     }, {});
@@ -162,19 +165,19 @@ const ListadoEmbarques = () => {
 
   function decargarPlantilla() {
     const data = {
-        "Semana": null,
-        "Cliente": null,
-        "Booking": null,
-        "Bill of loading": null,
-        "Naviera": null,
-        "Buque": null,
-        "Destino": null,
-        "Viaje": null,
-        "Sae": null,
-        "Anuncio": null,
+      "Semana": null,
+      "Cliente": null,
+      "Booking": null,
+      "Bill of loading": null,
+      "Naviera": null,
+      "Buque": null,
+      "Destino": null,
+      "Viaje": null,
+      "Sae": null,
+      "Anuncio": null,
     };
     excel([data], "Plantilla", "Plantilla de cargue");
-}
+  }
 
   useEffect(() => {
     const iniciar = async () => {
@@ -231,7 +234,7 @@ const ListadoEmbarques = () => {
               defaultValue={limit}
               ref={limitRef}
               onChange={changesLimit}
-              style={{maxWidth: "60px"}}
+              style={{ maxWidth: "60px" }}
               min={1}
             />
           </div>
@@ -242,7 +245,7 @@ const ListadoEmbarques = () => {
           </Button>
         </Col>
         <Col xs={12} sm={6} md={2} className="text-end">
-          <Button className="btn btn-primary btn-sm w-100 m-auto">
+          <Button onClick={() => setCargueMasivo(true)} className="btn btn-primary btn-sm w-100 m-auto">
             {'Cargue masivo'}
           </Button>
         </Col>
@@ -414,6 +417,23 @@ const ListadoEmbarques = () => {
 
       <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
 
+      {cargueMasivo && <CargueMasivo setOpenMasivo={setCargueMasivo}
+        titulo={"Embarques"}
+        endPointCargueMasivo={endPoints.Embarques.create + "/masivo"}
+        encabezados={{
+          id_semana: null,
+          id_cliente: null,
+          id_naviera: null,
+          id_buque: null,
+          viaje: null,
+          id_destino: null,
+          booking: null,
+          bl: null,
+          anuncio: null,
+          sae: null,
+          habilitado: null,
+        }}
+      />}
       {open &&
         <NuevoEmbarque
           crear={crearEmbarques}

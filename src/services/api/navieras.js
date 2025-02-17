@@ -6,6 +6,11 @@ const crearNavieras = async (body) => {
     return res.data;
 };
 
+const cargueMasivoNavieras = async (body) => {
+    const res = await axios.post(endPoints.Navieras.cargueMasivo, body);
+    return res.data;
+};
+
 const actualizarNavieras = async (id, body) => {
     const res = await axios.patch(endPoints.Navieras.update(id), body);
     return res.data;
@@ -22,7 +27,7 @@ const encontrarNavieras = async (id) => {
 };
 
 const paginarNavieras = async (offset, limit, body) => {
-    let item =  (typeof body === 'object' && body !== null) ? {...body} : { navieras: body };
+    let item = (typeof body === 'object' && body !== null) ? { ...body } : { navieras: body };
     const res = await axios.post(endPoints.Navieras.paginar(offset, limit), item);
     return res.data;
 };
@@ -39,5 +44,6 @@ export {
     actualizarNavieras,
     paginarNavieras,
     encontrarNavieras,
-    eliminarNavieras
+    eliminarNavieras,
+    cargueMasivoNavieras
 };

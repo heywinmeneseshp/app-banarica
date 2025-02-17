@@ -49,7 +49,7 @@ const paginarVehiculo = async (page, limit, nombre) => {
         const res = await axios.get(endPoints.vehiculos.pagination(page, limit, nombre));
         return res.data;
     } catch {
-        alert("Error al paginar proveedores");
+        alert("Error al paginar vehiculos");
     }
 };
 

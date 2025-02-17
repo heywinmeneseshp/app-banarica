@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import Tablas from "@components/shared/Tablas/Tablas";
 import { actualizarDestinos, crearDestinos, encontrarDestinos, listarDestinos, paginarDestinos } from "@services/api/destinos";
+import endPoints from "@services/api";
 
 
 const ListadoDestinos = () => {
@@ -23,6 +24,15 @@ const ListadoDestinos = () => {
         "Destino": "destino",
         "Pais": "pais",
         "Activar": "habilitado",
+      }}
+      //Cargue Masivo
+      tituloCargueMasivo={"Destinos"}
+      endPointCargueMasivo={endPoints.Destinos.create + "/masivo"}
+      encabezadosCargueMasivo={{
+        "cod": null,
+        "destino": null,
+        "pais": null,
+        "habilitado": null
       }}
     />
   );

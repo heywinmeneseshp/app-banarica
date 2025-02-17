@@ -31,6 +31,7 @@ const endPoints = {
         create: `${API}/api/${VERSION}/productos`,
         update: (id) => `${API}/api/${VERSION}/semanas/${id}`,
         delete: (id) => `${API}/api/${VERSION}/semanas/${id}`,
+        pagination: (page, limit, consecutivo) => `${API}/api/${VERSION}/semana/paginar?page=${page}&limit=${limit}&consecutivo=${consecutivo}`,
     },
     productos: {
         list: `${API}/api/${VERSION}/productos`,
@@ -324,6 +325,7 @@ const endPoints = {
         paginar: (offset, limit) => `${API}/api/${VERSION}/naviera/paginar?offset=${offset}&limit=${limit}`,
         update: (id) => `${API}/api/${VERSION}/naviera/${id}`,
         delete: (id) => `${API}/api/${VERSION}/naviera/${id}`,
+        cargueMasivo: `${API}/api/${VERSION}/naviera/masivo`,
     },
     Buques: {
         list: `${API}/api/${VERSION}/buque`,
@@ -356,7 +358,15 @@ const endPoints = {
         paginar: (offset, limit, nombre) => `${API}/api/${VERSION}/transbordo/paginar?offset=${offset}&limit=${limit}&destino=${nombre}`,
         update: (id) => `${API}/api/${VERSION}/transbordo/${id}`,
         delete: (id) => `${API}/api/${VERSION}/transbordo/${id}`,
-    }
+    }, 
+    rechazos: {
+        list: `${API}/api/${VERSION}/rechazo`, //Listo
+        findOne: (consecutivo) => `${API}/api/${VERSION}/rechazo/${consecutivo}`,
+        pagination: (page, limit) => `${API}/api/${VERSION}/rechazo/paginar?page=${page}&limit=${limit}`,
+        create: `${API}/api/${VERSION}/rechazo`,
+        update: (id) => `${API}/api/${VERSION}/rechazo/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/rechazo/${id}`
+    },
 
 
 

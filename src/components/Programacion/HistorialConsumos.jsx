@@ -75,14 +75,14 @@ export default function HistorialConsumos({placa, mes, sem, anho }) {
         if (fechaFin) body.fechaFin = fechaFin;
 
         const res = await paginarRecord_consumo(pagination, 100, body);
-        setItemsList(res.data);
+        setItemsList(res?.data ? res?.data : []);
         if (boolEdit.length == 0) {
             let arrayBool = new Array(res.data.length).fill(false);
             setBoolKm(arrayBool);
             setBoolEdit(arrayBool);
         }
         setLimit(100);
-        setTotal(res.total);
+        setTotal(res?.total);
     };
 
     const editarConsumo = async (item) => {

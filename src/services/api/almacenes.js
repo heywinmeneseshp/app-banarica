@@ -16,19 +16,19 @@ const agregarAlmacen = async (almacen) => {
    }
 };
 
-const eliminarAlmacen = async(consecutivo) => {
-    const res = await axios.delete(endPoints.almacenes.delete(consecutivo));
+const eliminarAlmacen = async(id) => {
+    const res = await axios.delete(endPoints.almacenes.delete(id));
     return res.data;
 };
 
-const actualizarAlmacen = async(consecutivo, changes) => {
-    const res = await axios.patch(endPoints.almacenes.update(consecutivo), changes);
+const actualizarAlmacen = async(id, changes) => {
+    const res = await axios.patch(endPoints.almacenes.update(id), changes);
     return res.data;
 };
 
-const buscarAlmacen = async(consecutivo) => {
+const buscarAlmacen = async(id) => {
     try {
-    const res = await axios.get(endPoints.almacenes.findOne(consecutivo));
+    const res = await axios.get(endPoints.almacenes.findOne(id));
     return res.data;
     } catch (e) {
         alert("Error al buscar almacen");
@@ -44,4 +44,10 @@ const listarAlmacenes = async() => {
     }
 };
 
-export { agregarAlmacen, eliminarAlmacen, actualizarAlmacen, buscarAlmacen, listarAlmacenes };
+const paginarAlmacenes = async (offset, limit, alamacen) => {
+    const res = await axios.get(endPoints.almacenes.pagination(offset, limit, alamacen));
+    return res.data;
+};
+
+
+export { agregarAlmacen, eliminarAlmacen, actualizarAlmacen, buscarAlmacen, listarAlmacenes, paginarAlmacenes };

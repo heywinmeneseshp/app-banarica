@@ -1,11 +1,9 @@
-.superContenedor{
-  margin-top: 40px;
-}
+
 .contenedor {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 10px 20px 10px 20px;
-    box-shadow: 0 0 8px rgb(210, 210, 210), inset 0 0.5px #b2b2b280;
+  background-color: rgba(0, 0, 0, 0.253);
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
   }
   

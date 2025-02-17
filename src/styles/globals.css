@@ -149,3 +149,8 @@ select {
     border-radius: 50px;
 }
 
+.header-with-high-zindex {
+  position: relative;
+  z-index: 9999;
+}
+

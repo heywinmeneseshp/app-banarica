@@ -49,7 +49,7 @@ const paginarUbicaciones = async (page, limit, nombre) => {
         const res = await axios.get(endPoints.ubicaciones.pagination(page, limit, nombre));
         return res.data;
     } catch {
-        alert("Error al paginar proveedores");
+        alert("Error al paginar ubicaciones");
     }
 };
 

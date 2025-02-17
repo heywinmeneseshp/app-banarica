@@ -46,7 +46,8 @@ function MyApp({ Component, pageProps }) {
 
                     <Head>
                         <title>{nombreApp}</title>
-                        <meta name="Transmonsa - App de gestion logisitca" content="Creado por Craken.com.co" />
+                        <meta name="description" content="LogiCrack - Aplicación de gestión logística, desarrollada por Craken.com.co" />
+                        <meta name="author" content="Craken.com.co" />
                         <link rel="icon" href="/favicon.ico" />
                     </Head>
 

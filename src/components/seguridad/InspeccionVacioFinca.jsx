@@ -1,23 +1,34 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from 'next/router';
 
+
 import '@fortawesome/fontawesome-free/css/all.min.css'; // Importar los estilos de Font Awesome
 import 'bootstrap/dist/css/bootstrap.min.css'; // Importar los estilos de Bootstrap
 import { crearListado } from "@services/api/listado";
-import { encontrarUnSerial  } from "@services/api/seguridad";
+import { encontrarUnSerial } from "@services/api/seguridad";
 import { filtrarSemanaRangoMes } from "@services/api/semanas";
 import { encontrarModulo } from "@services/api/configuracion";
+import { FaMinusCircle } from "react-icons/fa";
+import { LiaUndoAltSolid } from "react-icons/lia";
+import Loader from "@components/shared/Loader";
 
-export default function Lector() {
+export default function InspeccionVacioFinca() {
 
     const formRef = useRef();
     const router = useRouter();
 
 
     const today = new Date();
-    today.setDate(today.getDate() - 1); // Restar un día
     const now = today.toISOString().split('T')[0];
 
+    const fields = [
+        { label: "Fecha", id: "fecha", defaultValue: now, type: "date", required: true, eliminar: false },
+        { label: "Contenedor", id: "contenedor", placeholder: "DUMMY000001", type: "text", pattern: "[A-Za-z]{4}[0-9]{7}", title: "Debe ser 4 letras seguidas de 7 números", required: true, eliminar: false },
+        { label: "Kit", id: "kit", placeholder: "ABC0000", type: "text", eliminar: true },
+        { label: "Termógrafo", id: "termografo", placeholder: "TERM0000", type: "text", eliminar: true },
+        { label: "Sello cable", id: "selloCable", placeholder: "CABL20000", type: "text", eliminar: true },
+        { label: "Sello plástico", id: "selloPlastico", placeholder: "PREC20000", type: "text", eliminar: true }
+    ];
     // Estado de los campos del formulario
     // Estado de los campos dinámicos
     const [laminaInterna, setLaminaInterna] = useState([]);
@@ -25,26 +36,20 @@ export default function Lector() {
     const [observaciones, setObservaciones] = useState(null);
     const [verificado, setVerificado] = useState(false);
     const [semana, setSemana] = useState();
-    const [inputFields, setInputFields] = useState([
-        { label: "Fecha", id: "fecha", defaultValue: now, type: "date", required: true },
-        { label: "Contenedor", id: "contenedor", placeholder: "DUMMY000001", type: "text", pattern: "[A-Za-z]{4}[0-9]{7}", title: "Debe ser 4 letras seguidas de 7 números", required: true },
-        { label: "Kit", id: "kit", placeholder: "ABC0000", type: "text" },
-        { label: "Termógrafo", id: "termografo", placeholder: "ABC0000", type: "text" },
-        { label: "Sello cable", id: "selloCable", placeholder: "TERM20000", type: "text" },
-        { label: "Sello plástico", id: "selloPlastico", placeholder: "TERM20000", type: "text" }
-    ]);
-    
+    const [inputFields, setInputFields] = useState(fields);
+    const [loading, setLoading] = useState(false);
 
 
 
-    useEffect( () => {
-        filtrarSemanaRangoMes(1,1).then(res => {
+
+    useEffect(() => {
+        filtrarSemanaRangoMes(1, 1).then(res => {
             encontrarModulo("Semana").then(res2 => {
                 const sem = res.filter(item => item.semana == res2[0].semana_actual);
-                setSemana(sem[0].consecutivo);   
+                setSemana(sem[0].consecutivo);
             });
         });
-       
+
         let inputStatic = inputFields;
         inputStatic[0] = { ...inputStatic[0], defaultValue: now };
         const inputs = JSON.parse(localStorage.getItem("inspecVacio"));
@@ -74,6 +79,11 @@ export default function Lector() {
     const removeField = (type) => {
         const setter = type === 'laminaInterna' ? setLaminaInterna : setParteFrontal;
         setter(prevFields => prevFields.slice(0, -1));
+    };
+
+    const handleRemove = (id) => {
+        const newInputFields = inputFields.filter(item => item.id != id);
+        setInputFields(newInputFields);
     };
 
     // Maneja el evento de invalidación
@@ -113,6 +123,7 @@ export default function Lector() {
     // Maneja el envío del formulario
     const handleSubmit = async (event) => {
         event.preventDefault();
+        setLoading(true);
         if (!formRef.current) return;
         const formData = new FormData(formRef.current);
         const inputs = {
@@ -127,23 +138,30 @@ export default function Lector() {
 
         const interna = laminaInterna.map((_, index) => formData.get(`laminaInterna${index}`));
         const frontal = parteFrontal.map((_, index) => formData.get(`parteFrontal${index}`));
+        let allItems = [];
 
-        const kit = await encontrarUnSerial({
-            bag_pack: inputs.kit,
-            available: [true],
-        });
-        const newKits = kit.map(item => {
-            return { label: 'Kit', value: item.serial, ubicacion_en_contenedor: "Exterior" };
-        });
+        if ((inputs.kit = !0) && !inputs.kit) {
+            const kit = await encontrarUnSerial({
+                bag_pack: inputs.kit,
+                available: [true],
+            });
 
-        const allItems = [
-            ...newKits,
+            const newKits = kit.map(item => {
+                return { label: 'Kit', value: item.serial, ubicacion_en_contenedor: "Exterior" };
+            });
+            allItems = [...allItems, ...newKits];
+        }
+
+        allItems = [
+            ...allItems,
             { label: 'Termógrafo', value: inputs.termografo, ubicacion_en_contenedor: "Interior" },
             { label: 'Sello de Cable', value: inputs.selloCable, ubicacion_en_contenedor: "Exterior" },
             { label: 'Sello Plástico', value: inputs.selloPlastico, ubicacion_en_contenedor: "Exterior" },
             ...interna.map((item, index) => ({ label: `Lámina Interna ${index + 1}`, value: item, ubicacion_en_contenedor: "Interior" })),
             ...frontal.map((item, index) => ({ label: `Parte Frontal ${index + 1}`, value: item, ubicacion_en_contenedor: "Exterior" }))
         ];
+
+        allItems = allItems.filter(item => item.value != null);
 
         const existingItemsMap = new Map();
         const duplicatesMap = new Map();
@@ -166,6 +184,7 @@ export default function Lector() {
                     }
                 }
             } catch (error) {
+                setLoading(false);
                 isVerified = false;
                 alert(`Error al verificar el serial ${item.value} en el campo "${item.label}": ${error.message}`);
                 return;
@@ -193,7 +212,7 @@ export default function Lector() {
                 const usuarioString = localStorage.getItem("usuario");
                 const usuario = JSON.parse(usuarioString);
                 //Crear listado
-                crearListado({
+                const itemListado = await crearListado({
                     fecha: inputs.fecha,
                     contenedor: inputs.contenedor,
                     observaciones: inputs.observacion,
@@ -201,7 +220,15 @@ export default function Lector() {
                     seriales,
                     semana
                 });
-                formRef.current.reset(); // Clear the form fields
+                setLoading(false);
+                window.alert(itemListado.message || "Error");
+
+                const resetForm = formRef.current.elements; // Obtener todos los elementos del formulario
+                for (let i = 0; i < resetForm.length; i++) {
+                    if (resetForm[i].id !== "fecha") {
+                        resetForm[i].value = ""; // Restablecer solo los que no sean "fecha"
+                    }
+                }
                 setLaminaInterna([]); // Clear dynamic fields
                 setParteFrontal([]);
                 setObservaciones(null);
@@ -217,11 +244,13 @@ export default function Lector() {
                 const continuar = confirm(`Desea cargar otro contenedor?`);
                 if (!continuar) router.push(`/Seguridad/Dashboard`);
             } catch {
+                setLoading(false);
                 setVerificado(false);
                 alert("Lo siento, ocurrió un problema inesperado. Por favor, inténtalo de nuevo.");
             }
 
         } else {
+            setLoading(false);
             alert("Corrija todos los errores para poder continuar");
         }
     };
@@ -231,15 +260,14 @@ export default function Lector() {
 
     return (
         <form ref={formRef} onSubmit={handleSubmit}>
+            <Loader loading={loading} />
             <div className="container">
-                <div className="mb-4 mt-3 text-center">
-                    <h2>Inspección de Contenedores</h2>
-                </div>
 
                 <div className="row">
                     {inputFields.map((field, index) => (
                         <div className="col-md-6 mb-3" key={index}>
-                            <div className="input-group">
+                            <div className="input-group d-flex justify-content-center align-items-center">
+
                                 <span className="input-group-text" id={`${field.id}-addon`}>{field.label}:</span>
                                 <input
                                     type={field.type}
@@ -256,9 +284,34 @@ export default function Lector() {
                                     required={field.required || false}
                                     defaultValue={field?.defaultValue || ''}
                                 />
+                                {field.eliminar && <FaMinusCircle
+                                    size={20} // Tamaño del icono
+                                    color="#dc3545" // Color del icono
+                                    style={{
+                                        cursor: "pointer", // Hace que sea clickeable
+                                        borderRadius: "50%", // Lo hace circular visualmente
+                                        margin: "0px 0px 0px 10px"
+                                    }}
+                                    onClick={() => handleRemove(field.id)} // Acción al hacer clic
+                                    title="Eliminar este campo" // Tooltip al pasar el mouse
+                                />}
                             </div>
+
                         </div>
                     ))}
+
+                    {(inputFields.length == 2) && <LiaUndoAltSolid
+                        size={30} // Tamaño del icono
+                        color="#0b5ed7" // Color del icono
+                        style={{
+                            cursor: "pointer", // Hace que sea clickeable
+                            borderRadius: "50%", // Botón circular
+                            padding: "5px", // Espaciado interno
+
+                        }}
+                        onClick={() => setInputFields(fields)} // Función al hacer clic
+                        title="Restaurar valores" // Tooltip
+                    />}
                 </div>
 
                 <div className="mt-4 mb-2">
@@ -282,7 +335,9 @@ export default function Lector() {
                                     required
                                 />
                             </div>
+
                         </div>
+
                     ))}
                     <div className="col-12 mb-4 mt-1 text-center">
                         <button type="button" className="btn btn-primary px-5 py-1 mx-3" onClick={() => addField('laminaInterna')}>

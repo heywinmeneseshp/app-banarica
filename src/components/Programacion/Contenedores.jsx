@@ -50,11 +50,14 @@ export default function Programador() {
             paginarProgramaciones(pagination, limit, body),
         ]);
 
+        console.log("heywin");
+        console.log(res);
+
         // Actualización de los estados
         setUbicaciones(newUbicaciones);
         setConductores(newConductores);
-        setItemsList(res.data);
-        setTotal(res.total);
+        setItemsList(res?.data ? res?.data : []);
+        setTotal(res?.total);
     };
 
     // Ejecutar listado al cargar o cambiar estado relevante

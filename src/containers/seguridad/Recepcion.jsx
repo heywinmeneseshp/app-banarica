@@ -1,322 +1,187 @@
-import React, { useEffect, useState } from "react";
-import readXlsxFile from "read-excel-file";
-import { useRef } from "react";
+/* eslint-disable no-unused-vars */
+import React, { useEffect, useState, useRef } from "react";
+import * as XLSX from "xlsx"; // 📌 Importa xlsx para leer el archivo
+import { InputGroup, Form } from "react-bootstrap";
 
 import uDate from "@hooks/useDate";
-
-
-//CSS
-import styles from "@styles/Seguridad.module.css";
 import { useAuth } from "@hooks/useAuth";
 import { cargarSeriales, listarProductosSeguridad } from "@services/api/seguridad";
 import file from "@hooks/useFile";
 import excel from "@hooks/useExcel";
 import Alertas from "@assets/Alertas";
 import useAlert from "@hooks/useAlert";
-import { InputGroup, Form } from "react-bootstrap";
 import uSemana from "@hooks/useSemana";
+import styles from "@styles/Seguridad.module.css";
 
 export default function Recepcion() {
     const almacenRef = useRef();
     const articuloRef = useRef();
     const formRef = useRef();
-    const { almacenByUser, user } = useAuth();
+    
     const [archivoExcel, setArchivoExcel] = useState([]);
     const [tabla, setTabla] = useState([]);
     const [productos, setProductos] = useState([]);
-    const [limit, setLimit] = useState(0);
-    const { alert, setAlert, toogleAlert } = useAlert();
+    const [limit, setLimit] = useState(5);
     const [archivoBruto, setArchivoBruto] = useState(null);
+    const [almacenByUser, setAlmacenByUser] = useState([]);
     const [bool, setBool] = useState(false);
     const [nuevo, setNuevo] = useState(true);
+    
+    const { alert, setAlert, toogleAlert } = useAlert();
+    const { user } = useAuth();
 
     useEffect(() => {
         listarProductosSeguridad().then(res => {
-            setProductos(res.filter(item => item.serial == true));
+            setProductos(res.filter(item => item.serial));
         });
+        setAlmacenByUser(JSON.parse(localStorage.getItem("almacenByUser")) || []);
     }, []);
 
-    function subirExcel(e) {
+    const subirExcel = (e) => {
         const archivo = e.target.files[0];
-        readXlsxFile(archivo).then((rows) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const data = new Uint8Array(event.target.result);
+            const workbook = XLSX.read(data, { type: "array" });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            
             setArchivoBruto(rows);
-            const cons_almacen = almacenRef.current.value;
-            const cons_prodcuto = articuloRef.current.value;
-            const response = file().ordenarExcelSerial(rows, cons_almacen, cons_prodcuto);
+            const response = file().ordenarExcelSerial(rows, almacenRef.current.value, articuloRef.current.value);
             setArchivoExcel(response);
-            let tabla = response;
-            const res = tabla.slice(0, 5);
-            setTabla(res);
-        });
-        setLimit(5);
-    }
+            setTabla(response.slice(0, limit));
+        };
+        reader.readAsArrayBuffer(archivo);
+    };
 
-    function previsualizar() {
-        if (archivoExcel.length != 0) {
-            const cons_almacen = almacenRef.current.value;
-            const cons_prodcuto = articuloRef.current.value;
-            const file = ["0"].concat(archivoBruto);
-            const response = file().ordenarExcelSerial(file, cons_almacen, cons_prodcuto);
+    const previsualizar = () => {
+        if (archivoExcel.length) {
+            const response = file().ordenarExcelSerial(["0"].concat(archivoBruto), almacenRef.current.value, articuloRef.current.value);
             setArchivoExcel(response);
-            let tabla = response;
-            const res = tabla.slice(0, limit);
-            setTabla(res);
+            setTabla(response.slice(0, limit));
         }
-    }
+    };
 
-    function decargarPlantilla() {
-        const data = {
+    const descargarPlantilla = () => {
+        const data = [{
             "Consecutivo artículo": null,
             "Serial artículo": null,
             "Serial bag pack": null,
             "Serial s_pack": null,
             "Serial m_pack": null,
             "Serial l_pack": null,
-        };
-        excel([data], "Plantilla", "Plantilla seriales");
-    }
+        }];
+        excel(data, "Plantilla", "Plantilla seriales");
+    };
 
-    function limitPaginacion(e) {
+    const limitPaginacion = (e) => {
         setLimit(e.target.value);
-        let tabla = archivoExcel;
-        const res = tabla.slice(0, e.target.value);
-        setTabla(res);
-    }
+        setTabla(archivoExcel.slice(0, e.target.value));
+    };
 
-    async function cargarDatos(e) {
+    const cargarDatos = async (e) => {
         e.preventDefault();
         try {
             const formData = new FormData(formRef.current);
             const remision = formData.get("remision");
-            if (remision && remision.length < 3) {
-                window.alert("La remisión debe tener al menos tres caracteres.");
-                return; // Detener la ejecución si la validación falla
-            }const pedido = formData.get("pedido");
-            const semana = await uSemana(formData.get("semana"));
-            const fecha = formData.get("fecha");
-            const observaciones = formData.get("observaciones");
-            const res = await cargarSeriales(archivoExcel, remision, pedido, semana, fecha, observaciones, user.username);
-            if (res.bool == true) {
-                setBool(true);
-                setAlert({
-                    active: true,
-                    mensaje: res.message,
-                    color: "success",
-                    autoClose: false
-                });
-            } else {
-                setAlert({
-                    active: true,
-                    mensaje: res.message,
-                    color: "danger",
-                    autoClose: false
-                });
+            if (remision.length < 3) {
+                setAlert({ active: true, mensaje: "La remisión debe tener al menos tres caracteres.", color: "danger", autoClose: false });
+                return;
             }
-
-
-        } catch (e) {
-            return setAlert({
-                active: true,
-                mensaje: "Error, quizá existan seriales repetidos.",
-                color: "danger",
-                autoClose: false
-            });
+            const res = await cargarSeriales(
+                archivoExcel,
+                remision,
+                formData.get("pedido"),
+                await uSemana(formData.get("semana")),
+                formData.get("fecha"),
+                formData.get("observaciones"),
+                user.username
+            );
+            setBool(res.bool);
+            setAlert({ active: true, mensaje: res.message, color: res.bool ? "success" : "danger", autoClose: false });
+        } catch {
+            setAlert({ active: true, mensaje: "Error, quizá existan seriales repetidos.", color: "danger", autoClose: false });
         }
-    }
+    };
 
-    function nuevoMovimiento() {
+    const nuevoMovimiento = () => {
         setArchivoExcel([]);
         setTabla([]);
         setArchivoBruto(null);
         setBool(false);
         setNuevo(false);
-        setLimit(0);
-        setTimeout(() => {
-            setNuevo(true);
-        }, 50);
-    }
+        setTimeout(() => setNuevo(true), 50);
+    };
 
     return (
-        <>
-            <section>
-                <h2>Recepción</h2>
-                {nuevo &&
-                    <form ref={formRef} onSubmit={cargarDatos} className={styles.grid_recepcion}>
-                        <div className="input-group input-group-sm">
-                            <span className="input-group-text" id="inputGroup-sizing-sm">Alamcén</span>
-                            <select className="form-select form-select-sm"
-                                aria-label=".form-select-sm example"
-                                id="almacen"
-                                name="almacen"
-                                onChange={previsualizar}
-                                disabled={bool}
-                                ref={almacenRef}>
-                                {almacenByUser.map((item, index) => {
-                                    return (
-                                        <option key={index} selected={item.consecutivo == "BRC"} value={item.consecutivo}>{item.nombre}</option>
-                                    );
-                                })}
-                            </select>
-                        </div>
-
-                        <InputGroup size="sm">
-                            <InputGroup.Text id="inputGroup-sizing-sm">Remisión</InputGroup.Text>
-                            <Form.Control
-                                aria-label="Small"
-                                aria-describedby="inputGroup-sizing-sm"
-                                id="remision"
-                                name="remision"
-                                required
-                                minLength={2}
-                                disabled={bool}
-                            />
-                        </InputGroup>
-
-                        <InputGroup size="sm">
-                            <InputGroup.Text id="inputGroup-sizing-sm">Pedido</InputGroup.Text>
-                            <Form.Control
-                                aria-label="Small"
-                                aria-describedby="inputGroup-sizing-sm"
-                                id="pedido"
-                                name="pedido"
-                                required
-                                disabled={bool}
-                            />
-                        </InputGroup>
-
-                        <InputGroup size="sm">
-                            <InputGroup.Text id="inputGroup-sizing-sm">Semana</InputGroup.Text>
-                            <Form.Control
-                                aria-label="Small"
-                                aria-describedby="inputGroup-sizing-sm"
-                                min="1"
-                                max="52"
-                                id="semana"
-                                name="semana"
-                                type="number"
-                                required
-                                disabled={bool}
-                            />
-                        </InputGroup>
-
-                        <InputGroup size="sm">
-                            <InputGroup.Text id="inputGroup-sizing-sm">Fecha</InputGroup.Text>
-                            <Form.Control
-                                aria-label="Small"
-                                aria-describedby="inputGroup-sizing-sm"
-                                id="fecha"
-                                name="fecha"
-                                type="date"
-                                defaultValue={uDate()}
-                                disabled={bool}
-                            />
-                        </InputGroup>
-
-                        <div className="input-group input-group-sm">
-                            <span className="input-group-text" id="inputGroup-sizing-sm">Artículo</span>
-                            <select
-                                className="form-select form-select-sm"
-                                aria-label=".form-select-sm example"
-                                onChange={previsualizar}
-                                ref={articuloRef}
-                                disabled={bool}>
-                                <option value={0}>{"Varios"}</option>
-                                {productos.map((item, index) => (
-                                    <option key={index} value={item.consecutivo}>{item.name}</option>
+        <section>
+            <h2>Recepción</h2>
+            {nuevo && (
+                <form ref={formRef} onSubmit={cargarDatos} className={styles.grid_recepcion}>
+                    <InputGroup size="sm">
+                        <InputGroup.Text>Almacén</InputGroup.Text>
+                        <Form.Select ref={almacenRef} onChange={previsualizar} disabled={bool}>
+                            {almacenByUser.map((item, index) => (
+                                <option key={index} value={item.consecutivo}>{item.nombre}</option>
+                            ))}
+                        </Form.Select>
+                    </InputGroup>
+                    <InputGroup size="sm">
+                        <InputGroup.Text>Remisión</InputGroup.Text>
+                        <Form.Control id="remision" name="remision" required minLength={3} disabled={bool} />
+                    </InputGroup>
+                    <InputGroup size="sm">
+                        <InputGroup.Text>Pedido</InputGroup.Text>
+                        <Form.Control id="pedido" name="pedido" required disabled={bool} />
+                    </InputGroup>
+                    <InputGroup size="sm">
+                        <InputGroup.Text>Semana</InputGroup.Text>
+                        <Form.Control id="semana" name="semana" type="number" min="1" max="52" required disabled={bool} />
+                    </InputGroup>
+                    <InputGroup size="sm">
+                        <InputGroup.Text>Fecha</InputGroup.Text>
+                        <Form.Control id="fecha" name="fecha" type="date" defaultValue={uDate()} disabled={bool} />
+                    </InputGroup>
+                    <InputGroup size="sm">
+                        <InputGroup.Text>Artículo</InputGroup.Text>
+                        <Form.Select ref={articuloRef} onChange={previsualizar} disabled={bool}>
+                            <option value={0}>Varios</option>
+                            {productos.map((item, index) => (
+                                <option key={index} value={item.consecutivo}>{item.name}</option>
+                            ))}
+                        </Form.Select>
+                    </InputGroup>
+                    <Form.Control className="form-control-sm" type="file" onChange={subirExcel} required disabled={bool} />
+                    <InputGroup size="sm">
+                        <InputGroup.Text>Observaciones</InputGroup.Text>
+                        <Form.Control id="observaciones" name="observaciones" required disabled={bool} />
+                    </InputGroup>
+                    <button type="submit" className="btn btn-success btn-sm" disabled={bool}>Cargar datos</button>
+                </form>
+            )}
+            <Alertas alert={alert} handleClose={toogleAlert} />
+            {tabla.length > 0 && (
+                <table className="table table-striped">
+                    <thead>
+                        <tr>
+                            {Object.keys(tabla[0]).map((key, index) => (
+                                <th key={index}>{key}</th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {tabla.map((row, rowIndex) => (
+                            <tr key={rowIndex}>
+                                {Object.values(row).map((value, colIndex) => (
+                                    <td key={colIndex}>{value}</td>
                                 ))}
-                            </select>
-                        </div>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            )}
 
-                        <div>
-                            <input className="form-control form-control-sm"
-                                onChange={subirExcel}
-                                id="archivo-excel"
-                                type="file"
-                                required
-                                disabled={bool}
-                            ></input>
-                        </div>
-
-                        <InputGroup size="sm">
-                            <InputGroup.Text id="inputGroup-sizing-sm">Observaciones</InputGroup.Text>
-                            <Form.Control
-                                aria-label="Small"
-                                aria-describedby="inputGroup-sizing-sm"
-                                id="observaciones"
-                                name="observaciones"
-                                required
-                                disabled={bool}
-                            />
-                        </InputGroup>
-                        {!bool &&
-                            <button type="submit" className="btn btn-success btn-sm">Cargar datos</button>
-                        }
-                        {bool &&
-                            <button type="button" onClick={nuevoMovimiento} className="btn btn-primary btn-sm">Nuevo movimiento</button>
-                        }
-                    </form>
-                }
-
-                <Alertas className="mt-3" alert={alert} handleClose={toogleAlert} />
-
-                <div className="line"></div>
-                <div className="mt-3">
-
-
-                    <div className={styles.grid_result}>
-                        <div className={styles.botonesTrans}>
-                            <span className={styles.grid_result_child2}>
-                                <input type="number"
-                                    className="form-control form-control-sm"
-                                    id="limit"
-                                    min="1"
-                                    max={archivoExcel.length}
-                                    onChange={limitPaginacion}
-                                    placeholder={limit}
-                                    defaultValue={limit}
-                                ></input>
-                                <span className="mb-2 mt-2">Resultados de {archivoExcel.length}</span>
-                            </span>
-                            <span className={styles.display}></span>
-                            <span className={styles.display}></span>
-                            <button type="button" onClick={decargarPlantilla} className="btn btn-warning btn-sm w-100">Descargar Plantilla</button>
-                        </div>
-                    </div>
-
-                    <span className={styles.tabla_text}>
-                        <table className="table mb-4 table-striped">
-                            <thead>
-                                <tr>
-                                    <th scope="col">Alm</th>
-                                    <th scope="col">Artículo</th>
-                                    <th scope="col">Serial</th>
-                                    <th scope="col">Bag pack</th>
-                                    <th scope="col">S Pack</th>
-                                    <th scope="col">M Pack</th>
-                                    <th scope="col">L Pack</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {tabla.map((item, index) => (
-                                    <tr key={index}>
-                                        <td>{item?.cons_almacen}</td>
-                                        <td>{item?.cons_producto}</td>
-                                        <td>{item?.serial}</td>
-                                        <td>{item?.bag_pack}</td>
-                                        <td>{item?.s_pack}</td>
-                                        <td>{item?.m_pack}</td>
-                                        <td>{item?.l_pack}</td>
-                                    </tr>))}
-                            </tbody>
-                        </table>
-                    </span>
-
-
-                </div>
-
-
-            </section>
-
-        </>
+        </section>
     );
 }

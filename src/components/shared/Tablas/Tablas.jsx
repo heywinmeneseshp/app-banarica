@@ -3,6 +3,7 @@ import React, { useRef, useState, useEffect } from 'react';
 // Hooks
 import useAlert from '@hooks/useAlert';
 // Components
+import CargueMasivo from '@assets/Seguridad/Listado/CargueMasivo';
 import Paginacion from '@components/shared/Tablas/Paginacion';
 import NuevoItem from '@components/shared/Formularios/Formularios';
 import Alertas from '@assets/Alertas';
@@ -11,7 +12,11 @@ import styles from '@styles/Listar.module.css';
 import excel from '@hooks/useExcel';
 import { Button, ButtonGroup, Col, Row } from 'react-bootstrap';
 
-export default function Tablas({ encabezados, actualizar, listas, listar, paginar, crear, cargueMasivo, titulo }) {
+export default function Tablas({ encabezados, actualizar,
+  listas, listar, paginar, crear,
+  titulo, endPointCargueMasivo,
+  encabezadosCargueMasivo, tituloCargueMasivo
+}) {
   const ItemdorRef = useRef();
   const [item, setItem] = useState(null);
   const [items, setItems] = useState([]);
@@ -22,6 +27,7 @@ export default function Tablas({ encabezados, actualizar, listas, listar, pagina
   const [pagination, setPagination] = useState(1);
   const [total, setTotal] = useState(0);
   const limit = 10;
+  const [openMasivo, setOpenMasivo] = useState(false);
 
   useEffect(() => {
     const labels = { ...encabezados };
@@ -29,7 +35,7 @@ export default function Tablas({ encabezados, actualizar, listas, listar, pagina
     delete labels.Activar;
     setLabelForm(labels);
     listarItems();
-  }, [alert, pagination, open]);
+  }, [alert, pagination, open, openMasivo]);
 
   async function listarItems() {
     const nombre = ItemdorRef.current.value;
@@ -172,7 +178,7 @@ export default function Tablas({ encabezados, actualizar, listas, listar, pagina
             </Col>
             <Col md={12} lg={3} className="mb-2">
               <ButtonGroup className="w-100">
-                {cargueMasivo && <Button type="button" className="btn btn-primary btn-sm m-1 mt-0 mb-0">
+                {endPointCargueMasivo && <Button onClick={() => setOpenMasivo(true)} type="button" className="btn btn-primary btn-sm m-1 mt-0 mb-0">
                   Cargue Masivo
                 </Button>}
                 <Button onClick={onDescargar} type="button" className="btn btn-secondary btn-sm m-1 mt-0 mb-0 ">
@@ -245,6 +251,14 @@ export default function Tablas({ encabezados, actualizar, listas, listar, pagina
           </tbody>
         </table>
       </div>
+
+      {openMasivo && <CargueMasivo
+        setOpenMasivo={setOpenMasivo}
+        endPointCargueMasivo={endPointCargueMasivo}
+        encabezados={encabezadosCargueMasivo}
+        titulo={tituloCargueMasivo}
+      />}
+
       <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
       {open && (
         <NuevoItem
