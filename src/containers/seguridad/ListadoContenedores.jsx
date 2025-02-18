@@ -24,7 +24,7 @@ const ListadoContenedores = () => {
   const tablaRef = useRef();
   const [tableData, setTableData] = useState([]);
   const [pagination, setPagination] = useState(1);
-  const [limit, setLimit] = useState(100);
+  const [limit, setLimit] = useState(50);
   const [total, setTotal] = useState();
   const [configuracionInsumos, setConfigInsumos] = useState([]);
   const [configuracionTabla, setConfigTabla] = useState([]);
@@ -35,12 +35,13 @@ const ListadoContenedores = () => {
   const [openConfigInsumo, setOpenConfigInsumo] = useState(false);
   const [productos, setProductos] = useState([]);
   const [isEditable, setIsEditable] = useState(false);
-  const [change, setChange] = useState(false);
   const [check, setCheck] = useState([]);
   const [checkAll, setCheckAll] = useState(false);
   const [bol, setBol] = useState({});
   const [openTransbordar, setOpenTransbordar] = useState(false);
   const [openMasivo, setOpenMasivo] = useState(false);
+  const [noVerElimnados, setNoVerEliminados] = useState(true);
+
 
   const coloresPastel = [
     "#d4d8d8",  // Oscurecido de #eaeded
@@ -79,7 +80,6 @@ const ListadoContenedores = () => {
       }
       await actualizarContenedor(row.Contenedor.id, { [field]: value });
       e.target.style.color = "";
-      setChange(!change);
       return;  // Salir de la función después de actualizar el contenedor
     }
 
@@ -92,18 +92,16 @@ const ListadoContenedores = () => {
       }
       await actualizarListado(row.id, { [field]: parseInt(value, 10) });
       e.target.style.color = "";
-      setChange(!change);
       return;  // Salir de la función después de actualizar las unidades
     }
 
     // Actualización para otros campos que no requieren validación específica
     await actualizarListado(row.id, { [field]: value });
-    setChange(!change);
   };
 
 
   const toggleEdit = () => {
-    setTableData([]);
+    //setTableData([]);
     setIsEditable(!isEditable);
   };
 
@@ -159,21 +157,40 @@ const ListadoContenedores = () => {
       };
       await actualizarListado(linea, { id_producto: res.id });
     };
-    setChange(!change);
     inputElement.style.color = "";
   };
 
   const duplicarLinea = async () => {
-    check.map(async (item, index) => {
+    const promises = check.map(async (item, index) => {
       if (item) {
         const object = { ...tableData[index] };
         const idListado = object.id;
         await duplicarListado(idListado);
-        setChange(!change);
-        setLimit((limit * 1) + 1);
       }
     });
+
+    // Esperar a que todas las promesas se resuelvan antes de actualizar el límite
+    await Promise.all(promises);
+
+    // Actualizar el límite solo después de duplicar todas las líneas
+    setLimit((prevLimit) => prevLimit + 1);
   };
+
+
+  const eliminarLinea = async () => {
+    check.map(async (item, index) => {
+      if (item) {
+        const object = { ...tableData[index] };
+        const idListado = object.id;
+        console.log(idListado);
+        actualizarListado(idListado, { habilitado: false });
+      }
+    });
+    setLimit((prevLimit) => prevLimit - 1);
+    // Esperar a que todas las promesas se resuelvan antes de actualizar el límite
+  };
+
+
 
 
   const handleTransbordar = async () => {
@@ -236,7 +253,7 @@ const ListadoContenedores = () => {
       fecha_final: formData.get('fecha_final'),
       llenado: formData.get('llenado') || '',
       producto: formData.get('producto') || '',
-      habilitado: true,
+      habilitado: noVerElimnados
     };
     const listadoList = await paginarListado(pagination, limit, object);
     let almacenList = localStorage.getItem('almacenByUser');
@@ -295,9 +312,11 @@ const ListadoContenedores = () => {
   };
 
 
+
+
   useEffect(() => {
     listar();
-  }, [openConfigTabla, openConfigInsumo, isEditable, pagination, limit, change, openTransbordar, openMasivo]);
+  }, [openConfigTabla, openConfigInsumo, isEditable, pagination, limit, openTransbordar, openMasivo]);
 
   return (
 
@@ -305,6 +324,7 @@ const ListadoContenedores = () => {
       <h2 className="mb-2">{"Listad de Contenedores"}</h2>
       <div className="line"></div>
       {/* Filtros */}
+
       <Form ref={formRef} className="">
         <Row xs={1} sm={2} md={4} lg={6} className="">
 
@@ -399,15 +419,15 @@ const ListadoContenedores = () => {
       <Row className="mb-2 mt-4">
         <Col md={3} className="d-flex justify-content-start">
           <button
-            className={`btn btn-sm m-1 ${isEditable ? 'btn-success' : 'btn-warning'}`}
+            className={`btn btn-sm m-1 ${isEditable ? 'btn-warning' : 'btn-success'}`}
             onClick={toggleEdit}
           >
-            {isEditable ? 'Guardar Edición' : 'Permitir Edición'}
+            {isEditable ? 'Bloquear Edición' : 'Permitir Edición'}
           </button>
         </Col>
 
         <Col className="d-flex justify-content-end">
-        <span style={{
+          <span style={{
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
@@ -417,8 +437,8 @@ const ListadoContenedores = () => {
             overflow: 'hidden',
             cursor: "pointer"
           }} className="text-sm">
-        Mostrando {tableData.length} de {total}
-      </span>
+            Mostrando {tableData.length} de {total}
+          </span>
           <div style={{
             display: 'flex',
             justifyContent: 'center',
@@ -455,18 +475,21 @@ const ListadoContenedores = () => {
               min={1}
             />
           </div>
-          <button onClick={handleCargueMasivo}  className="btn btn-sm m-1 btn-primary">
+          <button onClick={handleCargueMasivo} className="btn btn-sm m-1 btn-primary">
             {'Cargue masivo'}
           </button>
           <button onClick={duplicarLinea} className="btn btn-sm m-1 btn-warning">
             {'Duplicar línea'}
+          </button>
+          <button onClick={eliminarLinea} className="btn btn-sm m-1 btn-danger">
+            {'Eliminar línea'}
           </button>
           <button onClick={handleTransbordar} className="btn btn-sm m-1 btn-info">
             {'Transbordar'}
           </button>
         </Col>
       </Row>
-      
+
       {/* Tabla */}
       <table ref={tablaRef} className="table table-striped table-bordered table-sm mt-2">
         <thead>
@@ -599,7 +622,6 @@ const ListadoContenedores = () => {
                     disabled={!isEditable}
 
                     defaultValue={row?.combo?.nombre}
-                    onChange={() => onChangeCasilla(`${row.id}-producto`, 'producto')}
                     onBlur={() => handleDatalist(`${row.id}-producto`, `producto`, row.id)}
                     className="form-control custom-input"
                   />
@@ -674,18 +696,18 @@ const ListadoContenedores = () => {
 
       {/*Formulario Transbordo*/}
       {openTransbordar && <Transbordar setOpen={setOpenTransbordar} />}
-      {openMasivo && <CargarExcel setOpenMasivo={setOpenMasivo} 
-      
-      titulo={"Contenedores"}
-      endPointCargueMasivo={endPoints.listado.create + "/masivo"}
-      encabezados={{
-        fecha: null,
-        bl: null,
-        contenedor: null,
-        id_lugar_de_llenado: null,
-        id_producto: null,
-        cajas_unidades: null,
-      }}  
+      {openMasivo && <CargarExcel setOpenMasivo={setOpenMasivo}
+
+        titulo={"Contenedores"}
+        endPointCargueMasivo={endPoints.listado.create + "/masivo"}
+        encabezados={{
+          fecha: null,
+          bl: null,
+          contenedor: null,
+          id_lugar_de_llenado: null,
+          id_producto: null,
+          cajas_unidades: null,
+        }}
       />}
     </>
   );

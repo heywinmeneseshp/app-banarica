@@ -29,7 +29,7 @@ const Bodega = () => {
                     "Teléfono": "telefono",
                     "email": "email",
                     "Editar": "",
-                    "Activar": "activo",
+                    "Activar": "isBlock",
                 }}
                 //Cargue Masivo
                 tituloCargueMasivo={"Almecenes"}
