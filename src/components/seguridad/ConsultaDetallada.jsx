@@ -13,6 +13,9 @@ export default function ConsultaResumen({ data, setPagination, limit, pagination
     const [total, setTotal] = useState(0);
 
     useEffect(() => {
+      const alamcenes = JSON.parse(localStorage.getItem("almacenByUser")).map(item => item.consecutivo);
+        data.cons_almacen = data.cons_almacen == "" ? alamcenes : data.cons_almacen;
+        console.log(data);
         listarSeriales(pagination, limit, data).then(res => {
             setTabla(res.data);
             setTotal(res.total);

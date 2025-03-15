@@ -8,6 +8,7 @@ import InsumoConfig from "@assets/InsumoConfig";
 import { filtrarProductos } from "@services/api/productos";
 import { FaCog, FaEye, FaPlus } from 'react-icons/fa';
 import VistaContenedor from "@assets/Seguridad/VistaContenedor";
+import AsignarSeriales from "@components/seguridad/AsignarSeriales";
 
 export default function Dashboard() {
     const formRef = useRef();
@@ -33,6 +34,7 @@ export default function Dashboard() {
     const [startDate, setStartDate] = useState(formattedDate); // Fecha actual por defecto
     const [endDate, setEndDate] = useState(defaultEndDate.toISOString().split('T')[0]);
     const [vistaCont, setVistaCont] = useState(null);
+    const [contenedor, setContenedor] = useState(null);
 
     useEffect(() => {
         const fetchConfiguracion = async () => {
@@ -64,7 +66,7 @@ export default function Dashboard() {
 
         fetchConfiguracion();
         fetchData();
-    }, [offset, startDate, endDate, openConfig]);
+    }, [offset, startDate, endDate, openConfig, contenedor]);
 
     const handleStartDateChange = (e) => {
         setStartDate(e.target.value);
@@ -78,8 +80,13 @@ export default function Dashboard() {
         setOpenConfig(!openConfig);
     };
 
+    const asignarArticulo = (contenedor) => {
+        setContenedor(contenedor);
+    };
+
 
     return (
+        <>
         <div className="container">
             <h2>Resumen diario</h2>
 
@@ -202,6 +209,7 @@ export default function Dashboard() {
                                  
                                         type="button"
                                         className="btn btn-primary btn-sm"
+                                        onClick={() => asignarArticulo(item?.Contenedor)}
                                         style={{
                                             display: 'flex',
                                             justifyContent: 'center',
@@ -242,5 +250,8 @@ export default function Dashboard() {
             {openConfig && <InsumoConfig handleConfig={handleConfig} modulo_confi={"Relación_seguridad"} />}
             {vistaCont && <VistaContenedor vistaCont={vistaCont} setVistaCont={setVistaCont} />}
         </div>
+
+        {contenedor && <AsignarSeriales contenedor={contenedor} setContenedor={setContenedor} />}
+        </>
     );
 }

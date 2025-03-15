@@ -141,9 +141,33 @@ const inspeccionAntinarcoticos = async (Formulario, rechazos) => {
     }
 };
 
+const usarSeriales = async (semana, fecha, seriales, contenedorID, id_usuario, motivo_de_uso) => {
+
+    const body = {
+        "formulario": {
+          "bolsa": seriales,
+          "fecha": fecha,
+          "semana": semana,
+          "contenedorId": contenedorID,
+          "id_usuario": id_usuario
+        },
+        "motivo_de_uso": motivo_de_uso
+      };
+
+      console.log(body);
+
+    try {
+        const response = await axios.post(endPoints.seguridad.usarSeriales, body);
+        return response.data;
+    } catch (e) {
+        alert("Error al actualizar data list");
+    }
+};
+
+
 
 export {
     listarSeriales, listarUsuariosSeguridad, cargarSeriales,
     actualizarSeriales, listarProductosSeguridad, exportarArticulosConSerial, encontrarUnSerial,
-    verificarAndActualizarSeriales, actualizarSerial, inspeccionAntinarcoticos
+    verificarAndActualizarSeriales, actualizarSerial, inspeccionAntinarcoticos, usarSeriales
 };

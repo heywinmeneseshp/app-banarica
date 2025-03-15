@@ -104,6 +104,7 @@ const ListadoContenedores = () => {
     //setTableData([]);
     setIsEditable(!isEditable);
   };
+  
 
   const handleConfig = () => {
     setOpenConfig(false);

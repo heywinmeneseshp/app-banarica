@@ -193,7 +193,8 @@ const endPoints = {
         ActualizarSerial: `${API}/api/${VERSION}/seguridad/actualizar-serial`,
         CargarSeriales: `${API}/api/${VERSION}/seguridad/cargar-seriales`,
         encontrarSerial: `${API}/api/${VERSION}/seguridad/encontrar-serial`,
-        inspeccionAntinarcoticos: `${API}/api/${VERSION}/seguridad/inspeccion-antinarcoticos`
+        inspeccionAntinarcoticos: `${API}/api/${VERSION}/seguridad/inspeccion-antinarcoticos`,
+        usarSeriales: `${API}/api/${VERSION}/seguridad/usar-seriales`
     },
     etiquetas: {
         crearEtiqueta: `${API}/api/${VERSION}/etiquetas`,
@@ -367,6 +368,15 @@ const endPoints = {
         update: (id) => `${API}/api/${VERSION}/rechazo/${id}`,
         delete: (id) => `${API}/api/${VERSION}/rechazo/${id}`
     },
+    motivoDeUso: {
+        list: `${API}/api/${VERSION}/motivoDeUso`, //Listo
+        findOne: (consecutivo) => `${API}/api/${VERSION}/motivoDeUso/${consecutivo}`,
+        pagination: (page, limit, MotivoDeUso) => `${API}/api/${VERSION}/motivoDeUso/paginar?page=${page}&limit=${limit}&MotivoDeUso=${MotivoDeUso}`,
+        create: `${API}/api/${VERSION}/motivoDeUso`,
+        update: (id) => `${API}/api/${VERSION}/motivoDeUso/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/motivoDeUso/${id}`
+    },
+
 
 
 
