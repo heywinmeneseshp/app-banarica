@@ -100,7 +100,6 @@ export default function InspeccionLLeno() {
         }
 
         // Imprimir todos los datos en la consola
-        console.log('Formulario:', formData);
 
         // Imprimir las secciones dinámicas
         sections.forEach((section, index) => {
@@ -118,6 +117,7 @@ export default function InspeccionLLeno() {
             bolsa: '',
             observaciones: ''
         });
+        setSections([]);
         window.alert("Datos cargados con exito");
         setLoading(false);
 
@@ -244,7 +244,7 @@ export default function InspeccionLLeno() {
                                 <>
                                     <div className="col-md-2 mb-3">
                                         <div className="input-group">
-                                            <span className="input-group-text">IBM:</span>
+                                            <span className="input-group-text">Cod:</span>
                                             <select
                                                 id={`cod_productor-${section.id}`}
                                                 className="form-control"
@@ -256,9 +256,9 @@ export default function InspeccionLLeno() {
                                                         sec.id === section.id ? { ...sec, cod_productor: newValue } : sec
                                                     ));
                                                 }}
-                                            >
+                                            >    <option ></option>
                                                 {almacenes.map((item, key) => (
-                                                    <option key={key} selected={item.nombre == "Predeterminado"} value={item.consecutivo}>
+                                                    <option key={key} value={item.consecutivo}>
                                                         {item.consecutivo}
                                                     </option>
                                                 ))}
@@ -269,7 +269,7 @@ export default function InspeccionLLeno() {
 
                                     <div className="col-md-3 mb-3">
                                         <div className="input-group">
-                                            <span className="input-group-text">Palet:</span>
+                                            <span className="input-group-text">Serial:</span>
                                             <input
                                                 type="text"
                                                 id={`codigoPallet-${section.id}`}
@@ -302,8 +302,9 @@ export default function InspeccionLLeno() {
                                                     ));
                                                 }}
                                             >
+                                               <option ></option>
                                                 {product.map((item, key) => (
-                                                    <option key={key} selected={item.nombre == "Predeterminado"} value={item.id}>
+                                                    <option key={key} value={item.id}>
                                                         {item.nombre}
                                                     </option>
                                                 ))}

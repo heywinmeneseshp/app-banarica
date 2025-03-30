@@ -142,6 +142,7 @@ const ListadoEmbarques = () => {
       return acc;
     }, {});
     try {
+      console.log(pagination, limit, dataObject);
       const { data, total } = await paginarEmbarques(pagination, limit, dataObject);
       setTableData(data);
       setTotal(total);
@@ -365,10 +366,11 @@ const ListadoEmbarques = () => {
                     name={`${row.id}-destino`}
                     id={`${row.id}-destino`}
                     disabled={!isEditable}
-                    style={{ width: "50px", margin: "auto" }}
+                  
                     defaultValue={row?.Destino?.cod}  // Valor por defecto
                     onBlur={() => handleDatalist(`${row.id}-destino`, `destino`, row.id)}
                     className="form-control custom-input"
+                    style={{ width: "50px", margin: "auto" }}
                   />
                   <datalist id={`${row.id}-destino1`}>
                     {destinos.map((item, index) => {
