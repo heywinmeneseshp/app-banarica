@@ -376,6 +376,14 @@ const endPoints = {
         update: (id) => `${API}/api/${VERSION}/motivoDeUso/${id}`,
         delete: (id) => `${API}/api/${VERSION}/motivoDeUso/${id}`
     },
+    motivoDeRechazo: {
+        list: `${API}/api/${VERSION}/motivoDeRechazo`, //Listo
+        findOne: (consecutivo) => `${API}/api/${VERSION}/motivoDeRechazo/${consecutivo}`,
+        pagination: (page, limit, MotivoDeUso) => `${API}/api/${VERSION}/motivoDeRechazo/paginar?page=${page}&limit=${limit}&MotivoDeUso=${MotivoDeUso}`,
+        create: `${API}/api/${VERSION}/motivoDeRechazo`,
+        update: (id) => `${API}/api/${VERSION}/motivoDeRechazo/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/motivoDeRechazo/${id}`
+    },
 
 
 

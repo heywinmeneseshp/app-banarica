@@ -35,6 +35,7 @@ export default function AsignarSeriales({ contenedor, setContenedor }) {
             const motivos = await listarMotivoDeUso();
             const weeks = await filtrarSemanaRangoMes(1, 1);
             const currentWeek = await encontrarModulo("Semana");
+            console.log(currentWeek);
             setAlmacenByUser(almacenes);
             setSemanas(weeks);
             setMotivosDeUsos(motivos);

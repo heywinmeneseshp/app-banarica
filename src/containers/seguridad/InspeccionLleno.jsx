@@ -120,9 +120,6 @@ export default function InspeccionLLeno() {
         setSections([]);
         window.alert("Datos cargados con exito");
         setLoading(false);
-
-
-        // Si quieres hacer algo más, como enviar los datos a un servidor, lo puedes hacer aquí.
     };
 
     // Agregar una nueva sección

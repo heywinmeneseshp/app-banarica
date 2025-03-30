@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { filtrarSemanaRangoMes } from '@services/api/semanas';
 import { paginarEmbarques } from '@services/api/embarques';
-import { actualizarListado, crearListado, duplicarListado, paginarListado } from '@services/api/listado';
+import { actualizarListado,  duplicarListado, paginarListado } from '@services/api/listado';
 import { listarAlmacenes } from "@services/api/almacenes";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { listarCombos } from '@services/api/combos';
 import { FaPlus, FaMinus } from 'react-icons/fa';  // Importar los íconos de más y menos
-import { encontrarUnSerial, usarSeriales } from '@services/api/seguridad';
-import { consultarGalonesPorRuta } from '@services/api/rutas';
+import { encontrarUnSerial } from '@services/api/seguridad';
+import {  listarMotivoDeUso } from '@services/api/motivoDeUso';
+import { agregarRechazo } from '@services/api/rechazos';
+import { listarMotivoDeRechazo } from '@services/api/motivoDeRechazo';
 
 const FormularioDinamico = () => {
     const today = new Date().toISOString().split('T')[0];
@@ -37,6 +39,7 @@ const FormularioDinamico = () => {
     const [sections, setSections] = useState([]); // Almacena las secciones de campos adicionales
     const [sectionsProduct, setsectionsProduct] = useState([]);
     const [almacenByUser, setAlmacenByUser] = useState([]);
+    const [motivosRechazo, setMotivosRechazo] = useState([]);
 
 
     const fields = [
@@ -52,6 +55,8 @@ const FormularioDinamico = () => {
         try {
             const weeks = await filtrarSemanaRangoMes(1, 1);
             const productos = await listarCombos();
+            const motivos = await listarMotivoDeRechazo();
+            setMotivosRechazo(motivos);
             setAlmacenByUser(JSON.parse(localStorage.getItem("almacenByUser")));
             listarAlmacenes().then(res => setAlmacenes(res));
             setProductos(productos);
@@ -138,10 +143,17 @@ const FormularioDinamico = () => {
                     available: [true],
                 });
                 if (!serial[0]) return window.alert(`El ${item} no existe`);
-              serialesList = [...serialesList, ...serial];
+                serialesList = [...serialesList, formData[item]];
             }
-            console.log(serialesList);
-      
+
+            const constWeek = semOptions.find(item => item == formData.semana);
+            
+            if (!constWeek) return window.alert(`La semana "${constWeek}" no existe`);
+            let motivo = await listarMotivoDeUso();
+            motivo = motivo.find(item => item.motivo_de_uso == "Lleneado de contenedor");
+            if (!motivo) return window.alert(`El motivo "Lleneado de contenedor" no existe`);
+            const userID = JSON.parse(localStorage.getItem("usuario")).id;
+            if (!userID) return window.alert(`usuario_id no existe`);
 
             const id_embarque = embarquesObjet.find(item => item.bl === formData.booking)?.id;
 
@@ -172,11 +184,25 @@ const FormularioDinamico = () => {
                     const duplicado = await duplicarListado(itemListado[0].id);
                     await actualizarListado(duplicado.id, payload);
                 }
-                usarSeriales()
-                const res = await usarSeriales(semana, fecha, seriales, contenedorID, usuarioID, motivo);
+                //Agregar rechazos
+                
+/*
+id_producto
+id_motivo_de_rechazo
+cantidad
+serial_palet
+cod_productor
+id_contenedor
+observaciones
+id_usuario
+habilitado
+*/
+                await agregarRechazo();
+
+               // await usarSeriales(constWeek, formData.fecha, serialesList, contenedorId, userID, motivo);
             }));
 
-            console.log("Datos a enviar:", JSON.stringify({ formData, sectionsProduct, sections }, null, 2));
+           
         } catch (error) {
             console.error("Error en el manejo del formulario:", error);
         }
@@ -237,6 +263,7 @@ const FormularioDinamico = () => {
                 {sectionsProduct[0] && <div className="line"></div>}
                 {/* Secciones dinámicas */}
                 {/* Asignacion de cajas*/}
+                <h5 className="mb-3">Cajas Recibidas</h5>
                 {sectionsProduct.map(section => (
                     <>
                         <div className="col-md-2 mb-3">
@@ -320,16 +347,17 @@ const FormularioDinamico = () => {
                             </button>
                         </div>
 
-                        {sections[0] && <div className="line d-block d-md-none"></div>}
+                  
                     </>
                 ))}
                 {/* Rechazos*/}
                 {sections[0] && <div className="line"></div>}
+                <h5 className="mb-3">Cajas Rechazadas</h5>
                 {sections.map(section => (
                     <>
                         <div className="col-md-2 mb-3">
                             <div className="input-group">
-                                <span className="input-group-text">Cod:</span>
+                            <span className="input-group-text">Cod:</span>
                                 <select
                                     id={`cod_productor-${section.id}`}
                                     className="form-control"
@@ -341,7 +369,7 @@ const FormularioDinamico = () => {
                                             sec.id === section.id ? { ...sec, cod_productor: newValue } : sec
                                         ));
                                     }}
-                                >    <option ></option>
+                                > 
                                     {almacenes.map((item, key) => (
                                         <option key={key} value={item.consecutivo}>
                                             {item.consecutivo}
@@ -354,7 +382,6 @@ const FormularioDinamico = () => {
 
                         <div className="col-md-2 mb-3">
                             <div className="input-group">
-                                <span className="input-group-text">Serial:</span>
                                 <input
                                     type="text"
                                     id={`codigoPallet-${section.id}`}
@@ -372,9 +399,32 @@ const FormularioDinamico = () => {
                             </div>
                         </div>
 
-                        <div className="col-md-4 mb-3">
+                        <div className="col-md-2 mb-3">
                             <div className="input-group">
-                                <span className="input-group-text">Producto:</span>
+                                <select
+                                    id={`rechazo-${section.id}`}
+                                    className="form-control"
+                                    value={section.motivo_rechazo}
+                                    required
+                                    onChange={(e) => {
+                                        const newValue = e.target.value;
+                                        setSections(prevSections => prevSections.map(sec =>
+                                            sec.id === section.id ? { ...sec, motivo_rechazo: newValue } : sec
+                                        ));
+                                    }}
+                                >
+                                    <option value={""}>Seleccione el motivo</option>
+                                    {motivosRechazo.map((item, key) => (
+                                        <option key={key} value={item.id}>
+                                            {item.motivo_rechazo}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="col-md-3 mb-3">
+                            <div className="input-group">
                                 <select
                                     id={`producto-${section.id}`}
                                     className="form-control"
@@ -387,7 +437,7 @@ const FormularioDinamico = () => {
                                         ));
                                     }}
                                 >
-                                    <option ></option>
+                                    <option value={""}>Seleccione el producto</option>
                                     {productos.map((item, key) => (
                                         <option key={key} value={item.id}>
                                             {item.nombre}
@@ -397,10 +447,10 @@ const FormularioDinamico = () => {
                             </div>
                         </div>
 
-                        <div className="col-md-3 mb-3">
+                        <div className="col-md-2 mb-3">
                             <div className="row">
                                 <div className="input-group w-10">
-                                    <span className="input-group-text">Cajas rechazadas:</span>
+                                    <span className="input-group-text">Cajas:</span>
                                     <input
                                         type="number"
                                         id={`totalCajas-${section.id}`}
@@ -428,8 +478,6 @@ const FormularioDinamico = () => {
                                 <FaMinus />
                             </button>
                         </div>
-
-                        {sections[0] && <div className="line d-block d-md-none"></div>}
                     </>
                 ))}
                 {(sections[0] || sectionsProduct[0]) && <div className="line"></div>}
