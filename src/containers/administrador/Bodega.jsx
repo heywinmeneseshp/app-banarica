@@ -1,7 +1,7 @@
 import React, {  useEffect } from 'react';
 
 import endPoints from '@services/api';
-import { actualizarAlmacen, agregarAlmacen, buscarAlmacen, listarAlmacenes, paginarAlmacenes } from '@services/api/almacenes';
+import { actualizarAlmacen, agregarAlmacen, listarAlmacenes, paginarAlmacenes } from '@services/api/almacenes';
 //Components
 import Tablas from '@components/shared/Tablas/Tablas';
 

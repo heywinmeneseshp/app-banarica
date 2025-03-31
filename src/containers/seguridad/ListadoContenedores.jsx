@@ -40,7 +40,7 @@ const ListadoContenedores = () => {
   const [bol, setBol] = useState({});
   const [openTransbordar, setOpenTransbordar] = useState(false);
   const [openMasivo, setOpenMasivo] = useState(false);
-  const [noVerElimnados, setNoVerEliminados] = useState(true);
+  //const [noVerElimnados, setNoVerEliminados] = useState(true);
 
 
   const coloresPastel = [
@@ -254,7 +254,7 @@ const ListadoContenedores = () => {
       fecha_final: formData.get('fecha_final'),
       llenado: formData.get('llenado') || '',
       producto: formData.get('producto') || '',
-      habilitado: noVerElimnados
+      habilitado: true
     };
     const listadoList = await paginarListado(pagination, limit, object);
     let almacenList = localStorage.getItem('almacenByUser');
