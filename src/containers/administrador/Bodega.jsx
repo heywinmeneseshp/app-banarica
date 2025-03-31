@@ -16,7 +16,6 @@ const Bodega = () => {
             <Tablas
                 titulo={"Almacenes"}
                 actualizar={actualizarAlmacen}
-                buscarItem={buscarAlmacen}
                 paginar={paginarAlmacenes}
                 crear={agregarAlmacen}
                 listar={listarAlmacenes}

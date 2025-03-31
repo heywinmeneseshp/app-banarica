@@ -25,6 +25,7 @@ import Notificaciones from '@components/Programacion/Notificaciones';
 import Clientes from '@components/Maestros/Clientes';
 import HistorialConsumo from "@components/Programacion/HistorialConsumos";
 import ReportesConsumo from '@components/Programacion/Reportes';
+import MotivoDeRechazo from '@containers/administrador/MotivoDeRechazo';
 
 
 export default function Adminsitrador() {
@@ -43,6 +44,7 @@ export default function Adminsitrador() {
         {initialAdminMenu.adminMenu.transporte && <Transporte />}
         {initialAdminMenu.adminMenu.usuarios && <Users />}
         {initialAdminMenu.adminMenu.etiquetas && <Etiquetas />}
+        {initialAdminMenu.adminMenu.MotivoDeRechazo && <MotivoDeRechazo/>}
         {/*Maestro*/}
         {initialAdminMenu.adminMenu.categoriaVehiculos && <CategoriaVehiculos />}
         {initialAdminMenu.adminMenu.clientes && <Clientes />}

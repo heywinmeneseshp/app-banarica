@@ -379,7 +379,7 @@ const endPoints = {
     motivoDeRechazo: {
         list: `${API}/api/${VERSION}/motivoDeRechazo`, //Listo
         findOne: (consecutivo) => `${API}/api/${VERSION}/motivoDeRechazo/${consecutivo}`,
-        pagination: (page, limit, MotivoDeUso) => `${API}/api/${VERSION}/motivoDeRechazo/paginar?page=${page}&limit=${limit}&MotivoDeUso=${MotivoDeUso}`,
+        pagination: (page, limit, motivoDeRechazo) => `${API}/api/${VERSION}/motivoDeRechazo/paginar?page=${page}&limit=${limit}&motivo_rechazo=${motivoDeRechazo}`,
         create: `${API}/api/${VERSION}/motivoDeRechazo`,
         update: (id) => `${API}/api/${VERSION}/motivoDeRechazo/${id}`,
         delete: (id) => `${API}/api/${VERSION}/motivoDeRechazo/${id}`

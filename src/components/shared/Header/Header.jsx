@@ -70,6 +70,7 @@ const Header = () => {
                 <Dropdown.Item onClick={() => openWindow("clientes")}>Clientes</Dropdown.Item>
                 <Dropdown.Item onClick={() => openWindow("combos")}>Combos</Dropdown.Item>
                 <Dropdown.Item onClick={() => openWindow("etiquetas")}>Etiquetas</Dropdown.Item>
+                <Dropdown.Item onClick={() => openWindow("MotivoDeRechazo")}>Motivos de Rechazo</Dropdown.Item>
                 <Dropdown.Item onClick={() => openWindow("productos")}>Productos</Dropdown.Item>
                 <Dropdown.Item onClick={() => openWindow("proveedores")}>Proveedores</Dropdown.Item>
                 <Dropdown.Item onClick={() => openWindow("rutas")}>Rutas</Dropdown.Item>

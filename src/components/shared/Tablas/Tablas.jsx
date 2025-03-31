@@ -34,16 +34,22 @@ export default function Tablas({ encabezados, actualizar,
     delete labels.Editar;
     delete labels.Activar;
     setLabelForm(labels);
+  }, [encabezados]); // Solo ejecuta cuando cambian los encabezados
+  
+  useEffect(() => {
     listarItems();
-  }, [alert, pagination, open, openMasivo]);
+  }, [pagination, open, openMasivo, alert]); // Solo ejecuta cuando cambian estos estados
+  
 
   async function listarItems() {
     const nombre = ItemdorRef.current.value;
     try {
       const res = await paginar(pagination, limit, nombre);
+      console.log(res);
       setItems(res.data);
       setTotal(res.total);
     } catch (error) {
+      console.log(error);
       setAlert({
         active: true,
         mensaje: 'Error al listar items',

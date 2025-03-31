@@ -22,7 +22,7 @@ const encontrarMotivoDeRechazo = async (id) => {
 };
 
 const paginarMotivoDeRechazo = async (offset, limit, motivoDeRechazo) => {
-    const res = await axios.get(endPoints.motivoDeRechazo.paginar(offset, limit, motivoDeRechazo));
+    const res = await axios.get(endPoints.motivoDeRechazo.pagination(offset, limit, motivoDeRechazo));
     return res.data;
 };
 
