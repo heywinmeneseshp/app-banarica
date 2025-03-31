@@ -428,6 +428,7 @@ const FormularioDinamico = () => {
                                             ));
                                         }}
                                     >
+                                        <option ></option>
                                         {almacenes.map((item, key) => (
                                             <option key={key} value={item.consecutivo}>
                                                 {item.consecutivo}
