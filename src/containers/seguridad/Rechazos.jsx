@@ -109,7 +109,7 @@ const Rechazos = () => {
         try {
             console.log(rechazo);
 
-            const { Contenedor, id_producto, cod_productor, combo } = rechazo;
+            const { Contenedor } = rechazo;
             const { Listados, contenedor } = Contenedor;
 
             // Validación de productor
@@ -126,12 +126,12 @@ const Rechazos = () => {
                     return window.alert(`⚠ Error: el producto "${valoresEditados.producto}" no está asignado al contenedor "${contenedor}".`);
                 }
                 rechazo.id_producto = producto.combo.id;
-                combo.nombre = producto.combo.nombre;
+                rechazo.combo.nombre = producto.combo.nombre;
             }
 
-            const existeProductoRechazado = Listados.some(item => item.combo.id === id_producto);
+            const existeProductoRechazado = Listados.some(item => item.combo.id === rechazo.id_producto);
             if (!existeProductoRechazado) {
-                return window.alert(`⚠ El producto "${combo.nombre}" no está asignado al contenedor "${contenedor}".`);
+                return window.alert(`⚠ El producto "${rechazo.combo.nombre}" no está asignado al contenedor "${contenedor}".`);
             }
 
             // Selección del código de almacén
@@ -148,7 +148,7 @@ const Rechazos = () => {
                     almacen = almacenesFiltrados.find(item => item.consecutivo === inputUsuario)?.consecutivo;
                     rechazo.cod_productor = almacen;
                 } else {
-                    almacen = almacenesFiltrados[0]?.consecutivo || cod_productor;
+                    almacen = almacenesFiltrados[0]?.consecutivo || rechazo.cod_productor;
                 }
 
                 if (!almacen) {
