@@ -23,7 +23,7 @@ export default function ConsultaDetallada({ data, setPagination, limit, paginati
         let categoria = await filtrarCategorias(1, 1, "Seguridad");
         let body = {
             "producto": {
-                "cons_categoria": categoria?.data[0].consecutivo,
+                "cons_categoria": categoria?.data[0]?.consecutivo,
                 "consecutivo": data?.cons_producto ? data?.cons_producto : ""
             },
             "almacen": {

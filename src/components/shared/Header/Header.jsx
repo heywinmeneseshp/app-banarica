@@ -27,6 +27,7 @@ const Header = () => {
   // Efecto para cargar datos al montar el componente
   useEffect(() => {
     const usuario = JSON.parse(localStorage.getItem('usuario'));
+    console.log(usuario);
     setUser(usuario);
 
     // Consulta el nombre de la empresa
@@ -89,7 +90,7 @@ const Header = () => {
             <Nav className="me-auto">
 
               {/* Menú: Maestros */}
-              {(configMenu.includes("maestros") || user.id_rol === "Super administrador") && (
+              {(configMenu.includes("maestros") || user?.id_rol === "Super administrador") && (
                 <DropdownButton variant="dark" title="Maestros" onClick={() => openMenu("admin")}>
                   {/* Ítems del menú Maestros */}
                   {[
