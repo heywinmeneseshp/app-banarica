@@ -22,13 +22,17 @@ export default function Login() {
     };
     return (
         <>
-            <Image style={
-                {
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover'
-                }
-            } layout="fill" src={background}></Image>
+
+            <Image
+                src={background}
+                alt="background"
+                fill
+                style={{
+                    objectFit: 'cover',
+                }}
+                priority // (opcional) mejora el rendimiento en páginas como login
+            />
+
             <div className={styles.padre}>
 
                 <form className={styles.hijo} onSubmit={submitHanlder}>
