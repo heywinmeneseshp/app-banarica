@@ -13,13 +13,16 @@ export default function Configuracion({ setOpen }) {
     const [semana, setSemana] = useState({});
     const [empresa, setEmpresa] = useState({});
     const [usuario, setUsuario] = useState(null);
+    const [configUsuario, setConfigUsuario] = useState({});
 
     useEffect(() => {
         const storedUser = localStorage.getItem('usuario');
+        var username = null;
         if (storedUser) {
             try {
                 const parsedUser = JSON.parse(storedUser);
                 setUsuario(parsedUser);
+                username = parsedUser.username;
             } catch (error) {
                 console.error('Error al parsear usuario desde localStorage:', error);
             }
@@ -30,10 +33,12 @@ export default function Configuracion({ setOpen }) {
             encontrarModulo("Seguridad"),
             encontrarModulo("Semana"),
             encontrarEmpresa(),
-        ]).then(([moduloSeguridad, moduloSemana, empresaData]) => {
+            encontrarModulo(username),
+        ]).then(([moduloSeguridad, moduloSemana, empresaData, userConfig]) => {
             setSecurityCheck(moduloSeguridad[0]?.habilitado || false);
             setSemana(moduloSemana[0] || {});
             setEmpresa(empresaData || {});
+            setConfigUsuario(JSON.parse(userConfig[0].detalles) || {});
         }).catch(error => {
             console.error('Error al cargar datos de configuración:', error);
         });
@@ -67,11 +72,11 @@ export default function Configuracion({ setOpen }) {
             });
 
             // Configuración del usuario
-            const configUsuario = JSON.stringify({ inicio: formData.get('pantalla_inicio') });
+            const configUser = JSON.stringify({ ...configUsuario, inicio: formData.get('pantalla_inicio') });
             if (usuario) {
                 await actualizarModulo({
                     modulo: usuario.username,
-                    detalles: configUsuario,
+                    detalles: configUser,
                 });
             }
 
@@ -97,11 +102,11 @@ export default function Configuracion({ setOpen }) {
         <div className={styles.tableros}>
             <div className={styles.padre}>
                 <div className={styles.ex}>
-                    <span 
-                        role="button" 
-                        tabIndex={0} 
-                        onClick={closeWindow} 
-                        onKeyDown={closeWindow} 
+                    <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={closeWindow}
+                        onKeyDown={closeWindow}
                         className={styles.x}>
                         X
                     </span>
@@ -116,10 +121,14 @@ export default function Configuracion({ setOpen }) {
                         <div className={styles1.input_group}>
                             <span>Pantalla de inicio:</span>
                             <InputGroup className="mb-3" size="sm">
-                                <Form.Control as="select" name="pantalla_inicio" id="pantalla_inicio">
-                                    <option value="Dashboard Combustible">Dashboard Combustible</option>
-                                    <option value="Dashboard Contenedores">Dashboard Contenedores</option>
-                                </Form.Control>
+                                <Form.Select
+                                    name="pantalla_inicio"
+                                    id="pantalla_inicio"
+                               
+                                >
+                                    <option selected={"Dashboard Combustible" == configUsuario?.inicio} >Dashboard Combustible</option>
+                                    <option selected={"Dashboard Contenedores" == configUsuario?.inicio}>Dashboard Contenedores</option>
+                                </Form.Select>
                             </InputGroup>
                         </div>
 
