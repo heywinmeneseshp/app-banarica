@@ -32,7 +32,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
         async function listarAlmacenes() {
             const res = await axios.get(endPoints.almacenes.list);
             if (user) {
-                const resB = await axios.get(endPoints.usuarios.almacenes.findByUsername(user.username));
+                const resB = await axios.get(endPoints.usuarios.almacenes.findByUsername(user?.username));
                 let array = new Array(res.data.length).fill(false);
                 res.data.map((almacen, index) => {
                     resB.data.map(item => {
@@ -47,13 +47,13 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                 setcheckedState(array);
             }
             setAlmacenes(res.data);
-        }
-        try {
-            listarAlmacenes();
-            encontrarModulo(user.username).then(res => {
+                 encontrarModulo(user?.username).then(res => {
                 const detalles = JSON.parse(res[0].detalles || "{}");
                 setTagMenu(detalles.menu || []);
             });
+        }
+        try {
+            listarAlmacenes();
         } catch (e) {
             alert("Se ha presentado un error");
         }
