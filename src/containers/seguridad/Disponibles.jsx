@@ -14,7 +14,6 @@ import excel from "@hooks/useExcel";
 import { listarProductosSeguridad, listarSeriales } from "@services/api/seguridad";
 import { filtrarCategorias } from "@services/api/categorias";
 import { buscarProducto } from "@services/api/productos";
-import { filtrarPorProductoYAlmacen } from "@services/api/stock";
 
 export default function Disponibles() {
     const { almacenByUser } = useAuth();
