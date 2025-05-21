@@ -6,20 +6,27 @@ import Paginacion from "@components/Paginacion";
 import { useEffect } from "react";
 import { listarSeriales } from "@services/api/seguridad";
 import { useState } from "react";
+import { encontrarModulo } from "@services/api/configuracion";
+import { botones } from "utils/configMenu";
 
 export default function ConsultaResumen({ data, setPagination, limit, pagination, setResults }) {
 
     const [tabla, setTabla] = useState([]);
     const [total, setTotal] = useState(0);
+    const [configBotons, setConfigBotons] = useState([]);
 
     useEffect(() => {
-      const alamcenes = JSON.parse(localStorage.getItem("almacenByUser")).map(item => item.consecutivo);
+        const alamcenes = JSON.parse(localStorage.getItem("almacenByUser")).map(item => item.consecutivo);
         data.cons_almacen = data.cons_almacen == "" ? alamcenes : data.cons_almacen;
-        console.log(data);
         listarSeriales(pagination, limit, data).then(res => {
             setTabla(res.data);
             setTotal(res.total);
             setResults(res.total);
+        });
+        const usuario = JSON.parse(localStorage.getItem('usuario'));
+        encontrarModulo(usuario.username).then(res => {
+            const config = JSON.parse(res[0].detalles);
+            setConfigBotons(config?.botones);
         });
     }, [data, pagination, limit]);
 
@@ -31,12 +38,12 @@ export default function ConsultaResumen({ data, setPagination, limit, pagination
                         <tr>
                             <th className="text-custom-small text-center">Alm</th>
                             <th className="text-custom-small text-center">Artículo</th>
-                            <th className="text-custom-small text-center">Serial</th>
+                            {botones.includes("disponibles_serial") && <th className="text-custom-small text-center">Serial</th>}
                             <th className="text-custom-small text-center">Bag Pack</th>
                             <th className="text-custom-small text-center">S Pack</th>
                             <th className="text-custom-small text-center">M Pack</th>
                             <th className="text-custom-small text-center">L Pack</th>
-                            <th  className="text-custom-small text-center">Estado</th>
+                            <th className="text-custom-small text-center">Estado</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -44,7 +51,7 @@ export default function ConsultaResumen({ data, setPagination, limit, pagination
                             <tr key={index}>
                                 <td className="text-custom-small text-center">{item.cons_almacen}</td>
                                 <td className="text-custom-small text-center">{item.cons_producto}</td>
-                                <td className="text-custom-small text-center">{item.serial}</td>
+                               {botones.includes("disponibles_serial") &&  <td className="text-custom-small text-center">{item.serial}</td>}
                                 <td className="text-custom-small text-center">{item.bag_pack}</td>
                                 <td className="text-custom-small text-center">{item.s_pack}</td>
                                 <td className="text-custom-small text-center">{item.m_pack}</td>

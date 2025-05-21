@@ -171,7 +171,6 @@ export default function Recepcion() {
                                 id="remision"
                                 name="remision"
                                 required
-                                minLength={2}
                                 disabled={bool}
                             />
                         </InputGroup>
@@ -196,6 +195,7 @@ export default function Recepcion() {
                                 name="semana"
                                 disabled={bool}
                             >
+                                <option value={""}>Selecciones una semana</option>
                                 {semanas.map((item, index) => {
                                     return (
                                         <option key={index}  value={item.consecutivo}>{item.consecutivo}</option>

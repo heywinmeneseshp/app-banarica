@@ -8,6 +8,7 @@ import { actualizarUsuario, agregarUsuario, cargarAlmacenesPorUsuario } from '@s
 import styles from "@components/shared/Formularios/Formularios.module.css";
 import axios from 'axios';
 import { actualizarModulo, encontrarModulo } from '@services/api/configuracion';
+import { botones, menuCompleto, menuPrincipal } from 'utils/configMenu';
 
 
 
@@ -17,16 +18,20 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
     const [almacenes, setAlmacenes] = useState([]);
     const [changePass, setChangePass] = useState(false);
     const [tagMenu, setTagMenu] = useState([]);
+    const [tagSubMenu, setTagSubMenu] = useState([]);
+    const [menuSelected, setMenuSelected] = useState([]);
+    const [tagBotones, setTagBotones] = useState([]);
 
-    const configMenuKeys = [
-        "maestros",
-        "programaciones",
-        "seguridad",
-        "almacen",
-        "informes"
-    ];
+    const configMenuKeys = menuPrincipal();
+    const configSubMenuKeys = menuCompleto;
+    const configBotones = botones;
 
-
+    const onChaneselectionTagsMenu = () => {
+        const formData = new FormData(formRef.current);
+        const menuSeleccionado = formData.get('selectionTagsMenu');
+        const res = configSubMenuKeys[menuSeleccionado] || [];
+        setMenuSelected(res);
+    };
 
     useEffect(() => {
         async function listarAlmacenes() {
@@ -47,9 +52,11 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                 setcheckedState(array);
             }
             setAlmacenes(res.data);
-                 encontrarModulo(user?.username).then(res => {
+            encontrarModulo(user?.username).then(res => {
                 const detalles = JSON.parse(res[0].detalles || "{}");
                 setTagMenu(detalles.menu || []);
+                setTagSubMenu(detalles.submenu || []);
+                setTagSubMenu(detalles.botones || []);
             });
         }
         try {
@@ -108,10 +115,42 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
         }
     };
 
+
+    const handleAddTagSubMenu = () => {
+        const formData = new FormData(formRef.current);
+        const tag = formData.get("inputTagsSubMenu");
+        if (tag && !tagMenu.includes(tag)) {
+            setTagSubMenu([...tagSubMenu, tag]);
+            const input = formRef.current.querySelector('[name="inputTagsSubMenu"]');
+            if (input) input.value = "";
+        }
+    };
+
+    const handleAddTagBoton = () => {
+        const formData = new FormData(formRef.current);
+        const tag = formData.get("inputTagsSubMenu");
+        if (tag && !tagMenu.includes(tag)) {
+            setTagBotones([...tagBotones, tag]);
+            const input = formRef.current.querySelector('[name="inputTagsSubMenu"]');
+            if (input) input.value = "";
+        }
+    };
+
     const handleRemoveTagMenu = (tag) => {
         const newList = tagMenu.filter(item => item !== tag);
         setTagMenu(newList);
     };
+
+    const handleRemoveTagSubMenu = (tag) => {
+        const newList = tagSubMenu.filter(item => item !== tag);
+        setTagSubMenu(newList);
+    };
+
+     const handleRemoveBoton = (tag) => {
+        const newList = setTagBotones.filter(item => item !== tag);
+        setTagBotones(newList);
+    };
+
 
 
     const handleSubmit = async (e) => {
@@ -174,7 +213,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
         const res = await encontrarModulo(user.username);
 
         let confUser = JSON.parse(res[0].detalles || "{}");
-        confUser = JSON.stringify({ ...confUser, menu: tagMenu });
+        confUser = JSON.stringify({ ...confUser, menu: tagMenu, submenu: tagSubMenu });
 
         await actualizarModulo({ modulo: user.username, detalles: confUser });
         setOpen(false);
@@ -383,9 +422,11 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                                 {/* Configuración de menú y almacenes */}
                                 {!profile && !changePass && (
                                     <>
+
+                                        {/**Habilitar Menú*/}
                                         <div className="row g-3 mt-1 mb-1">
 
-                                            <p className='mb-1'>Habilitar Menú</p>
+                                            <h6 className='mb-0'>Habilitar Menú</h6>
                                             <div className="col-md-8">
                                                 <input
                                                     type="text"
@@ -435,9 +476,132 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                                             </div>
                                         </div>
 
+                                        {/**Habilitar submenu */}
+                                        <div className="row g-3 mt-1 mb-1">
+
+                                            <h6 className='mb-0'>Habilitar Submenu</h6>
+                                            <div className="col-md-4">
+                                                <select
+                                                    id="selectionTagsMenu"
+                                                    name="selectionTagsMenu"
+                                                    className="form-control"
+                                                    defaultValue=""
+                                                    onChange={() => onChaneselectionTagsMenu()}
+                                                >
+                                                    <option value="">Seleccione un ítem</option>
+                                                    {tagMenu.map((item, key) => {
+                                                        return (
+                                                            <option key={key} value={item}>{item}</option>
+                                                        );
+                                                    })}
+                                                </select>
+                                            </div>
+                                            <div className="col-md-4">
+                                                <select
+                                                    id="inputTagsSubMenu"
+                                                    name="inputTagsSubMenu"
+                                                    className="form-control"
+                                                    defaultValue=""
+                                                >
+                                                    <option value="" >Seleccione un ítem</option>
+                                                    {menuSelected.map(([ruta, label]) => {
+                                                        if (!tagSubMenu.includes(label)) {
+                                                            return (
+                                                                <option key={ruta} value={label}>{label}</option>
+                                                            );
+                                                        }
+                                                    })}
+                                                </select>
+                                            </div>
+                                            <div className="col-md-4 d-flex align-items-end">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-primary w-100"
+                                                    onClick={handleAddTagSubMenu}
+                                                >
+                                                    Agregar
+                                                </button>
+                                            </div>
+
+                                            <div className="col-md-12">
+                                                <div className="card">
+                                                    <div className="card-body d-flex flex-wrap">
+                                                        {tagSubMenu.map((tag, index) => (
+                                                            <span
+                                                                key={index}
+                                                                className="badge bg-primary me-2 mb-2 d-flex align-items-center"
+                                                            >
+                                                                {tag}
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn-close btn-sm ms-2"
+                                                                    aria-label="Remove"
+                                                                    onClick={() => handleRemoveTagSubMenu(tag)}
+                                                                />
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/**Botones */}
+                                         <div className="row g-3 mt-1 mb-1">
+
+                                            <h6 className='mb-0'>Habilitar Submenu</h6>
+                                    
+                                            <div className="col-md-8">
+                                                <select
+                                                    id="inputBotones"
+                                                    name="inputBotones"
+                                                    className="form-control"
+                                                    defaultValue=""
+                                                >
+                                                    <option value="" >Seleccione un ítem</option>
+                                                    {configBotones.map((label, key) => {
+                                                        if (!tagBotones.includes(label)) {
+                                                            return (
+                                                                <option key={key} value={label}>{label}</option>
+                                                            );
+                                                        }
+                                                    })}
+                                                </select>
+                                            </div>
+                                            <div className="col-md-4 d-flex align-items-end">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-primary w-100"
+                                                    onClick={handleAddTagBoton}
+                                                >
+                                                    Agregar
+                                                </button>
+                                            </div>
+
+                                            <div className="col-md-12">
+                                                <div className="card">
+                                                    <div className="card-body d-flex flex-wrap">
+                                                        {tagBotones.map((tag, index) => (
+                                                            <span
+                                                                key={index}
+                                                                className="badge bg-primary me-2 mb-2 d-flex align-items-center"
+                                                            >
+                                                                {tag}
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn-close btn-sm ms-2"
+                                                                    aria-label="Remove"
+                                                                    onClick={() => handleRemoveBoton(tag)}
+                                                                />
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         {/* Almacenes */}
                                         <div className="container mt-4">
-                                            <p>Habilitar almacenes</p>
+                                            <h6 className='mb-3'>Habilitar almacenes</h6>
                                             <div className="row">
                                                 {almacenes.map((almacen, index) => (
                                                     <div key={index} className="col-md-3 form-check">

@@ -11,6 +11,7 @@ import NuevoUsuario from "@components/administrador/NuevoUsuario";
 import Configuracion from '@components/administrador/Configuracion';
 
 import { encontrarEmpresa, encontrarModulo } from '@services/api/configuracion';
+import { menuCompleto } from 'utils/configMenu';
 
 const Header = () => {
   const router = useRouter();
@@ -23,11 +24,11 @@ const Header = () => {
   const [openConfig, setOpenConfig] = useState(false);
   const [nombreApp, setNombreApp] = useState(null);
   const [configMenu, setConfigMenu] = useState([]);
+  const [configSubMenu, setConfigSubMenu] = useState([]);
 
   // Efecto para cargar datos al montar el componente
   useEffect(() => {
     const usuario = JSON.parse(localStorage.getItem('usuario'));
-    console.log(usuario);
     setUser(usuario);
 
     // Consulta el nombre de la empresa
@@ -35,8 +36,10 @@ const Header = () => {
 
     // Consulta la configuración de menú para el usuario
     encontrarModulo(usuario.username).then(res => {
+      console.log(res);
       const detalles = JSON.parse(res[0].detalles);
       setConfigMenu(detalles.menu || []);
+      setConfigSubMenu(detalles.submenu || []);
     });
 
     // Cargar almacén asociado al usuario
@@ -93,24 +96,12 @@ const Header = () => {
               {(configMenu.includes("maestros") || user?.id_rol === "Super administrador") && (
                 <DropdownButton variant="dark" title="Maestros" onClick={() => openMenu("admin")}>
                   {/* Ítems del menú Maestros */}
-                  {[
-                    ["bodegas", "Almacenes"],
-                    ["categorias", "Categoria productos"],
-                    ["categoriaVehiculos", "Categoria vehiculos"],
-                    ["clientes", "Clientes"],
-                    ["combos", "Combos"],
-                    ["etiquetas", "Etiquetas"],
-                    ["MotivoDeRechazo", "Motivos de Rechazo"],
-                    ["productos", "Productos"],
-                    ["proveedores", "Proveedores"],
-                    ["rutas", "Rutas"],
-                    ["transporte", "Transporte"],
-                    ["ubicaciones", "Ubicaciones"],
-                    ["usuarios", "Usuarios"],
-                    ["vehiculos", "Vehiculos"]
-                  ].map(([key, label]) => (
-                    <Dropdown.Item key={key} onClick={() => openWindow(key)}>{label}</Dropdown.Item>
-                  ))}
+                  {
+                    menuCompleto.maestros.map(([key, label]) => {
+                      if (configSubMenu.includes(label) || user?.id_rol === "Super administrador") return (
+                        <Dropdown.Item key={key} onClick={() => openWindow(key)}>{label}</Dropdown.Item>
+                      );
+                    })}
                   {/* Configuración */}
                   <Dropdown.Item onClick={() => setOpenConfig(true)}>Configuración</Dropdown.Item>
                 </DropdownButton>
@@ -119,12 +110,7 @@ const Header = () => {
               {/* Menú: Programaciones */}
               {configMenu.includes("programaciones") && (
                 <DropdownButton variant="dark" title="Programaciones" onClick={() => openMenu("admin")}>
-                  {[
-                    ["contenedores", "Contenedores"],
-                    ["historico", "Historico"],
-                    ["programador", "Programador"],
-                    ["reportesConsumo", "Reportes"]
-                  ].map(([key, label]) => (
+                  {menuCompleto.programaciones.map(([key, label]) => (
                     <Dropdown.Item key={key} onClick={() => openWindow(key)}>{label}</Dropdown.Item>
                   ))}
                 </DropdownButton>
@@ -133,20 +119,11 @@ const Header = () => {
               {/* Menú: Seguridad */}
               {configMenu.includes("seguridad") && (
                 <DropdownButton variant="dark" title="Seguridad">
-                  {[
-                    ["/Listado", "Contenedores"],
-                    ["/Dashboard", "Dashboard"],
-                    ["/Disponibles", "Disponibles"],
-                    ["/Embarques", "Embarques"],
-                    ["/InspLleno", "Insp Lleno"],
-                    ["/Lector", "Insp Vacio"],
-                    ["/LlenadoContenedor", "Llenado"],
-                    ["/Recepcion", "Recepción"],
-                    ["/Rechazos", "Rechazos"],
-                    ["/Transferencias", "Transferencias"]
-                  ].map(([ruta, label]) => (
-                    <Dropdown.Item key={ruta} onClick={() => onSeguridad(ruta)}>{label}</Dropdown.Item>
-                  ))}
+                  {menuCompleto.seguridad.map(([ruta, label]) => {
+                    if (configSubMenu.includes(label)) return (
+                      <Dropdown.Item key={ruta} onClick={() => onSeguridad(ruta)}>{label}</Dropdown.Item>
+                    );
+                  })}
                 </DropdownButton>
               )}
 
