@@ -147,7 +147,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
         setTagSubMenu(newList);
     };
 
-     const handleRemoveBoton = (tag) => {
+    const handleRemoveBoton = (tag) => {
         const newList = setTagBotones.filter(item => item !== tag);
         setTagBotones(newList);
     };
@@ -213,9 +213,17 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
         }
         const res = await encontrarModulo(user.username);
 
-        let confUser = JSON.parse(res[0].detalles || "{}");
-        confUser = JSON.stringify({ ...confUser, menu: tagMenu, submenu: tagSubMenu, botones: tagBotones });
+        let confUser = {};
+        try {
+            confUser = JSON.parse(res[0].detalles);
+        } catch (err) {
+            console.error("Error al parsear JSON:", err);
+            console.log("Contenido que falló:", res[0].detalles);
+            // Puedes decidir cómo manejar el error aquí
+            confUser = {}; // usar objeto vacío por defecto
+        }
 
+        confUser = JSON.stringify({ ...confUser, menu: tagMenu, submenu: tagSubMenu, botones: tagBotones });
         await actualizarModulo({ modulo: user.username, detalles: confUser });
         setOpen(false);
     };
@@ -547,10 +555,10 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                                         </div>
 
                                         {/**Botones */}
-                                         <div className="row g-3 mt-1 mb-1">
+                                        <div className="row g-3 mt-1 mb-1">
 
                                             <h6 className='mb-0'>Habilitar Submenu</h6>
-                                    
+
                                             <div className="col-md-8">
                                                 <select
                                                     id="inputTagsBotones"
