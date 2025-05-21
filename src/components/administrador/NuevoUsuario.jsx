@@ -214,7 +214,6 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
         const res = await encontrarModulo(user.username);
 
         let confUser = JSON.parse(res[0].detalles || "{}");
-        console.log({ ...confUser, menu: tagMenu, submenu: tagSubMenu, botones: tagBotones })
         confUser = JSON.stringify({ ...confUser, menu: tagMenu, submenu: tagSubMenu, botones: tagBotones });
 
         await actualizarModulo({ modulo: user.username, detalles: confUser });
