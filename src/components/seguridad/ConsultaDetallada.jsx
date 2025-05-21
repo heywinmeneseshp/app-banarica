@@ -7,7 +7,6 @@ import { useEffect } from "react";
 import { listarSeriales } from "@services/api/seguridad";
 import { useState } from "react";
 import { encontrarModulo } from "@services/api/configuracion";
-import { botones } from "utils/configMenu";
 
 export default function ConsultaResumen({ data, setPagination, limit, pagination, setResults }) {
 
@@ -38,7 +37,7 @@ export default function ConsultaResumen({ data, setPagination, limit, pagination
                         <tr>
                             <th className="text-custom-small text-center">Alm</th>
                             <th className="text-custom-small text-center">Artículo</th>
-                            {botones.includes("disponibles_serial") && <th className="text-custom-small text-center">Serial</th>}
+                            {configBotons.includes("disponibles_serial") && <th className="text-custom-small text-center">Serial</th>}
                             <th className="text-custom-small text-center">Bag Pack</th>
                             <th className="text-custom-small text-center">S Pack</th>
                             <th className="text-custom-small text-center">M Pack</th>
@@ -51,7 +50,7 @@ export default function ConsultaResumen({ data, setPagination, limit, pagination
                             <tr key={index}>
                                 <td className="text-custom-small text-center">{item.cons_almacen}</td>
                                 <td className="text-custom-small text-center">{item.cons_producto}</td>
-                               {botones.includes("disponibles_serial") &&  <td className="text-custom-small text-center">{item.serial}</td>}
+                               {configBotons.includes("disponibles_serial") &&  <td className="text-custom-small text-center">{item.serial}</td>}
                                 <td className="text-custom-small text-center">{item.bag_pack}</td>
                                 <td className="text-custom-small text-center">{item.s_pack}</td>
                                 <td className="text-custom-small text-center">{item.m_pack}</td>

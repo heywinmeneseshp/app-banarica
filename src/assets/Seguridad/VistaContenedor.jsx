@@ -140,7 +140,7 @@ function VistaContenedor({ vistaCont, setVistaCont }) {
     `;
 
         await enviarEmail(
-            "hmeneses@banarica.com,ogomez@banarica.com,jtaite@banarica.com",
+            "hmeneses@banarica.com,ogomez@banarica.com,jtaite@banarica.com,coordportuario@seguridadnapolesltda.com,avega@banarica.com",
             `Alerta: Inconsistencias en unidad ${contenedor} - ${fechaFormateada}`,
             cuerpo
         );
