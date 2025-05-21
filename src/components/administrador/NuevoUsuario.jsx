@@ -56,7 +56,8 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                 const detalles = JSON.parse(res[0].detalles || "{}");
                 setTagMenu(detalles.menu || []);
                 setTagSubMenu(detalles.submenu || []);
-                setTagSubMenu(detalles.botones || []);
+                setTagBotones(detalles.botones || []);
+                console.log(detalles);
             });
         }
         try {
@@ -213,7 +214,8 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
         const res = await encontrarModulo(user.username);
 
         let confUser = JSON.parse(res[0].detalles || "{}");
-        confUser = JSON.stringify({ ...confUser, menu: tagMenu, submenu: tagSubMenu });
+        console.log({ ...confUser, menu: tagMenu, submenu: tagSubMenu, botones: tagBotones })
+        confUser = JSON.stringify({ ...confUser, menu: tagMenu, submenu: tagSubMenu, botones: tagBotones });
 
         await actualizarModulo({ modulo: user.username, detalles: confUser });
         setOpen(false);
