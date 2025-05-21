@@ -25,7 +25,7 @@ export default function ConsultaResumen({ data, setPagination, limit, pagination
         const usuario = JSON.parse(localStorage.getItem('usuario'));
         encontrarModulo(usuario.username).then(res => {
             const config = JSON.parse(res[0].detalles);
-            setConfigBotons(config?.botones);
+            setConfigBotons(config?.botones || []);
         });
     }, [data, pagination, limit]);
 

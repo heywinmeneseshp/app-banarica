@@ -128,7 +128,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
 
     const handleAddTagBoton = () => {
         const formData = new FormData(formRef.current);
-        const tag = formData.get("inputTagsSubMenu");
+        const tag = formData.get("inputTagsBotones");
         if (tag && !tagMenu.includes(tag)) {
             setTagBotones([...tagBotones, tag]);
             const input = formRef.current.querySelector('[name="inputTagsSubMenu"]');
@@ -552,8 +552,8 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                                     
                                             <div className="col-md-8">
                                                 <select
-                                                    id="inputBotones"
-                                                    name="inputBotones"
+                                                    id="inputTagsBotones"
+                                                    name="inputTagsBotones"
                                                     className="form-control"
                                                     defaultValue=""
                                                 >

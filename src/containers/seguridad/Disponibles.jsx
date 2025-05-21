@@ -14,6 +14,7 @@ import excel from "@hooks/useExcel";
 import { listarProductosSeguridad, listarSeriales } from "@services/api/seguridad";
 import { filtrarCategorias } from "@services/api/categorias";
 import { buscarProducto } from "@services/api/productos";
+import { encontrarModulo } from "@services/api/configuracion";
 
 export default function Disponibles() {
     const { almacenByUser } = useAuth();
@@ -26,6 +27,7 @@ export default function Disponibles() {
     const [pagination, setPagination] = useState(1);
     const [limit, setLimit] = useState(10);
     const [results, setResults] = useState(0);
+    const [configBotons, setConfigBotons] = useState([]);
 
     // Carga productos y realiza búsqueda cuando cambia el tipo de tabla
     useEffect(() => {
@@ -34,6 +36,11 @@ export default function Disponibles() {
             setProductos(
                 tablaConsulta ? res : res.filter((item) => item.serial === true)
             );
+        });
+        const usuario = JSON.parse(localStorage.getItem('usuario'));
+        encontrarModulo(usuario.username).then(res => {
+            const config = JSON.parse(res[0].detalles);
+            setConfigBotons(config?.botones || []);
         });
         buscarArticulos(); // Buscar productos según formulario
     }, [tablaConsulta]);
@@ -187,8 +194,8 @@ export default function Disponibles() {
                                                             opt === "All"
                                                                 ? "All"
                                                                 : opt === "Disponible"
-                                                                ? 1
-                                                                : 0
+                                                                    ? 1
+                                                                    : 0
                                                         }
                                                     >
                                                         {opt}
@@ -233,14 +240,14 @@ export default function Disponibles() {
                             Resumen
                         </button>
                     </div>
-                    <div className="col-md-3 mb-3">
+                    {configBotons.includes("disponibles_detallado") && <div className="col-md-3 mb-3">
                         <button
                             className="btn btn-primary btn-sm w-100"
                             onClick={() => handleTableConsulta(false)}
                         >
                             Detallado
                         </button>
-                    </div>
+                    </div>}
                     <div className="col-md-3 mb-3" />
                     <div className="col-md-3 mb-3 row d-flex justify-content-end">
                         <div className="col-6 d-flex align-items-center">
