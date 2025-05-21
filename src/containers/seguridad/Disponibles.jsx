@@ -32,7 +32,6 @@ export default function Disponibles() {
     // Carga productos y realiza búsqueda cuando cambia el tipo de tabla
     useEffect(() => {
         listarProductosSeguridad().then((res) => {
-            console.log(res);
             setProductos(
                 tablaConsulta ? res : res.filter((item) => item.serial === true)
             );
@@ -40,6 +39,7 @@ export default function Disponibles() {
         const usuario = JSON.parse(localStorage.getItem('usuario'));
         encontrarModulo(usuario.username).then(res => {
             const config = JSON.parse(res[0].detalles);
+            console.log(config);
             setConfigBotons(config?.botones || []);
         });
         buscarArticulos(); // Buscar productos según formulario
