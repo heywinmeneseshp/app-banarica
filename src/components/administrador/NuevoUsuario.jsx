@@ -212,7 +212,6 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
             });
         }
         const res = await encontrarModulo(user.username);
-
         let confUser = {};
         try {
             confUser = JSON.parse(res[0].detalles);
@@ -220,11 +219,10 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
             console.error("Error al parsear JSON:", err);
             console.log("Contenido que falló:", res[0].detalles);
             // Puedes decidir cómo manejar el error aquí
-            confUser = {}; // usar objeto vacío por defecto
         }
-
         confUser = JSON.stringify({ ...confUser, menu: tagMenu, submenu: tagSubMenu, botones: tagBotones });
         await actualizarModulo({ modulo: user.username, detalles: confUser });
+        console.log({ modulo: user.username, detalles: confUser });
         setOpen(false);
     };
 

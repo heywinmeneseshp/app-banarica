@@ -104,7 +104,7 @@ const ListadoContenedores = () => {
     //setTableData([]);
     setIsEditable(!isEditable);
   };
-  
+
 
   const handleConfig = () => {
     setOpenConfig(false);
@@ -129,6 +129,14 @@ const ListadoContenedores = () => {
       setProductos(data);
     }
   };
+
+  const renderHeader = (name, highlight = false, label = null) => {
+  return configuracionTabla.includes(name) && (
+    <th className={`text-custom-small text-center ${highlight ? 'text-white bg-secondary' : ''}`}>
+      {label || name}
+    </th>
+  );
+};
 
   const handleDatalist = async (id, itemActualiza, linea) => {
     const inputElement = document.getElementById(id);
@@ -495,152 +503,228 @@ const ListadoContenedores = () => {
       <table ref={tablaRef} className="table table-striped table-bordered table-sm mt-2">
         <thead>
           <tr>
-            {<th className="text-custom-small text-center">
+            <th className="text-custom-small text-center">
               <input
                 className="form-check-input"
-                type="checkbox" id={`checkboxAll`}
-                name={`checkboxAll`}
+                type="checkbox"
+                id="checkboxAll"
+                name="checkboxAll"
                 checked={checkAll}
                 onChange={() => {
                   const newCheck = !checkAll;
                   setCheckAll(newCheck);
                   setCheck(new Array(check.length).fill(newCheck));
                 }}
-              ></input>
-            </th>}
-            {configuracionTabla.includes("Fecha") && <th className="text-custom-small text-center">Fecha</th>}
-            {configuracionTabla.includes("Sem") && <th className="text-custom-small text-center text-white bg-secondary">Sem</th>}
-            {configuracionTabla.includes("Bookin") && <th className="text-custom-small text-center text-white bg-secondary">Booking</th>}
-            {configuracionTabla.includes("BoL") && <th className="text-custom-small text-center">BoL</th>}
-            {configuracionTabla.includes("Naviera") && <th className="text-custom-small text-center text-white bg-secondary">Naviera</th>}
-            {configuracionTabla.includes("Buque") && <th className="text-custom-small text-center text-white bg-secondary">Buque</th>}
-            {configuracionTabla.includes("Destino") && <th className="text-custom-small text-center text-white bg-secondary">Destino</th>}
-            {configuracionTabla.includes("Llenado") && <th className="text-custom-small text-center">Llenado</th>}
-            {configuracionTabla.includes("Contenedor") && <th className="text-custom-small text-center">Contenedor</th>}
-            {/*Kits e insumos*/}
-            {configuracionTabla.includes("Insumos de segurdad") && configuracionInsumos.map((item, key) => {
-              let title = item.name.charAt(0).toUpperCase() + item.name.toLowerCase().slice(1);
-              return (<th className='text-custom-small text-center text-white bg-secondary' key={key}>{title}</th>);
-            })}
-            {/*Kits e insumos fin*/}
-            {configuracionTabla.includes("Producto") && <th className="text-custom-small text-center">Producto</th>}
-            {configuracionTabla.includes("Cajas") && <th className="text-custom-small text-center">Cajas</th>}
-            {configuracionTabla.includes("Pallets") && <th className="text-custom-small text-center text-white bg-secondary">Pallets</th>}
-            {configuracionTabla.includes("Peso Bruto") && <th className="text-custom-small text-center text-white bg-secondary">Peso Bruto</th>}
-            {configuracionTabla.includes("Peso Neto") && <th className="text-custom-small text-center text-white bg-secondary">Peso Neto</th>}
+              />
+            </th>
+
+            {renderHeader("Fecha")}
+            {renderHeader("Sem", true)}
+            {renderHeader("Bookin", true, "Booking")}
+            {renderHeader("BoL")}
+            {renderHeader("Naviera", true)}
+            {renderHeader("Buque", true)}
+            {renderHeader("Destino", true)}
+            {renderHeader("Llenado")}
+            {renderHeader("Contenedor")}
+
+            {/* Insumos de seguridad */}
+            {configuracionTabla.includes("Insumos de segurdad") &&
+              configuracionInsumos.map((item, idx) => {
+                const title = item.name.charAt(0).toUpperCase() + item.name.slice(1).toLowerCase();
+                return (
+                  <th className="text-custom-small text-center text-white bg-secondary" key={idx}>
+                    {title}
+                  </th>
+                );
+              })}
+
+            {renderHeader("Producto")}
+            {renderHeader("Cajas")}
+            {renderHeader("Pallets", true)}
+            {renderHeader("Peso Bruto", true)}
+            {renderHeader("Peso Neto", true)}
           </tr>
         </thead>
+
         <tbody>
           {tableData.map((row, index) => {
-            const seriales = row?.serial_de_articulos;
-            const cajas = row?.cajas_unidades;
-            const cajasPallet = row?.combo?.cajas_por_palet;
-            const pallets = Math.ceil(cajas / cajasPallet);
-            const pesoBruto = (row?.combo?.peso_bruto * cajas)?.toFixed(1);
-            const pesoNeto = (row?.combo?.peso_neto * cajas)?.toFixed(1);
+            const {
+              serial_de_articulos: seriales,
+              cajas_unidades: cajas,
+              combo,
+              Contenedor,
+              Embarque,
+              almacen,
+              fecha,
+            } = row;
 
+            const pallets = Math.ceil(cajas / combo?.cajas_por_palet || 1);
+            const pesoBruto = (combo?.peso_bruto * cajas).toFixed(1);
+            const pesoNeto = (combo?.peso_neto * cajas).toFixed(1);
 
+            const cajasPorContenedor = (combo?.cajas_por_palet * (combo?.palets_por_contenedor - 1)) + (combo?.cajas_por_mini_palet || 0);
+            const sumaToriaCajas = tableData
+              .filter(item => item.Contenedor?.contenedor === Contenedor?.contenedor)
+              .reduce((acc, item) => acc + item.cajas_unidades, 0);
 
-
+            const existeRechazo = cajasPorContenedor === sumaToriaCajas ? "" : "text-danger";
 
             return (
               <tr key={row.id}>
                 <td className="text-custom-small text-center">
                   <input
                     className="form-check-input"
-                    type="checkbox" id={`check-${index}`}
+                    type="checkbox"
+                    id={`check-${index}`}
                     name={`check-${index}`}
                     checked={check[index]}
                     onChange={() => handleChecks(index)}
-                  ></input>
-
+                  />
                 </td>
-                {configuracionTabla.includes("Fecha") && <td className="text-custom-small text-center">
-                  {isEditable ? (
-                    <input
-                      type="date"
-                      defaultValue={row?.fecha?.slice(0, 10)}  // Valor por defecto (YYYY-MM-DD)
-                      onBlur={(e) => handleCellEdit(row, "fecha", e)}
-                      className="date-input custom-input"
-                      style={{ width: "90px", padding: "0", boxSizing: "border-box" }}
-                    />
-                  ) : (
-                    row.fecha?.slice(0, 10)  // Mostrar solo la fecha en modo no editable
-                  )}
-                </td>}
-                {configuracionTabla.includes("Sem") && <td style={{ width: "70px", padding: "0", boxSizing: "border-box" }} className="text-custom-small text-center" >{row?.Embarque?.semana?.consecutivo}</td>}
-                {configuracionTabla.includes("Booking") && <td className="text-custom-small text-center" >{row?.Embarque?.booking}</td>}
-                {configuracionTabla.includes("BoL") && <td className="text-custom-small text-center">
-                  <input
-                    list={`${row.id}-embarques`}
-                    style={{ width: "100px", padding: "0", margin: "auto" }}
-                    id={`${row.id}-embarque`}
-                    defaultValue={row.Embarque?.bl}
-                    disabled={!isEditable}
-                    onChange={() => onChangeCasilla(`${row.id}-embarque`, 'embarque')}
-                    onBlur={() => handleDatalist(`${row.id}-embarque`, `embarque`, row.id)}
-                    className="form-control custom-input"
-                  />
-                  <datalist id={`${row.id}-embarques`}>
-                    {embarques.map((item, index) => (
-                      <option key={index} value={item.bl} />
-                    ))}
-                  </datalist>
-                </td>}
-                {configuracionTabla.includes("Naviera") && <td className="text-custom-small text-center" >{row?.Embarque?.Naviera?.cod}</td>}
-                {configuracionTabla.includes("Buque") && <td className="text-custom-small text-center" >{row?.Embarque?.Buque?.buque}</td>}
-                {configuracionTabla.includes("Destino") && <td className="text-custom-small text-center" >{row?.Embarque?.Destino?.cod}</td>}
-                {configuracionTabla.includes("Llenado") && <td className="text-custom-small text-center">
-                  <input
-                    list={`${row.id}-almacenes`}
-                    id={`${row.id}-almacen`}
-                    defaultValue={row.almacen?.nombre}
-                    style={{ width: "110px", padding: "0", margin: "auto" }}
-                    disabled={!isEditable}
-                    onBlur={() => handleDatalist(`${row.id}-almacen`, `almacen`, row.id)}
-                    className="form-control custom-input"
-                  />
-                  <datalist id={`${row.id}-almacenes`}>
-                    {almacenes.map((item, index) => (
-                      <option key={index} value={item.nombre} />
-                    ))}
-                  </datalist>
-                </td>}
-                {configuracionTabla.includes("Contenedor") && <td style={{ backgroundColor: `${bol[row?.Contenedor?.contenedor]}` }} className="text-custom-small text-center" contentEditable={isEditable} onBlur={(e) => handleCellEdit(row, "contenedor", e)}>{row?.Contenedor?.contenedor}</td>}
-                {/*Kits e insumos*/}
-                {configuracionTabla.includes("Insumos de segurdad") && configuracionInsumos.map((itemConfig, key) => {
-                  let serial = seriales.filter(item2 => itemConfig.consecutivo === item2.cons_producto);
-                  const latestItem = serial.reduce((latest, current) => {
-                    return new Date(current.updatedAt) > new Date(latest.updatedAt) ? current : latest;
-                  }, serial[0]);
-                  return (<td className="text-custom-small text-center" key={key}>{latestItem?.serial}</td>);
-                })}
-                {/*Kits e fin*/}
-                {configuracionTabla.includes("Producto") && <td className="text-custom-small text-center">
-                  <input
-                    list="productos"
-                    id={`${row.id}-producto`}
-                    disabled={!isEditable}
 
-                    defaultValue={row?.combo?.nombre}
-                    onBlur={() => handleDatalist(`${row.id}-producto`, `producto`, row.id)}
-                    className="form-control custom-input"
-                  />
-                  <datalist id="productos">
-                    {productos.map((item, index) => (
-                      <option key={index} value={item.nombre} />
-                    ))}
-                  </datalist>
-                </td>}
-                {configuracionTabla.includes("Cajas") && <td style={{ width: "60px", padding: "0", margin: "auto" }} className="text-custom-small text-center" contentEditable={isEditable} onBlur={(e) => handleCellEdit(row, "cajas_unidades", e)}>{cajas}</td>}
-                {configuracionTabla.includes("Pallets") && <td className="text-custom-small text-center" >{pallets}</td>}
-                {configuracionTabla.includes("Peso Bruto") && <td className="text-custom-small text-center">{pesoBruto}</td>}
-                {configuracionTabla.includes("Peso Neto") && <td className="text-custom-small text-center" >{pesoNeto}</td>}
+                {configuracionTabla.includes("Fecha") && (
+                  <td className="text-custom-small text-center">
+                    {isEditable ? (
+                      <input
+                        type="date"
+                        defaultValue={fecha?.slice(0, 10)}
+                        onBlur={e => handleCellEdit(row, "fecha", e)}
+                        className="date-input custom-input"
+                        style={{ width: "90px", padding: 0 }}
+                      />
+                    ) : (
+                      fecha?.slice(0, 10)
+                    )}
+                  </td>
+                )}
+
+                {configuracionTabla.includes("Sem") && (
+                  <td className="text-custom-small text-center" style={{ width: "70px" }}>
+                    {Embarque?.semana?.consecutivo}
+                  </td>
+                )}
+
+                {configuracionTabla.includes("Bookin") && (
+                  <td className="text-custom-small text-center">{Embarque?.booking}</td>
+                )}
+
+                {configuracionTabla.includes("BoL") && (
+                  <td className="text-custom-small text-center">
+                    <input
+                      list={`${row.id}-embarques`}
+                      id={`${row.id}-embarque`}
+                      style={{ width: "100px", padding: 0 }}
+                      defaultValue={Embarque?.bl}
+                      disabled={!isEditable}
+                      onChange={() => onChangeCasilla(`${row.id}-embarque`, 'embarque')}
+                      onBlur={() => handleDatalist(`${row.id}-embarque`, 'embarque', row.id)}
+                      className="form-control custom-input"
+                    />
+                    <datalist id={`${row.id}-embarques`}>
+                      {embarques.map((item, i) => <option key={i} value={item.bl} />)}
+                    </datalist>
+                  </td>
+                )}
+
+                {configuracionTabla.includes("Naviera") && (
+                  <td className="text-custom-small text-center">{Embarque?.Naviera?.cod}</td>
+                )}
+                {configuracionTabla.includes("Buque") && (
+                  <td className="text-custom-small text-center">{Embarque?.Buque?.buque}</td>
+                )}
+                {configuracionTabla.includes("Destino") && (
+                  <td className="text-custom-small text-center">{Embarque?.Destino?.cod}</td>
+                )}
+
+                {configuracionTabla.includes("Llenado") && (
+                  <td className="text-custom-small text-center">
+                    <input
+                      list={`${row.id}-almacenes`}
+                      id={`${row.id}-almacen`}
+                      defaultValue={almacen?.nombre}
+                      style={{ width: "110px", padding: 0 }}
+                      disabled={!isEditable}
+                      onBlur={() => handleDatalist(`${row.id}-almacen`, 'almacen', row.id)}
+                      className="form-control custom-input"
+                    />
+                    <datalist id={`${row.id}-almacenes`}>
+                      {almacenes.map((item, i) => <option key={i} value={item.nombre} />)}
+                    </datalist>
+                  </td>
+                )}
+
+                {configuracionTabla.includes("Contenedor") && (
+                  <td
+                    className="text-custom-small text-center"
+                    style={{ backgroundColor: bol[Contenedor?.contenedor] }}
+                    contentEditable={isEditable}
+                    onBlur={(e) => handleCellEdit(row, "contenedor", e)}
+                  >
+                    {Contenedor?.contenedor}
+                  </td>
+                )}
+
+                {/* Insumos */}
+                {configuracionTabla.includes("Insumos de segurdad") &&
+                  configuracionInsumos.map((itemConfig, key) => {
+                    const serial = seriales.filter(s => s.cons_producto === itemConfig.consecutivo);
+                    const colorClass = serial.length > 1 ? "text-danger" : "green";
+                    const latestItem = serial.reduce((latest, current) =>
+                      new Date(current.updatedAt) > new Date(latest.updatedAt) ? current : latest, serial[0]
+                    );
+
+                    return (
+                      <td className={`text-custom-small text-center ${colorClass}`} key={key}>
+                        {latestItem?.serial}
+                      </td>
+                    );
+                  })}
+
+                {configuracionTabla.includes("Producto") && (
+                  <td className="text-custom-small text-center">
+                    <input
+                      list="productos"
+                      id={`${row.id}-producto`}
+                      defaultValue={combo?.nombre}
+                      disabled={!isEditable}
+                      onBlur={() => handleDatalist(`${row.id}-producto`, 'producto', row.id)}
+                      className="form-control custom-input"
+                    />
+                    <datalist id="productos">
+                      {productos.map((item, i) => <option key={i} value={item.nombre} />)}
+                    </datalist>
+                  </td>
+                )}
+
+                {configuracionTabla.includes("Cajas") && (
+                  <td
+                    className={`text-custom-small text-center ${existeRechazo}`}
+                    style={{ width: "60px" }}
+                    contentEditable={isEditable}
+                    onBlur={(e) => handleCellEdit(row, "cajas_unidades", e)}
+                  >
+                    {cajas}
+                  </td>
+                )}
+
+                {configuracionTabla.includes("Pallets") && (
+                  <td className="text-custom-small text-center">{pallets}</td>
+                )}
+
+                {configuracionTabla.includes("Peso Bruto") && (
+                  <td className="text-custom-small text-center">{pesoBruto}</td>
+                )}
+
+                {configuracionTabla.includes("Peso Neto") && (
+                  <td className="text-custom-small text-center">{pesoNeto}</td>
+                )}
               </tr>
             );
           })}
         </tbody>
       </table>
+
 
       <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
       {openConfigInsumo && <InsumoConfig handleConfig={handleConfig} modulo_confi={"Relación_listado"} />}

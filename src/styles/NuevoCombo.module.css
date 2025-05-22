@@ -18,12 +18,6 @@
     width: 80px;
 }
 
-.contenedor1{
-    display: grid;
-    grid-template-columns: 0.52fr 2.08fr;
-    grid-gap: 20px;
-    margin-top: 20px;
-}
 
 .contenedor2{
     display: grid;

@@ -1,174 +1,227 @@
 import React, { useRef, useState, useEffect } from 'react';
-//Services
-import { actualizarCombos, agregarCombos, armarCombo, buscarComboArmado } from '@services/api/combos';
-import { buscarProducto, listarProductos } from '@services/api/productos';
-//Boostrap
-import { Button } from 'react-bootstrap';
-//Components
-//CSS
-import styles from '@styles/NuevoCombo.module.css';
+import { Button, Form, InputGroup, Row, Col, Modal } from 'react-bootstrap';
 
-export default function NuevoCombo({ setAlert, setOpen, item }) {
+// Services
+import {
+    actualizarCombos,
+    agregarCombos,
+    armarCombo,
+    buscarComboArmado
+} from '@services/api/combos';
+import { buscarProducto, listarProductos } from '@services/api/productos';
+
+export default function NuevoCombo({ setAlert, setOpen, item, open }) {
     const formRef = useRef(null);
-    const [products, setProducts] = useState([]);
     const [productos, setProductos] = useState([]);
-    const [listaDelCombo, setListaDelCombo] = useState([]);
+    const [comboItems, setComboItems] = useState([]); // Productos seleccionados
+    const [comboData, setComboData] = useState([]);   // Datos del combo armado (para edición)
+
+
+    const isEdit = Boolean(item);
 
     useEffect(() => {
-        async function listrasItems() {
-            listarProductos().then((res) => {
-                setProductos(res);
-                if (item) {
-                    buscarComboArmado(item.consecutivo).then((res) => {
-                        res.map(item => {
-                            const producto = item.cons_producto;
-                            buscarProducto(producto).then((res) => {
-                                setListaDelCombo(lista => [...lista, res]);
-                            });
-                        });
-                        setProducts(res);
-                    });
+        const fetchData = async () => {
+            try {
+                const productos = await listarProductos();
+                setProductos(productos);
+
+                if (isEdit) {
+                    const combos = await buscarComboArmado(item.consecutivo);
+                    const productosCombo = await Promise.all(
+                        combos.map(combo => buscarProducto(combo.cons_producto))
+                    );
+                    setComboItems(productosCombo);
+                    setComboData(combos);
                 }
-            });
-        }
-        listrasItems();
-    }, [item]);
+            } catch (error) {
+                console.error("Error al cargar datos:", error);
+            }
+        };
 
-    function addProduct() {
-        setProducts([...products, products.length + 1]);
-    }
+        fetchData();
+    }, [item, isEdit]);
 
-    let styleBoton = { color: "success", text: "Agregar" };
-    if (item) styleBoton = { color: "warning", text: "Editar" };
+    const addProduct = () => setComboData(prev => [...prev, {}]);
+    const closeWindow = () => setOpen(false);
 
-    const closeWindow = () => {
-        setOpen(false);
-    };
+    const comboFields = [
+        { id: 'id_cliente', label: 'ID Cliente', type: 'text', required: true },
+        { id: 'cajas_por_palet', label: 'Cajas por Palet', type: 'number', required: true },
+        { id: 'cajas_por_mini_palet', label: 'Cajas por Mini Palet', type: 'number' },
+        { id: 'palets_por_contenedor', label: 'Palets por Contenedor', type: 'number' },
+        { id: 'peso_neto', label: 'Peso Neto (kg)', type: 'number' },
+        { id: 'peso_bruto', label: 'Peso Bruto (kg)', type: 'number' },
+        { id: 'precio_de_venta', label: 'Precio de Venta ($)', type: 'number', required: true }
+    ];
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const formData = new FormData(formRef.current);
 
-
         const data = {
             nombre: formData.get('nombre_combo'),
-            isBlock: false
+            isBlock: false,
         };
-        if (item == null) {
-            try {
-                agregarCombos(data).then(res => {
-                    products.map((item, index) => {
-                        const result = formData.get('producto-' + index);
-                        const existe = productos.find((element) => element.name == result);
-                        armarCombo(res.data.consecutivo, existe.consecutivo);
-                    });
-                });
+
+        // Añadir los campos extra al objeto data
+        comboFields.forEach(field => {
+            const value = formData.get(field.id);
+            data[field.id] = field.type === 'number' ? parseFloat(value) || 0 : value;
+        });
+
+        try {
+            if (!isEdit) {
+                const res = await agregarCombos(data);
+                const consecutivoCombo = res.data.consecutivo;
+
+                await Promise.all(comboData.map((_, index) => {
+                    const nombreProducto = formData.get(`producto-${index}`);
+                    const producto = productos.find(p => p.name === nombreProducto);
+                    return armarCombo(consecutivoCombo, producto?.consecutivo);
+                }));
+
                 setAlert({
                     active: true,
-                    mensaje: "El combo ha sido creado con exito",
+                    mensaje: "El combo ha sido creado con éxito",
                     color: "success",
                     autoClose: true
                 });
-                setOpen(false);
-            } catch (e) {
+            } else {
+                console.log(data);
+                await actualizarCombos(item.consecutivo, data);
+
                 setAlert({
                     active: true,
-                    mensaje: "Se ha producido un error al crear el combo",
-                    color: "warning",
+                    mensaje: "El combo se ha actualizado",
+                    color: "success",
                     autoClose: true
                 });
-                setOpen(false);
             }
-        } else {
-            actualizarCombos(item.consecutivo, { nombre: data.nombre });
+
+            setOpen(false);
+        } catch (error) {
             setAlert({
                 active: true,
-                mensaje: 'El combo se ha actualizado',
-                color: "success",
+                mensaje: "Se ha producido un error",
+                color: "warning",
                 autoClose: true
             });
-            setOpen(false);
+            console.error("Error al guardar combo:", error);
         }
     };
 
     return (
-        <div>
+        <Modal show={open} onHide={closeWindow} size="lg" centered>
+            <Modal.Header closeButton>
+                <Modal.Title className='fs-5'>{isEdit ? "Editar Combo" : "Nuevo Combo"}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <Form ref={formRef} onSubmit={handleSubmit} className="w-100 container">
 
-            <div className={styles.tableros}>
-                <div className={styles.padre}>
-                    <div className={styles.ex}><span role="button" tabIndex={0} onClick={closeWindow} onKeyDown={closeWindow} className={styles.x}>X</span></div>
+                    <Row className="mb-3">
+                        <Col xs={12} md={2}>
+                            <Form.Group controlId="cons_combo">
+                                <Form.Label>Código</Form.Label>
+                                <Form.Control
+                                    name="cons_combo"
+                                    defaultValue={item?.consecutivo}
+                                    disabled
+                                    size="sm"
+                                />
+                            </Form.Group>
+                        </Col>
 
-                    <form ref={formRef} onSubmit={handleSubmit} className={styles.formulario}>
+                        <Col xs={12} md={8}>
+                            <Form.Group controlId="nombre_combo">
+                                <Form.Label>Nombre del Combo</Form.Label>
+                                <Form.Control
+                                    name="nombre_combo"
+                                    defaultValue={item?.nombre}
+                                    required
+                                    size="sm"
+                                />
+                            </Form.Group>
+                        </Col>
+                    </Row>
 
-                        <div className={styles.contenedor1}>
+                    <Row className="mb-3">
+                        {comboFields.map(({ id, label, type, required }) => (
+                            <Col xs={12} md={4} key={id} >
+                                <Form.Group controlId={id}>
+                                    <Form.Label>{label}</Form.Label>
+                                    <Form.Control
+                                        name={id}
+                                        type={type}
+                                        step={type === 'number' ? '0.01' : undefined}
+                                        defaultValue={item?.[id] || ''}
+                                        required={required}
+                                        size="sm"
+                                    />
+                                </Form.Group>
+                            </Col>
+                        ))}
+                    </Row>
 
-                            <div className="mb-3 input-group input-group-sm">
-                                <label htmlFor='cons_combo' className="input-group-text" id="inputGroup-sizing-sm">Cod</label>
-                                <input defaultValue={item?.consecutivo} id='cons_combo' name='cons_combo' aria-label="Small" aria-describedby="inputGroup-sizing-sm" className="form-control" disabled></input>
-                            </div>
+                    {(isEdit ? comboItems : comboData).map((comboItem, index) => (
+                        <Row key={index} className="mb-3">
+                            <Col xs={1} md={3}>
+                                <InputGroup size="sm">
+                                    <InputGroup.Text>Cod</InputGroup.Text>
+                                    <Form.Control
+                                        id={`cons_product-${index}`}
+                                        name={`cons_product-${index}`}
+                                        defaultValue={isEdit ? comboItem?.consecutivo : ""}
+                                        disabled
+                                    />
+                                </InputGroup>
+                            </Col>
 
-                            <div className="mb-3 input-group input-group-sm">
-                                <label htmlFor="nombre_combo" className="input-group-text" id="inputGroup-sizing-sm">Nombre del Combo</label>
-                                <input defaultValue={item?.nombre} id='nombre_combo' name='nombre_combo' aria-label="Small" aria-describedby="inputGroup-sizing-sm" className="form-control" required></input>
-                            </div>
-                        </div>
-
-                        {item &&
-                            products.map((item, key) => (
-                                <div key={key} className={styles.contenedor2}>
-
-                                    <div className="mb-3 input-group input-group-sm">
-                                        <label htmlFor='cons_combo' className="input-group-text" id="inputGroup-sizing-sm">Cod</label>
-                                        <input defaultValue={listaDelCombo[key]?.consecutivo} id='cons_combo' name='cons_combo' aria-label="Small" aria-describedby="inputGroup-sizing-sm" className="form-control" disabled></input>
-                                    </div>
-
-                                    <div className="mb-3 input-group input-group-sm">
-                                        <label htmlFor="nombre_combo" className="input-group-text" id="inputGroup-sizing-sm">Producto</label>
-                                        <input defaultValue={listaDelCombo[key]?.name} id='nombre_combo' name='nombre_combo' aria-label="Small" aria-describedby="inputGroup-sizing-sm" className="form-control" disabled></input>
-                                    </div>
-                                </div>
-                            )
-                            )
-                        }
-
-
-                        {!item &&
-                            products.map((item, key) => (
-                                <div key={key} className={styles.contenedor2}>
-                                    <div className="mb-3 input-group input-group-sm">
-                                        <label htmlFor={'cons_product-' + key} className="input-group-text" id="inputGroup-sizing-sm">Cod</label>
-                                        <input id={'cons_product-' + key} name={'cons_product-' + key} aria-label="Small" aria-describedby="inputGroup-sizing-sm" className="form-control" disabled></input>
-                                    </div>
-
-
-                                    <select id={'producto-' + key} name={'producto-' + key} className="NuevoCombo_select__f6cop form-select form-select-sm">
-                                        {productos.map((item, index) => {
-                                            return <option key={index}>{item.name}</option>;
-                                        })}
-                                    </select>
-                                </div>
-                            )
-                            )
-                        }
+                            <Col xs={11} md={9}>
+                                {isEdit ? (
+                                    <InputGroup size="sm" className="mb-3">
+                                        <InputGroup.Text>Producto</InputGroup.Text>
+                                        <Form.Control
+                                            id={`producto-${index}`}
+                                            name={`producto-${index}`}
+                                            defaultValue={comboItem?.name}
+                                            disabled
+                                        />
+                                    </InputGroup>
+                                ) : (
+                                    <Form.Select
+                                        id={`producto-${index}`}
+                                        name={`producto-${index}`}
+                                        className="form-select-sm"
+                                        required
+                                    >
+                                        <option value="">Selecciona un producto</option>
+                                        {productos.map((p, idx) => (
+                                            <option key={idx} value={p.name}>{p.name}</option>
+                                        ))}
+                                    </Form.Select>
+                                )}
+                            </Col>
+                        </Row>
+                    ))}
 
 
-                        <div className={styles.contenedor3}>
-                            <div>
-                                {!item &&
-                                    <Button onClick={addProduct} variant="primary" size="sm">
-                                        Añadir artículo
-                                    </Button>
-                                }
-                            </div>
-
-                            <div>
-                                <button type="submit" className={"btn btn-" + styleBoton.color + " btn-sm form-control form-control-sm"}>{styleBoton.text}</button>
-                            </div>
-
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+                    <div className="d-flex justify-content-end">
+                        {!isEdit && (
+                            <Button variant="primary" size="sm" onClick={addProduct}>
+                                Añadir artículo
+                            </Button>
+                        )}
+                        <Button
+                            type="submit"
+                            variant={isEdit ? "warning" : "success"}
+                            size="sm"
+                            className="ms-2"
+                        >
+                            {isEdit ? "Editar" : "Agregar"}
+                        </Button>
+                    </div>
+                </Form>
+            </Modal.Body>
+        </Modal>
     );
 }
