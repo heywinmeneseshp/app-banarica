@@ -16,8 +16,9 @@ import { filtrarCategorias } from "@services/api/categorias";
 import { buscarProducto } from "@services/api/productos";
 import { encontrarModulo } from "@services/api/configuracion";
 
+
 export default function Disponibles() {
-    const { almacenByUser } = useAuth();
+    const { almacenByUser, user } = useAuth();
     const formRef = useRef();
 
     // Estados
@@ -32,18 +33,17 @@ export default function Disponibles() {
     // Carga productos y realiza búsqueda cuando cambia el tipo de tabla
     useEffect(() => {
         listarProductosSeguridad().then((res) => {
+            console.log(res);
             setProductos(
                 tablaConsulta ? res : res.filter((item) => item.serial === true)
             );
         });
-        const usuario = JSON.parse(localStorage.getItem('usuario'));
-        encontrarModulo(usuario.username).then(res => {
+        encontrarModulo(user.username).then(res => {
             const config = JSON.parse(res[0].detalles);
-            console.log(config);
             setConfigBotons(config?.botones || []);
         });
         buscarArticulos(); // Buscar productos según formulario
-    }, [tablaConsulta]);
+    }, [tablaConsulta, pagination]);
 
     // Cambiar entre tabla resumen y detallada
     const handleTableConsulta = (isResumen) => {
@@ -72,7 +72,6 @@ export default function Disponibles() {
                     : formData.get("almacen"),
             available: estado,
         };
-        setPagination(1);
         setData(dataBusqueda);
     };
 
@@ -172,47 +171,55 @@ export default function Disponibles() {
                         <>
                             {[
                                 ["estado", "Estado", ["Disponible", "No disponible", "All"]],
-                                ["serial", "Serial"],
-                                ["bag_pack", "Bag Pack"],
+                                ["serial", "Serial Interno"],
+                                ["bag_pack", "Serial Externo"],
                                 ["s_pack", "S Pack"],
                                 ["m_pack", "M Pack"],
                                 ["l_pack", "L Pack"],
-                            ].map(([name, label, options]) => (
-                                <div className="col-md-3" key={name}>
-                                    <div className="input-group input-group-sm">
-                                        <span className="input-group-text">{label}</span>
-                                        {options ? (
-                                            <select
-                                                className="form-select form-select-sm"
-                                                name={name}
-                                                onChange={buscarArticulos}
-                                            >
-                                                {options.map((opt, idx) => (
-                                                    <option
-                                                        key={idx}
-                                                        value={
-                                                            opt === "All"
-                                                                ? "All"
-                                                                : opt === "Disponible"
-                                                                    ? 1
-                                                                    : 0
-                                                        }
+                            ].map(([name, label, options]) => {
+
+                                const mostrar = name == "serial" ? configBotons.includes("dashboard_seriales") : true;
+                                if (mostrar) {
+                                    return (
+                                        <div className="col-md-3" key={name}>
+                                            <div className="input-group input-group-sm">
+                                                <span className="input-group-text">{label}</span>
+                                                {options ? (
+                                                    <select
+                                                        className="form-select form-select-sm"
+                                                        name={name}
+                                                        onChange={buscarArticulos}
                                                     >
-                                                        {opt}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        ) : (
-                                            <input
-                                                type="text"
-                                                className="form-control"
-                                                name={name}
-                                                onChange={buscarArticulos}
-                                            />
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
+                                                        {options.map((opt, idx) => (
+                                                            <option
+                                                                key={idx}
+                                                                value={
+                                                                    opt === "All"
+                                                                        ? "All"
+                                                                        : opt === "Disponible"
+                                                                            ? 1
+                                                                            : 0
+                                                                }
+                                                            >
+                                                                {opt}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                ) : (
+                                                    <input
+                                                        type="text"
+                                                        className="form-control"
+                                                        name={name}
+                                                        onChange={buscarArticulos}
+                                                    />
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                } else {
+                                    return null;
+                                }
+                            })}
                         </>
                     )}
 

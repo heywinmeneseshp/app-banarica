@@ -17,7 +17,7 @@ export default function ConsultaDetallada({ data, setPagination, limit, paginati
 
     useEffect(() => {
         listar(data);
-    }, [data, limit]);
+    }, [data, limit, pagination]);
 
     async function listar(data) {
         let categoria = await filtrarCategorias(1, 1, "Seguridad");
@@ -28,7 +28,6 @@ export default function ConsultaDetallada({ data, setPagination, limit, paginati
             },
             "almacen": {
                 "consecutivo": data?.cons_almacen ? data?.cons_almacen : ""
-
             },
             "pagination": {
                 "offset": pagination,

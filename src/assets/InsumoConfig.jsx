@@ -2,26 +2,46 @@ import React, { useEffect, useRef, useState } from "react";
 import styles from "@components/shared/Formularios/Formularios.module.css";
 import { listarProductos } from "@services/api/productos";
 import { actualizarModulo, encontrarModulo } from "@services/api/configuracion";
+import { Col, Form, InputGroup, Row } from "react-bootstrap";
 
-function InsumoConfig({handleConfig, modulo_confi }) {
+
+function InsumoConfig({ handleConfig, modulo_confi }) {
   const formRef = useRef();
 
 
   const [productos, setProductos] = useState([]);
   const [selectedConsecutivo, setSelectedConsecutivo] = useState('');
   const [tags, setTags] = useState([]);
+  const [tiempoBloque, setTiempoBloque] = useState({});
   const inputRef = useRef(null);
 
   useEffect(() => {
     listarProductos().then(res => setProductos(res || []));
     encontrarModulo(modulo_confi).then(res => {
-      setTags(JSON.parse(res[0].detalles || "[]"));
+      const response = JSON.parse(res[0].detalles);
+      setTags(response?.tags || []);
+      setTiempoBloque({
+        hora_inicial: response.hora_inicial,
+        hora_final: response.hora_final,
+        fecha_inicio: response.fecha_inicio,
+        correos_alerta: response.correos_alerta
+      });
+
+
     });
   }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const json = JSON.stringify(tags);
+    const formData = new FormData(formRef.current);
+    const cofiguracion = {
+      "tags": tags,
+      "hora_inicial": formData.get("hora_inicial"),
+      "hora_final": formData.get("hora_final"),
+      "fecha_inicio": formData.get("fecha_inicio"),
+      "correos_alerta": formData.get("correos_alerta")
+    };
+    const json = JSON.stringify(cofiguracion);
     actualizarModulo({
       "modulo": modulo_confi,
       "detalles": json
@@ -36,7 +56,7 @@ function InsumoConfig({handleConfig, modulo_confi }) {
     if (inputRef.current) {
       inputRef.current.value = "";
       setSelectedConsecutivo("");
-    } 
+    }
   };
 
   const handleRemoveTag = (tag) => {
@@ -113,9 +133,6 @@ function InsumoConfig({handleConfig, modulo_confi }) {
               </div>
 
 
-
-
-
               <div className="mt-12">
                 <div className="card">
 
@@ -126,7 +143,7 @@ function InsumoConfig({handleConfig, modulo_confi }) {
                         return (
                           <span
                             key={index}
-                            className="badge bg-primary me-2 mb-2 d-flex align-items-center"
+                            className="badge bg-primary me-2 mb-1 d-flex align-items-center"
                           >
                             {res?.name}
                             <button
@@ -142,6 +159,42 @@ function InsumoConfig({handleConfig, modulo_confi }) {
                   </div>
                 </div>
               </div>
+
+              {/*Correos de alerta*/}
+              <div className="col-md-12">
+
+                <InputGroup size="sm" className="mb-3">
+                  <InputGroup.Text id="label-correos-alerta">Correos alertas:</InputGroup.Text>
+                  <Form.Control
+                    id="correos_alerta"
+                    name="correos_alerta"
+                    type="text"
+                    aria-label="Correos alertas"
+                    aria-describedby="label-correos-alerta"
+                    defaultValue={tiempoBloque.correos_alerta}
+                  />
+                </InputGroup>
+              </div>
+              {/*Fin correoa de alerta */}
+              {/*Habilitar vista sellos */}
+              <Row className="mb-2">
+                <Col xs={12} md={4} className="mb-1">
+                  <Form.Label size="sm">Fecha de bloqueo:</Form.Label>
+                  <Form.Control size="sm" type="date" name="fecha_inicio" defaultValue={tiempoBloque.fecha_inicio} />
+                </Col>
+                <Col xs={12} md={4} className="mb-2">
+                  <Form.Label size="sm">Hora inicio:</Form.Label>
+                  <Form.Control size="sm" type="time" name="hora_inicial" defaultValue={tiempoBloque.hora_inicial} />
+                </Col>
+                <Col xs={12} md={4} className="mb-2">
+                  <Form.Label size="sm">Hora fin:</Form.Label>
+                  <Form.Control size="sm" type="time" name="hora_final" defaultValue={tiempoBloque.hora_final} />
+                </Col>
+              </Row>
+              {/*fin habilitar vista sellos */}
+
+
+
               <div className="col-12 d-flex justify-content-end">
                 <button
                   type="submit"

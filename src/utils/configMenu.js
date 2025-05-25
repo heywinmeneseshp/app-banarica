@@ -39,13 +39,14 @@ const menuCompleto = {
 };
 
 const botones = [
-    'dashboard_carrusel',
-    'dashboard_relacion',
+    'dashboard_descargar_carrusel',
+    'dashboard_descargar_relacion',
     'dashboard_agregar',
-    'dashboard_filtros',
     'disponibles_serial',
     'disponibles_detallado',
-    'contenedores_edicion'
+    'contenedores_edicion',
+    'dashboard_configuracion',
+    'dashboard_seriales',
 ];
 
 const menuPrincipal = () => {

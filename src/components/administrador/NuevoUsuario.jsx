@@ -148,7 +148,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
     };
 
     const handleRemoveBoton = (tag) => {
-        const newList = setTagBotones.filter(item => item !== tag);
+        const newList = tagBotones.filter(item => item !== tag);
         setTagBotones(newList);
     };
 

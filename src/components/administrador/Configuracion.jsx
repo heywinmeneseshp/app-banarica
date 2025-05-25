@@ -3,46 +3,56 @@ import React, { useState, useEffect, useRef } from 'react';
 import { actualizarEmpresa, actualizarModulo, encontrarEmpresa, encontrarModulo } from '@services/api/configuracion';
 // Bootstrap
 import { Container, Form, InputGroup } from 'react-bootstrap';
+import { useAuth } from "@hooks/useAuth";
 // CSS
 import styles from '@styles/NuevoCombo.module.css';
 import styles1 from '@styles/Config.module.css';
 
 export default function Configuracion({ setOpen }) {
     const formRef = useRef();
+    const { user } = useAuth();
     const [securityCheck, setSecurityCheck] = useState(false);
     const [semana, setSemana] = useState({});
     const [empresa, setEmpresa] = useState({});
     const [usuario, setUsuario] = useState(null);
     const [configUsuario, setConfigUsuario] = useState({});
+    const [correosAlerta, setCorreosAlerta] = useState("");
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('usuario');
-        var username = null;
-        if (storedUser) {
+        const init = async () => {
             try {
-                const parsedUser = JSON.parse(storedUser);
+                const parsedUser = user || {};
                 setUsuario(parsedUser);
-                username = parsedUser.username;
-            } catch (error) {
-                console.error('Error al parsear usuario desde localStorage:', error);
-            }
-        }
+                const username = parsedUser?.username || "";
 
-        // Cargar configuraciones desde API
-        Promise.all([
-            encontrarModulo("Seguridad"),
-            encontrarModulo("Semana"),
-            encontrarEmpresa(),
-            encontrarModulo(username),
-        ]).then(([moduloSeguridad, moduloSemana, empresaData, userConfig]) => {
-            setSecurityCheck(moduloSeguridad[0]?.habilitado || false);
-            setSemana(moduloSemana[0] || {});
-            setEmpresa(empresaData || {});
-            setConfigUsuario(JSON.parse(userConfig[0].detalles) || {});
-        }).catch(error => {
-            console.error('Error al cargar datos de configuración:', error);
-        });
+                const [
+                    [moduloSeguridad = {}],
+                    [moduloSemana = {}],
+                    empresaData = {},
+                    [userConfig = {}],
+                    [moduloCorreos = {}],
+                ] = await Promise.all([
+                    encontrarModulo("Seguridad"),
+                    encontrarModulo("Semana"),
+                    encontrarEmpresa(),
+                    username ? encontrarModulo(username) : Promise.resolve([{}]),
+                    encontrarModulo("Correos_alerta"),
+                ]);
+
+                setSecurityCheck(Boolean(moduloSeguridad.habilitado));
+                setSemana(moduloSemana);
+                setEmpresa(empresaData);
+                setConfigUsuario(JSON.parse(userConfig.detalles));
+                setCorreosAlerta(moduloCorreos.detalles || "");
+
+            } catch (error) {
+                console.error("Error al cargar datos de configuración:", error);
+            }
+        };
+
+        init();
     }, []);
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -62,6 +72,12 @@ export default function Configuracion({ setOpen }) {
                 semana_siguiente: formData.get('siguiente'),
                 semana_previa: formData.get('anterior'),
                 anho_actual: formData.get('anho_actual'),
+            });
+
+            // Actualizar módulo de semana
+            await actualizarModulo({
+                modulo: "Correos_alerta_combustible",
+                detalles: formData.get('Correos_alerta_combustible'),
             });
 
             // Actualizar datos de la empresa
@@ -92,9 +108,6 @@ export default function Configuracion({ setOpen }) {
         setOpen(false);
     };
 
-    const changeSecurity = () => {
-        setSecurityCheck(prevState => !prevState);
-    };
 
     const isSuperAdmin = usuario?.id_rol === "Super administrador";
 
@@ -124,7 +137,7 @@ export default function Configuracion({ setOpen }) {
                                 <Form.Select
                                     name="pantalla_inicio"
                                     id="pantalla_inicio"
-                               
+
                                 >
                                     <option selected={"Dashboard Combustible" == configUsuario?.inicio} >Dashboard Combustible</option>
                                     <option selected={"Dashboard Contenedores" == configUsuario?.inicio}>Dashboard Contenedores</option>
@@ -171,17 +184,21 @@ export default function Configuracion({ setOpen }) {
                                     />
                                 </InputGroup>
 
-                                {/* Seguridad */}
-                                <span>Seguridad:</span>
+                                {/* Combustible */}
+
+                                <span>Alerta combustible:</span>
                                 <InputGroup size="sm">
-                                    <input
-                                        type="checkbox"
-                                        name="seguridad"
-                                        id="seguridad"
-                                        checked={securityCheck}
-                                        onChange={changeSecurity}
+                                    <Form.Control
+                                        id="correos_alerta"
+                                        name="correos_alerta"
+                                        type="text"
+                                        placeholder="usuario@correo.com,usuario2@correo.com,..."
+                                        className={styles1.input_semana}
+                                        defaultValue={correosAlerta}
                                     />
                                 </InputGroup>
+
+
 
                                 {/* Configuración de semana */}
                                 <span>Semana:</span>

@@ -6,15 +6,16 @@ import { enviarEmail } from "@services/api/email";
 import Loader from "@components/shared/Loader";
 import { actualizarSerial } from "@services/api/seguridad";
 
-function VistaContenedor({ vistaCont, setVistaCont }) {
+
+function VistaContenedor({ vistaCont, setVistaCont, correos }) {
     const [items, setItems] = useState([]);
     const [serialChecks, setSerialChecks] = useState({});
     const [massApproveActive, setMassApproveActive] = useState({});
     const [loading, setLoading] = useState(false);
     const [serialesSinRevision, setSerialesSinRevision] = useState([]);
 
+
     useEffect(() => {
-        console.log(vistaCont);
         if (vistaCont?.serial_de_articulos?.length) {
             filtrarProductosAsync();
         }
@@ -140,7 +141,7 @@ function VistaContenedor({ vistaCont, setVistaCont }) {
     `;
 
         await enviarEmail(
-            "hmeneses@banarica.com,ogomez@banarica.com,jtaite@banarica.com,coordportuario@seguridadnapolesltda.com,avega@banarica.com",
+            correos,
             `Alerta: Inconsistencias en unidad ${contenedor} - ${fechaFormateada}`,
             cuerpo
         );
