@@ -18,7 +18,7 @@ import { encontrarModulo } from "@services/api/configuracion";
 
 
 export default function Disponibles() {
-    const { almacenByUser, user } = useAuth();
+    const { almacenByUser, getUser } = useAuth();
     const formRef = useRef();
 
     // Estados
@@ -29,6 +29,8 @@ export default function Disponibles() {
     const [limit, setLimit] = useState(10);
     const [results, setResults] = useState(0);
     const [configBotons, setConfigBotons] = useState([]);
+    const user = getUser();
+ 
 
     // Carga productos y realiza búsqueda cuando cambia el tipo de tabla
     useEffect(() => {
@@ -43,7 +45,7 @@ export default function Disponibles() {
             setConfigBotons(config?.botones || []);
         });
         buscarArticulos(); // Buscar productos según formulario
-    }, [tablaConsulta, pagination]);
+    }, [tablaConsulta]);
 
     // Cambiar entre tabla resumen y detallada
     const handleTableConsulta = (isResumen) => {
@@ -178,7 +180,7 @@ export default function Disponibles() {
                                 ["l_pack", "L Pack"],
                             ].map(([name, label, options]) => {
 
-                                const mostrar = name == "serial" ? configBotons.includes("dashboard_seriales") : true;
+                                const mostrar = name == "serial" ? configBotons.includes("disponibles_serial") : true;
                                 if (mostrar) {
                                     return (
                                         <div className="col-md-3" key={name}>

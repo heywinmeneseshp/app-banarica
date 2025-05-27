@@ -24,8 +24,8 @@ function useProviderAuth() {
         try {
             const { data } = await axios.post(endPoints.auth.login, { username: username, password: password });
 
-            const expire = 1/48;
-                   
+            const expire = 1 / 24;
+
             Cookie.set('token', data.token, { expires: expire });
             axios.defaults.headers.Authorization = 'Bearer ' + data.token;
             const res = await axios.get(endPoints.auth.profile);
@@ -34,20 +34,20 @@ function useProviderAuth() {
 
             //Guardar usuario en local storage
             const usuario = res.data.usuario;
-          
+
             const usuarioComoCadena = JSON.stringify(usuario);
-            
+
             localStorage.setItem('usuario', usuarioComoCadena);
 
             const almacenes = res.data.almacenes.sort((a, b) => {
                 if (a.nombre == b.nombre) {
-                  return 0;
+                    return 0;
                 }
                 if (a.nombre < b.nombre) {
-                  return -1;
+                    return -1;
                 }
                 return 1;
-              });
+            });
             setAlmacenByUser(almacenes);
             const almacenesComoCadena = JSON.stringify(almacenes);
             localStorage.setItem('almacenByUser', almacenesComoCadena);
@@ -58,5 +58,12 @@ function useProviderAuth() {
 
 
     };
-    return { user, login, almacenByUser, setAlmacenByUser, setUser };
+
+    const getUser = () => {
+        const usuario = localStorage.getItem('usuario');
+        const usuarioComoObjeto = JSON.parse(usuario);
+        return usuarioComoObjeto;
+    };
+
+    return { user, login, almacenByUser, setAlmacenByUser, setUser, getUser };
 }

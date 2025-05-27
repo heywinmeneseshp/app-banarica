@@ -3,16 +3,19 @@ import styles from "@components/shared/Formularios/Formularios.module.css";
 import { filtrarProductos } from "@services/api/productos";
 import { BsCheckCircle, BsXCircle } from "react-icons/bs";
 import { enviarEmail } from "@services/api/email";
+import { useAuth } from "@hooks/useAuth";
 import Loader from "@components/shared/Loader";
 import { actualizarSerial } from "@services/api/seguridad";
 
 
-function VistaContenedor({ vistaCont, setVistaCont, correos }) {
+function VistaContenedor({ vistaCont, setVistaCont, correos, configProducts }) {
+    const { getUser } = useAuth();
     const [items, setItems] = useState([]);
     const [serialChecks, setSerialChecks] = useState({});
     const [massApproveActive, setMassApproveActive] = useState({});
     const [loading, setLoading] = useState(false);
     const [serialesSinRevision, setSerialesSinRevision] = useState([]);
+    const user = getUser();
 
 
     useEffect(() => {
@@ -23,8 +26,9 @@ function VistaContenedor({ vistaCont, setVistaCont, correos }) {
 
     const filtrarProductosAsync = async () => {
         try {
-            const usuario = JSON.parse(localStorage.getItem('usuario'));
-            const sinRevisar = usuario.id_rol === "Super administrador" ? vistaCont.serial_de_articulos : vistaCont.serial_de_articulos.filter(item => item.revisado == false);
+            const usuario = user;
+            let sinRevisar = usuario.id_rol === "Super administrador" ? vistaCont.serial_de_articulos : vistaCont.serial_de_articulos.filter(item => (item.revisado == false) && configProducts.includes(item.cons_producto));
+            sinRevisar = sinRevisar.filter(item => configProducts.includes(item.cons_producto) == true);
             setSerialesSinRevision(sinRevisar);
             const consecutivos = sinRevisar.map(item => item.cons_producto);
             const productos = await filtrarProductos({ producto: { consecutivo: consecutivos } });

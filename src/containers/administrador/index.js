@@ -1,5 +1,6 @@
 import React from 'react';
 import { useContext } from 'react';
+import { useAuth } from '@hooks/useAuth';
 import AppContext from '@context/AppContext';
 //Bootstrap
 //Components
@@ -31,6 +32,8 @@ import MotivoDeRechazo from '@containers/administrador/MotivoDeRechazo';
 export default function Adminsitrador() {
 
   const { initialAdminMenu } = useContext(AppContext);
+  const { getUser } = useAuth();
+  const user = getUser();
 
   return (
     <>
@@ -42,7 +45,7 @@ export default function Adminsitrador() {
         {initialAdminMenu.adminMenu.productos && <Producto />}
         {initialAdminMenu.adminMenu.proveedores && <Proveedor />}
         {initialAdminMenu.adminMenu.transporte && <Transporte />}
-        {initialAdminMenu.adminMenu.usuarios && <Users />}
+        {(initialAdminMenu.adminMenu.usuarios && user.id_rol == "Super administrador" ) && <Users />}
         {initialAdminMenu.adminMenu.etiquetas && <Etiquetas />}
         {initialAdminMenu.adminMenu.MotivoDeRechazo && <MotivoDeRechazo/>}
         {/*Maestro*/}

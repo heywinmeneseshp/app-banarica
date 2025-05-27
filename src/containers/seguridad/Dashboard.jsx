@@ -14,7 +14,7 @@ import { useAuth } from "@hooks/useAuth";
 export default function Dashboard() {
     const formRef = useRef();
     const tableRef = useRef(null);
-    const { user } = useAuth();
+    const { getUser } = useAuth();
 
     // Fecha inicial y final por defecto
     const yesterday = new Date();
@@ -38,27 +38,25 @@ export default function Dashboard() {
     const [contenedor, setContenedor] = useState(null);
     const [botones, setBotones] = useState([]);
     const [bloqueo, setBloqueo] = useState({});
+    const user = getUser();
 
     useEffect(() => {
         const fetchConfiguracion = async () => {
             try {
+                const username = user?.username;
                 const [moduloRes, configBotonsRes] = await Promise.all([
                     encontrarModulo("Relación_seguridad"),
-                    encontrarModulo(user.usename),
+                    encontrarModulo(username),
                 ]);
-
-                const configUsuario = JSON.parse(configBotonsRes?.[0]?.detalles || "{}");
-                const detallesModulo = JSON.parse(moduloRes?.[0]?.detalles || "{}");
-
-                setBotones(configUsuario.botones || []);
+                const botonesList = JSON.parse(configBotonsRes[0].detalles).botones;
+                const detallesModulo = JSON.parse(moduloRes?.[0]?.detalles);
+                setBotones(botonesList);
                 setBloqueo(detallesModulo);
-
                 const consecutivos = detallesModulo.tags;
-                if (!Array.isArray(consecutivos) || consecutivos.length === 0) return setConfig([]);
+                if (consecutivos.length === 0) return setConfig([]);
 
-                const { producto = [] } = await filtrarProductos({ producto: { consecutivo: consecutivos } });
+                const producto = await filtrarProductos({ producto: { consecutivo: consecutivos, isBlock: false } });
                 const resultado = consecutivos.map(c => producto.find(p => p.consecutivo === c)).filter(Boolean);
-
                 setConfig(resultado);
             } catch (error) {
                 console.error("Error al obtener configuración:", error);
@@ -120,7 +118,7 @@ export default function Dashboard() {
                                 onChange={handleStartDateChange}
                                 type="date"
                                 id="fecha-inicio"
-                                min={user.id_rol == "Super administrador" ? "2024-01-01" : bloqueo.fecha_inicio} 
+                                min={user.id_rol == "Super administrador" ? "2024-01-01" : bloqueo.fecha_inicio}
                                 name="fecha-inicio"
                                 className="form-control"
                                 aria-label="Fecha inicio"
@@ -206,8 +204,8 @@ export default function Dashboard() {
                                 let title = item.name.charAt(0).toUpperCase() + item.name.toLowerCase().slice(1);
                                 return (<th className="d-none d-md-table-cell" key={key}>{title}</th>);
                             })}
-                            {botones.includes("dashboard_agregar") || user.id_rol == "Super administrador" &&<th></th>}
-                            {botones.includes('dashboard_seriales') || user.id_rol == "Super administrador" &&<th></th>}
+                            {(botones.includes("dashboard_agregar") || user.id_rol == "Super administrador") && <th></th>}
+                            {(botones.includes('dashboard_seriales') || user.id_rol == "Super administrador") && <th></th>}
                         </tr>
                     </thead>
                     <tbody>
@@ -224,9 +222,9 @@ export default function Dashboard() {
                                     <td className="text-center">{item?.Contenedor?.contenedor}</td>
                                     {configuracion.map((itemConfig, key) => {
                                         const serial = seriales.find(item2 => itemConfig.consecutivo === item2.cons_producto);
-                                        return (<td className="text-center d-none d-md-table-cell" key={key}>{serial?.serial}</td>);
+                                        return (<td className="text-center d-none d-md-table-cell" key={key}>{serial?.revisado == false ? serial?.serial : ""}</td>);
                                     })}
-                                    {botones.includes("dashboard_agregar") || user.id_rol == "Super administrador" &&  <td className="text-custom-small text-center align-middle" style={{ padding: '2px', width: '45px' }}>
+                                    {(botones.includes("dashboard_agregar") || user.id_rol == "Super administrador") && <td className="text-custom-small text-center align-middle" style={{ padding: '2px', width: '45px' }}>
                                         <button
 
                                             type="button"
@@ -244,7 +242,7 @@ export default function Dashboard() {
                                             <FaPlus />
                                         </button>
                                     </td>}
-                                    {botones.includes('dashboard_seriales') || user.id_rol == "Super administrador" && <td className="text-custom-small text-center align-middle" style={{ padding: '2px', width: '45px' }}>
+                                    {(botones.includes('dashboard_seriales') || user.id_rol == "Super administrador") && <td className="text-custom-small text-center align-middle" style={{ padding: '2px', width: '45px' }}>
                                         <button
                                             onClick={() => setVistaCont(item)}
                                             type="button"
@@ -270,10 +268,10 @@ export default function Dashboard() {
 
                 <Paginacion setPagination={setOffset} pagination={offset} total={total} limit={25} />
                 {openConfig && <InsumoConfig handleConfig={handleConfig} modulo_confi={"Relación_seguridad"} />}
-                {vistaCont && <VistaContenedor vistaCont={vistaCont} setVistaCont={setVistaCont} correos={bloqueo?.correos_alerta} />}
+                {vistaCont && <VistaContenedor  configProducts={bloqueo.tags} vistaCont={vistaCont} setVistaCont={setVistaCont} correos={bloqueo?.correos_alerta} />}
             </div>
 
-            {contenedor && <AsignarSeriales contenedor={contenedor} setContenedor={setContenedor} />}
+            {contenedor && <AsignarSeriales  contenedor={contenedor} setContenedor={setContenedor} />}
         </>
     );
 }

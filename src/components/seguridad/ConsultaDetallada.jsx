@@ -18,9 +18,10 @@ export default function ConsultaResumen({ data, setPagination, limit, pagination
     useEffect(() => {
         const alamcenes = almacenByUser.map(item => item.consecutivo);
         data.cons_almacen = data.cons_almacen == "" ? alamcenes : data.cons_almacen;
-        listarSeriales(pagination, limit, data).then(res => {
+        listarSeriales(pagination, limit, { ...data, serial: data.serial ? data.serial : "" }).then(res => {
             setTabla(res.data ? res.data : []);
-            setTotal(res.total);
+            console.log(res.data);
+            setTotal(res);
             setResults(res.total);
         });
         const usuario = user;
@@ -38,7 +39,7 @@ export default function ConsultaResumen({ data, setPagination, limit, pagination
                         <tr>
                             <th className="text-custom-small text-center">Alm</th>
                             <th className="text-custom-small text-center">Artículo</th>
-                            {configBotons.includes("dashboard_seriales") && <th className="text-custom-small text-center">Serial Interno</th>}
+                            {configBotons.includes("disponibles_serial") && <th className="text-custom-small text-center">Serial Interno</th>}
                             <th className="text-custom-small text-center">Serial Externo</th>
                             <th className="text-custom-small text-center">S Pack</th>
                             <th className="text-custom-small text-center">M Pack</th>
@@ -52,7 +53,7 @@ export default function ConsultaResumen({ data, setPagination, limit, pagination
                                 <tr key={index}>
                                     <td className="text-custom-small text-center">{item.cons_almacen}</td>
                                     <td className="text-custom-small text-center">{item.producto.name}</td>
-                                    {configBotons.includes("dashboard_seriales") && <td className="text-custom-small text-center">{item.serial}</td>}
+                                    {configBotons.includes("disponibles_serial") && <td className="text-custom-small text-center">{item.serial}</td>}
                                     <td className="text-custom-small text-center">{item.bag_pack}</td>
                                     <td className="text-custom-small text-center">{item.s_pack}</td>
                                     <td className="text-custom-small text-center">{item.m_pack}</td>

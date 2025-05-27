@@ -13,13 +13,14 @@ import { filtrarProductos } from '@services/api/productos';
 import { paginarEmbarques } from '@services/api/embarques';
 import { actualizarContenedor } from '@services/api/contenedores';
 import { paginarCombos } from '@services/api/combos';
+import { useAuth } from '@hooks/useAuth';
 import * as XLSX from 'xlsx';
 import Transbordar from '@assets/Seguridad/Listado/Transbordar';
 import CargarExcel from '@assets/Seguridad/Listado/CargueMasivo';
 import endPoints from '@services/api';
 
 const ListadoContenedores = () => {
-
+  const { getUser } = useAuth();
   const formRef = useRef();
   const tablaRef = useRef();
   const [tableData, setTableData] = useState([]);
@@ -40,31 +41,33 @@ const ListadoContenedores = () => {
   const [bol, setBol] = useState({});
   const [openTransbordar, setOpenTransbordar] = useState(false);
   const [openMasivo, setOpenMasivo] = useState(false);
+  const user = getUser();
   //const [noVerElimnados, setNoVerEliminados] = useState(true);
 
 
   const coloresPastel = [
-    "#d4d8d8",  // Oscurecido de #eaeded
-    "#e2e5e5",  // Oscurecido de #fbfcfc
-    "#e2ccba",  // Oscurecido de #fae5d3
-    "#e3daae",  // Oscurecido de #fcf3cf
-    "#b9d1c0",  // Oscurecido de #d4efdf
-    "#b6d9d1",  // Oscurecido de #d1f2eb
-    "#d9a3a3",  // Oscurecido de #f4c2c2 (Pastel Red)
-    "#b1b1a8",  // Oscurecido de #cfcfc4 (Pastel Green)
-    "#d4a7a8",  // Oscurecido de #f7c6c7 (Pastel Pink)
-    "#b4bed1",  // Oscurecido de #d9e3f0 (Pastel Blue)
-    "#c8a9da",  // Oscurecido de #e4d0f4 (Pastel Purple)
-    "#c4cfb7",  // Oscurecido de #e2e8d3 (Pastel Lime)
-    "#d0d0b5",  // Oscurecido de #f4f2d1 (Pastel Yellow)
-    "#b4a8c8",  // Oscurecido de #d3c8e5 (Pastel Lavender)
-    "#a6d9dc",  // Oscurecido de #d8f2f7 (Pastel Aqua)
-    "#c3a8a8",  // Oscurecido de #e2cfcf (Pastel Rose)
-    "#d2baa7",  // Oscurecido de #f3e3d3 (Pastel Peach)
-    "#c5b5a7",  // Oscurecido de #e4d7d0 (Pastel Apricot)
-    "#b4c4c8",  // Oscurecido de #d9e0e4 (Pastel Sky Blue)
-    "#c0d9c0"   // Oscurecido de #e6f3e6 (Pastel Mint)
-  ];
+  "#FFCDD2", // Rosado pastel
+  "#F8BBD0", // Rosa
+  "#E1BEE7", // Lila
+  "#D1C4E9", // Lavanda
+  "#C5CAE9", // Azul suave
+  "#BBDEFB", // Azul cielo
+  "#B3E5FC", // Azul celeste
+  "#B2EBF2", // Aguamarina
+  "#B2DFDB", // Verde menta
+  "#C8E6C9", // Verde suave
+  "#DCEDC8", // Verde lima
+  "#F0F4C3", // Amarillo pálido
+  "#FFF9C4", // Amarillo claro
+  "#FFECB3", // Amarillo dorado
+  "#FFE0B2", // Durazno
+  "#FFCCBC", // Coral pastel
+  "#D7CCC8", // Beige tostado
+  "#F5F5F5", // Blanco humo
+  "#CFD8DC", // Gris azulado (el único gris claro que se ve bien)
+  "#FFE082"  // Amarillo pastel fuerte
+];
+
 
 
   const handleCellEdit = async (row, field, e) => {
@@ -191,7 +194,6 @@ const ListadoContenedores = () => {
       if (item) {
         const object = { ...tableData[index] };
         const idListado = object.id;
-        console.log(idListado);
         actualizarListado(idListado, { habilitado: false });
       }
     });
@@ -233,12 +235,14 @@ const ListadoContenedores = () => {
   };
 
   const listar = async () => {
-    const modulo = await encontrarModulo("Relación_listado");
+    const modulo = await encontrarModulo("Relación_listado_"+user.username);
     const configTabla = localStorage.getItem("ListadoConfig") || `[ "Fecha",
       "Sem", "BoL", "Naviera", "Destino", "Llenado", "Contenedor", "Insumos de segurdad",
       "Producto", "Cajas", "Peso Neto" ]`;
     setConfigTabla(configTabla);
-    const consecutivos = JSON.parse(modulo[0]?.detalles || "[]");
+    const consecutivos = JSON.parse(modulo[0]?.detalles).tags;
+    console.log(consecutivos);
+    console.log(modulo);
     if (consecutivos.length > 0) {
       const insumos = await filtrarProductos({ producto: { consecutivo: consecutivos } });
       const result = consecutivos.map(consecutivo => insumos.find(e => e.consecutivo === consecutivo));
@@ -272,7 +276,6 @@ const ListadoContenedores = () => {
     setAlmacenes(almacenList);
     setTableData(listadoList.data);
     setTotal(listadoList.total);
-    console.log(listadoList.data);
     aplicarColor(listadoList.data);
   };
 
@@ -284,41 +287,56 @@ const ListadoContenedores = () => {
   };
 
 
-  const handleExport = () => {
-    // Convertir tabla a hoja de cálculo
-    const ws = XLSX.utils.table_to_sheet(tablaRef.current);
-    const wb = XLSX.utils.book_new();
+ const handleExport = () => {
+  const ws = XLSX.utils.table_to_sheet(tablaRef.current);
+  const wb = XLSX.utils.book_new();
 
-    // Extraer los valores de los inputs y agregarlos a la hoja de cálculo
-    const table = tablaRef.current;
-    const rows = table.querySelectorAll('tbody tr');
-    rows.forEach((row, rowIndex) => {
-      const cells = row.querySelectorAll('td');
-      cells.forEach((cell, cellIndex) => {
-        if (cell.querySelector('input')) {
-          const input = cell.querySelector('input');
-          ws[XLSX.utils.encode_cell({ r: rowIndex + 1, c: cellIndex })] = { v: input.value, t: 's' }; // 'v' es el valor, 't' es el tipo de datos (string)
-        }
-      });
+  // Extraer valores de los inputs manualmente
+  const table = tablaRef.current;
+  const rows = table.querySelectorAll('tbody tr');
+
+  rows.forEach((row, rowIndex) => {
+    const cells = row.querySelectorAll('td');
+    cells.forEach((cell, cellIndex) => {
+      const input = cell.querySelector('input');
+      if (input) {
+        const cellAddress = XLSX.utils.encode_cell({ r: rowIndex + 1, c: cellIndex });
+        ws[cellAddress] = { v: input.value, t: 's' };
+      }
     });
+  });
 
-    // Eliminar la primera columna
-    const range = XLSX.utils.decode_range(ws['!ref']); // Obtener el rango de celdas
-    for (let R = range.s.r; R <= range.e.r; R++) {
-      for (let C = range.s.c; C < range.e.c; C++) {
-        const address = XLSX.utils.encode_cell({ r: R, c: C });
-        const newAddress = XLSX.utils.encode_cell({ r: R, c: C - 1 });
-        ws[newAddress] = ws[address];
-        delete ws[address];
+  // Obtener el rango actual
+  const range = XLSX.utils.decode_range(ws['!ref']);
+
+  // Eliminar la primera columna correctamente (copiar todas las demás una posición a la izquierda)
+  for (let R = range.s.r; R <= range.e.r; R++) {
+    for (let C = range.s.c + 1; C <= range.e.c; C++) {
+      const oldAddr = XLSX.utils.encode_cell({ r: R, c: C });
+      const newAddr = XLSX.utils.encode_cell({ r: R, c: C - 1 });
+      if (ws[oldAddr]) {
+        ws[newAddr] = ws[oldAddr];
+      } else {
+        delete ws[newAddr]; // Evita celdas vacías innecesarias
       }
     }
-    range.e.c -= 1;
-    ws['!ref'] = XLSX.utils.encode_range(range);
+  }
 
-    // Añadir la hoja de cálculo al libro y exportar
-    XLSX.utils.book_append_sheet(wb, ws, "Listado de Contenedores");
-    XLSX.writeFile(wb, "Listado de Contenedores.xlsx");
-  };
+  // Ahora eliminamos las celdas originales de la primera columna
+  for (let R = range.s.r; R <= range.e.r; R++) {
+    const firstColAddr = XLSX.utils.encode_cell({ r: R, c: range.s.c + (range.s.c === 0 ? 0 : 1) });
+    delete ws[firstColAddr];
+  }
+
+  // Actualizamos el rango
+  range.s.c += 1;
+  range.e.c -= 1;
+  ws['!ref'] = XLSX.utils.encode_range(range);
+
+  XLSX.utils.book_append_sheet(wb, ws, "Listado de Contenedores");
+  XLSX.writeFile(wb, "Listado de Contenedores.xlsx");
+};
+
 
 
 
@@ -569,7 +587,6 @@ const ListadoContenedores = () => {
               .reduce((acc, item) => acc + item.cajas_unidades, 0);
 
             const existeRechazo = cajasPorContenedor === sumaToriaCajas ? "" : "text-danger";
-
             return (
               <tr key={row.id}>
                 <td className="text-custom-small text-center">
@@ -727,7 +744,7 @@ const ListadoContenedores = () => {
 
 
       <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
-      {openConfigInsumo && <InsumoConfig handleConfig={handleConfig} modulo_confi={"Relación_listado"} />}
+      {openConfigInsumo && <InsumoConfig handleConfig={handleConfig} modulo_confi={"Relación_listado_"+user.username } />}
       {openConfigTabla && <ListadoConfig handleConfig={handleConfig} modulo_confi={"Tabla_listado"} />}
 
       {openConfig && <div className={styles2.fondo}>

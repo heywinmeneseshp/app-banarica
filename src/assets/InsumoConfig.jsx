@@ -42,10 +42,13 @@ function InsumoConfig({ handleConfig, modulo_confi }) {
       "correos_alerta": formData.get("correos_alerta")
     };
     const json = JSON.stringify(cofiguracion);
+
     actualizarModulo({
       "modulo": modulo_confi,
       "detalles": json
     });
+
+
     handleConfig();
   };
 
@@ -161,7 +164,7 @@ function InsumoConfig({ handleConfig, modulo_confi }) {
               </div>
 
               {/*Correos de alerta*/}
-              <div className="col-md-12">
+              {(modulo_confi === "Relación_seguridad") && <div className="col-md-12">
 
                 <InputGroup size="sm" className="mb-3">
                   <InputGroup.Text id="label-correos-alerta">Correos alertas:</InputGroup.Text>
@@ -174,10 +177,10 @@ function InsumoConfig({ handleConfig, modulo_confi }) {
                     defaultValue={tiempoBloque.correos_alerta}
                   />
                 </InputGroup>
-              </div>
+              </div>}
               {/*Fin correoa de alerta */}
               {/*Habilitar vista sellos */}
-              <Row className="mb-2">
+              {(modulo_confi === "Relación_seguridad") && <Row className="mb-2">
                 <Col xs={12} md={4} className="mb-1">
                   <Form.Label size="sm">Fecha de bloqueo:</Form.Label>
                   <Form.Control size="sm" type="date" name="fecha_inicio" defaultValue={tiempoBloque.fecha_inicio} />
@@ -190,7 +193,7 @@ function InsumoConfig({ handleConfig, modulo_confi }) {
                   <Form.Label size="sm">Hora fin:</Form.Label>
                   <Form.Control size="sm" type="time" name="hora_final" defaultValue={tiempoBloque.hora_final} />
                 </Col>
-              </Row>
+              </Row>}
               {/*fin habilitar vista sellos */}
 
 
