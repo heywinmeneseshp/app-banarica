@@ -32,6 +32,9 @@ export default function ConsultaDetallada({ data, setPagination, limit, paginati
             "pagination": {
                 "offset": pagination,
                 "limit": limit
+            },
+            "stock": {
+                "isBlock": false
             }
         };
         if (data.cons_almacen == "") body.almacen.consecutivo = almacenByUser.map(item => item.consecutivo);
