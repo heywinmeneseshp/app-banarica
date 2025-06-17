@@ -154,7 +154,7 @@ const usarSeriales = async (semana, fecha, seriales, contenedorID, id_usuario, m
         "motivo_de_uso": motivo_de_uso
       };
 
-      console.log(body);
+
 
     try {
         const response = await axios.post(endPoints.seguridad.usarSeriales, body);

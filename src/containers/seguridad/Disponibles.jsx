@@ -30,12 +30,10 @@ export default function Disponibles() {
     const [results, setResults] = useState(0);
     const [configBotons, setConfigBotons] = useState([]);
     const user = getUser();
- 
 
     // Carga productos y realiza búsqueda cuando cambia el tipo de tabla
     useEffect(() => {
         listarProductosSeguridad().then((res) => {
-            console.log(res);
             setProductos(
                 tablaConsulta ? res : res.filter((item) => item.serial === true)
             );
