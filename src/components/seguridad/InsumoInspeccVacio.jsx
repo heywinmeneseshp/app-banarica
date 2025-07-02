@@ -21,8 +21,9 @@ export default function InsumoInspeccVacio({ setOpenConfig }) {
                     filtrarProductos(body),
                     encontrarModulo("Insumos_inspeccion_vacio")
                 ]);
+                console.log(insumos);
                 setArticulos(productos || []);
-                setInputs(JSON.parse(insumos[0].detalles));
+                setInputs(JSON.parse(insumos[0].detalles) || []);
             } catch (error) {
                 console.error("Error al listar productos:", error);
             }
