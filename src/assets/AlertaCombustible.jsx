@@ -7,8 +7,6 @@ import Alert from 'react-bootstrap/Alert';
 export default function AlertaCombustible({ data, setChange }) {
 
 
-
-
     const onCerrar = () => {
         actualizarNotificaciones(data.id, { visto: true, aprobado: true });
         setChange(true);
