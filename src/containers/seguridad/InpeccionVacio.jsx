@@ -259,8 +259,8 @@ export default function InspeccionVacio() {
 
         // Validar campos antes de enviar
         const form = formRef.current;
-        if (!form.checkValidity()) {
 
+        if (!form.checkValidity()) {
             setStateValue('loading', false);
             return;
         }
@@ -272,13 +272,18 @@ export default function InspeccionVacio() {
             observacion: formData.get('observaciones')
         };
 
+      
         const serialesList = inputFields
             .filter(({ id }) => !['contenedor', 'fecha', 'semana'].includes(id))
-            .map(({ id, label }) => ({
-                serial: formData.get(id),
-                label
-            }));
+            .map(({ id, label }) => {
+                console.log(id);
+                return {
+                    serial: formData.get(id),
+                    label
+                };
+            });
 
+        console.log(serialesList);
         const { success, seriales } = await verificarSeriales(serialesList);
         if (!success) {
             setStateValue('loading', false);
@@ -342,62 +347,67 @@ export default function InspeccionVacio() {
                 <Loader loading={loading} />
 
                 <div className="row g-3">
-                    {inputFields.map((field) => (
-                        <div className="col-md-6 mb-1" key={field.id}>
-                            <div className="input-group has-validation">
-                                <span className="input-group-text">{field.label}:</span>
+                    {inputFields.map((field) => {
+console.log(field);
+                        return (
+                            <div className="col-md-6 mb-1" key={field.id}>
+                                <div className="input-group has-validation">
+                                    <span className="input-group-text">{field.label}:</span>
 
-                                {field.id === "semana" ? (
-                                    <>
+                                    {field.id === "semana" ? (
+                                        <>
+                                            <input
+                                                {...field}
+                                                  name={field.id}
+                                                className={`form-control ${fieldErrors[field.id] ? 'is-invalid' : ''}`}
+                                                onInvalid={handleInvalid}
+                                                onChange={handleChange}
+                                                value={semana || field.defaultValue}
+                                                list={`${field.id}-list`}
+                                                autoComplete="off"
+                                            />
+                                            <datalist id={`${field.id}-list`}>
+                                                {semanas.map(s => (
+                                                    <option key={s.consecutivo} value={s.consecutivo} />
+                                                ))}
+                                            </datalist>
+                                        </>
+                                    ) : (
                                         <input
                                             {...field}
+                                            name={field.id}
                                             className={`form-control ${fieldErrors[field.id] ? 'is-invalid' : ''}`}
                                             onInvalid={handleInvalid}
                                             onChange={handleChange}
-                                            defaultValue={semana || field.defaultValue}
-                                            list={`${field.id}-list`}
-                                            autoComplete="off"
+                            
                                         />
-                                        <datalist id={`${field.id}-list`}>
-                                            {semanas.map(s => (
-                                                <option key={s.consecutivo} value={s.consecutivo} />
-                                            ))}
-                                        </datalist>
-                                    </>
-                                ) : (
-                                    <input
-                                        {...field}
-                                        className={`form-control ${fieldErrors[field.id] ? 'is-invalid' : ''}`}
-                                        onInvalid={handleInvalid}
-                                        onChange={handleChange}
-                                        autoComplete={field.id === "contenedor" ? "off" : "on"}
-                                    />
-                                )}
+                                    )}
 
-                                {field.eliminar && (
-                                    <button
-                                        type="button"
-                                        className="btn"
-                                        onClick={() => handleRemove(field.id)}
-                                        aria-label={`Eliminar ${field.label}`}
-                                        style={{ minWidth: '40px' }}
-                                    >
-                                        <FaMinusCircle
-                                            size={20}
-                                            color="#dc3545"
-                                            style={{
-                                                cursor: "pointer",
-                                                margin: "0px 0px 0px 10px"
-                                            }}
+                                    {field.eliminar && (
+                                        <button
+                                            type="button"
+                                            className="btn"
                                             onClick={() => handleRemove(field.id)}
-                                            title="Eliminar este campo"
                                             aria-label={`Eliminar ${field.label}`}
-                                        />
-                                    </button>
-                                )}
+                                            style={{ minWidth: '40px' }}
+                                        >
+                                            <FaMinusCircle
+                                                size={20}
+                                                color="#dc3545"
+                                                style={{
+                                                    cursor: "pointer",
+                                                    margin: "0px 0px 0px 10px"
+                                                }}
+                                                onClick={() => handleRemove(field.id)}
+                                                title="Eliminar este campo"
+                                                aria-label={`Eliminar ${field.label}`}
+                                            />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
 
                     {inputFields.length === 3 && (
                         <div className="col-md-6 mb-1 text-center" >

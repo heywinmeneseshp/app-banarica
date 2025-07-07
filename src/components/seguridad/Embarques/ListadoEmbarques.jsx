@@ -166,16 +166,16 @@ const ListadoEmbarques = () => {
 
   function decargarPlantilla() {
     const data = {
-      "Semana": null,
-      "Cliente": null,
-      "Booking": null,
-      "Bill of loading": null,
-      "Naviera": null,
-      "Buque": null,
-      "Destino": null,
-      "Viaje": null,
-      "Sae": null,
-      "Anuncio": null,
+      "id_semana": null,
+      "id_cliente": null,
+      "booking": null,
+      "bl": null,
+      "id_naviera": null,
+      "id_buque": null,
+      "id_destino": null,
+      "viaje": null,
+      "sae": null,
+      "anuncio": null,
     };
     excel([data], "Plantilla", "Plantilla de cargue");
   }
