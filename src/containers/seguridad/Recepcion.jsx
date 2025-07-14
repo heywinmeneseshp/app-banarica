@@ -117,11 +117,9 @@ export default function Recepcion() {
 
 
         } catch (e) {
-            console.log(e);
-            window.alert(e);
             return setAlert({
                 active: true,
-                mensaje: "Error, quizá existan seriales repetidos.",
+                mensaje: "Error, no se ha cargado la información.",
                 color: "danger",
                 autoClose: false
             });
