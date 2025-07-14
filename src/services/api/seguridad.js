@@ -38,20 +38,17 @@ const listarUsuariosSeguridad = async (offset, limit, username) => {
 
 const cargarSeriales = async (dataExcel, remision, pedido, semana, fecha, observaciones, username) => {
     try {
-        console.log(dataExcel);
+
         const res = dataExcel.find(item => item.cons_producto == null);
         if (res?.cons_producto === null) return { message: "Existen artículos sin código ID.", bool: false };
        
-       console.log({ dataExcel,
-        remision, pedido, semana, fecha, observaciones, username
-    });
         await axios.post(endPoints.seguridad.CargarSeriales, {data: dataExcel,
             remision, pedido, semana, fecha, observaciones, username
         });
         return { message: "Se han cargado los datos con éxito.", bool: true };
-    } catch (e) {
-        console.log(e);
-        throw e;
+    } catch (error) {
+        window.alert(JSON.stringify(error.response.data.message));
+        throw error;
     }
 
 };
