@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { DownloadTableExcel } from 'react-export-table-to-excel';
 
+
 import Paginacion from "@components/shared/Tablas/Paginacion";
 import { paginarListado } from "@services/api/listado";
 import { encontrarModulo } from "@services/api/configuracion";
@@ -71,6 +72,7 @@ export default function Dashboard() {
                     habilitado: true,
                 };
                 const { data, total } = await paginarListado(offset, 25, filtros);
+                console.log(data, total)
                 setData(data);
                 setTotal(total);
             } catch (error) {
@@ -175,12 +177,12 @@ export default function Dashboard() {
                     </div>}
 
                     {/* Columna 4: Botón Descargar Carrusel */}
-                    {botones.includes("dashboard_descargar_carrusel") || user.id_rol == "Super administrador" && <div className="col-12 col-md-2 d-flex justify-content-md-end">
+                    {(botones.includes("dashboard_descargar_carrusel") || user.id_rol == "Super administrador") && <div className="col-12 col-md-2 d-flex justify-content-md-end">
                         <button type="button" className="btn btn-primary w-100">Descargar Carrusel</button>
                     </div>}
 
                     {/* Columna 5: Botón Descargar Relación */}
-                    {botones.includes("dashboard_descargar_relacion") || user.id_rol == "Super administrador" && <div className="col-12 col-md-2">
+                    {(botones.includes("dashboard_descargar_relacion") || user.id_rol == "Super administrador") && <div className="col-12 col-md-2">
                         <DownloadTableExcel
                             filename={`Contenedores Inspecc_Banarica ${new Date().toISOString().split('T')[0]}`}
                             sheet={`Del ${startDate} al ${endDate}`}
