@@ -72,7 +72,6 @@ export default function Dashboard() {
                     habilitado: true,
                 };
                 const { data, total } = await paginarListado(offset, 25, filtros);
-                console.log(data, total)
                 setData(data);
                 setTotal(total);
             } catch (error) {
