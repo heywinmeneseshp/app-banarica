@@ -22,7 +22,7 @@ const encontrarListado = async (id) => {
 };
 
 const paginarListado = async (offset, limit, body) => {
-    console.log("este es el limit", limit)
+    console.log("este es el limit", limit);
     if (!limit) limit = 50;
     const res = await axios.post(endPoints.listado.paginar(offset,limit), body);
     return res.data;

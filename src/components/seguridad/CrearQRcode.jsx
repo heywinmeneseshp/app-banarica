@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { useRouter } from 'next/router';
 import jsPDF from 'jspdf';
 import styles2 from "@components/shared/Formularios/Formularios.module.css";
 
 function CrearQRCode({ contenedor, setOpenQR }) {
-    const router = useRouter();
     const [contenedorId, setContenedorId] = useState('');
     const [fechaValue, setFechaValue] = useState('');
     const [qrData, setQrData] = useState(null);
@@ -15,7 +13,7 @@ function CrearQRCode({ contenedor, setOpenQR }) {
     const canvasRef = useRef();
 
     useEffect(() => {
-        console.log(contenedor)
+        console.log(contenedor);
         if (contenedor.id) {
             // ✅ SOLUCIÓN: Crear un objeto JSON y codificarlo
             const datos = {
@@ -46,7 +44,7 @@ function CrearQRCode({ contenedor, setOpenQR }) {
         setQrData(traceUrl);
     };
 
-  
+
 
     // Convertir SVG a Canvas y luego a Data URL
     const convertSVGtoCanvas = () => {
@@ -226,8 +224,9 @@ function CrearQRCode({ contenedor, setOpenQR }) {
                         <form onSubmit={handleGenerarQR}>
 
                             <div style={{ marginBottom: '15px' }}>
-                                <label>Número de etiquetas a generar (20 por hoja):</label>
+                                <label htmlFor="repeticiones-input">Número de etiquetas a generar (20 por hoja):</label>
                                 <input
+                                    id="repeticiones-input"
                                     type="number"
                                     value={repeticiones}
                                     onChange={(e) => setRepeticiones(parseInt(e.target.value) || 20)}

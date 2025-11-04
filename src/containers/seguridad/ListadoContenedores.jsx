@@ -1,6 +1,6 @@
 import Paginacion from '@components/shared/Tablas/Paginacion';
 import { actualizarListado, duplicarListado, paginarListado } from '@services/api/listado';
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Form, Col, Row, Button } from 'react-bootstrap';
 import { FaQrcode } from 'react-icons/fa';
 import Image from "next/image";
