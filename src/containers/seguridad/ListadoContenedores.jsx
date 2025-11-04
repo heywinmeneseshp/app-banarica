@@ -1,13 +1,15 @@
 import Paginacion from '@components/shared/Tablas/Paginacion';
 import { actualizarListado, duplicarListado, paginarListado } from '@services/api/listado';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Form, Col, Row, Button } from 'react-bootstrap';
+import { FaQrcode } from 'react-icons/fa';
 import Image from "next/image";
 import config from '@public/images/configuracion.png';
 import styles from '@styles/header.module.css';
 import styles2 from "@components/shared/Formularios/Formularios.module.css";
 import InsumoConfig from '@assets/InsumoConfig';
 import ListadoConfig from '@assets/ListadoConfig';
+import CrearQRCode from '@components/seguridad/CrearQRcode';
 import { encontrarModulo } from '@services/api/configuracion';
 import { filtrarProductos } from '@services/api/productos';
 import { paginarEmbarques } from '@services/api/embarques';
@@ -19,339 +21,349 @@ import Transbordar from '@assets/Seguridad/Listado/Transbordar';
 import CargarExcel from '@assets/Seguridad/Listado/CargueMasivo';
 import endPoints from '@services/api';
 
+// Constantes fuera del componente
+const COLORES_PASTEL = [
+  "#FFCDD2", "#F8BBD0", "#E1BEE7", "#D1C4E9", "#C5CAE9",
+  "#BBDEFB", "#B3E5FC", "#B2EBF2", "#B2DFDB", "#C8E6C9",
+  "#DCEDC8", "#F0F4C3", "#FFF9C4", "#FFECB3", "#FFE0B2",
+  "#FFCCBC", "#D7CCC8", "#F5F5F5", "#CFD8DC", "#FFE082"
+];
+
+const VALIDACIONES = {
+  contenedor: /^[A-Za-z]{4}[0-9]{7}$/,
+  cajas: /^\d+$/
+};
+
+const CONFIG_TABLA_DEFAULT = `["Fecha","Sem","BoL","Naviera","Destino","Llenado","Contenedor","Insumos de segurdad","Producto","Cajas","Peso Neto", "QR"]`;
+
 const ListadoContenedores = () => {
   const { getUser } = useAuth();
   const formRef = useRef();
   const tablaRef = useRef();
-  const [tableData, setTableData] = useState([]);
-  const [pagination, setPagination] = useState(1);
-  const [limit, setLimit] = useState(50);
-  const [total, setTotal] = useState();
-  const [configuracionInsumos, setConfigInsumos] = useState([]);
-  const [configuracionTabla, setConfigTabla] = useState([]);
-  const [openConfig, setOpenConfig] = useState(false);
-  const [almacenes, setAlmacenes] = useState([]);
-  const [embarques, setEmbarques] = useState([]);
-  const [openConfigTabla, setOpenConfigTabla] = useState(false);
-  const [openConfigInsumo, setOpenConfigInsumo] = useState(false);
-  const [productos, setProductos] = useState([]);
-  const [isEditable, setIsEditable] = useState(false);
-  const [check, setCheck] = useState([]);
-  const [checkAll, setCheckAll] = useState(false);
-  const [bol, setBol] = useState({});
-  const [openTransbordar, setOpenTransbordar] = useState(false);
-  const [openMasivo, setOpenMasivo] = useState(false);
   const user = getUser();
-  //const [noVerElimnados, setNoVerEliminados] = useState(true);
 
-
-  const coloresPastel = [
-  "#FFCDD2", // Rosado pastel
-  "#F8BBD0", // Rosa
-  "#E1BEE7", // Lila
-  "#D1C4E9", // Lavanda
-  "#C5CAE9", // Azul suave
-  "#BBDEFB", // Azul cielo
-  "#B3E5FC", // Azul celeste
-  "#B2EBF2", // Aguamarina
-  "#B2DFDB", // Verde menta
-  "#C8E6C9", // Verde suave
-  "#DCEDC8", // Verde lima
-  "#F0F4C3", // Amarillo pálido
-  "#FFF9C4", // Amarillo claro
-  "#FFECB3", // Amarillo dorado
-  "#FFE0B2", // Durazno
-  "#FFCCBC", // Coral pastel
-  "#D7CCC8", // Beige tostado
-  "#F5F5F5", // Blanco humo
-  "#CFD8DC", // Gris azulado (el único gris claro que se ve bien)
-  "#FFE082"  // Amarillo pastel fuerte
-];
-
-
-
-  const handleCellEdit = async (row, field, e) => {
-    const value = e.target.innerText || e.target.value;
-
-    // Validación para el campo "contenedor"
-    if (field === "contenedor") {
-      const regex = /^[A-Za-z]{4}[0-9]{7}$/;
-      if (!regex.test(value)) {
-        e.target.style.color = "#C70039";
-        window.alert('El contenedor debe tener al menos 11 caracteres: 4 letras seguidas de 7 números.');
-        return;
-      }
-      await actualizarContenedor(row.Contenedor.id, { [field]: value });
-      e.target.style.color = "";
-      return;  // Salir de la función después de actualizar el contenedor
-    }
-
-    // Validación para el campo "cajas_unidades"
-    if (field === "cajas_unidades") {
-      if (isNaN(value) || value === '') {
-        e.target.style.color = "#C70039";
-        window.alert('El campo cajas debe ser un número.');
-        return;
-      }
-      await actualizarListado(row.id, { [field]: parseInt(value, 10) });
-      e.target.style.color = "";
-      return;  // Salir de la función después de actualizar las unidades
-    }
-
-    // Actualización para otros campos que no requieren validación específica
-    await actualizarListado(row.id, { [field]: value });
-  };
-
-
-  const toggleEdit = () => {
-    //setTableData([]);
-    setIsEditable(!isEditable);
-  };
-
-
-  const handleConfig = () => {
-    setOpenConfig(false);
-    setOpenConfigTabla(false);
-    setOpenConfigInsumo(false);
-  };
-
-  const handleOpenConfig = () => {
-    setOpenConfig(true);
-  };
-
-  const onChangeCasilla = async (id, field) => {
-    const inputElement = document.getElementById(id);
-    const value = inputElement.value;
-    if (!value) return;
-    if (field == "embarque") {
-      const { data } = await paginarEmbarques(1, 20, { bl: value });
-      setEmbarques(data);
-    }
-    if (field == "producto") {
-      const { data } = await paginarCombos(1, 20, value);
-      setProductos(data);
-    }
-  };
-
-  const renderHeader = (name, highlight = false, label = null) => {
-  return configuracionTabla.includes(name) && (
-    <th className={`text-custom-small text-center ${highlight ? 'text-white bg-secondary' : ''}`}>
-      {label || name}
-    </th>
-  );
-};
-
-  const handleDatalist = async (id, itemActualiza, linea) => {
-    const inputElement = document.getElementById(id);
-    const value = inputElement.value;
-    if (!value) return;
-    if (itemActualiza == "almacen") {
-      const res = almacenes.find(item => item.nombre == value);
-      if (!res) {
-        inputElement.style.color = "#C70039";
-        return window.alert(`En la fila ${linea} el item ${itemActualiza} no existe`);
-      };
-      await actualizarListado(linea, { id_lugar_de_llenado: res.id });
-    };
-    if (itemActualiza == "embarque") {
-      const res = embarques.find(item => item.bl == value);
-      if (!res) {
-        inputElement.style.color = "#C70039";
-        return window.alert(`En la fila ${linea} el item ${itemActualiza} no existe`);
-      };
-      await actualizarListado(linea, { id_embarque: res.id });
-    };
-    if (itemActualiza == "producto") {
-      const res = productos.find(item => item.nombre == value);
-      if (!res) {
-        inputElement.style.color = "#C70039";
-        return window.alert(`En la fila ${linea} el item ${itemActualiza} no existe`);
-      };
-      await actualizarListado(linea, { id_producto: res.id });
-    };
-    inputElement.style.color = "";
-  };
-
-  const duplicarLinea = async () => {
-    const promises = check.map(async (item, index) => {
-      if (item) {
-        const object = { ...tableData[index] };
-        const idListado = object.id;
-        await duplicarListado(idListado);
-      }
-    });
-
-    // Esperar a que todas las promesas se resuelvan antes de actualizar el límite
-    await Promise.all(promises);
-
-    // Actualizar el límite solo después de duplicar todas las líneas
-    setLimit((prevLimit) => prevLimit + 1);
-  };
-
-
-  const eliminarLinea = async () => {
-    check.map(async (item, index) => {
-      if (item) {
-        const object = { ...tableData[index] };
-        const idListado = object.id;
-        actualizarListado(idListado, { habilitado: false });
-      }
-    });
-    setLimit((prevLimit) => prevLimit - 1);
-    // Esperar a que todas las promesas se resuelvan antes de actualizar el límite
-  };
-
-
-
-
-  const handleTransbordar = async () => {
-    setOpenTransbordar(true);
-  };
-
-  const handleCargueMasivo = async () => {
-    setOpenMasivo(true);
-  };
-
-
-
-  const aplicarColor = (data = []) => {
-    const booking = data.map(item => item.Contenedor.contenedor);
-    const countOccurrences = booking.reduce((acc, bl) => {
-      acc[bl] = (acc[bl] || 0) + 1;
-      return acc;
-    }, {});
-    // Identificar los valores duplicados
-    const duplicados = Object.keys(countOccurrences).filter(bl => countOccurrences[bl] > 1);
-    // Asignar colores a los valores duplicados
-    const colorMapping = {};
-    let colorIndex = 0;
-    booking.forEach(bl => {
-      if (duplicados.includes(bl)) {
-        colorMapping[bl] = coloresPastel[colorIndex % coloresPastel.length];
-        colorIndex++;
-      }
-    });
-    setBol(colorMapping);
-  };
-
-  const listar = async () => {
-    const modulo = await encontrarModulo("Relación_listado_"+user.username);
-    const configTabla = localStorage.getItem("ListadoConfig") || `[ "Fecha",
-      "Sem", "BoL", "Naviera", "Destino", "Llenado", "Contenedor", "Insumos de segurdad",
-      "Producto", "Cajas", "Peso Neto" ]`;
-    setConfigTabla(configTabla);
-    const consecutivos = JSON.parse(modulo[0]?.detalles).tags;
-    console.log(consecutivos);
-    console.log(modulo);
-    if (consecutivos.length > 0) {
-      const insumos = await filtrarProductos({ producto: { consecutivo: consecutivos } });
-      const result = consecutivos.map(consecutivo => insumos.find(e => e.consecutivo === consecutivo));
-      setConfigInsumos(result);
-    }
-    const embarques = await paginarEmbarques(1, 20, {});
-    const producto = await paginarCombos(1, 20, "");
-    setProductos(producto.data);
-    setEmbarques(embarques.data);
-    const formData = new FormData(formRef.current);
-    const object = {
-      contenedor: formData.get('contenedor') || '',
-      booking: formData.get('booking') || '',
-      bl: formData.get('BoL') || '',
-      destino: formData.get('destino') || '',
-      naviera: formData.get('naviera') || '',
-      cliente: formData.get('cliente') || '',
-      semana: formData.get('semana') || '',
-      buque: formData.get('buque') || '',
-      fecha_inicial: formData.get('fecha_inicial'),
-      fecha_final: formData.get('fecha_final'),
-      llenado: formData.get('llenado') || '',
-      producto: formData.get('producto') || '',
-      habilitado: true
-    };
-    const listadoList = await paginarListado(pagination, limit, object);
-    let almacenList = localStorage.getItem('almacenByUser');
-    const boolList = new Array(listadoList.data.length).fill(false);
-    setCheck(boolList);
-    almacenList = JSON.parse(almacenList);
-    setAlmacenes(almacenList);
-    setTableData(listadoList.data);
-    setTotal(listadoList.total);
-    aplicarColor(listadoList.data);
-  };
-
-  const handleChecks = (index) => {
-    let newListCheck = [...check];
-    newListCheck[index] = !newListCheck[index];
-    setCheck(newListCheck);
-    setCheckAll(false);
-  };
-
-
- const handleExport = () => {
-  const ws = XLSX.utils.table_to_sheet(tablaRef.current);
-  const wb = XLSX.utils.book_new();
-
-  // Extraer valores de los inputs manualmente
-  const table = tablaRef.current;
-  const rows = table.querySelectorAll('tbody tr');
-
-  rows.forEach((row, rowIndex) => {
-    const cells = row.querySelectorAll('td');
-    cells.forEach((cell, cellIndex) => {
-      const input = cell.querySelector('input');
-      if (input) {
-        const cellAddress = XLSX.utils.encode_cell({ r: rowIndex + 1, c: cellIndex });
-        ws[cellAddress] = { v: input.value, t: 's' };
-      }
-    });
+  // Estado unificado
+  const [state, setState] = useState({
+    tableData: [],
+    pagination: 1,
+    limit: 50,
+    total: 0,
+    configuracionInsumos: [],
+    configuracionTabla: JSON.parse(localStorage.getItem("ListadoConfig") || CONFIG_TABLA_DEFAULT),
+    almacenes: JSON.parse(localStorage.getItem('almacenByUser') || '[]'),
+    embarques: [],
+    productos: [],
+    check: [],
+    checkAll: false,
+    bol: {},
+    openConfig: false,
+    openConfigTabla: false,
+    openConfigInsumo: false,
+    openTransbordar: false,
+    openMasivo: false,
+    isEditable: false,
+    openQR: false
   });
 
-  // Obtener el rango actual
-  const range = XLSX.utils.decode_range(ws['!ref']);
+  // Actualización optimizada del estado
+  const updateState = useCallback((updates) => {
+    setState(prev => ({ ...prev, ...updates }));
+  }, []);
 
-  // Eliminar la primera columna correctamente (copiar todas las demás una posición a la izquierda)
-  for (let R = range.s.r; R <= range.e.r; R++) {
-    for (let C = range.s.c + 1; C <= range.e.c; C++) {
-      const oldAddr = XLSX.utils.encode_cell({ r: R, c: C });
-      const newAddr = XLSX.utils.encode_cell({ r: R, c: C - 1 });
-      if (ws[oldAddr]) {
-        ws[newAddr] = ws[oldAddr];
-      } else {
-        delete ws[newAddr]; // Evita celdas vacías innecesarias
-      }
+  // Handlers optimizados
+  const handleCellEdit = useCallback(async (row, field, e) => {
+    const value = e.target.innerText || e.target.value;
+
+    if (field === "contenedor" && !VALIDACIONES.contenedor.test(value)) {
+      e.target.style.color = "#C70039";
+      alert('El contenedor debe tener 4 letras seguidas de 7 números.');
+      return;
     }
-  }
 
-  // Ahora eliminamos las celdas originales de la primera columna
-  for (let R = range.s.r; R <= range.e.r; R++) {
-    const firstColAddr = XLSX.utils.encode_cell({ r: R, c: range.s.c + (range.s.c === 0 ? 0 : 1) });
-    delete ws[firstColAddr];
-  }
+    if (field === "cajas_unidades" && (!VALIDACIONES.cajas.test(value) || value === '')) {
+      e.target.style.color = "#C70039";
+      alert('El campo cajas debe ser un número.');
+      return;
+    }
 
-  // Actualizamos el rango
-  range.s.c += 1;
-  range.e.c -= 1;
-  ws['!ref'] = XLSX.utils.encode_range(range);
+    try {
+      const updateData = field === "cajas_unidades"
+        ? parseInt(value, 10)
+        : value;
 
-  XLSX.utils.book_append_sheet(wb, ws, "Listado de Contenedores");
-  XLSX.writeFile(wb, "Listado de Contenedores.xlsx");
-};
+      if (field === "contenedor") {
+        await actualizarContenedor(row.Contenedor.id, { [field]: updateData });
+      } else {
+        await actualizarListado(row.id, { [field]: updateData });
+      }
+      e.target.style.color = "";
+    } catch (error) {
+      console.error('Error al actualizar:', error);
+      alert('Error al actualizar el registro');
+    }
+  }, []);
 
+  const toggleEdit = useCallback(() => {
+    updateState({ isEditable: !state.isEditable });
+  }, [state.isEditable, updateState]);
 
+  const handleConfig = useCallback(() => {
+    updateState({
+      openConfig: false,
+      openConfigTabla: false,
+      openConfigInsumo: false
+    });
+  }, [updateState]);
 
+  const handleOpenConfig = useCallback(() => {
+    updateState({ openConfig: true });
+  }, [updateState]);
 
+  const onChangeCasilla = useCallback(async (id, field) => {
+    const inputElement = document.getElementById(id);
+    const value = inputElement.value;
+    if (!value) return;
 
+    try {
+      if (field === "embarque") {
+        const { data } = await paginarEmbarques(1, 20, { bl: value });
+        updateState({ embarques: data });
+      } else if (field === "producto") {
+        const { data } = await paginarCombos(1, 20, value);
+        updateState({ productos: data });
+      }
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+    }
+  }, [updateState]);
+
+  const renderHeader = useCallback((name, highlight = false, label = null) => {
+    return state.configuracionTabla.includes(name) && (
+      <th className={`text-custom-small text-center ${highlight ? 'text-white bg-secondary' : ''}`}>
+        {label || name}
+      </th>
+    );
+  }, [state.configuracionTabla]);
+
+  const handleDatalist = useCallback(async (id, itemActualiza, linea) => {
+    const inputElement = document.getElementById(id);
+    const value = inputElement.value;
+    if (!value) return;
+
+    let res;
+    let updateField;
+    let updateValue;
+
+    try {
+      switch (itemActualiza) {
+        case "almacen":
+          res = state.almacenes.find(item => item.nombre === value);
+          updateField = "id_lugar_de_llenado";
+          updateValue = res?.id;
+          break;
+        case "embarque":
+          res = state.embarques.find(item => item.bl === value);
+          updateField = "id_embarque";
+          updateValue = res?.id;
+          break;
+        case "producto":
+          res = state.productos.find(item => item.nombre === value);
+          updateField = "id_producto";
+          updateValue = res?.id;
+          break;
+        default:
+          return;
+      }
+
+      if (!res) {
+        inputElement.style.color = "#C70039";
+        alert(`En la fila ${linea} el item ${itemActualiza} no existe`);
+        return;
+      }
+
+      await actualizarListado(linea, { [updateField]: updateValue });
+      inputElement.style.color = "";
+    } catch (error) {
+      console.error('Error al actualizar:', error);
+      alert('Error al actualizar el registro');
+    }
+  }, [state.almacenes, state.embarques, state.productos]);
+
+  const duplicarLinea = useCallback(async () => {
+    const selectedItems = state.check
+      .map((checked, index) => checked ? state.tableData[index] : null)
+      .filter(Boolean);
+
+    if (selectedItems.length === 0) return;
+
+    try {
+      const promises = selectedItems.map(item => duplicarListado(item.id));
+      await Promise.all(promises);
+      updateState({ limit: state.limit + selectedItems.length });
+    } catch (error) {
+      console.error('Error al duplicar líneas:', error);
+      alert('Error al duplicar las líneas seleccionadas');
+    }
+  }, [state.check, state.tableData, state.limit, updateState]);
+
+  const eliminarLinea = useCallback(async () => {
+    const selectedItems = state.check
+      .map((checked, index) => checked ? state.tableData[index] : null)
+      .filter(Boolean);
+
+    if (selectedItems.length === 0) return;
+
+    try {
+      const promises = selectedItems.map(item =>
+        actualizarListado(item.id, { habilitado: false })
+      );
+      await Promise.all(promises);
+      updateState({
+        limit: Math.max(1, state.limit - selectedItems.length),
+        check: new Array(state.check.length).fill(false),
+        checkAll: false
+      });
+    } catch (error) {
+      console.error('Error al eliminar líneas:', error);
+      alert('Error al eliminar las líneas seleccionadas');
+    }
+  }, [state.check, state.tableData, state.limit, updateState]);
+
+  const handleTransbordar = useCallback(() => {
+    updateState({ openTransbordar: true });
+  }, [updateState]);
+
+  const handleCargueMasivo = useCallback(() => {
+    updateState({ openMasivo: true });
+  }, [updateState]);
+
+  const aplicarColor = useCallback((data = []) => {
+    const contenedoresCount = data.reduce((acc, item) => {
+      const contenedor = item.Contenedor?.contenedor;
+      if (contenedor) {
+        acc[contenedor] = (acc[contenedor] || 0) + 1;
+      }
+      return acc;
+    }, {});
+
+    const duplicados = Object.keys(contenedoresCount).filter(bl => contenedoresCount[bl] > 1);
+    const colorMapping = duplicados.reduce((acc, bl, index) => {
+      acc[bl] = COLORES_PASTEL[index % COLORES_PASTEL.length];
+      return acc;
+    }, {});
+
+    updateState({ bol: colorMapping });
+  }, [updateState]);
+
+  const handleChecks = useCallback((index) => {
+    const newCheck = [...state.check];
+    newCheck[index] = !newCheck[index];
+    updateState({
+      check: newCheck,
+      checkAll: false
+    });
+  }, [state.check, updateState]);
+
+  const handleCheckAll = useCallback(() => {
+    const newCheckAll = !state.checkAll;
+    updateState({
+      checkAll: newCheckAll,
+      check: new Array(state.check.length).fill(newCheckAll)
+    });
+  }, [state.checkAll, state.check.length, updateState]);
+
+  const handleExport = useCallback(() => {
+    try {
+      const ws = XLSX.utils.table_to_sheet(tablaRef.current);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Listado de Contenedores");
+      XLSX.writeFile(wb, "Listado de Contenedores.xlsx");
+    } catch (error) {
+      console.error('Error al exportar:', error);
+      alert('Error al exportar el archivo Excel');
+    }
+  }, []);
+
+  const listar = useCallback(async () => {
+    try {
+      const [modulo, embarquesRes, productoRes] = await Promise.all([
+        encontrarModulo(`Relación_listado_${user.username}`),
+        paginarEmbarques(1, 20, {}),
+        paginarCombos(1, 20, "")
+      ]);
+
+      // Configuración de insumos
+      const detalles = JSON.parse(modulo[0]?.detalles || '{"tags":[]}');
+      const consecutivos = detalles.tags;
+
+      let insumosConfig = [];
+      if (consecutivos.length > 0) {
+        const insumos = await filtrarProductos({ producto: { consecutivo: consecutivos } });
+        insumosConfig = consecutivos.map(consecutivo =>
+          insumos.find(e => e.consecutivo === consecutivo)
+        ).filter(Boolean);
+      }
+
+      // Filtros del formulario
+      const formData = new FormData(formRef.current);
+      const filters = {
+        contenedor: formData.get('contenedor') || '',
+        booking: formData.get('booking') || '',
+        bl: formData.get('BoL') || '',
+        destino: formData.get('destino') || '',
+        naviera: formData.get('naviera') || '',
+        cliente: formData.get('cliente') || '',
+        semana: formData.get('semana') || '',
+        buque: formData.get('buque') || '',
+        fecha_inicial: formData.get('fecha_inicial'),
+        fecha_final: formData.get('fecha_final'),
+        llenado: formData.get('llenado') || '',
+        producto: formData.get('producto') || '',
+        habilitado: true
+      };
+
+      const listadoList = await paginarListado(state.pagination, state.limit, filters);
+
+      updateState({
+        tableData: listadoList.data,
+        total: listadoList.total,
+        configuracionInsumos: insumosConfig,
+        embarques: embarquesRes.data,
+        productos: productoRes.data,
+        check: new Array(listadoList.data.length).fill(false)
+      });
+
+      aplicarColor(listadoList.data);
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+      alert('Error al cargar los datos del listado');
+    }
+  }, [state.pagination, state.limit, user.username, aplicarColor, updateState]);
+
+  // Efecto optimizado
   useEffect(() => {
     listar();
-  }, [openConfigTabla, openConfigInsumo, isEditable, pagination, limit, openTransbordar, openMasivo]);
+  }, [
+    state.openConfigTabla,
+    state.openConfigInsumo,
+    state.isEditable,
+    state.pagination,
+    state.limit,
+    state.openTransbordar,
+    state.openMasivo,
+    listar
+  ]);
+
+  // Ahora reemplaza todas las referencias en el JSX
+  // Por ejemplo, donde antes usabas tableData ahora usa state.tableData
+  // Donde usabas setPagination ahora usa updateState({ pagination: valor })
 
   return (
-
     <>
-      <h2 className="mb-2">{"Listad de Contenedores"}</h2>
+      <h2 className="mb-2">{"Listado de Contenedores"}</h2>
       <div className="line"></div>
-      {/* Filtros */}
 
+      {/* Filtros */}
       <Form ref={formRef} className="">
         <Row xs={1} sm={2} md={4} lg={6} className="">
 
@@ -434,22 +446,21 @@ const ListadoContenedores = () => {
             </Form.Group>
           </Col>
           <Col>
-
             <button type='button' onClick={handleExport} className={`btn  mt-30px w-100 btn-sm btn-success`} >
               {'Descargar excel'}
             </button>
-
           </Col>
         </Row>
       </Form>
+
       {/* Botones de Control */}
       <Row className="mb-2 mt-4">
         <Col md={3} className="d-flex justify-content-start">
           <button
-            className={`btn btn-sm m-1 ${isEditable ? 'btn-warning' : 'btn-success'}`}
+            className={`btn btn-sm m-1 ${state.isEditable ? 'btn-warning' : 'btn-success'}`}
             onClick={toggleEdit}
           >
-            {isEditable ? 'Bloquear Edición' : 'Permitir Edición'}
+            {state.isEditable ? 'Bloquear Edición' : 'Permitir Edición'}
           </button>
         </Col>
 
@@ -460,11 +471,11 @@ const ListadoContenedores = () => {
             alignItems: 'center',
             margin: "5px 5px",
             padding: "auto",
-            height: '25px', // Puedes ajustar la altura según tus necesidades
+            height: '25px',
             overflow: 'hidden',
             cursor: "pointer"
           }} className="text-sm">
-            Mostrando {tableData.length} de {total}
+            Mostrando {state.tableData.length} de {state.total}
           </span>
           <div style={{
             display: 'flex',
@@ -472,20 +483,20 @@ const ListadoContenedores = () => {
             alignItems: 'center',
             margin: "5px 5px",
             padding: "auto",
-            width: '25px', // Puedes ajustar el ancho según tus necesidades
-            height: '25px', // Puedes ajustar la altura según tus necesidades
+            width: '25px',
+            height: '25px',
             overflow: 'hidden',
             cursor: "pointer"
           }}>
             <Image
               className={styles.imgConfig}
-              onClick={() => handleOpenConfig()}
+              onClick={handleOpenConfig}
               src={config}
               alt="configuración"
               style={{
                 maxWidth: '100%',
                 maxHeight: '100%',
-                objectFit: 'contain' // Asegura que la imagen se ajuste dentro del contenedor sin distorsionarse
+                objectFit: 'contain'
               }} />
           </div>
           <div className="d-flex align-items-center me-1">
@@ -493,13 +504,14 @@ const ListadoContenedores = () => {
             <Form.Control
               type="number"
               className="form-control-sm"
-              defaultValue={limit}
+              value={state.limit}
               style={{ maxWidth: "60px" }}
               onChange={e => {
-                setLimit(!e.target.value ? 1 : e.target.value);
-                setPagination(1);
+                const newLimit = Math.min(200, Math.max(1, parseInt(e.target.value) || 1));
+                updateState({ limit: newLimit, pagination: 1 });
               }}
               min={1}
+              max={200}
             />
           </div>
           <button onClick={handleCargueMasivo} className="btn btn-sm m-1 btn-primary">
@@ -525,14 +537,8 @@ const ListadoContenedores = () => {
               <input
                 className="form-check-input"
                 type="checkbox"
-                id="checkboxAll"
-                name="checkboxAll"
-                checked={checkAll}
-                onChange={() => {
-                  const newCheck = !checkAll;
-                  setCheckAll(newCheck);
-                  setCheck(new Array(check.length).fill(newCheck));
-                }}
+                checked={state.checkAll}
+                onChange={handleCheckAll}
               />
             </th>
 
@@ -547,8 +553,8 @@ const ListadoContenedores = () => {
             {renderHeader("Contenedor")}
 
             {/* Insumos de seguridad */}
-            {configuracionTabla.includes("Insumos de segurdad") &&
-              configuracionInsumos.map((item, idx) => {
+            {state.configuracionTabla.includes("Insumos de segurdad") &&
+              state.configuracionInsumos.map((item, idx) => {
                 const title = item.name.charAt(0).toUpperCase() + item.name.slice(1).toLowerCase();
                 return (
                   <th className="text-custom-small text-center text-white bg-secondary" key={idx}>
@@ -562,11 +568,12 @@ const ListadoContenedores = () => {
             {renderHeader("Pallets", true)}
             {renderHeader("Peso Bruto", true)}
             {renderHeader("Peso Neto", true)}
+            {renderHeader("QR", true)}
           </tr>
         </thead>
 
         <tbody>
-          {tableData.map((row, index) => {
+          {state.tableData.map((row, index) => {
             const {
               serial_de_articulos: seriales,
               cajas_unidades: cajas,
@@ -582,27 +589,26 @@ const ListadoContenedores = () => {
             const pesoNeto = (combo?.peso_neto * cajas).toFixed(1);
 
             const cajasPorContenedor = (combo?.cajas_por_palet * (combo?.palets_por_contenedor - 1)) + (combo?.cajas_por_mini_palet || 0);
-            const sumaToriaCajas = tableData
+            const sumaToriaCajas = state.tableData
               .filter(item => item.Contenedor?.contenedor === Contenedor?.contenedor)
               .reduce((acc, item) => acc + item.cajas_unidades, 0);
 
             const existeRechazo = cajasPorContenedor === sumaToriaCajas ? "" : "text-danger";
+
             return (
               <tr key={row.id}>
                 <td className="text-custom-small text-center">
                   <input
                     className="form-check-input"
                     type="checkbox"
-                    id={`check-${index}`}
-                    name={`check-${index}`}
-                    checked={check[index]}
+                    checked={state.check[index]}
                     onChange={() => handleChecks(index)}
                   />
                 </td>
 
-                {configuracionTabla.includes("Fecha") && (
+                {state.configuracionTabla.includes("Fecha") && (
                   <td className="text-custom-small text-center">
-                    {isEditable ? (
+                    {state.isEditable ? (
                       <input
                         type="date"
                         defaultValue={fecha?.slice(0, 10)}
@@ -616,66 +622,66 @@ const ListadoContenedores = () => {
                   </td>
                 )}
 
-                {configuracionTabla.includes("Sem") && (
+                {state.configuracionTabla.includes("Sem") && (
                   <td className="text-custom-small text-center" style={{ width: "70px" }}>
                     {Embarque?.semana?.consecutivo}
                   </td>
                 )}
 
-                {configuracionTabla.includes("Bookin") && (
+                {state.configuracionTabla.includes("Bookin") && (
                   <td className="text-custom-small text-center">{Embarque?.booking}</td>
                 )}
 
-                {configuracionTabla.includes("BoL") && (
+                {state.configuracionTabla.includes("BoL") && (
                   <td className="text-custom-small text-center">
                     <input
                       list={`${row.id}-embarques`}
                       id={`${row.id}-embarque`}
                       style={{ width: "100px", padding: 0 }}
                       defaultValue={Embarque?.bl}
-                      disabled={!isEditable}
+                      disabled={!state.isEditable}
                       onChange={() => onChangeCasilla(`${row.id}-embarque`, 'embarque')}
                       onBlur={() => handleDatalist(`${row.id}-embarque`, 'embarque', row.id)}
                       className="form-control custom-input"
                     />
                     <datalist id={`${row.id}-embarques`}>
-                      {embarques.map((item, i) => <option key={i} value={item.bl} />)}
+                      {state.embarques.map((item, i) => <option key={i} value={item.bl} />)}
                     </datalist>
                   </td>
                 )}
 
-                {configuracionTabla.includes("Naviera") && (
+                {state.configuracionTabla.includes("Naviera") && (
                   <td className="text-custom-small text-center">{Embarque?.Naviera?.cod}</td>
                 )}
-                {configuracionTabla.includes("Buque") && (
+                {state.configuracionTabla.includes("Buque") && (
                   <td className="text-custom-small text-center">{Embarque?.Buque?.buque}</td>
                 )}
-                {configuracionTabla.includes("Destino") && (
+                {state.configuracionTabla.includes("Destino") && (
                   <td className="text-custom-small text-center">{Embarque?.Destino?.cod}</td>
                 )}
 
-                {configuracionTabla.includes("Llenado") && (
+                {state.configuracionTabla.includes("Llenado") && (
                   <td className="text-custom-small text-center">
                     <input
                       list={`${row.id}-almacenes`}
                       id={`${row.id}-almacen`}
                       defaultValue={almacen?.nombre}
                       style={{ width: "110px", padding: 0 }}
-                      disabled={!isEditable}
+                      disabled={!state.isEditable}
                       onBlur={() => handleDatalist(`${row.id}-almacen`, 'almacen', row.id)}
                       className="form-control custom-input"
                     />
                     <datalist id={`${row.id}-almacenes`}>
-                      {almacenes.map((item, i) => <option key={i} value={item.nombre} />)}
+                      {state.almacenes.map((item, i) => <option key={i} value={item.nombre} />)}
                     </datalist>
                   </td>
                 )}
 
-                {configuracionTabla.includes("Contenedor") && (
+                {state.configuracionTabla.includes("Contenedor") && (
                   <td
                     className="text-custom-small text-center"
-                    style={{ backgroundColor: bol[Contenedor?.contenedor] }}
-                    contentEditable={isEditable}
+                    style={{ backgroundColor: state.bol[Contenedor?.contenedor] }}
+                    contentEditable={state.isEditable}
                     onBlur={(e) => handleCellEdit(row, "contenedor", e)}
                   >
                     {Contenedor?.contenedor}
@@ -683,8 +689,8 @@ const ListadoContenedores = () => {
                 )}
 
                 {/* Insumos */}
-                {configuracionTabla.includes("Insumos de segurdad") &&
-                  configuracionInsumos.map((itemConfig, key) => {
+                {state.configuracionTabla.includes("Insumos de segurdad") &&
+                  state.configuracionInsumos.map((itemConfig, key) => {
                     const serial = seriales.filter(s => s.cons_producto === itemConfig.consecutivo);
                     const colorClass = serial.length > 1 ? "text-danger" : "green";
                     const latestItem = serial.reduce((latest, current) =>
@@ -698,43 +704,54 @@ const ListadoContenedores = () => {
                     );
                   })}
 
-                {configuracionTabla.includes("Producto") && (
+                {state.configuracionTabla.includes("Producto") && (
                   <td className="text-custom-small text-center">
                     <input
                       list="productos"
                       id={`${row.id}-producto`}
                       defaultValue={combo?.nombre}
-                      disabled={!isEditable}
+                      disabled={!state.isEditable}
                       onBlur={() => handleDatalist(`${row.id}-producto`, 'producto', row.id)}
                       className="form-control custom-input"
                     />
                     <datalist id="productos">
-                      {productos.map((item, i) => <option key={i} value={item.nombre} />)}
+                      {state.productos.map((item, i) => <option key={i} value={item.nombre} />)}
                     </datalist>
                   </td>
                 )}
 
-                {configuracionTabla.includes("Cajas") && (
+                {state.configuracionTabla.includes("Cajas") && (
                   <td
                     className={`text-custom-small text-center ${existeRechazo}`}
                     style={{ width: "60px" }}
-                    contentEditable={isEditable}
+                    contentEditable={state.isEditable}
                     onBlur={(e) => handleCellEdit(row, "cajas_unidades", e)}
                   >
                     {cajas}
                   </td>
                 )}
 
-                {configuracionTabla.includes("Pallets") && (
+                {state.configuracionTabla.includes("Pallets") && (
                   <td className="text-custom-small text-center">{pallets}</td>
                 )}
 
-                {configuracionTabla.includes("Peso Bruto") && (
+                {state.configuracionTabla.includes("Peso Bruto") && (
                   <td className="text-custom-small text-center">{pesoBruto}</td>
                 )}
 
-                {configuracionTabla.includes("Peso Neto") && (
+                {state.configuracionTabla.includes("Peso Neto") && (
                   <td className="text-custom-small text-center">{pesoNeto}</td>
+                )}
+
+                {state.configuracionTabla.includes("QR") && (
+                  <td className="text-custom-small text-center">
+                    <button style={{ all: 'unset', cursor: 'pointer' }}
+                      onClick={() => {
+                        updateState({ openQR: Contenedor });
+                      }}>
+                      <FaQrcode />
+                    </button>
+                  </td>
                 )}
               </tr>
             );
@@ -742,33 +759,36 @@ const ListadoContenedores = () => {
         </tbody>
       </table>
 
+      <Paginacion
+        setPagination={(page) => updateState({ pagination: page })}
+        pagination={state.pagination}
+        total={state.total}
+        limit={state.limit}
+      />
 
-      <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
-      {openConfigInsumo && <InsumoConfig handleConfig={handleConfig} modulo_confi={"Relación_listado_"+user.username } />}
-      {openConfigTabla && <ListadoConfig handleConfig={handleConfig} modulo_confi={"Tabla_listado"} />}
+      {state.openConfigInsumo && <InsumoConfig handleConfig={handleConfig} modulo_confi={"Relación_listado_" + user.username} />}
+      {state.openConfigTabla && <ListadoConfig handleConfig={handleConfig} modulo_confi={"Tabla_listado"} />}
 
-      {openConfig && <div className={styles2.fondo}>
+      {state.openConfig && <div className={styles2.fondo}>
         <div className={styles2.floatingform}>
           <div className="card">
             <div className="card-header d-flex justify-content-between">
               <span className="fw-bold">Configuración</span>
               <button
                 type="button"
-                onClick={handleConfig} // Close or go back
+                onClick={handleConfig}
                 className="btn-close"
                 aria-label="Close"
               />
             </div>
             <div className="card-body">
-
               <div className="container">
                 <div className="row">
                   <div className="col-12 col-md-6 mb-2">
                     <Button
                       className="w-100"
                       onClick={() => {
-                        setOpenConfigTabla(true);
-                        setOpenConfig(false);
+                        updateState({ openConfigTabla: true, openConfig: false });
                       }}
                       variant="secondary"
                     >
@@ -779,8 +799,7 @@ const ListadoContenedores = () => {
                     <Button
                       className="w-100"
                       onClick={() => {
-                        setOpenConfigInsumo(true);
-                        setOpenConfig(false);
+                        updateState({ openConfigInsumo: true, openConfig: false });
                       }}
                       variant="secondary"
                     >
@@ -789,17 +808,15 @@ const ListadoContenedores = () => {
                   </div>
                 </div>
               </div>
-
-
             </div>
           </div>
         </div>
       </div>}
 
       {/*Formulario Transbordo*/}
-      {openTransbordar && <Transbordar setOpen={setOpenTransbordar} />}
-      {openMasivo && <CargarExcel setOpenMasivo={setOpenMasivo}
-
+      {state.openTransbordar && <Transbordar setOpen={(open) => updateState({ openTransbordar: open })} />}
+      {state.openQR && <CrearQRCode setOpenQR={(open) => updateState({ openQR: open })} contenedor={state.openQR} />}
+      {state.openMasivo && <CargarExcel setOpenMasivo={(open) => updateState({ openMasivo: open })}
         titulo={"Contenedores"}
         endPointCargueMasivo={endPoints.listado.create + "/masivo"}
         encabezados={{

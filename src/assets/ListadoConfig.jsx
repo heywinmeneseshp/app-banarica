@@ -19,7 +19,8 @@ function ListadoConfig({ handleConfig }) {
     "Cajas",
     "Pallets",
     "Peso Bruto",
-    "Peso Neto"
+    "Peso Neto",
+    "QR"
   ]);
 
   const [tags, setTags] = useState([]);
