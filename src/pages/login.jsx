@@ -22,7 +22,6 @@ export default function Login() {
     };
     return (
         <>
-
             <Image
                 src={background}
                 alt="background"
@@ -38,7 +37,7 @@ export default function Login() {
                 <form className={styles.hijo} onSubmit={submitHanlder}>
 
                     <div className="mb-3">
-                        <label htmlFor="usuario">Usuario</label>
+                        <label className='mb-2' htmlFor="usuario">Usuario</label>
                         <input
                             id='username'
                             name='username'
@@ -49,7 +48,7 @@ export default function Login() {
                         />
                     </div>
                     <div className="mb-3">
-                        <label htmlFor="password">Contraseña</label>
+                        <label className='mb-2' htmlFor="password">Contraseña</label>
                         <input
                             id='password'
                             name='password'
@@ -59,26 +58,12 @@ export default function Login() {
                             ref={passwordRef}
                         />
                     </div>
-                    <div className="mb-3">
-                        <div className="custom-control custom-checkbox">
-                            <input
-                                type="checkbox"
-                                className="custom-control-input"
-                                id="customCheck1"
-                            />
-                            <label className="custom-control-label" htmlFor="customCheck1">
-                                Recordarme
-                            </label>
-                        </div>
-                    </div>
+              
                     <div className="d-grid">
                         <button type='submit' className="btn btn-primary">
                             Iniciar sesión
                         </button>
                     </div>
-                    <p className="forgot-password text-right">
-                        ¿Olvidaste tu contraseña?
-                    </p>
                 </form>
             </div>
         </>

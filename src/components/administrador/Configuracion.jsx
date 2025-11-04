@@ -137,7 +137,7 @@ export default function Configuracion({ setOpen }) {
                                 <Form.Select
                                     name="pantalla_inicio"
                                     id="pantalla_inicio"
-
+                                    required
                                 >
                                     <option selected={"Dashboard Combustible" == configUsuario?.inicio} >Dashboard Combustible</option>
                                     <option selected={"Dashboard Contenedores" == configUsuario?.inicio}>Dashboard Contenedores</option>
@@ -155,6 +155,7 @@ export default function Configuracion({ setOpen }) {
                                         id="razon_social"
                                         name="razon_social"
                                         type="text"
+                                        required
                                         className={styles1.input_semana}
                                         defaultValue={empresa?.razonSocial || ''}
                                     />
@@ -167,6 +168,7 @@ export default function Configuracion({ setOpen }) {
                                         id="nombre_comercial"
                                         name="nombre_comercial"
                                         type="text"
+                                        required
                                         className={styles1.input_semana}
                                         defaultValue={empresa?.nombreComercial || ''}
                                     />
@@ -179,6 +181,7 @@ export default function Configuracion({ setOpen }) {
                                         id="nit"
                                         name="nit"
                                         type="text"
+                                        required
                                         className={styles1.input_semana}
                                         defaultValue={empresa?.nit || ''}
                                     />
@@ -192,6 +195,7 @@ export default function Configuracion({ setOpen }) {
                                         id="correos_alerta"
                                         name="correos_alerta"
                                         type="text"
+                           
                                         placeholder="usuario@correo.com,usuario2@correo.com,..."
                                         className={styles1.input_semana}
                                         defaultValue={correosAlerta}
@@ -211,6 +215,7 @@ export default function Configuracion({ setOpen }) {
                                             type="number"
                                             max={52}
                                             min={0}
+                                            required
                                             defaultValue={semana?.semana_actual || ''}
                                         />
                                     </InputGroup>
@@ -222,6 +227,7 @@ export default function Configuracion({ setOpen }) {
                                             name="anterior"
                                             type="number"
                                             min={0}
+                                            required
                                             max={semana?.semana_actual || 52}
                                             defaultValue={semana?.semana_previa || ''}
                                         />
@@ -234,6 +240,7 @@ export default function Configuracion({ setOpen }) {
                                             name="siguiente"
                                             type="number"
                                             min={0}
+                                            required
                                             max={52 - (semana?.semana_actual || 0)}
                                             defaultValue={semana?.semana_siguiente || ''}
                                         />
@@ -248,8 +255,9 @@ export default function Configuracion({ setOpen }) {
                                         id="anho_actual"
                                         name="anho_actual"
                                         type="number"
-                                        min={0}
-                                        max={9999}
+                                        min={2024}
+                                        max={2099}
+                                        required
                                         defaultValue={semana?.anho_actual || ''}
                                     />
                                 </InputGroup>

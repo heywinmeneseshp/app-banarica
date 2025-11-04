@@ -37,17 +37,18 @@ const Users = () => {
                     return;
                 }
                 setUser(res.data.usuario);
+                console.log(res.data.usuario);
                 listarUsurios();
             } catch (error) {
                 window.alert("Error al cargar los usuarios: " + error.message);
             }
         };
-    
+
         fetchData();
     }, [alert, pagination]);
-    
 
-    
+
+
 
     async function listarUsurios() {
         const username = buscardorRef.current.value;
@@ -59,7 +60,7 @@ const Users = () => {
     const onChangeBuscador = () => {
         setPagination(1);
         listarUsurios();
-    }; 
+    };
 
     const handleNuevo = async () => {
         setOpen(true);
@@ -78,6 +79,8 @@ const Users = () => {
 
     const handleActivar = (usuario) => {
         try {
+            const deleteUser = window.confirm("¿Está seguro que desea eliminar el usuario?");
+            if (!deleteUser) return;
             const changes = { isBlock: !usuario.isBlock };
             actualizarUsuario(usuario.username, changes);
             setAlert({
@@ -105,7 +108,7 @@ const Users = () => {
                     <button onClick={handleNuevo} type="button" className="btn btn-success btn-sm w-100">Nuevo</button>
                 </div>
                 <div className={styles.botones}>
-                    <button type="button" className="btn btn-danger btn-sm w-100">Eliminar</button>
+                
                 </div>
                 <div className={styles.buscar}>
                     <input ref={buscardorRef} onChange={onChangeBuscador} className="form-control form-control-sm w-90" type="text" placeholder="Buscar"></input>
@@ -118,7 +121,7 @@ const Users = () => {
             <table className="table">
                 <thead className={styles.letter}>
                     <tr>
-                        <th><input type="checkbox" id="topping" name="topping" value="Paneer" /></th>
+                       
                         <th scope="col">Cod</th>
                         <th scope="col">Nombre</th>
                         <th scope="col">Usuario</th>
@@ -130,9 +133,16 @@ const Users = () => {
                     </tr>
                 </thead>
                 <tbody className={styles.letter}>
-                    {usuarios.map((usuario, index) => (
+                    {usuarios.map((usuario, index) => {
+                        const allowDelete = usuario.username != user?.username;
+
+                        if (usuario.isBlock == true) {
+                            return;
+                        } else {
+
+                              return (
                         <tr key={index} >
-                            <td><input type="checkbox" id="topping" name="topping" value="Paneer" /></td>
+                         
                             <td >{usuario.id}</td>
                             <td>{usuario.nombre + " " + usuario.apellido}</td>
                             <td>{usuario.username}</td>
@@ -143,10 +153,12 @@ const Users = () => {
                                 <button onClick={() => handleEditar(usuario)} type="button" className="btn btn-warning btn-sm w-80">Editar</button>
                             </td>
                             <td>
-                                {usuario.isBlock && <button onClick={() => handleActivar(usuario)} type="button" className="btn btn-danger btn-sm w-80">Activar</button>}
-                                {!usuario.isBlock && <button onClick={() => handleActivar(usuario)} type="button" className="btn btn-success btn-sm w-80">Desactivar</button>}
+                                {!usuario.isBlock && allowDelete && <button onClick={() => handleActivar(usuario)} type="button" className="btn btn-danger btn-sm w-80">Eliminar</button>}
                             </td>
-                        </tr>)
+                        </tr>);
+                        }
+                      
+                    }
                     )}
 
                 </tbody>
