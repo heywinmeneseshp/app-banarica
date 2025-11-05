@@ -188,8 +188,8 @@ const Combo = () => {
 
                         <th className="text-custom-small text-center align-middle d-none d-md-table-cell" style={{ padding: '2px' }}>Peso B</th>
                         <th className="text-custom-small text-center align-middle d-none d-md-table-cell" style={{ padding: '2px' }}>Precio</th>
-                        <th className="text-custom-small text-center align-middle" style={{ padding: '2px' }}></th>
-                        <th className="text-custom-small text-center align-middle" style={{ padding: '2px' }}></th>
+                        <th className="text-custom-small text-center align-middle" style={{ padding: '2px' }}>Editar</th>
+                        <th className="text-custom-small text-center align-middle" style={{ padding: '2px' }}>Activar</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -216,6 +216,7 @@ const Combo = () => {
                                     onClick={() => handleEditar(item)}
                                     type="button"
                                     className="btn btn-warning btn-sm"
+                                    title="Editar"
                                     style={{
                                         display: 'flex',
                                         justifyContent: 'center',
@@ -232,6 +233,7 @@ const Combo = () => {
                                 <button
                                     onClick={() => handleActivar(item)}
                                     type="button"
+                                    title={item.isBlock ? "Activar" : "Desactivar"}
                                     className={`btn btn-${item.isBlock ? "danger" : "success"} btn-sm`}
                                     style={{
                                         display: 'flex',

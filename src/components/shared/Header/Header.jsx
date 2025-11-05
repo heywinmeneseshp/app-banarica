@@ -120,7 +120,7 @@ const Header = () => {
               {configMenu.includes("seguridad") && (
                 <DropdownButton variant="dark" title="Seguridad">
                   {menuCompleto.seguridad.map(([ruta, label]) => {
-                    if (configSubMenu.includes(label)) return (
+                    if (configSubMenu.includes(label) || user?.id_rol === "Super administrador") return (
                       <Dropdown.Item key={ruta} onClick={() => onSeguridad(ruta)}>{label}</Dropdown.Item>
                     );
                   })}

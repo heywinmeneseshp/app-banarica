@@ -26,7 +26,8 @@ const menuCompleto = {
         ["/LlenadoContenedor", "Llenado"],
         ["/Recepcion", "Recepción"],
         ["/Rechazos", "Rechazos"],
-        ["/Transferencias", "Transferencias"]
+        ["/Transferencias", "Transferencias"],
+         ["/Inspeccionados", "Inspeccionados"]
     ],
     'programaciones': [
         ["contenedores", "Contenedores"],

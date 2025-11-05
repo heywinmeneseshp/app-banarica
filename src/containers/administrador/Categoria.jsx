@@ -168,8 +168,8 @@ const Categoria = () => {
                             </th>
                             <th className="text-custom-small text-center align-middle" style={{ padding: '2px' }}>Código</th>
                             <th className="text-custom-small text-center align-middle" style={{ padding: '2px' }}>Nombre</th>
-                            <th className="text-custom-small text-center align-middle" style={{ padding: '2px' }}></th>
-                            <th className="text-custom-small text-center align-middle" style={{ padding: '2px' }}></th>
+                            <th className="text-custom-small text-center align-middle" style={{ padding: '2px' }}>Editar</th>
+                            <th className="text-custom-small text-center align-middle" style={{ padding: '2px' }}>Activar</th>
                         </tr>
                     </thead>
                     <tbody className={styles.letter}>
@@ -190,6 +190,7 @@ const Categoria = () => {
                                     <button
                                         onClick={() => handleEditar(item)}
                                         type="button"
+                                         title={"Editar"}
                                         className="btn btn-warning btn-sm"
                                         style={{
                                             display: 'flex',
@@ -208,6 +209,7 @@ const Categoria = () => {
                                     <button
                                         onClick={() => handleActivar(item)}
                                         type="button"
+                                            title={item.isBlock ? "Activar" : "Desactivar"}
                                         className={`btn btn-${item.isBlock ? "danger" : "success"} btn-sm`}
                                         style={{
                                             display: 'flex',

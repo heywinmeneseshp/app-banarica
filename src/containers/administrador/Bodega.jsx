@@ -24,7 +24,7 @@ const Bodega = () => {
     const [pagination, setPagination] = useState(1);
     const [total, setTotal] = useState(0);
     const [selectedItems, setSelectedItems] = useState([]);
-    const limit = 10;
+    const limit = 30;
 
     useEffect(() => {
         async function fetchAlmacenes() {
@@ -109,16 +109,16 @@ const Bodega = () => {
             if (!confirmar) return;
 
             // Desactivar todos los almacenes seleccionados
-            const promises = selectedItems.map(consecutivo => 
+            const promises = selectedItems.map(consecutivo =>
                 actualizarAlmacen(consecutivo, { isBlock: true })
             );
 
             await Promise.all(promises);
 
             // Actualizar el estado local
-            setAlmacenes(prev => 
-                prev.map(almacen => 
-                    selectedItems.includes(almacen.consecutivo) 
+            setAlmacenes(prev =>
+                prev.map(almacen =>
+                    selectedItems.includes(almacen.consecutivo)
                         ? { ...almacen, isBlock: true }
                         : almacen
                 )
@@ -148,14 +148,14 @@ const Bodega = () => {
         try {
             const changes = { isBlock: !almacen.isBlock };
             await actualizarAlmacen(almacen.consecutivo, changes);
-            
+
             // Actualizar el estado local
-            setAlmacenes(prev => prev.map(a => 
-                a.consecutivo === almacen.consecutivo 
+            setAlmacenes(prev => prev.map(a =>
+                a.consecutivo === almacen.consecutivo
                     ? { ...a, isBlock: !a.isBlock }
                     : a
             ));
-            
+
             setAlert({
                 active: true,
                 mensaje: `El almacén "${almacen.consecutivo}" se ha ${almacen.isBlock ? 'activado' : 'desactivado'} correctamente`,
@@ -225,8 +225,8 @@ const Bodega = () => {
                         <th className="text-custom-small text-center align-middle d-none d-md-table-cell" style={{ padding: '2px' }}>Dirección</th>
                         <th className="text-custom-small text-center align-middle d-none d-md-table-cell" style={{ padding: '2px' }}>Teléfono</th>
                         <th className="text-custom-small text-center align-middle d-none d-md-table-cell" style={{ padding: '2px' }}>Email</th>
-                        <th className="text-custom-small text-center align-middle" style={{ padding: '2px' }}></th>
-                        <th className="text-custom-small text-center align-middle" style={{ padding: '2px' }}></th>
+                        <th className="text-custom-small text-center align-middle" style={{ padding: '2px' }}>Editar</th>
+                        <th className="text-custom-small text-center align-middle" style={{ padding: '2px' }}>Activar</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -250,6 +250,7 @@ const Bodega = () => {
                                 <button
                                     onClick={() => handleEditar(almacen)}
                                     type="button"
+                                    title={"Editar"}
                                     className="btn btn-warning btn-sm"
                                     style={{
                                         display: 'flex',
@@ -267,6 +268,7 @@ const Bodega = () => {
                                 <button
                                     onClick={() => handleActivar(almacen)}
                                     type="button"
+                                    title={almacen.isBlock ? "Activar" : "Desactivar"}
                                     className={`btn btn-${almacen.isBlock ? "danger" : "success"} btn-sm`}
                                     style={{
                                         display: 'flex',
