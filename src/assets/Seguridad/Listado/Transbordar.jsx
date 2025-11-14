@@ -29,7 +29,6 @@ const Transbordar = ({ setOpen }) => {
             return contenedoresConDuplicados.indexOf(item) === index;
         });
         setContenedores(contSinDuplicados);
-        console.log(res.data);
         const semConDuplicados = res.data.map(item => item.Embarque.semana.consecutivo);
         const semSinDuplicados = semConDuplicados.filter((item, index) => {
             return semConDuplicados.indexOf(item) === index;
@@ -69,7 +68,6 @@ const Transbordar = ({ setOpen }) => {
             observaciones: observaciones,
             cons_semana: semana
         };
-        console.log(transbordo);
         await agregarTransbordo(transbordo);
         setOpen(false);
     };

@@ -11,6 +11,7 @@ import { FaCog, FaEye, FaPlus } from 'react-icons/fa';
 import VistaContenedor from "@assets/Seguridad/VistaContenedor";
 import AsignarSeriales from "@components/seguridad/AsignarSeriales";
 import { useAuth } from "@hooks/useAuth";
+import GenerarCarruselExcel from "@assets/Seguridad/GenerarCarruselExcel";
 
 export default function Dashboard() {
     const formRef = useRef();
@@ -40,6 +41,7 @@ export default function Dashboard() {
     const [botones, setBotones] = useState([]);
     const [bloqueo, setBloqueo] = useState({});
     const user = getUser();
+    const [openCarrusel, setOpenCarrusel] = useState(false);
 
     useEffect(() => {
         const fetchConfiguracion = async () => {
@@ -177,7 +179,7 @@ export default function Dashboard() {
 
                     {/* Columna 4: Botón Descargar Carrusel */}
                     {(botones.includes("dashboard_descargar_carrusel") || user.id_rol == "Super administrador") && <div className="col-12 col-md-2 d-flex justify-content-md-end">
-                        <button type="button" className="btn btn-primary w-100">Descargar Carrusel</button>
+                        <button type="button" onClick={() => setOpenCarrusel(true)} className="btn btn-primary w-100">Descargar Carrusel</button>
                     </div>}
 
                     {/* Columna 5: Botón Descargar Relación */}
@@ -269,10 +271,10 @@ export default function Dashboard() {
 
                 <Paginacion setPagination={setOffset} pagination={offset} total={total} limit={25} />
                 {openConfig && <InsumoConfig handleConfig={handleConfig} modulo_confi={"Relación_seguridad"} />}
-                {vistaCont && <VistaContenedor  configProducts={bloqueo.tags} vistaCont={vistaCont} setVistaCont={setVistaCont} correos={bloqueo?.correos_alerta} />}
+                {vistaCont && <VistaContenedor configProducts={bloqueo.tags} vistaCont={vistaCont} setVistaCont={setVistaCont} correos={bloqueo?.correos_alerta} />}
             </div>
-
-            {contenedor && <AsignarSeriales  contenedor={contenedor} setContenedor={setContenedor} />}
+            {openCarrusel && <GenerarCarruselExcel data={data} setOpen={setOpenCarrusel} />}
+            {contenedor && <AsignarSeriales contenedor={contenedor} setContenedor={setContenedor} />}
         </>
     );
 }

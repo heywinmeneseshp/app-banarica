@@ -164,22 +164,6 @@ const ListadoEmbarques = () => {
     setPagination(1);
   };
 
-  function decargarPlantilla() {
-    const data = {
-      "id_semana": null,
-      "id_cliente": null,
-      "booking": null,
-      "bl": null,
-      "id_naviera": null,
-      "id_buque": null,
-      "id_destino": null,
-      "viaje": null,
-      "sae": null,
-      "anuncio": null,
-    };
-    excel([data], "Plantilla", "Plantilla de cargue");
-  }
-
   useEffect(() => {
     const iniciar = async () => {
       await fetchInitialData();
@@ -209,11 +193,7 @@ const ListadoEmbarques = () => {
               {'Descargar excel'}
             </Button>
           </Col>
-          <Col>
-            <Button onClick={decargarPlantilla} className="btn btn-sm btn-warning w-100 mt-30px">
-              {'Planilla de Cargue'}
-            </Button>
-          </Col>
+  
         </Row>
       </Form>
 

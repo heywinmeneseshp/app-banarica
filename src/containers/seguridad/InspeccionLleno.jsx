@@ -1,373 +1,446 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { encontrarModulo } from "@services/api/configuracion";
 import { listarCombos } from "@services/api/combos";
 import { paginarListado } from "@services/api/listado";
 import { encontrarUnSerial, inspeccionAntinarcoticos } from "@services/api/seguridad";
-import { FaPlus, FaMinus } from 'react-icons/fa';  // Importar los íconos de más y menos
+import { FaPlus, FaMinus } from 'react-icons/fa';
 import Loader from "@components/shared/Loader";
 import { listarAlmacenes } from "@services/api/almacenes";
 
-export default function InspeccionLLeno() {
-    const today = new Date();
-    const formattedDate = today.toISOString().split('T')[0];
-    today.setMonth(today.getMonth() - 1);
-    const monthBefore = today.toISOString().split('T')[0];
-    today.setMonth(today.getMonth() + 2);
-    const monthLater = today.toISOString().split('T')[0];
-    const formRef = useRef();
-    const [product, setProduct] = useState([]);
-    const [contenedores, setContenedores] = useState([]);
-    const [bolsaStated, setBolsaStated] = useState(true);
-    const [containerStated, setConstainerStated] = useState(true);
-    const [consSemana, setConsSemana] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [almacenes, setAlmacenes] = useState([]);
+// Constantes para configuración
+const CONTAINER_LENGTH = 11;
 
-    const [formData, setFormData] = useState({
-        consecutivo: "", // Campo para el consecutivo único
-        fecha: formattedDate,
+// Hook personalizado para fechas
+const useDates = () => {
+  const today = new Date();
+  const formattedDate = today.toISOString().split('T')[0];
+  
+  const getDateOffset = (months) => {
+    const date = new Date(today);
+    date.setMonth(date.getMonth() + months);
+    return date.toISOString().split('T')[0];
+  };
+
+  return {
+    currentDate: formattedDate,
+    monthBefore: getDateOffset(-1),
+    monthLater: getDateOffset(1)
+  };
+};
+
+// Componente para campos de entrada
+const InputField = ({ label, type = "text", id, value, onChange, required = false, readOnly = false, className = "", list, placeholder, onBlur, isValid = true, minLength, maxLength }) => (
+  <div className="input-group">
+    <span className="input-group-text">{label}:</span>
+    <input
+      type={type}
+      id={id}
+      className={`form-control ${className} ${isValid ? "" : "is-invalid"}`}
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      required={required}
+      readOnly={readOnly}
+      list={list}
+      onBlur={onBlur}
+      minLength={minLength}
+      maxLength={maxLength}
+    />
+  </div>
+);
+
+// Componente para secciones dinámicas
+const DynamicSection = ({ section, onUpdate, onRemove, products, almacenes }) => {
+  const handleFieldChange = (field, value) => {
+    onUpdate(section.id, field, value);
+  };
+
+  return (
+    <>
+      <div className="col-md-2 mb-3">
+        <div className="input-group">
+          <span className="input-group-text">Cod:</span>
+          <select
+            className="form-control"
+            value={section.cod_productor}
+            required
+            onChange={(e) => handleFieldChange('cod_productor', e.target.value)}
+          >
+            <option value=""></option>
+            {almacenes.map((item) => (
+              <option key={item.id} value={item.consecutivo}>
+                {item.consecutivo}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="col-md-3 mb-3">
+        <InputField
+          label="Serial"
+          type="text"
+          value={section.codigoPallet}
+          onChange={(e) => handleFieldChange('codigoPallet', e.target.value)}
+          placeholder="Palet"
+          required
+        />
+      </div>
+
+      <div className="col-md-4 mb-3">
+        <div className="input-group">
+          <span className="input-group-text">Producto:</span>
+          <select
+            className="form-control"
+            value={section.producto}
+            required
+            onChange={(e) => handleFieldChange('producto', e.target.value)}
+          >
+            <option value=""></option>
+            {products.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="col-md-2 mb-3">
+        <InputField
+          label="Cajas"
+          type="number"
+          value={section.totalCajas}
+          onChange={(e) => handleFieldChange('totalCajas', e.target.value)}
+          placeholder="00"
+          required
+        />
+      </div>
+
+      <div className="col-md-1 mb-3">
+        <button
+          type="button"
+          className="btn btn-danger w-100"
+          onClick={() => onRemove(section.id)}
+          title="Eliminar sección"
+        >
+          <FaMinus />
+        </button>
+      </div>
+
+      <div className="line d-block d-md-none"></div>
+    </>
+  );
+};
+
+export default function InspeccionLLeno() {
+  const { currentDate, monthBefore, monthLater } = useDates();
+  const formRef = useRef();
+  
+  const [products, setProducts] = useState([]);
+  const [contenedores, setContenedores] = useState([]);
+  const [almacenes, setAlmacenes] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [validation, setValidation] = useState({
+    bolsa: true,
+    contenedor: true
+  });
+
+  const [formData, setFormData] = useState({
+    consecutivo: "",
+    fecha: currentDate,
+    contenedor: '',
+    bolsa: '',
+    observaciones: ''
+  });
+
+  const [sections, setSections] = useState([]);
+
+  // Generar consecutivo único
+  const generarConsecutivo = useCallback(() => {
+    const consecutivo = contenedores[0]?.id || "";
+    setFormData(prev => ({ ...prev, consecutivo }));
+  }, [contenedores]);
+
+  // Listar contenedores
+  const listarContenedores = useCallback(async (value) => {
+    const filters = {
+      contenedor: value,
+      booking: '',
+      bl: '',
+      destino: '',
+      naviera: '',
+      cliente: '',
+      semana: '',
+      buque: '',
+      fecha_inicial: monthBefore,
+      fecha_final: monthLater,
+      llenado: '',
+      producto: '',
+      habilitado: true,
+    };
+
+    try {
+      const listado = await paginarListado(1, 10, filters);
+      const result = listado.data
+        .map(item => item?.Contenedor)
+        .filter(item => item != null);
+      
+      const uniqueResult = [...new Set(result)];
+      const semana = listado.data
+        .filter(item => item?.Contenedor?.contenedor === uniqueResult[0]?.contenedor)[0]
+        ?.Embarque?.semana?.consecutivo;
+
+      setContenedores(uniqueResult);
+      setValidation(prev => ({ 
+        ...prev, 
+        contenedor: uniqueResult.length > 0 
+      }));
+      
+      // Actualizar consSemana en el estado si es necesario
+      if (semana) {
+        setFormData(prev => ({ ...prev, semana }));
+      }
+    } catch (error) {
+      console.error('Error al listar contenedores:', error);
+      setValidation(prev => ({ ...prev, contenedor: false }));
+    }
+  }, [monthBefore, monthLater]);
+
+  // Manejar cambios en el formulario principal
+  const handleInputChange = useCallback((e) => {
+    const { id, value } = e.target;
+    
+    if (id === "contenedor") {
+      listarContenedores(value);
+    }
+    
+    setFormData(prev => ({ ...prev, [id]: value }));
+  }, [listarContenedores]);
+
+  // Manejar cambios en secciones dinámicas
+  const handleSectionUpdate = useCallback((sectionId, field, value) => {
+    setSections(prev => prev.map(section =>
+      section.id === sectionId ? { ...section, [field]: value } : section
+    ));
+  }, []);
+
+  // Agregar nueva sección
+  const addSection = useCallback(() => {
+    setSections(prev => [
+      ...prev,
+      { 
+        id: Date.now(), 
+        cod_productor: "", 
+        codigoPallet: '', 
+        producto: '', 
+        totalCajas: '' 
+      }
+    ]);
+  }, []);
+
+  // Eliminar sección
+  const removeSection = useCallback((id) => {
+    setSections(prev => prev.filter(section => section.id !== id));
+  }, []);
+
+  // Validar formulario
+  const validateForm = async () => {
+    // Validar bolsa
+    const kit = await encontrarUnSerial({
+      bag_pack: formData.bolsa,
+      available: [true],
+    });
+
+    if (kit.length === 0) {
+      setValidation(prev => ({ ...prev, bolsa: false }));
+      throw new Error('La Bolsa no existe');
+    }
+
+    // Validar contenedor
+    if (contenedores.length === 0) {
+      setValidation(prev => ({ ...prev, contenedor: false }));
+      throw new Error('El Contenedor no existe');
+    }
+
+    setValidation({ bolsa: true, contenedor: true });
+  };
+
+  // Manejar envío del formulario
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      await validateForm();
+      
+      const usuario = JSON.parse(localStorage.getItem("usuario"));
+      await inspeccionAntinarcoticos(
+        { ...formData, id_usuario: usuario.id }, 
+        sections
+      );
+
+      // Resetear formulario
+      setFormData({
+        consecutivo: "",
+        fecha: currentDate,
         contenedor: '',
         bolsa: '',
         observaciones: ''
-    });
+      });
+      setSections([]);
+      
+      window.alert("Datos cargados con éxito");
+    } catch (error) {
+      window.alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    // Estado para las secciones dinámicas
-    const [sections, setSections] = useState([]); // Almacena las secciones de campos adicionales
-
-    // Función para generar un consecutivo único
-    const generarConsecutivo = () => {
-        // Podrías usar cualquier formato para el consecutivo. Aquí estamos usando la fecha y un número aleatorio
-        const consecutivo = contenedores[0]?.id;
-        console.log(contenedores);
-        setFormData(prevData => ({ ...prevData, consecutivo }));
-    };
-
-
-    const listarContenedores = async (value) => {
-        const object = {
-            contenedor: value,
-            booking: '',
-            bl: '',
-            destino: '',
-            naviera: '',
-            cliente: '',
-            semana: '',
-            buque: '',
-            fecha_inicial: monthBefore,
-            fecha_final: monthLater,
-            llenado: '',
-            producto: '',
-            habilitado: true,
-        };
-        const listado = await paginarListado(1, 10, object);
-        const result = listado.data.map(item => item?.Contenedor);
-        const filteredResult = result.filter(item => item != null);
-        const semana = listado.data.filter(item => item?.Contenedor?.contenedor == filteredResult[0].contenedor)[0]?.Embarque?.semana?.consecutivo;
-        setConsSemana(semana);
-        const uniqueResult = [...new Set(filteredResult)];
-        setContenedores(uniqueResult);
-        uniqueResult[0] ? setConstainerStated(true) : setConstainerStated(false);
-    };
-
-    const handleInputChange = (e) => {
-        const { id, value } = e.target;
-        console.log(id, value); // Imprime el id y el valor en consola
-        if (id === "contenedor") {
-            listarContenedores(value);
-        };
-        setFormData(prevData => ({ ...prevData, [id]: value }));
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        // Verificar si la bolsa existe
-        const kit = await encontrarUnSerial({
-            bag_pack: formData.bolsa,
-            available: [true],
-        });
-        if (kit.length === 0) {
-            setBolsaStated(false);
-            setLoading(false);
-            return window.alert('La Bolsa no existe');
-        }
-        setLoading(true);
-        setBolsaStated(true);
-        if (!containerStated) {
-            setLoading(false);
-            return window.alert('El Contenedor no existe');
-        }
-
-        // Imprimir todos los datos en la consola
-
-        // Imprimir las secciones dinámicas
-        sections.forEach((section, index) => {
-            console.log(`Sección ${index + 1}:`, section);
-        });
-
-        console.log(sections);
-        const usuario = JSON.parse(localStorage.getItem("usuario"));
-        await inspeccionAntinarcoticos({ ...formData, semana: consSemana, id_usuario: usuario.id }, sections);
-
-        setFormData({
-            consecutivo: "", // Campo para el consecutivo único
-            fecha: formattedDate,
-            contenedor: '',
-            bolsa: '',
-            observaciones: ''
-        });
-        setSections([]);
-        window.alert("Datos cargados con exito");
-        setLoading(false);
-    };
-
-    // Agregar una nueva sección
-    const addSection = () => {
-        setSections(prevSections => [
-            ...prevSections,
-            { id: Date.now(), cod_productor: "", codigoPallet: '', producto: '', totalCajas: '' }
+  // Efectos iniciales
+  useEffect(() => {
+    const initializeData = async () => {
+      try {
+        await encontrarModulo("Semana");
+        const [productsData, almacenesData] = await Promise.all([
+          listarCombos(),
+          listarAlmacenes()
         ]);
+        setProducts(productsData);
+        setAlmacenes(almacenesData);
+      } catch (error) {
+        console.error('Error inicializando datos:', error);
+      }
     };
 
-    // Eliminar una sección
-    const removeSection = (id) => {
-        setSections(prevSections => prevSections.filter(section => section.id !== id));
-    };
+    initializeData();
+  }, []);
 
-    useEffect(() => {
-        encontrarModulo("Semana").then(res => console.log(res[0]));
-        listarCombos().then(res => setProduct(res));
-        listarAlmacenes().then(res => setAlmacenes(res));
-    }, []);
+  return (
+    <>
+      <Loader loading={loading} />
 
-    return (
-        <>
-            <Loader loading={loading} />
+      <form ref={formRef} onSubmit={handleSubmit}>
+        <div className="container">
+          <div className="mb-4 mt-3 text-center">
+            <h2>Inspección Lleno</h2>
+          </div>
 
-            <form ref={formRef} onSubmit={handleSubmit}>
-                <div className="container">
-                    <div className="mb-4 mt-3 text-center">
-                        <h2>Inspeccion Lleno</h2>
-                    </div>
+          <div className="container">
+            <div className="row">
+              {/* Campos principales */}
+              <div className="col-sm-6 col-md-3 mb-3">
+                <InputField
+                  label="Cons"
+                  type="text"
+                  id="consecutivo"
+                  value={formData.consecutivo}
+                  readOnly
+                  placeholder="Consecutivo"
+                />
+              </div>
 
-                    <div className="container">
-                        <div className="row">
-                            {/* Primera columna */}
-                            <div className="col-sm-6 col-md-3 mb-3">
-                                <div className="input-group">
-                                    <span className="input-group-text">Cons:</span>
-                                    <input
-                                        type="text"
-                                        id="consecutivo"
-                                        className="form-control"
-                                        placeholder="Consecutivo"
-                                        value={formData.consecutivo}
-                                        readOnly // El campo es solo lectura
-                                    />
-                                </div>
-                            </div>
+              <div className="col-sm-6 col-md-3 mb-3">
+                <InputField
+                  label="Fecha"
+                  type="date"
+                  id="fecha"
+                  value={formData.fecha}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
 
-                            <div className="col-sm-6 col-md-3 mb-3">
-                                <div className="input-group">
-                                    <span className="input-group-text">Fecha:</span>
-                                    <input
-                                        type="date"
-                                        id="fecha"
-                                        className="form-control"
-                                        placeholder={formData.fecha}
-                                        defaultValue={formData.fecha}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-                                </div>
-                            </div>
+              <div className="col-md-6 mb-3">
+                <InputField
+                  label="Contenedor"
+                  type="text"
+                  id="contenedor"
+                  value={formData.contenedor}
+                  onChange={handleInputChange}
+                  onBlur={generarConsecutivo}
+                  required
+                  minLength={CONTAINER_LENGTH}
+                  maxLength={CONTAINER_LENGTH}
+                  placeholder="DUMMY000001"
+                  isValid={validation.contenedor}
+                  list="container-list"
+                />
+                <datalist id="container-list">
+                  {contenedores.map((item, index) => (
+                    <option key={index} value={item?.contenedor} />
+                  ))}
+                </datalist>
+              </div>
 
-                            <div className="col-md-6 mb-3">
-                                <div className="input-group">
-                                    <span className="input-group-text">Contenedor:</span>
-                                    <input
-                                        type="text"
-                                        id="contenedor"
-                                        maxLength="11"
-                                        minLength={11}
-                                        list="container-list"
-                                        className={`form-control ${containerStated ? "" : "is-invalid"}`}
-                                        placeholder="DUMMY000001"
-                                        value={formData.contenedor}
-                                        onChange={handleInputChange}
-                                        required
-                                        onBlur={generarConsecutivo}
-                                    />
-                                    {/* Datalist con opciones dinámicas */}
-                                    <datalist id="container-list">
-                                        {contenedores.map((item, index) => (
-                                            <option key={index} value={item?.contenedor} />
-                                        ))}
-                                    </datalist>
-                                </div>
-                            </div>
+              <div className="col-md-6 mb-3">
+                <InputField
+                  label="Kit"
+                  type="text"
+                  id="bolsa"
+                  value={formData.bolsa}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="AA2L0000"
+                  isValid={validation.bolsa}
+                />
+              </div>
 
-                            {/* Otras entradas */}
-                            <div className="col-md-6 mb-3">
-                                <div className="input-group">
-                                    <span className="input-group-text">Kit:</span>
-                                    <input
-                                        type="text"
-                                        id="bolsa"
-                                        name="bolsa"
-                                        className={`form-control ${bolsaStated ? "" : "is-invalid"}`}
-                                        placeholder="AA2L0000"
-                                        onChange={handleInputChange}
-                                        value={formData.bolsa}
-                                        required
-                                    />
-                                </div>
-                            </div>
+              {/* Botón para agregar secciones */}
+              <div className="col-md-6 mb-3">
+                <button
+                  type="button"
+                  className="btn btn-primary w-100"
+                  onClick={addSection}
+                >
+                  <FaPlus /> Agregar Rechazo
+                </button>
+              </div>
 
-                            {/* Botones "+" y "-" para mostrar/ocultar campos */}
-                            <div className="col-md-6 mb-3">
-                                <button
-                                    type="button"
-                                    className="btn btn-primary w-100"
-                                    onClick={addSection}  // Agregar nueva sección
-                                >
-                                    <FaPlus /> Agregar Rechazo
-                                </button>
-                            </div>
-                            {sections[0] && <div className="line"></div>}
-                            {/* Secciones dinámicas */}
-                            {sections.map(section => (
-                                <>
-                                    <div className="col-md-2 mb-3">
-                                        <div className="input-group">
-                                            <span className="input-group-text">Cod:</span>
-                                            <select
-                                                id={`cod_productor-${section.id}`}
-                                                className="form-control"
-                                                value={section.cod_productor}
-                                                required
-                                                onChange={(e) => {
-                                                    const newValue = e.target.value;
-                                                    setSections(prevSections => prevSections.map(sec =>
-                                                        sec.id === section.id ? { ...sec, cod_productor: newValue } : sec
-                                                    ));
-                                                }}
-                                            >    <option ></option>
-                                                {almacenes.map((item, key) => (
-                                                    <option key={key} value={item.consecutivo}>
-                                                        {item.consecutivo}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
+              {sections.length > 0 && <div className="line"></div>}
 
+              {/* Secciones dinámicas */}
+              {sections.map(section => (
+                <DynamicSection
+                  key={section.id}
+                  section={section}
+                  onUpdate={handleSectionUpdate}
+                  onRemove={removeSection}
+                  products={products}
+                  almacenes={almacenes}
+                />
+              ))}
 
-                                    <div className="col-md-3 mb-3">
-                                        <div className="input-group">
-                                            <span className="input-group-text">Serial:</span>
-                                            <input
-                                                type="text"
-                                                id={`codigoPallet-${section.id}`}
-                                                className="form-control"
-                                                placeholder="Palet"
-                                                value={section.codigoPallet}
-                                                required
-                                                onChange={(e) => {
-                                                    const newValue = e.target.value;
-                                                    setSections(prevSections => prevSections.map(sec =>
-                                                        sec.id === section.id ? { ...sec, codigoPallet: newValue } : sec
-                                                    ));
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
+              {sections.length > 0 && <div className="line d-none d-md-block"></div>}
 
-                                    <div className="col-md-4 mb-3">
-                                        <div className="input-group">
-                                            <span className="input-group-text">Producto:</span>
-                                            <select
-                                                id={`producto-${section.id}`}
-                                                className="form-control"
-                                                value={section.producto}
-                                                required
-                                                onChange={(e) => {
-                                                    const newValue = e.target.value;
-                                                    setSections(prevSections => prevSections.map(sec =>
-                                                        sec.id === section.id ? { ...sec, producto: newValue } : sec
-                                                    ));
-                                                }}
-                                            >
-                                               <option ></option>
-                                                {product.map((item, key) => (
-                                                    <option key={key} value={item.id}>
-                                                        {item.nombre}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div className="col-md-2 mb-3">
-                                        <div className="row">
-                                            <div className="input-group w-10">
-                                                <span className="input-group-text">Cajas:</span>
-                                                <input
-                                                    type="number"
-                                                    id={`totalCajas-${section.id}`}
-                                                    className="form-control"
-                                                    placeholder="00"
-                                                    value={section.totalCajas}
-                                                    required
-                                                    onChange={(e) => {
-                                                        const newValue = e.target.value;
-                                                        setSections(prevSections => prevSections.map(sec =>
-                                                            sec.id === section.id ? { ...sec, totalCajas: newValue } : sec
-                                                        ));
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="col-md-1 mb-3">
-                                        <button
-                                            type="button"
-                                            className="btn btn-danger w-100"
-                                            onClick={() => removeSection(section.id)}  // Eliminar la sección
-                                        >
-                                            <FaMinus />
-                                        </button>
-                                    </div>
-
-                                    {sections[0] && <div className="line d-block d-md-none"></div>}
-                                </>
-                            ))}
-                            {sections[0] && <div className="line d-none d-md-block"></div>}
-                            {/* Observaciones ocupa una fila completa */}
-                            <div className="col-md-12 mb-3">
-                                <div className="input-group">
-                                    <span className="input-group-text">Observaciones:</span>
-                                    <textarea
-                                        id="observaciones"
-                                        className="form-control"
-                                        placeholder="Escriba sus observaciones"
-                                        onChange={handleInputChange}
-                                        value={formData.observaciones}
-                                    ></textarea>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="row">
-                        <div className="col-12 mb-2">
-                            <button type="submit" className="btn btn-success w-100">Guardar</button>
-                        </div>
-                    </div>
+              {/* Observaciones */}
+              <div className="col-md-12 mb-3">
+                <div className="input-group">
+                  <span className="input-group-text">Observaciones:</span>
+                  <textarea
+                    id="observaciones"
+                    className="form-control"
+                    placeholder="Escriba sus observaciones"
+                    onChange={handleInputChange}
+                    value={formData.observaciones}
+                    rows="3"
+                  ></textarea>
                 </div>
-            </form>
-        </>
-    );
+              </div>
+            </div>
+          </div>
+
+          <div className="row">
+            <div className="col-12 mb-2">
+              <button type="submit" className="btn btn-success w-100">
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </>
+  );
 }

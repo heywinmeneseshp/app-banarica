@@ -317,6 +317,7 @@ const endPoints = {
         findOne: (id) => `${API}/api/${VERSION}/listado/${id}`,
         paginar: (offset, limit) => `${API}/api/${VERSION}/listado/paginar?offset=${offset}&limit=${limit}`,
         update: (id) => `${API}/api/${VERSION}/listado/${id}`,
+        updateMasivo: `${API}/api/${VERSION}/listado/actualizar-masivo`,
         delete: (id) => `${API}/api/${VERSION}/listado/${id}`,
     },
     Navieras: {

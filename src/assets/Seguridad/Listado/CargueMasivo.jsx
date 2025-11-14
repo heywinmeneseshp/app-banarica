@@ -54,8 +54,13 @@ const CargueMasivo = ({ setOpenMasivo, endPointCargueMasivo, encabezados, titulo
             return;
         }
 
+        if (data.length === 0) {
+            alert("No hay datos para cargar. Verifica el archivo.");
+            return;
+        }
+
         setLoading(true);
-        setProgress(10); // Simula inicio del progreso
+        setProgress(10);
 
         try {
             const response = await fetch(endPointCargueMasivo, {
@@ -66,21 +71,48 @@ const CargueMasivo = ({ setOpenMasivo, endPointCargueMasivo, encabezados, titulo
                 body: JSON.stringify(data)
             });
 
-            setProgress(50); // Simula progreso intermedio
+            setProgress(50);
 
-            const result = await response.json();
-            setProgress(80); // Casi finalizado
+            let result;
+            try {
+                result = await response.json();
+            } catch (jsonError) {
+                throw new Error("Error al procesar la respuesta del servidor");
+            }
+
+            setProgress(80);
 
             console.log("Respuesta del servidor:", result);
-            if (result?.error) throw result?.message;
 
-            alert("Carga exitosa");
-            setOpenMasivo(false);
+            // Manejar diferentes tipos de respuesta
+            if (!response.ok) {
+                // Error HTTP (4xx, 5xx)
+                throw new Error(result?.message || `Error ${response.status}: ${response.statusText}`);
+            }
+
+            if (result?.error) {
+                // Error de lógica del servidor
+                throw new Error(result.message || "Error en el procesamiento de los datos");
+            }
+
+            if (result?.results?.some(item => item.error)) {
+                // Algunos registros fallaron en actualización masiva
+                const errores = result.results.filter(item => item.error);
+                const mensajeErrores = errores.map(err =>
+                    `Fecha: ${err.fecha}, Contenedor: ${err.contenedor} - ${err.message}`
+                ).join('\n');
+
+                alert(`Carga parcialmente exitosa. Errores encontrados:\n${mensajeErrores}`);
+            } else {
+                alert("Carga exitosa");
+                setOpenMasivo(false);
+            }
+
         } catch (error) {
             console.error("Error al enviar los datos:", error);
-            alert("Error al cargar los datos. " + error);
+            alert("Error al cargar los datos: " + error.message);
         } finally {
-            setProgress(100); // Finaliza la barra de carga
+            setProgress(100);
             setTimeout(() => {
                 setLoading(false);
                 setProgress(0);
@@ -99,7 +131,14 @@ const CargueMasivo = ({ setOpenMasivo, endPointCargueMasivo, encabezados, titulo
                 <div className={styles2.floatingform}>
                     <div className="card">
                         <div className="card-header d-flex justify-content-between">
-                            <span className="fw-bold">Cargar Archivo Excel</span>
+                            <span>
+                                <span className="fw-bold me-2">Cargar Archivo Excel</span>
+                                {titulo &&
+                                    <span>
+                                        <span className="fw-bold me-2">|</span>
+                                        <span>{titulo}</span>
+                                    </span>}
+                            </span>
                             <button
                                 type="button"
                                 onClick={() => setOpenMasivo(false)}

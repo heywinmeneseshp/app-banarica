@@ -58,6 +58,7 @@ export default function Vehiculo() {
           "Categoria": categoryV,
           "Conductor": conductoresL
         }}
+        type={[null, null, null, null, null, null, "number" ,"number", null, null]}
 
       />
 

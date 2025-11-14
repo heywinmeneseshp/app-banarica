@@ -16,6 +16,8 @@ const actualizarListado = async (id, body) => {
     return res.data;
 };
 
+
+
 const encontrarListado = async (id) => {
     const res = await axios.get(endPoints.listado.findOne(id));
     return res.data;

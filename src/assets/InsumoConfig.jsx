@@ -193,10 +193,11 @@ function InsumoConfig({ handleConfig, modulo_confi }) {
                   <Form.Label size="sm">Hora fin:</Form.Label>
                   <Form.Control size="sm" type="time" name="hora_final" defaultValue={tiempoBloque.hora_final} />
                 </Col>
+                <div className="col-md-5">
+
+                </div>
               </Row>}
               {/*fin habilitar vista sellos */}
-
-
 
               <div className="col-12 d-flex justify-content-end">
                 <button
