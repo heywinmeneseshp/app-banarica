@@ -25,7 +25,7 @@ const STYLES = Object.freeze({
 
 const BASE_DATA = Object.freeze({
   sdHeaders: [
-    "Prefijo", "Numero", "ISOCode", "Estado", "Sello", "Peso",
+    "Prefijo", "Numero", "ISOCode", "Estado", "Sello1", "Peso",
     "BookingEDO", "OrigenContenedor", "Cantidad", "Empaque", "ObservacionContenedor",
     "", "Motonave", "Buque"
   ],
@@ -189,7 +189,7 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
 
     worksheet.getCell('N11').value = "Descripción";
     worksheet.getCell('N12').value = "Lleno";
-    worksheet.getCell('N13').value = "Vacío";
+    worksheet.getCell('N13').value = "Vacio";
 
     // Estilo para sección de Tamaño (gris como en la imagen)
     for (let row = 6; row <= 8; row++) {

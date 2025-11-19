@@ -1,3 +1,4 @@
+// Código optimizado con nuevos campos agregados
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { encontrarModulo } from "@services/api/configuracion";
@@ -8,20 +9,16 @@ import { FaPlus, FaMinus } from 'react-icons/fa';
 import Loader from "@components/shared/Loader";
 import { listarAlmacenes } from "@services/api/almacenes";
 
-// Constantes para configuración
 const CONTAINER_LENGTH = 11;
 
-// Hook personalizado para fechas
 const useDates = () => {
   const today = new Date();
   const formattedDate = today.toISOString().split('T')[0];
-  
   const getDateOffset = (months) => {
     const date = new Date(today);
     date.setMonth(date.getMonth() + months);
     return date.toISOString().split('T')[0];
   };
-
   return {
     currentDate: formattedDate,
     monthBefore: getDateOffset(-1),
@@ -29,7 +26,6 @@ const useDates = () => {
   };
 };
 
-// Componente para campos de entrada
 const InputField = ({ label, type = "text", id, value, onChange, required = false, readOnly = false, className = "", list, placeholder, onBlur, isValid = true, minLength, maxLength }) => (
   <div className="input-group">
     <span className="input-group-text">{label}:</span>
@@ -50,7 +46,6 @@ const InputField = ({ label, type = "text", id, value, onChange, required = fals
   </div>
 );
 
-// Componente para secciones dinámicas
 const DynamicSection = ({ section, onUpdate, onRemove, products, almacenes }) => {
   const handleFieldChange = (field, value) => {
     onUpdate(section.id, field, value);
@@ -119,12 +114,7 @@ const DynamicSection = ({ section, onUpdate, onRemove, products, almacenes }) =>
       </div>
 
       <div className="col-md-1 mb-3">
-        <button
-          type="button"
-          className="btn btn-danger w-100"
-          onClick={() => onRemove(section.id)}
-          title="Eliminar sección"
-        >
+        <button type="button" className="btn btn-danger w-100" onClick={() => onRemove(section.id)}>
           <FaMinus />
         </button>
       </div>
@@ -137,19 +127,19 @@ const DynamicSection = ({ section, onUpdate, onRemove, products, almacenes }) =>
 export default function InspeccionLLeno() {
   const { currentDate, monthBefore, monthLater } = useDates();
   const formRef = useRef();
-  
   const [products, setProducts] = useState([]);
   const [contenedores, setContenedores] = useState([]);
   const [almacenes, setAlmacenes] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [validation, setValidation] = useState({
-    bolsa: true,
-    contenedor: true
-  });
+  const [validation, setValidation] = useState({ bolsa: true, contenedor: true });
 
   const [formData, setFormData] = useState({
     consecutivo: "",
     fecha: currentDate,
+    hora_inicio: "",
+    hora_fin: "",
+    agente: "",
+    zona: "",
     contenedor: '',
     bolsa: '',
     observaciones: ''
@@ -157,141 +147,60 @@ export default function InspeccionLLeno() {
 
   const [sections, setSections] = useState([]);
 
-  // Generar consecutivo único
   const generarConsecutivo = useCallback(() => {
     const consecutivo = contenedores[0]?.id || "";
     setFormData(prev => ({ ...prev, consecutivo }));
   }, [contenedores]);
 
-  // Listar contenedores
   const listarContenedores = useCallback(async (value) => {
     const filters = {
       contenedor: value,
-      booking: '',
-      bl: '',
-      destino: '',
-      naviera: '',
-      cliente: '',
-      semana: '',
-      buque: '',
-      fecha_inicial: monthBefore,
-      fecha_final: monthLater,
-      llenado: '',
-      producto: '',
-      habilitado: true,
+      booking: '', bl: '', destino: '', naviera: '', cliente: '', semana: '', buque: '',
+      fecha_inicial: monthBefore, fecha_final: monthLater,
+      llenado: '', producto: '', habilitado: true
     };
 
     try {
       const listado = await paginarListado(1, 10, filters);
-      const result = listado.data
-        .map(item => item?.Contenedor)
-        .filter(item => item != null);
-      
+      const result = listado.data.map(item => item?.Contenedor).filter(item => item != null);
       const uniqueResult = [...new Set(result)];
-      const semana = listado.data
-        .filter(item => item?.Contenedor?.contenedor === uniqueResult[0]?.contenedor)[0]
-        ?.Embarque?.semana?.consecutivo;
-
       setContenedores(uniqueResult);
-      setValidation(prev => ({ 
-        ...prev, 
-        contenedor: uniqueResult.length > 0 
-      }));
-      
-      // Actualizar consSemana en el estado si es necesario
-      if (semana) {
-        setFormData(prev => ({ ...prev, semana }));
-      }
+      setValidation(prev => ({ ...prev, contenedor: uniqueResult.length > 0 }));
     } catch (error) {
-      console.error('Error al listar contenedores:', error);
+      console.error(error);
       setValidation(prev => ({ ...prev, contenedor: false }));
     }
   }, [monthBefore, monthLater]);
 
-  // Manejar cambios en el formulario principal
   const handleInputChange = useCallback((e) => {
     const { id, value } = e.target;
-    
-    if (id === "contenedor") {
-      listarContenedores(value);
-    }
-    
+    if (id === "contenedor") listarContenedores(value);
     setFormData(prev => ({ ...prev, [id]: value }));
   }, [listarContenedores]);
 
-  // Manejar cambios en secciones dinámicas
   const handleSectionUpdate = useCallback((sectionId, field, value) => {
-    setSections(prev => prev.map(section =>
-      section.id === sectionId ? { ...section, [field]: value } : section
-    ));
+    setSections(prev => prev.map(section => section.id === sectionId ? { ...section, [field]: value } : section));
   }, []);
 
-  // Agregar nueva sección
-  const addSection = useCallback(() => {
-    setSections(prev => [
-      ...prev,
-      { 
-        id: Date.now(), 
-        cod_productor: "", 
-        codigoPallet: '', 
-        producto: '', 
-        totalCajas: '' 
-      }
-    ]);
-  }, []);
+  const addSection = () => setSections(prev => [...prev, { id: Date.now(), cod_productor: "", codigoPallet: '', producto: '', totalCajas: '' }]);
+  const removeSection = (id) => setSections(prev => prev.filter(section => section.id !== id));
 
-  // Eliminar sección
-  const removeSection = useCallback((id) => {
-    setSections(prev => prev.filter(section => section.id !== id));
-  }, []);
-
-  // Validar formulario
   const validateForm = async () => {
-    // Validar bolsa
-    const kit = await encontrarUnSerial({
-      bag_pack: formData.bolsa,
-      available: [true],
-    });
-
-    if (kit.length === 0) {
-      setValidation(prev => ({ ...prev, bolsa: false }));
-      throw new Error('La Bolsa no existe');
-    }
-
-    // Validar contenedor
-    if (contenedores.length === 0) {
-      setValidation(prev => ({ ...prev, contenedor: false }));
-      throw new Error('El Contenedor no existe');
-    }
-
-    setValidation({ bolsa: true, contenedor: true });
+    const kit = await encontrarUnSerial({ bag_pack: formData.bolsa, available: [true] });
+    if (kit.length === 0) throw new Error('La Bolsa no existe');
+    if (contenedores.length === 0) throw new Error('El Contenedor no existe');
   };
 
-  // Manejar envío del formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       await validateForm();
-      
       const usuario = JSON.parse(localStorage.getItem("usuario"));
-      await inspeccionAntinarcoticos(
-        { ...formData, id_usuario: usuario.id }, 
-        sections
-      );
-
-      // Resetear formulario
-      setFormData({
-        consecutivo: "",
-        fecha: currentDate,
-        contenedor: '',
-        bolsa: '',
-        observaciones: ''
-      });
-      setSections([]);
-      
+      await inspeccionAntinarcoticos({ ...formData, id_usuario: usuario.id }, sections);
       window.alert("Datos cargados con éxito");
+      setFormData({ consecutivo: "", fecha: currentDate, hora_inicio: "", hora_fin: "", agente: "", zona: "", contenedor: '', bolsa: '', observaciones: '' });
+      setSections([]);
     } catch (error) {
       window.alert(error.message);
     } finally {
@@ -299,144 +208,86 @@ export default function InspeccionLLeno() {
     }
   };
 
-  // Efectos iniciales
   useEffect(() => {
     const initializeData = async () => {
       try {
         await encontrarModulo("Semana");
-        const [productsData, almacenesData] = await Promise.all([
-          listarCombos(),
-          listarAlmacenes()
-        ]);
+        const [productsData, almacenesData] = await Promise.all([listarCombos(), listarAlmacenes()]);
         setProducts(productsData);
         setAlmacenes(almacenesData);
       } catch (error) {
-        console.error('Error inicializando datos:', error);
+        console.error(error);
       }
     };
-
     initializeData();
   }, []);
 
   return (
     <>
       <Loader loading={loading} />
-
       <form ref={formRef} onSubmit={handleSubmit}>
         <div className="container">
-          <div className="mb-4 mt-3 text-center">
-            <h2>Inspección Lleno</h2>
-          </div>
 
-          <div className="container">
-            <div className="row">
-              {/* Campos principales */}
-              <div className="col-sm-6 col-md-3 mb-3">
-                <InputField
-                  label="Cons"
-                  type="text"
-                  id="consecutivo"
-                  value={formData.consecutivo}
-                  readOnly
-                  placeholder="Consecutivo"
-                />
-              </div>
-
-              <div className="col-sm-6 col-md-3 mb-3">
-                <InputField
-                  label="Fecha"
-                  type="date"
-                  id="fecha"
-                  value={formData.fecha}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div className="col-md-6 mb-3">
-                <InputField
-                  label="Contenedor"
-                  type="text"
-                  id="contenedor"
-                  value={formData.contenedor}
-                  onChange={handleInputChange}
-                  onBlur={generarConsecutivo}
-                  required
-                  minLength={CONTAINER_LENGTH}
-                  maxLength={CONTAINER_LENGTH}
-                  placeholder="DUMMY000001"
-                  isValid={validation.contenedor}
-                  list="container-list"
-                />
-                <datalist id="container-list">
-                  {contenedores.map((item, index) => (
-                    <option key={index} value={item?.contenedor} />
-                  ))}
-                </datalist>
-              </div>
-
-              <div className="col-md-6 mb-3">
-                <InputField
-                  label="Kit"
-                  type="text"
-                  id="bolsa"
-                  value={formData.bolsa}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="AA2L0000"
-                  isValid={validation.bolsa}
-                />
-              </div>
-
-              {/* Botón para agregar secciones */}
-              <div className="col-md-6 mb-3">
-                <button
-                  type="button"
-                  className="btn btn-primary w-100"
-                  onClick={addSection}
-                >
-                  <FaPlus /> Agregar Rechazo
-                </button>
-              </div>
-
-              {sections.length > 0 && <div className="line"></div>}
-
-              {/* Secciones dinámicas */}
-              {sections.map(section => (
-                <DynamicSection
-                  key={section.id}
-                  section={section}
-                  onUpdate={handleSectionUpdate}
-                  onRemove={removeSection}
-                  products={products}
-                  almacenes={almacenes}
-                />
-              ))}
-
-              {sections.length > 0 && <div className="line d-none d-md-block"></div>}
-
-              {/* Observaciones */}
-              <div className="col-md-12 mb-3">
-                <div className="input-group">
-                  <span className="input-group-text">Observaciones:</span>
-                  <textarea
-                    id="observaciones"
-                    className="form-control"
-                    placeholder="Escriba sus observaciones"
-                    onChange={handleInputChange}
-                    value={formData.observaciones}
-                    rows="3"
-                  ></textarea>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div className="mb-4 mt-3 text-center"><h2>Inspección Lleno</h2></div>
 
           <div className="row">
+            <div className="col-sm-6 col-md-3 mb-3">
+              <InputField label="Cons" id="consecutivo" value={formData.consecutivo} readOnly placeholder="Consecutivo" />
+            </div>
+
+            <div className="col-sm-6 col-md-3 mb-3">
+              <InputField label="Fecha" type="date" id="fecha" value={formData.fecha} onChange={handleInputChange} required />
+            </div>
+
+            <div className="col-sm-6 col-md-3 mb-3">
+              <InputField label="Inicio" type="time" id="hora_inicio" value={formData.hora_inicio} onChange={handleInputChange} required />
+            </div>
+
+            <div className="col-sm-6 col-md-3 mb-3">
+              <InputField label="Fin" type="time" id="hora_fin" value={formData.hora_fin} onChange={handleInputChange}  />
+            </div>
+
+        
+            <div className="col-md-6 mb-3">
+              <InputField label="Contenedor" id="contenedor" value={formData.contenedor} onChange={handleInputChange} onBlur={generarConsecutivo} required minLength={CONTAINER_LENGTH} maxLength={CONTAINER_LENGTH} placeholder="DUMMY000001" isValid={validation.contenedor} list="container-list" />
+              <datalist id="container-list">
+                {contenedores.map((item, index) => (<option key={index} value={item?.contenedor} />))}
+              </datalist>
+            </div>
+
+
+            <div className="col-md-6 mb-3">
+              <InputField label="Kit" id="bolsa" value={formData.bolsa} onChange={handleInputChange} required isValid={validation.bolsa} placeholder="AA2L0000" />
+            </div>
+
+              <div className="col-sm-6 col-md-6 mb-3">
+              <InputField label="Agente" type="text" id="agente" value={formData.agente} onChange={handleInputChange} placeholder="Nombre del agente de policía" required />
+            </div>
+
+            <div className="col-sm-6 col-md-6 mb-3">
+              <InputField label="Zona" type="text" id="zona" value={formData.zona} onChange={handleInputChange} placeholder="Zona de inspección" required />
+            </div>
+
+
+            <div className="col-md-6 mb-3">
+              <button type="button" className="btn btn-primary w-100" onClick={addSection}><FaPlus /> Agregar Rechazo</button>
+            </div>
+
+            {sections.length > 0 && <div className="line"></div>}
+
+            {sections.map(section => (
+              <DynamicSection key={section.id} section={section} onUpdate={handleSectionUpdate} onRemove={removeSection} products={products} almacenes={almacenes} />
+            ))}
+
+            <div className="col-md-12 mb-3">
+              <div className="input-group">
+                <span className="input-group-text">Observaciones:</span>
+                <textarea id="observaciones" className="form-control" placeholder="Escriba sus observaciones" onChange={handleInputChange} value={formData.observaciones} rows="3"></textarea>
+              </div>
+            </div>
+
             <div className="col-12 mb-2">
-              <button type="submit" className="btn btn-success w-100">
-                Guardar
-              </button>
+              <button type="submit" className="btn btn-success w-100">Guardar</button>
             </div>
           </div>
         </div>
