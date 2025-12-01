@@ -315,7 +315,6 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
       // Importar el servicio dinámicamente (ajusta la ruta según tu proyecto)
       const { enviarCorreo } = await import('@services/api/correo');
       const respuesta = await enviarCorreo(datosCorreo);
-      console.log()
       if (respuesta.success) {
         alert('¡Archivo enviado por correo exitosamente!');
       } else {
