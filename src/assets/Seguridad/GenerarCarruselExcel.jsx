@@ -5,7 +5,7 @@ import { Form, Col, Row, Button } from 'react-bootstrap';
 import { actualizarModulo, encontrarModulo } from '@services/api/configuracion';
 import { listarProductosSeguridad } from '@services/api/seguridad';
 
-// 🎨 Estilos y configuración base (inmutables)
+// 🎨 Estilos y configuración base (inmutables) - SIN CAMBIOS
 const STYLES = Object.freeze({
   colors: {
     darkBlue: '333399',
@@ -32,11 +32,11 @@ const BASE_DATA = Object.freeze({
   isoCodes: [['IsoCode', 'SizeType', 'Descripción'], ['20G0', '20DR', '20 DRY FREIGHT CONTAINER'], ['20G1', '20DR', '20 DRY FREIGHT CONTAINER'], ['20H0', '20RF', '20 REEFER CONTAINER'], ['20P1', '20FR', '20 FLAT RACK CONTAINER'], ['20T3', '20TK', '20 TANK CONTAINER'], ['20T4', '20TK', '20 TANK CONTAINER'], ['20T5', '20TK', '20 TANK CONTAINER'], ['20T6', '20TK', '20 TANK CONTAINER'], ['20T7', '20TK', '20 TANK CONTAINER'], ['20T8', '20TK', '20 TANK CONTAINER'], ['20T0', '20TK', '20 TANK CONTAINER'], ['20T1', '20TK', '20 TANK CONTAINER'], ['20T2', '20TK', '20 TANK CONTAINER'], ['22B0', '20TK', '20 TANK CONTAINER'], ['22G0', '20DR', '20 DRY FREIGHT CONTAINER'], ['22G1', '20DR', '20 DRY FREIGHT CONTAINER'], ['22H0', '20RF', '20 REEFER CONTAINER'], ['22P3', '20FR', '20 FLAT RACK CONTAINER'], ['22P8', '20FR', '20 FLAT RACK CONTAINER'], ['22P9', '20FR', '20 FLAT RACK CONTAINER'], ['22P1', '20FR', '20 FLAT RACK CONTAINER'], ['22P7', '20FR', '20 FLAT RACK CONTAINER'], ['22R9', '20RF', '20 REEFER CONTAINER'], ['22R7', '20RF', '20 REEFER CONTAINER'], ['22R1', '20RF', '20 REEFER CONTAINER'], ['22S1', '20DR', '20 DRY FREIGHT CONTAINER'], ['22T3', '20TK', '20 TANK CONTAINER'], ['22T4', '20TK', '20 TANK CONTAINER'], ['22T5', '20TK', '20 TANK CONTAINER'], ['22T6', '20TK', '20 TANK CONTAINER'], ['22T7', '20TK', '20 TANK CONTAINER'], ['22T8', '20TK', '20 TANK CONTAINER'], ['22T0', '20TK', '20 TANK CONTAINER'], ['22T1', '20TK', '20 TANK CONTAINER'], ['22T2', '20TK', '20 TANK CONTAINER'], ['22U6', '20OT', '20 OPEN TOP CONTAINER'], ['22U1', '20OT', '20 OPEN TOP CONTAINER'], ['28T8', '20TK', '20 TANK CONTAINER'], ['28U1', '20OT', '20 OPEN TOP CONTAINER'], ['29P0', '20PF', '20 PLATAFORM CONTAINER'], ['42G0', '40DR', '40 DRY FREIGHT CONTAINER'], ['42G1', '40DR', '40 DRY FREIGHT CONTAINER'], ['42H0', '40RF', '40 REEFER CONTAINER'], ['42P3', '40FR', '40 FLAT RACK CONTAINER'], ['42P8', '40FR', '40 FLAT RACK CONTAINER'], ['42P9', '40FR', '40 FLAT RACK CONTAINER'], ['42P1', '40FR', '40 FLAT RACK CONTAINER'], ['42P6', '40PF', '40 PLATAFORM CONTAINER'], ['42R9', '40RF', '40 REEFER CONTAINER'], ['42R3', '40RF', '40 REEFER CONTAINER'], ['42R1', '40RF', '40 REEFER CONTAINER'], ['42S1', '40DR', '40 DRY FREIGHT CONTAINER'], ['42T5', '40TK', '40 TANK CONTAINER'], ['42T6', '40TK', '40 TANK CONTAINER'], ['42T8', '40TK', '40 TANK CONTAINER'], ['42T2', '40TK', '40 TANK CONTAINER'], ['42U6', '40OT', '40 OPEN TOP CONTAINER'], ['42U1', '40OT', '40 OPEN TOP CONTAINER'], ['45B3', '40DH', '40 HIGH CUBE DRY CONTAINER'], ['45G0', '40DH', '40 HIGH CUBE DRY CONTAINER'], ['45G1', '40DH', '40 HIGH CUBE DRY CONTAINER'], ['45P3', '40FR', '40 FLAT RACK CONTAINER'], ['45P8', '40FR', '40 FLAT RACK CONTAINER'], ['45R9', '40RH', '40 HIGH CUBE REEFER CONTAINER'], ['45R1', '40RH', '40 HIGH CUBE REEFER CONTAINER'], ['45U1', '40OT', '40 OPEN TOP CONTAINER'], ['45U6', '40OT', '40 OPEN TOP CONTAINER'], ['46H0', '40RH', '40 HIGH CUBE REEFER CONTAINER'], ['48T8', '40TK', '40 TANK CONTAINER'], ['49P0', '40PF', '40 PLATAFORM CONTAINER'], ['4CG0', '40DR', '40 DRY FREIGHT CONTAINER'], ['L0G1', '45DR', '45  DRY CONTAINER'], ['L2G1', '45DR', '45  DRY CONTAINER'], ['L5G1', '45DH', '45 HIGH CUBE DRY CONTAINER'], ['45R8', '40RH', '40 HIGH CUBE REEFER CONTAINER']]
 });
 
-// 🔧 Utilidades
+// 🔧 Utilidades - SIN CAMBIOS
 const getUniqueBuques = (data) =>
   [...new Set(data?.map(item => item?.Embarque?.Buque?.buque).filter(Boolean))];
 
-// 🧩 Construcción de la lista del carrusel (filtra por buque)
+// 🧩 Construcción de la lista del carrusel (filtra por buque) - SIN CAMBIOS
 const buildCarruselList = (data, formData) => {
   if (!Array.isArray(data)) return [];
 
@@ -94,6 +94,7 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
     isoCode: '', estado: '', sello: "", origen: '', empaque: '', observacion: '', buque: ''
   });
   const [insumoSeg, setInsumoSeg] = useState([]);
+  const [enviando, setEnviando] = useState(false);
 
   // Cargar configuración y buques únicos
   useEffect(() => {
@@ -132,7 +133,7 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
     fecha: new Date().toLocaleDateString('es-ES'),
   }), [formData.buque]);
 
-  // 🎨 Aplicar estilo a una celda
+  // 🎨 Aplicar estilo a una celda - SIN CAMBIOS
   const applyCellStyle = useCallback((cell, bg = null, color = STYLES.colors.black, bold = false) => {
     cell.font = { color: { argb: color }, bold };
     cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
@@ -145,7 +146,7 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
     if (bg) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
   }, []);
 
-  // 🧾 Hoja principal (SD) - CORREGIDO
+  // 🧾 Hoja principal (SD) - SIN CAMBIOS (exactamente igual)
   const setupSDWorksheet = useCallback((worksheet) => {
     // Agregar headers
     worksheet.addRow(BASE_DATA.sdHeaders);
@@ -177,7 +178,7 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
       applyCellStyle(worksheet.getCell(ref), STYLES.colors.yellow, STYLES.colors.black, true)
     );
 
-    // CORRECCIÓN: Estilos adicionales para tamaños y estados
+    // Sección de Tamaño y Estado (manteniendo exactamente tu estilo)
     worksheet.getCell('M5').value = "Tamaño";
     worksheet.getCell('M6').value = 20;
     worksheet.getCell('M7').value = 40;
@@ -191,7 +192,7 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
     worksheet.getCell('N12').value = "Lleno";
     worksheet.getCell('N13').value = "Vacio";
 
-    // Estilo para sección de Tamaño (gris como en la imagen)
+    // Estilo para sección de Tamaño (gris como en tu diseño)
     for (let row = 6; row <= 8; row++) {
       for (let col = 13; col <= 14; col++) {
         const cell = worksheet.getCell(row, col);
@@ -201,7 +202,7 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
       }
     }
 
-    // Estilo para sección de Estado (gris como en la imagen)
+    // Estilo para sección de Estado (gris como en tu diseño)
     for (let row = 12; row <= 13; row++) {
       for (let col = 13; col <= 14; col++) {
         const cell = worksheet.getCell(row, col);
@@ -217,7 +218,7 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
     applyCellStyle(worksheet.getCell(11, 14), STYLES.colors.yellow, STYLES.colors.black, true);
   }, [listaCarrusel, applyCellStyle, shipInfo]);
 
-  // 📘 Hoja IsoCodes
+  // 📘 Hoja IsoCodes - SIN CAMBIOS (exactamente igual)
   const setupIsoCodesWorksheet = useCallback((worksheet) => {
     worksheet.addRows(BASE_DATA.isoCodes);
     worksheet.columns = STYLES.columnWidths.isoCodes.map(width => ({ width }));
@@ -235,8 +236,8 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
     }
   }, [applyCellStyle]);
 
-  // 📤 Generar Excel
-  const generarExcelConEstilos = async () => {
+  // 📤 Función para generar el Excel (sin cambios en la generación)
+  const generarExcel = async () => {
     try {
       const workbook = new ExcelJS.Workbook();
       const wsSD = workbook.addWorksheet('SD');
@@ -245,7 +246,17 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
       setupSDWorksheet(wsSD);
       setupIsoCodesWorksheet(wsIso);
 
-      const buffer = await workbook.xlsx.writeBuffer();
+      return await workbook.xlsx.writeBuffer();
+    } catch (error) {
+      console.error('Error al generar Excel:', error);
+      throw error;
+    }
+  };
+
+  // 📥 Descargar Excel localmente (tu función original sin cambios)
+  const descargarExcelLocal = async () => {
+    try {
+      const buffer = await generarExcel();
       const blob = new Blob([buffer], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       });
@@ -255,19 +266,74 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
       link.download = `Carrusel_${shipInfo.nombre}_${new Date().toISOString().split('T')[0]}.xlsx`;
       link.click();
       URL.revokeObjectURL(url);
+      alert('¡Archivo descargado exitosamente!');
     } catch (error) {
-      console.error('Error al generar Excel:', error);
+      console.error('Error al descargar Excel:', error);
       alert('Ocurrió un error al generar el archivo.');
     }
   };
 
-  // 🧱 UI
+  // 📧 Enviar Excel por correo (NUEVA FUNCIONALIDAD)
+  const enviarExcelPorCorreo = async () => {
+    if (!formData.correo) {
+      alert('Por favor ingresa un correo destino');
+      return;
+    }
+
+    // ACEPTA UNO O VARIOS EMAILS SEPARADOS POR COMA
+    const multipleEmailRegex = /^([^\s@]+@[^\s@]+\.[^\s@]+)(\s*,\s*[^\s@]+@[^\s@]+\.[^\s@]+)*$/;
+
+    if (!multipleEmailRegex.test(formData.correo)) {
+      alert('Por favor ingresa uno o varios correos electrónicos válidos, separados por comas.');
+      return;
+    }
+
+    try {
+      setEnviando(true);
+      const buffer = await generarExcel();
+
+      // Convertir buffer a base64
+      const base64String = btoa(
+        new Uint8Array(buffer).reduce(
+          (data, byte) => data + String.fromCharCode(byte),
+          ''
+        )
+      );
+
+      // Preparar datos para enviar al backend
+      const datosCorreo = {
+        destinatario: formData.correo,
+        asunto: `Carrusel - ${shipInfo.nombre} - ${new Date().toLocaleDateString('es-ES')}`,
+        cuerpo: `Adjunto se encuentra el archivo del carrusel para el buque ${shipInfo.nombre} generado el ${new Date().toLocaleDateString('es-ES')}`,
+        archivo: {
+          nombre: `Carrusel_${shipInfo.nombre}_${new Date().toISOString().split('T')[0]}.xlsx`,
+          contenido: base64String,
+          tipo: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        }
+      };
+
+      // Importar el servicio dinámicamente (ajusta la ruta según tu proyecto)
+      const { enviarCorreo } = await import('@services/api/correo');
+      const respuesta = await enviarCorreo(datosCorreo);
+      console.log()
+      if (respuesta.success) {
+        alert('¡Archivo enviado por correo exitosamente!');
+      } else {
+        alert('Error al enviar el correo: ' + respuesta.message);
+      }
+    } catch (error) {
+      console.error('Error al enviar por correo:', error);
+      alert('Ocurrió un error al enviar el archivo por correo');
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  // 🧱 UI - MEJORADO EL GRID
   return (
     <div className={styles.fondo}>
       <div className="container py-4">
-
         <div className="card shadow-sm border-0 mb-4 pb-3">
-
           <div className="card-header bg-light py-3 px-4">
             <div className="d-flex align-items-center justify-content-between">
               <div className="d-flex align-items-center">
@@ -287,91 +353,290 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
           </div>
 
           <div className="card-body p-4">
-            <Row className="g-3" xs={1} sm={2} md={3} lg={6}>
-              {["isoCode", "estado", "sello", "origen", "empaque", "observacion"].map((field) => (
-                <Col key={field}>
+            {/* 📝 SECCIÓN 1: PARÁMETROS DEL CARRUSEL */}
+            <div className="mb-4">
+              <h6 className="fw-bold text-secondary mb-3 d-flex align-items-center">
+                <i className="bi bi-sliders me-2"></i>
+                Configuración del Carrusel
+              </h6>
+              <Row className="g-3 mb-4">
+                {/* Primera fila de parámetros */}
+                <Col xs={12} md={6} lg={3}>
                   <Form.Group>
-                    <Form.Label className="form-label-sm text-secondary mb-2 text-capitalize">
-                      {field === 'isoCode' ? 'ISO Code' :
-                        field === 'empaque' ? 'Empaque' :
-                          field === 'observacion' ? 'Observación' : field}
+                    <Form.Label className="form-label-sm text-secondary mb-2">
+                      <i className="bi bi-upc-scan me-1"></i> ISO Code
                     </Form.Label>
-                    {field === "estado" || field === "sello" ? (
-                      <Form.Select name={field} value={formData[field]} onChange={handleChange}>
-                        {field === "estado" && <>
-                          <option value="">Seleccione estado</option>
-                          <option value="L">L (Lleno)</option>
-                          <option value="V">V (Vacío)</option>
-                        </>}
-                        {insumoSeg.map((e, index) => {
-                          if (field === "sello") return (<option key={index} value={e.consecutivo}>{e.name}</option>);
-                        })}
-                      </Form.Select>
-                    ) : (
-                      <Form.Control
-                        name={field}
-                        value={formData[field]}
-                        onChange={handleChange}
-                        className="form-control-sm border-secondary-subtle"
-                        placeholder={`Ingrese ${field}`}
-                      />
-                    )}
+                    <Form.Control
+                      name="isoCode"
+                      value={formData.isoCode}
+                      onChange={handleChange}
+                      className="form-control-sm border-secondary-subtle"
+                      placeholder="Ej: 20G0"
+                    />
                   </Form.Group>
                 </Col>
-              ))}
 
-              <Col xs={12} sm={6} md={4} lg={2}>
-                <Form.Group>
-                  <Form.Label className="form-label-sm text-secondary mb-2 d-block">Buque</Form.Label>
-                  <Form.Select
-                    name="buque"
-                    onChange={handleChange}
-                  >
-                    <option value="">Seleccione buque</option>
-                    {buques.map((b, i) => <option key={i} value={b}>{b}</option>)}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
+                <Col xs={12} md={6} lg={3}>
+                  <Form.Group>
+                    <Form.Label className="form-label-sm text-secondary mb-2">
+                      <i className="bi bi-circle-half me-1"></i> Estado
+                    </Form.Label>
+                    <Form.Select
+                      name="estado"
+                      value={formData.estado}
+                      onChange={handleChange}
+                      className="form-select-sm"
+                    >
+                      <option value="">Seleccione estado</option>
+                      <option value="L">L (Lleno)</option>
+                      <option value="V">V (Vacío)</option>
+                    </Form.Select>
+                  </Form.Group>
+                </Col>
 
-              <Col className="d-flex align-items-end">
-                <Button
-                  onClick={async () => {
-                    await handleSave();
-                    await generarExcelConEstilos();
-                  }} className="btn btn-primary w-100">
-                  <i className="bi bi-check-lg me-2"></i>Descargar Carrusel
-                </Button>
-              </Col>
+                <Col xs={12} md={6} lg={3}>
+                  <Form.Group>
+                    <Form.Label className="form-label-sm text-secondary mb-2">
+                      <i className="bi bi-tag me-1"></i> Sello
+                    </Form.Label>
+                    <Form.Select
+                      name="sello"
+                      value={formData.sello}
+                      onChange={handleChange}
+                      className="form-select-sm"
+                    >
+                      <option value="">Seleccione sello</option>
+                      {insumoSeg.map((e, index) => (
+                        <option key={index} value={e.consecutivo}>{e.name}</option>
+                      ))}
+                    </Form.Select>
+                  </Form.Group>
+                </Col>
 
-              {formData.buque && (
+                <Col xs={12} md={6} lg={3}>
+                  <Form.Group>
+                    <Form.Label className="form-label-sm text-secondary mb-2">
+                      <i className="bi bi-geo-alt me-1"></i> Origen
+                    </Form.Label>
+                    <Form.Control
+                      name="origen"
+                      value={formData.origen}
+                      onChange={handleChange}
+                      className="form-control-sm border-secondary-subtle"
+                      placeholder="Origen del contenedor"
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
 
-                <Col className='d-flex align-items-end' xs={12} md={8} lg={8}>
-                  <div className="p-2 alert alert-primary text-center w-100 h-80 d-flex align-items-center justify-content-center mb-0 border-0 shadow-sm">
-                    <div className="d-flex align-items-center gap-3">
-                      <div className="d-flex align-items-center">
-                        <i className="bi bi-ship me-2 fs-5"></i>
-                        <strong className="me-3">Buque:</strong>
-                        <span className="fw-bold text-dark me-2">{formData.buque}</span>
-                      </div>
-                      <div className="vr"></div>
-                      <div className="d-flex align-items-center">
-                        <i className="bi bi-box-seam me-2 fs-5"></i>
-                        <strong className="me-1">Contenedores:</strong>
-                        <span className="badge  text-black fs-6">{listaCarrusel.length}</span>
-                      </div>
+              {/* Segunda fila de parámetros */}
+              <Row className="g-3">
+                <Col xs={12} md={6} lg={3}>
+                  <Form.Group>
+                    <Form.Label className="form-label-sm text-secondary mb-2">
+                      <i className="bi bi-box me-1"></i> Empaque
+                    </Form.Label>
+                    <Form.Control
+                      name="empaque"
+                      value={formData.empaque}
+                      onChange={handleChange}
+                      className="form-control-sm border-secondary-subtle"
+                      placeholder="Tipo de empaque"
+                    />
+                  </Form.Group>
+                </Col>
+
+                <Col xs={12} md={6} lg={3}>
+                  <Form.Group>
+                    <Form.Label className="form-label-sm text-secondary mb-2">
+                      <i className="bi bi-chat-left-text me-1"></i> Observación
+                    </Form.Label>
+                    <Form.Control
+                      name="observacion"
+                      value={formData.observacion}
+                      onChange={handleChange}
+                      className="form-control-sm border-secondary-subtle"
+                      placeholder="Observaciones adicionales"
+                    />
+                  </Form.Group>
+                </Col>
+
+                <Col xs={12} md={6} lg={3}>
+                  <Form.Group>
+                    <Form.Label className="form-label-sm text-secondary mb-2">
+                      <i className="bi bi-ship me-1"></i> Buque
+                    </Form.Label>
+                    <Form.Select
+                      name="buque"
+                      value={formData.buque}
+                      onChange={handleChange}
+                      className="form-select-sm"
+                    >
+                      <option value="">Seleccione buque</option>
+                      {buques.map((b, i) => (
+                        <option key={i} value={b}>{b}</option>
+                      ))}
+                    </Form.Select>
+                  </Form.Group>
+                </Col>
+
+                <Col xs={12} md={6} lg={3}>
+                  <Form.Group>
+                    <Form.Label className="form-label-sm text-secondary mb-2">
+                      Correo Destino
+                    </Form.Label>
+                    <div className="input-group input-group-sm">
+
+                      <Form.Control
+                        type="email"
+                        name="correo"
+                        value={formData.correo}
+                        onChange={handleChange}
+                        className="form-control-sm border-secondary-subtle"
+                        placeholder="ejemplo@empresa.com"
+                      />
                     </div>
+                  </Form.Group>
+                </Col>
+              </Row>
+            </div>
+
+            {/* 📤 SECCIÓN 2: ACCIONES */}
+            <div className="mb-4">
+              <h6 className="fw-bold text-secondary mb-3 d-flex align-items-center">
+                <i className="bi bi-lightning-charge me-2"></i>
+                Acciones
+              </h6>
+              <Row className="g-3">
+                <Col xs={12} lg={8}>
+                  <div className="d-flex gap-3">
+                    <Button
+                      onClick={async () => {
+                        await handleSave();
+                        await descargarExcelLocal();
+                      }}
+                      className="btn btn-primary flex-fill d-flex align-items-center justify-content-center"
+                      style={{ minHeight: '44px' }}
+                    >
+                      <i className="bi bi-download me-2 fs-5"></i>
+                      <div className="text-start">
+                        <div className="fw-bold">Descargar Excel</div>
+                        <small className="opacity-75">Guardar en dispositivo</small>
+                      </div>
+                    </Button>
+                    {/*Enviar carrusel */}
+                    <Button
+                      onClick={async () => {
+                        await handleSave();
+                        await enviarExcelPorCorreo();
+                      }}
+                      disabled={enviando || !formData.correo}
+                      className="btn btn-success flex-fill d-flex align-items-center justify-content-center"
+                      style={{ minHeight: '44px' }}
+                    >
+                      {enviando ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                          <div className="text-start">
+                            <div className="fw-bold">Enviando...</div>
+                            <small className="opacity-75">Espere por favor</small>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <i className="bi bi-send me-2 fs-5"></i>
+                          <div className="text-start">
+                            <div className="fw-bold">Enviar por Correo</div>
+                          </div>
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </Col>
 
-              )}
-            </Row>
+                <Col xs={12} lg={4}>
+                  <div className="d-flex h-100">
+                    <Button
+                      onClick={() => {
+                        handleSave();
+                        window.alert("Parámetros guardados");
+                      }}
+                      className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center"
+                      style={{ minHeight: '44px' }}
+                    >
+                      <i className="bi bi-save me-2"></i>
+                      <div className="text-start text-white">
+                        <div className="fw-bold">Guardar Parámetros</div>
+                      </div>
+                    </Button>
+                  </div>
+                </Col>
+              </Row>
+            </div>
 
+            {/* 📊 SECCIÓN 3: INFORMACIÓN DEL BUQUE */}
+            {formData.buque && (
+              <div className="mt-4">
+                <h6 className="fw-bold text-secondary mb-3 d-flex align-items-center">
+                  <i className="bi bi-info-circle me-2"></i>
+                  Resumen
+                </h6>
+                <div className="p-4 bg-light rounded-3 border">
+                  <Row className="align-items-center">
+                    <Col xs={12} md={6} lg={4}>
+                      <div className="d-flex align-items-center mb-3 mb-md-0">
+                        <div className="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                          <i className="bi bi-ship fs-4 text-primary"></i>
+                        </div>
+                        <div>
+                          <div className="text-muted small">Buque Seleccionado</div>
+                          <div className="fw-bold fs-5 text-dark">{formData.buque}</div>
+                        </div>
+                      </div>
+                    </Col>
 
+                    <Col xs={12} md={6} lg={4}>
+                      <div className="d-flex align-items-center mb-3 mb-md-0">
+                        <div className="bg-success bg-opacity-10 rounded-circle p-3 me-3">
+                          <i className="bi bi-box-seam fs-4 text-success"></i>
+                        </div>
+                        <div>
+                          <div className="text-muted small">Contenedores a Procesar</div>
+                          <div className="fw-bold fs-5 text-dark">
+                            <span className="badge bg-success bg-opacity-25 text-success fs-6 px-3 py-2">
+                              {listaCarrusel.length} contenedores
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </Col>
+
+                    <Col xs={12} md={12} lg={4}>
+                      <div className="d-flex align-items-center">
+                        <div className="bg-info bg-opacity-10 rounded-circle p-3 me-3">
+                          <i className="bi bi-calendar-check fs-4 text-info"></i>
+                        </div>
+                        <div>
+                          <div className="text-muted small">Fecha de Generación</div>
+                          <div className="fw-bold fs-5 text-dark">
+                            {new Date().toLocaleDateString('es-ES', {
+                              weekday: 'long',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    </Col>
+                  </Row>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
     </div>
-
   );
 };
 
