@@ -776,6 +776,7 @@ const ListadoContenedores = () => {
       </Row>
 
       {/* Tabla COMPLETA */}
+      <div className="table-responsive">
       <table ref={tablaRef} className="table table-striped table-bordered table-sm mt-2">
         <thead>
           <tr>
@@ -814,7 +815,7 @@ const ListadoContenedores = () => {
           {state.tableData.map(renderTableRow)}
         </tbody>
       </table>
-
+</div>
       <Paginacion
         setPagination={(page) => updateState({ pagination: page })}
         pagination={state.pagination}

@@ -179,7 +179,7 @@ export default function Dashboard() {
 
                     {/* Columna 4: Botón Descargar Carrusel */}
                     {(botones.includes("dashboard_descargar_carrusel") || user.id_rol == "Super administrador") && <div className="col-12 col-md-2 d-flex justify-content-md-end">
-                        <button type="button" onClick={() => setOpenCarrusel(true)} className="btn btn-primary w-100">Descargar Carrusel</button>
+                        <button type="button" onClick={() => setOpenCarrusel(true)} className="btn btn-primary w-100">Carrusel</button>
                     </div>}
 
                     {/* Columna 5: Botón Descargar Relación */}

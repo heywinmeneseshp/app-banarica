@@ -7,7 +7,7 @@ function CrearQRCode({ contenedor, setOpenQR }) {
     const [contenedorId, setContenedorId] = useState('');
     const [fechaValue, setFechaValue] = useState('');
     const [qrData, setQrData] = useState(null);
-    const [repeticiones, setRepeticiones] = useState(20);
+    const [repeticiones, setRepeticiones] = useState(25);
     const [generandoPDF, setGenerandoPDF] = useState(false);
     const qrRef = useRef();
     const canvasRef = useRef();
@@ -92,34 +92,62 @@ function CrearQRCode({ contenedor, setOpenQR }) {
         try {
             const numRepeticiones = Math.min(Math.max(1, repeticiones), 100);
 
-            // Crear nuevo PDF
             const pdf = new jsPDF({
                 orientation: 'portrait',
                 unit: 'mm',
-                format: 'letter'
+                format: 'letter' // Formato Carta (Letter)
             });
 
             const pageWidth = 215.9;
             const pageHeight = 279.4;
 
-            // Configuración optimizada para 20 etiquetas por hoja (4x5)
-            const qrPerRow = 4;
+            // Configuración para 25 etiquetas por hoja (5x5)
+            const qrPerRow = 5;
             const qrPerColumn = 5;
             const totalPerPage = qrPerRow * qrPerColumn;
 
-            const usableWidth = pageWidth - 20;
-            const usableHeight = pageHeight - 20;
+            // --- Ajustes de Espacio y Márgenes ---
+            const spacingBetweenQR = 4;   // Espacio horizontal entre QR (4mm)
+            const dateTextHeight = 5;  // Altura reservada para el texto de la fecha (AUMENTADO a 5mm)
+       
 
-            const qrWidth = (usableWidth / qrPerRow) - 5;
-            const qrHeight = (usableHeight / qrPerColumn) - 4;
+            // 1. CALCULAR TAMAÑO MÁXIMO DEL QR (Limitado por el ancho)
+            const assumedMarginHorizontal = 5;
+            const usableWidth = pageWidth - (2 * assumedMarginHorizontal);
+            const totalSpacingH = (qrPerRow - 1) * spacingBetweenQR;
 
-            const qrSize = Math.min(qrWidth, qrHeight);
+            // Cálculo del QR Size: el QR debe ser cuadrado y está limitado por el ancho.
+            const qrSize = Math.floor((usableWidth - totalSpacingH) / qrPerRow);
 
-            const marginHorizontal = (pageWidth - (qrPerRow * qrSize + (qrPerRow - 1) * 5)) / 2;
-            const marginVertical = (pageHeight - (qrPerColumn * qrSize + (qrPerColumn - 1) * 4)) / 2;
+            // 2. CALCULAR MARGEN HORIZONTAL REAL (Para centrado y margen uniforme)
+            const totalBlockWidth = (qrPerRow * qrSize) + totalSpacingH;
+            // Este margen es el que se usa para centrar y para los márgenes superior/inferior.
+            const uniformMargin = (pageWidth - totalBlockWidth) / 2;
 
-            // Convertir SVG a Data URL usando canvas
+            // Asignar el margen uniforme
+            const marginHorizontal = uniformMargin;
+
+
+            // 3. CALCULAR ESPACIADO VERTICAL RESTANTE (Para centrado vertical)
+            // Altura requerida por los 5 códigos QR + 5 textos de fecha (usamos dateTextHeight + datePadding)
+            const totalHeightRequiredByElements = (qrPerColumn * qrSize) + (qrPerColumn * dateTextHeight);
+
+            // Espacio total disponible verticalmente quitando el margen uniforme (arriba y abajo)
+            const usableHeightForSpacing = pageHeight - (2 * uniformMargin) - totalHeightRequiredByElements;
+
+            // El número de "espacios" entre las celdas (4 entre 5 filas)
+            const numberOfVerticalSpaces = qrPerColumn - 1;
+
+            // Calcular el nuevo spacing vertical, ajustando para usar el espacio restante.
+            const spacingVertical = Math.max(0, usableHeightForSpacing / numberOfVerticalSpaces);
+
+            // Recalcular la posición de inicio vertical (startY)
+            const startY = uniformMargin;
+            // -----------------------------------------------------
+
+            // Convertir SVG a Data URL
             const qrDataURL = await convertSVGtoCanvas();
+            const dateString = new Date().toLocaleDateString();
 
             let currentRep = 0;
             let pageNumber = 1;
@@ -136,32 +164,43 @@ function CrearQRCode({ contenedor, setOpenQR }) {
                     const row = Math.floor(i / qrPerRow);
                     const col = i % qrPerRow;
 
-                    const x = marginHorizontal + (col * (qrSize + 5));
-                    const y = marginVertical + (row * (qrSize + 4));
+                    // 1. Calcular posición X e Y
+                    const x = marginHorizontal + (col * (qrSize + spacingBetweenQR));
 
-                    // Agregar el QR real como imagen al PDF
-                    pdf.addImage(
-                        qrDataURL,
-                        'PNG',
-                        x,
-                        y,
-                        qrSize,
-                        qrSize
-                    );
+                    // La posición Y incluye el qrSize, la altura del texto de la fecha y el nuevo spacingVertical
+                    // Se usa el spacingVertical calculado para el espacio entre celdas
+                    const yIncrement = qrSize + dateTextHeight + spacingVertical;
+                    const y = startY + (row * yIncrement);
 
-                    // Borde sutil alrededor del QR
+                    // 2. Agregar el QR real como imagen al PDF
+                    pdf.addImage(qrDataURL, 'PNG', x, y, qrSize, qrSize);
+
+                    // 3. Borde sutil alrededor del QR
                     pdf.setDrawColor(200, 200, 200);
                     pdf.setLineWidth(0.1);
                     pdf.rect(x, y, qrSize, qrSize, 'S');
+
+                    // 4. Agregar la fecha de impresión debajo del cuadro y CENTRADA
+                    pdf.setFontSize(8); // **AJUSTE: Fuente más grande (8pt)**
+                    pdf.setTextColor(50, 50, 50);
+
+                    // AJUSTE: Mover el texto 3mm debajo del QR para dejar un espacio pequeño
+                    const yDate = y + qrSize + 3;
+                    const xDateCenter = x + (qrSize / 2);
+
+                    pdf.text(dateString, xDateCenter, yDate, { align: 'center' });
                 }
 
                 currentRep += qrsThisPage;
 
-                // Pie de página con información
+                // Pie de página global con información (usando el margen uniforme)
                 pdf.setFontSize(8);
                 pdf.setTextColor(100, 100, 100);
-                pdf.text(`Página ${pageNumber} - ${contenedor.contenedor}`, pageWidth - 20, pageHeight - 10);
-                pdf.text(`Generado: ${new Date().toLocaleDateString()}`, 15, pageHeight - 10);
+
+                // Posicionar el footer usando el margen uniforme
+                const footerY = pageHeight - (uniformMargin / 2);
+                pdf.text(`Página ${pageNumber} - ${contenedor.contenedor}`, pageWidth - uniformMargin, footerY, { align: 'right' });
+                pdf.text(`Generado: ${new Date().toLocaleDateString()}`, uniformMargin, footerY);
             }
 
             // Guardar PDF
@@ -174,7 +213,6 @@ function CrearQRCode({ contenedor, setOpenQR }) {
             setGenerandoPDF(false);
         }
     };
-
     // Función para copiar la URL al portapapeles
     const copiarURL = async () => {
         if (!qrData) return;
@@ -229,13 +267,13 @@ function CrearQRCode({ contenedor, setOpenQR }) {
                                     id="repeticiones-input"
                                     type="number"
                                     value={repeticiones}
-                                    onChange={(e) => setRepeticiones(parseInt(e.target.value) || 20)}
+                                    onChange={(e) => setRepeticiones(parseInt(e.target.value) || 25)}
                                     min="1"
                                     max="100"
                                     style={{ width: '100%', padding: '8px', marginTop: '5px' }}
                                 />
                                 <small style={{ color: '#666' }}>
-                                    Máximo 100 etiquetas. Se generarán {Math.ceil(repeticiones / 20)} hojas.
+                                    Máximo 100 etiquetas. Se generarán {Math.ceil(repeticiones / 25)} hojas.
                                 </small>
                             </div>
 
@@ -300,7 +338,7 @@ function CrearQRCode({ contenedor, setOpenQR }) {
                                 <div style={{ marginTop: '15px', background: '#f8f9fa', padding: '15px', borderRadius: '5px' }}>
                                     <p><strong>Contenedor:</strong> {contenedor.contenedor}</p>
                                     <p><strong>Total de etiquetas:</strong> {repeticiones}</p>
-                                    <p><strong>Hojas requeridas:</strong> {Math.ceil(repeticiones / 20)}</p>
+                                    <p><strong>Hojas requeridas:</strong> {Math.ceil(repeticiones / 25)}</p>
 
                                     <div style={{ marginTop: '10px', padding: '10px', background: '#e9ecef', borderRadius: '3px' }}>
                                         <p style={{ margin: '0 0 5px 0', fontWeight: 'bold' }}>URL en el QR:</p>
@@ -339,7 +377,7 @@ function CrearQRCode({ contenedor, setOpenQR }) {
                                         border: '1px solid #ffeaa7',
                                         borderRadius: '5px'
                                     }}>
-                                        ⏳ Generando PDF con {repeticiones} etiquetas ({Math.ceil(repeticiones / 20)} hojas), por favor espere...
+                                        ⏳ Generando PDF con {repeticiones} etiquetas ({Math.ceil(repeticiones / 25)} hojas), por favor espere...
                                     </div>
                                 )}
                             </div>

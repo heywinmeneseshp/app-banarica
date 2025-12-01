@@ -43,6 +43,7 @@ const ListadoEmbarques = () => {
   const [clientes, setCliente] = useState([]);
   const [semanas, setSemanas] = useState();
   const [cargueMasivo, setCargueMasivo] = useState(false);
+  const [actualizarMasivo, setActualizarMasivo] = useState(false);
 
 
   const handleCellEdit = async (id, field, value) => {
@@ -178,7 +179,7 @@ const ListadoEmbarques = () => {
       <Alertas alert={alert} handleClose={toogleAlert} />
 
       <Form className="mb-3">
-        <Row xs={1} sm={2} md={4} lg={6}>
+        <Row xs={1} sm={2} md={6} >
           {inputs.map((field, index) => (
             <Col key={index}>
               <Form.Group className="mb-0" >
@@ -192,21 +193,23 @@ const ListadoEmbarques = () => {
               {'Descargar excel'}
             </Button>
           </Col>
-  
+
         </Row>
       </Form>
 
-      <Row className="mb-2 mt-4 g-2">
-        <Col xs={12} sm={6} md={isEditable ? 4 : 2}>
+
+      <Row className="mb-2 mt-4 justify-content-center align-items-center gy-2">
+        <Col xs={6} sm={6} md={2} className="d-flex justify-content-start align-items-center">
           <Button
-            className={`btn btn-sm ${isEditable ? 'btn-success' : 'btn-warning'} m-auto`}
+            className={`btn btn-sm ${isEditable ? 'btn-success' : 'btn-warning'}`}
             onClick={async () => await toggleEdit()}
+            style={{ padding: '0.1rem 0.5rem !important' }}
           >
             {isEditable ? 'Guardar Edición' : 'Permitir Edición'}
           </Button>
         </Col>
-        <Col xs={12} sm={6} md={isEditable ? 4 : 6} className="d-flex justify-content-end align-items-center mt-2">
-          <div className="d-flex align-items-center mt-auto">
+        <Col xs={6} sm={6} md={5} className="d-flex justify-content-end align-items-center">
+          <div className="d-flex align-items-center">
             <span className="me-2">Limite:</span>
             <Form.Control
               type="number"
@@ -219,18 +222,35 @@ const ListadoEmbarques = () => {
             />
           </div>
         </Col>
-        <Col xs={12} sm={6} md={2} className="text-end">
-          <Button onClick={() => setOpen(true)} className="btn btn-primary btn-sm w-100 m-auto">
+        <Col xs={12} sm={12} md={5} className="d-flex justify-content-center align-items-center">
+          <Button
+            onClick={() => setOpen(true)}
+
+            className="btn btn-primary btn-sm w-100 me-1"
+            style={{ padding: '0.1rem 0.5rem !important' }}
+          >
             {'Nuevo embarque'}
           </Button>
-        </Col>
-        <Col xs={12} sm={6} md={2} className="text-end">
-          <Button onClick={() => setCargueMasivo(true)} className="btn btn-primary btn-sm w-100 m-auto">
+
+          <Button
+            onClick={() => setActualizarMasivo(true)}
+            className="btn btn-primary btn-sm w-100 mx-1"
+            style={{ padding: '0.1rem 0.5rem !important' }}
+          >
+            {'Actualizar masivo'}
+          </Button>
+    
+          <Button
+            onClick={() => setCargueMasivo(true)}
+            className="btn btn-primary btn-sm w-100 ms-1"
+            style={{ padding: '0.1rem 0.5rem !important' }}
+          >
             {'Cargue masivo'}
           </Button>
         </Col>
       </Row>
 
+<div className="table-responsive">
       <table className="table table-striped table-bordered table-sm mt-2">
         <thead>
           <tr>
@@ -345,7 +365,7 @@ const ListadoEmbarques = () => {
                     name={`${row.id}-destino`}
                     id={`${row.id}-destino`}
                     disabled={!isEditable}
-                  
+
                     defaultValue={row?.Destino?.cod}  // Valor por defecto
                     onBlur={() => handleDatalist(`${row.id}-destino`, `destino`, row.id)}
                     className="form-control custom-input"
@@ -395,23 +415,34 @@ const ListadoEmbarques = () => {
           })}
         </tbody>
       </table>
-
+</div>
       <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
 
       {cargueMasivo && <CargueMasivo setOpenMasivo={setCargueMasivo}
-        titulo={"Embarques"}
+        titulo={"Cargue embarques"}
         endPointCargueMasivo={endPoints.Embarques.create + "/masivo"}
         encabezados={{
           id_semana: null,
-          id_cliente: null,
-          id_naviera: null,
-          id_buque: null,
           viaje: null,
-          id_destino: null,
           booking: null,
           bl: null,
           anuncio: null,
           sae: null,
+          habilitado: null,
+        }}
+      />}
+
+      {actualizarMasivo && <CargueMasivo setOpenMasivo={setActualizarMasivo}
+        titulo={"Actualizar Embarques"}
+        endPointCargueMasivo={endPoints.Embarques.create + "/actualizar-masivo"}
+        encabezados={{
+          bl: null,
+          booking: null,
+          viaje: null,
+          anuncio: null,
+          sae: null,
+          fecha_zarpe: null,
+          fecha_arribo: null,
           habilitado: null,
         }}
       />}
