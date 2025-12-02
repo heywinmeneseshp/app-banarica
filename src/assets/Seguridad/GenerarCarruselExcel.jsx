@@ -300,11 +300,48 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
         )
       );
 
+      const fechaActual = new Date();
+      const fechaFormateada = fechaActual.toLocaleDateString('es-ES');
+      const horaFormateada = fechaActual.toLocaleTimeString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+
       // Preparar datos para enviar al backend
       const datosCorreo = {
         destinatario: formData.correo,
-        asunto: `Carrusel - ${shipInfo.nombre} - ${new Date().toLocaleDateString('es-ES')}`,
-        cuerpo: `Adjunto se encuentra el archivo del carrusel para el buque ${shipInfo.nombre} generado el ${new Date().toLocaleDateString('es-ES')}`,
+        asunto: `Carrusel - ${shipInfo.nombre} - ${fechaFormateada} ${horaFormateada}`,
+        cuerpo: `
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px;">
+        <p>Estimado/a,</p>
+        
+        <p>Se adjunta el archivo correspondiente al buque <strong>${shipInfo.nombre}</strong>.</p>
+        
+        <div style="background-color: #f5f5f5; padding: 15px; border-left: 4px solid #2c5282; margin: 20px 0;">
+            <p style="margin-top: 0; font-weight: bold; color: #2c5282;">Detalles del documento:</p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li><strong>Buque:</strong> ${shipInfo.nombre}</li>
+                <li><strong>Fecha de generación:</strong> ${fechaFormateada} ${horaFormateada}</li>
+                <li><strong>Tipo:</strong> Carrusel</li>
+            </ul>
+        </div>
+        
+        <p>El archivo adjunto contiene el listado requerido según lo programado.</p>
+        
+        <p>Por favor, verifique la información y proceda según corresponda.</p>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+            <p>Atentamente,<br>
+            <strong>Departamento de Logística</strong></p>
+            
+            <p style="font-size: 12px; color: #666; margin-top: 20px;">
+            ---<br>
+            Este es un mensaje generado automáticamente.
+            </p>
+        </div>
+    </div>
+    `,
         archivo: {
           nombre: `Carrusel_${shipInfo.nombre}_${new Date().toISOString().split('T')[0]}.xlsx`,
           contenido: base64String,
