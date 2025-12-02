@@ -114,11 +114,11 @@ const TransferListModal = ({ show, onClose, items, onRemove }) => {
 
     const allChecked = items.length > 0 && selectedItemsToDelete.length === items.length;
 
-    return (
+    if (show) return (
         <div style={modalStyle}>
             <div style={contentStyle}>
                 <div className="modal-header d-flex justify-content-between align-items-center mb-3">
-                    <h5 className="modal-title">📦 Artículos Agregados ({items.length})</h5>
+                    <h5 className="modal-title">Artículos Agregados ({items.length})</h5>
                     <button type="button" className="btn-close" onClick={onClose} aria-label="Close"></button>
                 </div>
                 <div className="modal-body">
