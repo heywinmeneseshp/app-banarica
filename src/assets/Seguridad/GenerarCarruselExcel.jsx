@@ -18,7 +18,7 @@ const STYLES = Object.freeze({
     black: 'FF000000',
   },
   columnWidths: {
-    sd: [9, 9, 9, 9, 9, 9, 12, 22, 10, 10, 22, 3, 17, 12],
+    sd: [9, 9, 9, 9, 9, 9, 13, 22, 10, 10, 24, 9, 17, 12],
     isoCodes: [12, 12, 35],
   },
 });
@@ -77,7 +77,7 @@ const buildCarruselList = (data, formData) => {
       formData.isoCode,
       formData.estado,
       botella,
-      peso,
+      parseInt(peso),
       res?.Embarque?.bl,
       formData.origen,
       caja,
@@ -134,15 +134,20 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
   }), [formData.buque]);
 
   // 🎨 Aplicar estilo a una celda - SIN CAMBIOS
-  const applyCellStyle = useCallback((cell, bg = null, color = STYLES.colors.black, bold = false) => {
-    cell.font = { color: { argb: color }, bold };
-    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-    cell.border = {
+  const applyCellStyle = useCallback((cell, bg = null, color = STYLES.colors.black, bold = false, horizontal = "center", border = {
       top: { style: 'thin' },
       left: { style: 'thin' },
       bottom: { style: 'thin' },
       right: { style: 'thin' }
+    }) => {
+    cell.font = {
+      color: { argb: color },
+      bold,
+      name: 'Arial',
+      size: 10
     };
+    cell.alignment = { vertical: 'middle', horizontal, wrapText: true };
+    cell.border = border;
     if (bg) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
   }, []);
 
@@ -159,7 +164,7 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
 
     // Aplicar estilos a los headers
     for (let col = 1; col <= 11; col++) {
-      applyCellStyle(worksheet.getCell(1, col), STYLES.colors.darkBlue, STYLES.colors.white, true);
+      applyCellStyle(worksheet.getCell(1, col), STYLES.colors.darkBlue, STYLES.colors.white, true, null, null);
     }
 
     // Merge cells y configurar información del buque
@@ -167,6 +172,7 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
     worksheet.mergeCells('N2:O2');
 
     worksheet.getCell('N1').value = shipInfo.nombre;
+     worksheet.getCell('N2').numFmt = 'dd/mm/yyyy hh:mm:ss "a. m."';
     worksheet.getCell('N2').value = shipInfo.fecha;
     worksheet.getCell('M1').value = "Motonave";
     worksheet.getCell('M2').value = "Fecha Anuncio";
@@ -225,23 +231,37 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
 
     // Aplicar estilos a los headers
     for (let c = 1; c <= 3; c++) {
-      applyCellStyle(worksheet.getCell(1, c), STYLES.colors.darkBlue, STYLES.colors.white, true);
+      applyCellStyle(worksheet.getCell(1, c), STYLES.colors.white, STYLES.colors.black, true, "left");
     }
 
     // Aplicar estilos a los datos
     for (let r = 2; r <= BASE_DATA.isoCodes.length; r++) {
       for (let c = 1; c <= 3; c++) {
-        applyCellStyle(worksheet.getCell(r, c), STYLES.colors.lightBlue);
+        applyCellStyle(worksheet.getCell(r, c), null, null, null, "left");
       }
     }
+    const columnaC = worksheet.getColumn(2);
+    columnaC.hidden = true;
   }, [applyCellStyle]);
 
   // 📤 Función para generar el Excel (sin cambios en la generación)
   const generarExcel = async () => {
     try {
       const workbook = new ExcelJS.Workbook();
-      const wsSD = workbook.addWorksheet('SD');
-      const wsIso = workbook.addWorksheet('IsoCodes');
+      const wsSD = workbook.addWorksheet('CARRUSEL', {
+        views: [
+          {
+            showGridLines: false // Desactiva las líneas de cuadrícula
+          }
+        ]
+      });
+      const wsIso = workbook.addWorksheet('IsoCodes', {
+        views: [
+          {
+            showGridLines: false // Desactiva las líneas de cuadrícula
+          }
+        ]
+      });
 
       setupSDWorksheet(wsSD);
       setupIsoCodesWorksheet(wsIso);
