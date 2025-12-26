@@ -22,16 +22,17 @@ const encontrarSemanas = async (id) => {
 };
 
 const filtrarSemanas = async (body) => {
+    console.log(body);
     const res = await axios.post(endPoints.semanas.filter, body);
     return res.data;
 };
 
 const filtrarSemanaRangoMes = async (previousMonths, afterMonths) => {
     const mas1Mes = new Date();
-    mas1Mes.setMonth(mas1Mes.getMonth() + afterMonths);
+    mas1Mes.setMonth(mas1Mes.getMonth() + afterMonths + 1);
     const mas1MesFormatted = mas1Mes.toISOString().slice(0, 19).replace('T', ' ');
     const menos1Mes = new Date();
-    menos1Mes.setMonth(menos1Mes.getMonth() - previousMonths);
+    menos1Mes.setMonth(menos1Mes.getMonth() - previousMonths - 1 );
     const menos1MesFormatted = menos1Mes.toISOString().slice(0, 19).replace('T', ' ');
     const semanas = await filtrarSemanas({ createdAt: [menos1MesFormatted, mas1MesFormatted] });
     return semanas;
