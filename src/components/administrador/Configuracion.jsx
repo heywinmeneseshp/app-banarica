@@ -40,6 +40,7 @@ export default function Configuracion({ setOpen }) {
                 ]);
 
                 setSecurityCheck(Boolean(moduloSeguridad.habilitado));
+                console.log(moduloSemana);
                 setSemana(moduloSemana);
                 setEmpresa(empresaData);
                 setConfigUsuario(JSON.parse(userConfig.detalles));
@@ -139,8 +140,10 @@ export default function Configuracion({ setOpen }) {
                                     id="pantalla_inicio"
                                     required
                                 >
-                                    <option selected={"Dashboard Combustible" == configUsuario?.inicio} >Dashboard Combustible</option>
+                                   
                                     <option selected={"Dashboard Contenedores" == configUsuario?.inicio}>Dashboard Contenedores</option>
+                                    <option selected={"Dashboard Inspeccionados" == configUsuario?.inicio}>Dashboard Inspeccionados</option>
+                                     <option selected={"Dashboard Combustible" == configUsuario?.inicio} >Dashboard Combustible</option>
                                 </Form.Select>
                             </InputGroup>
                         </div>
@@ -213,7 +216,7 @@ export default function Configuracion({ setOpen }) {
                                             id="actual"
                                             name="actual"
                                             type="number"
-                                            max={52}
+                                            max={53}
                                             min={0}
                                             required
                                             defaultValue={semana?.semana_actual || ''}
@@ -228,7 +231,7 @@ export default function Configuracion({ setOpen }) {
                                             type="number"
                                             min={0}
                                             required
-                                            max={semana?.semana_actual || 52}
+                                            max={semana?.semana_actual || 53}
                                             defaultValue={semana?.semana_previa || ''}
                                         />
                                     </InputGroup>
@@ -241,7 +244,7 @@ export default function Configuracion({ setOpen }) {
                                             type="number"
                                             min={0}
                                             required
-                                            max={52 - (semana?.semana_actual || 0)}
+                                            max={53 - (semana?.semana_actual || 0)}
                                             defaultValue={semana?.semana_siguiente || ''}
                                         />
                                     </InputGroup>

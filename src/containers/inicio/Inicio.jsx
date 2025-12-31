@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
 
 
-
-
 import FuelConsumptionDashboard from '@assets/FuelConsumptionDashboard';
 import Dashboard from '@containers/seguridad/Dashboard';
 import { encontrarModulo } from '@services/api/configuracion';
 import Configuracion from '@components/administrador/Configuracion';
+import Inspeccionados from '@containers/seguridad/Inspeccionados';
 
 //CSS
-
 
 export default function Inicio() {
 
@@ -51,6 +49,9 @@ export default function Inicio() {
         <>
             {inicio == "Dashboard Combustible" && <FuelConsumptionDashboard />}
             {inicio == "Dashboard Contenedores" && <Dashboard />}
+             {inicio == "Dashboard Inspeccionados" &&   <Inspeccionados/>}
+           
+
             {open && <Configuracion setOpen={setOpen}/>}
         </>
     );

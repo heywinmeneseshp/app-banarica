@@ -51,12 +51,14 @@ export default function InspeccionVacio() {
     const [state, setState] = useState({
         observaciones: null,
         verificado: false,
-        semana: null,
+        semana: "",
         inputFields: [],
         loading: false,
         openConfig: false,
         semanas: [],
-        fieldErrors: {}
+        fieldErrors: {},
+        // Nuevo estado para manejar los valores de los inputs
+        formValues: {}
     });
 
     // Derivar estados para facilitar el acceso
@@ -68,7 +70,8 @@ export default function InspeccionVacio() {
         loading,
         openConfig,
         semanas,
-        fieldErrors
+        fieldErrors,
+        formValues
     } = state;
 
     // Utilidades
@@ -107,15 +110,29 @@ export default function InspeccionVacio() {
                 defaultValue: id === "fecha" ? getCurrentDate() : (inputsGuardados?.[id] || "")
             }));
 
-            if (semanaSeleccionada) {
-                camposBase.find(f => f.id === "semana").defaultValue = semanaSeleccionada.consecutivo;
-            }
+            // Inicializar valores del formulario
+            const initialFormValues = {};
+            camposBase.forEach(field => {
+                if (field.id === "semana") {
+                    initialFormValues[field.id] = semanaSeleccionada?.consecutivo || "";
+                } else if (field.id === "fecha") {
+                    initialFormValues[field.id] = getCurrentDate();
+                } else {
+                    initialFormValues[field.id] = inputsGuardados?.[field.id] || "";
+                }
+            });
+
+            // Inicializar valores para los insumos
+            insumos.forEach(insumo => {
+                initialFormValues[insumo.id] = "";
+            });
 
             setState(prev => ({
                 ...prev,
                 semanas: semanasData,
-                semana: semanaSeleccionada?.consecutivo,
+                semana: semanaSeleccionada?.consecutivo || "",
                 inputFields: [...camposBase, ...insumos],
+                formValues: initialFormValues,
                 loading: false
             }));
 
@@ -188,25 +205,39 @@ export default function InspeccionVacio() {
     }, []);
 
     const handleChange = useCallback(event => {
-        const field = event.target;
+        const { id, value } = event.target;
+
+        // Actualizar valor en el estado
+        setState(prev => ({
+            ...prev,
+            formValues: {
+                ...prev.formValues,
+                [id]: value
+            }
+        }));
 
         // Limpiar errores al cambiar
-        if (state.fieldErrors[field.id]) {
+        if (state.fieldErrors[id]) {
             setState(prev => ({
                 ...prev,
-                fieldErrors: { ...prev.fieldErrors, [field.id]: false }
+                fieldErrors: { ...prev.fieldErrors, [id]: false }
             }));
         }
 
-        field.setCustomValidity('');
+        event.target.setCustomValidity('');
 
-        // Guardar cambios en localStorage
-        const formData = new FormData(formRef.current);
-        localStorage.setItem(STORAGE_KEYS.OBSERVACIONES, formData.get('observaciones'));
-        localStorage.setItem(STORAGE_KEYS.INSPECCION_VACIO, JSON.stringify({
-            contenedor: formData.get('contenedor'),
-            fecha: formData.get('fecha')
-        }));
+        // Guardar cambios en localStorage (solo para campos específicos)
+        if (id === 'contenedor' || id === 'fecha') {
+            const formData = new FormData(formRef.current);
+            localStorage.setItem(STORAGE_KEYS.INSPECCION_VACIO, JSON.stringify({
+                contenedor: formData.get('contenedor'),
+                fecha: formData.get('fecha')
+            }));
+        }
+        
+        if (id === 'observaciones') {
+            localStorage.setItem(STORAGE_KEYS.OBSERVACIONES, value);
+        }
     }, [state.fieldErrors]);
 
     const verificarSeriales = useCallback(async (serialesList) => {
@@ -265,25 +296,17 @@ export default function InspeccionVacio() {
             return;
         }
 
-        const formData = new FormData(form);
-        const inputs = {
-            contenedor: formData.get('contenedor'),
-            fecha: formData.get('fecha'),
-            observacion: formData.get('observaciones')
-        };
-
-      
+        const semanaValue = formValues.semana || semana;
+        
         const serialesList = inputFields
             .filter(({ id }) => !['contenedor', 'fecha', 'semana'].includes(id))
             .map(({ id, label }) => {
-                console.log(id);
                 return {
-                    serial: formData.get(id),
+                    serial: formValues[id] || "",
                     label
                 };
             });
 
-        console.log(serialesList);
         const { success, seriales } = await verificarSeriales(serialesList);
         if (!success) {
             setStateValue('loading', false);
@@ -293,23 +316,26 @@ export default function InspeccionVacio() {
         try {
             const usuario = JSON.parse(localStorage.getItem(STORAGE_KEYS.USUARIO));
             const itemListado = await crearListado({
-                fecha: inputs.fecha,
-                contenedor: inputs.contenedor,
-                observaciones: inputs.observacion,
+                fecha: formValues.fecha || getCurrentDate(),
+                contenedor: formValues.contenedor || "",
+                observaciones: observaciones || "",
                 usuario,
                 seriales,
-                semana
+                semana: semanaValue
             });
 
             alert(itemListado.message || "Guardado exitoso.");
 
             // Resetear formulario
-            form.reset();
             setState(prev => ({
                 ...prev,
                 observaciones: null,
                 verificado: false,
-                inputFields: prev.inputFields.map(f => ({ ...f, defaultValue: f.id === "fecha" ? getCurrentDate() : "" }))
+                formValues: Object.keys(prev.formValues).reduce((acc, key) => {
+                    acc[key] = key === "fecha" ? getCurrentDate() : "";
+                    return acc;
+                }, {}),
+                semana: ""
             }));
 
             localStorage.removeItem(STORAGE_KEYS.INSPECCION_VACIO);
@@ -324,7 +350,7 @@ export default function InspeccionVacio() {
         } finally {
             setStateValue('loading', false);
         }
-    }, [inputFields, semana, verificarSeriales, router, getCurrentDate]);
+    }, [inputFields, semana, formValues, observaciones, verificarSeriales, router, getCurrentDate]);
 
     // Renderizado
     return (
@@ -348,7 +374,6 @@ export default function InspeccionVacio() {
 
                 <div className="row g-3">
                     {inputFields.map((field) => {
-console.log(field);
                         return (
                             <div className="col-md-6 mb-1" key={field.id}>
                                 <div className="input-group has-validation">
@@ -357,14 +382,18 @@ console.log(field);
                                     {field.id === "semana" ? (
                                         <>
                                             <input
-                                                {...field}
-                                                  name={field.id}
+                                                id={field.id}
+                                                name={field.id}
+                                                type={field.type}
+                                                pattern={field.pattern}
+                                                required={field.required}
                                                 className={`form-control ${fieldErrors[field.id] ? 'is-invalid' : ''}`}
                                                 onInvalid={handleInvalid}
                                                 onChange={handleChange}
-                                                value={semana || field.defaultValue}
+                                                value={formValues[field.id] || ""}
                                                 list={`${field.id}-list`}
                                                 autoComplete="off"
+                                                placeholder={field.placeholder}
                                             />
                                             <datalist id={`${field.id}-list`}>
                                                 {semanas.map(s => (
@@ -374,12 +403,17 @@ console.log(field);
                                         </>
                                     ) : (
                                         <input
-                                            {...field}
+                                            id={field.id}
                                             name={field.id}
+                                            type={field.type}
+                                            pattern={field.pattern}
+                                            required={field.required}
                                             className={`form-control ${fieldErrors[field.id] ? 'is-invalid' : ''}`}
                                             onInvalid={handleInvalid}
                                             onChange={handleChange}
-                            
+                                            value={formValues[field.id] || ""}
+                                            placeholder={field.placeholder}
+                                            autoComplete="off"
                                         />
                                     )}
 

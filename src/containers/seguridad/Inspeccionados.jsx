@@ -27,6 +27,7 @@ export default function Inspeccionados() {
         const fetchSeriales = async () => {
             try {
                 const alamcenes = almacenByUser?.map(item => item.consecutivo) || [];
+                console.log(alamcenes);
                 let config = await encontrarModulo("InspeccionesConfig");
                 config = JSON.parse(config[0].detalles);
                 config = config.tags;
@@ -35,6 +36,8 @@ export default function Inspeccionados() {
                     cons_almacen: alamcenes,
                     available: [false],
                 };
+
+
 
                 const res = await listarSeriales(pagination, limit, dataBusqueda);
                 setData(res.data);
