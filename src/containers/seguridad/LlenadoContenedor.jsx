@@ -155,7 +155,7 @@ const FormularioDinamico = () => {
     if (!formData.semana) return;
     
     try {
-      const embarquesList = await paginarEmbarques(1, 20, { semana: formData.semana });
+      const embarquesList = await paginarEmbarques(1, 1000, { semana: formData.semana });
       setEmbarquesObject(embarquesList.data);
     } catch (error) {
       console.error("Error al listar embarques:", error);
