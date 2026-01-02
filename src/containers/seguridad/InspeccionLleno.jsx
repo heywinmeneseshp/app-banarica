@@ -197,6 +197,7 @@ export default function InspeccionLLeno() {
     try {
       await validateForm();
       const usuario = JSON.parse(localStorage.getItem("usuario"));
+      console.log({ ...formData, id_usuario: usuario.id }, sections)
       await inspeccionAntinarcoticos({ ...formData, id_usuario: usuario.id }, sections);
       window.alert("Datos cargados con éxito");
       setFormData({ consecutivo: "", fecha: currentDate, hora_inicio: "", hora_fin: "", agente: "", zona: "", contenedor: '', bolsa: '', observaciones: '' });
