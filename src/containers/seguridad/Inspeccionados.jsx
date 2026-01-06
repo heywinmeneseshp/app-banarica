@@ -5,6 +5,8 @@ import InsumoConfig from "@assets/InsumoConfig";
 import { FaCog } from 'react-icons/fa';
 import { useAuth } from "@hooks/useAuth";
 import { listarSeriales } from "@services/api/seguridad";
+import { GrCircleInformation } from "react-icons/gr";
+
 
 
 export default function Inspeccionados() {
@@ -12,49 +14,57 @@ export default function Inspeccionados() {
     const tableRef = useRef(null);
     const { getUser, almacenByUser } = useAuth();
 
-    const defaultEndDate = new Date();
+    const ultimoDiaDelAnio = () => {
+        const hoy = new Date();
+        return `${hoy.getFullYear() + 1}-01-01`;
+    };
+
+
 
 
     const [data, setData] = useState([]);
     const [total, setTotal] = useState(0);
     const [openConfig, setOpenConfig] = useState(false);
-    const [endDate, setEndDate] = useState(defaultEndDate.toISOString().split('T')[0]);
     const [pagination, setPagination] = useState(1);
     const user = getUser();
     const limit = 30;
 
-    useEffect(() => {
-        const fetchSeriales = async () => {
-            try {
-                const alamcenes = almacenByUser?.map(item => item.consecutivo) || [];
-                console.log(alamcenes);
-                let config = await encontrarModulo("InspeccionesConfig");
-                config = JSON.parse(config[0].detalles);
-                config = config.tags;
-                const dataBusqueda = {
-                    cons_producto: config,
-                    cons_almacen: alamcenes,
-                    available: [false],
-                };
+    const fetchSeriales = async () => {
+        try {
+            const formData = new FormData(formRef.current);
+            const alamcenes = almacenByUser?.map(item => item.consecutivo) || [];
+            let config = await encontrarModulo("InspeccionesConfig");
+            config = JSON.parse(config[0].detalles);
+            config = config.tags;
+            const dataBusqueda = {
+                cons_producto: config,
+                cons_almacen: alamcenes,
+                available: [false],
+                motivo_de_uso: "INSP02",
+                contenedor: formData.get("contenedor"),
+                fecha_inspeccion_inicio: formData.get("fecha-inicio"),
+                fecha_inspeccion_fin: formData.get("fecha-fin"),
+            };
 
-
-
-                const res = await listarSeriales(pagination, limit, dataBusqueda);
-                setData(res.data);
-                setTotal(res.total || res.data.length);
-                console.log("Datos de seriales:", res.data);
-            } catch (error) {
-                console.error("Error al obtener seriales:", error);
-            }
-        };
-
-        fetchSeriales();
-    }, [pagination, limit, almacenByUser, openConfig,  endDate]); // Agregué startDate y endDate
-
-
-    const handleEndDateChange = (e) => {
-        setEndDate(e.target.value);
+            console.log(formData.get("fecha-inicio"));
+            const res = await listarSeriales(pagination, limit, dataBusqueda);
+            setData(res.data);
+            setTotal(res.total || res.data.length);
+            console.log("Datos de seriales:", res.data);
+        } catch (error) {
+            console.error("Error al obtener seriales:", error);
+        }
     };
+
+    useEffect(() => {
+        fetchSeriales();
+    }, [pagination, limit, almacenByUser, openConfig]); // Agregué startDate y endDate
+
+
+    const handleFilter = () => {
+        fetchSeriales();
+    };
+
 
     const handleConfig = () => {
         setOpenConfig(!openConfig);
@@ -62,15 +72,11 @@ export default function Inspeccionados() {
 
     // Función para formatear fecha a DD-MM-YYYY
     const formatDateToDDMMYYYY = (dateString) => {
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) {
-            return 'Fecha inválida';
-        }
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-
-        return `${day}-${month}-${year}`;
+        const d = new Date(dateString);
+        const dia = String(d.getUTCDate()).padStart(2, '0');
+        const mes = String(d.getUTCMonth() + 1).padStart(2, '0');
+        const anio = d.getUTCFullYear();
+        return `${dia}-${mes}-${anio}`;
     };
 
     return (
@@ -84,13 +90,13 @@ export default function Inspeccionados() {
                         <div className="input-group">
                             <span className="input-group-text" id="start-date-addon">Fecha Inicio:</span>
                             <input
+                                onChange={handleFilter}
                                 type="date"
                                 id="fecha-inicio"
                                 name="fecha-inicio"
                                 className="form-control"
                                 aria-label="Fecha inicio"
                                 aria-describedby="start-date-addon"
-                                  value={endDate}
                             />
                         </div>
                     </div>
@@ -100,20 +106,35 @@ export default function Inspeccionados() {
                         <div className="input-group">
                             <span className="input-group-text" id="end-date-addon">Fecha Fin:</span>
                             <input
-                                onChange={handleEndDateChange}
+                                defaultValue={ultimoDiaDelAnio()}
+                                onChange={handleFilter}
                                 type="date"
                                 id="fecha-fin"
                                 name="fecha-fin"
                                 className="form-control"
                                 aria-label="Fecha fin"
                                 aria-describedby="end-date-addon"
-                                value={endDate}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="col-12 col-md-3">
+                        <div className="input-group">
+                            <span className="input-group-text" id="end-contendor-addon">Contenedor:</span>
+                            <input
+                                onChange={handleFilter}
+                                type="text"
+                                id="contenedor"
+                                name="contenedor"
+                                className="form-control"
+                                aria-label="Fecha fin"
+                                aria-describedby="end-date-addon"
                             />
                         </div>
                     </div>
 
                     {/* Columna 3: Icono de Configuración */}
-                    {user.id_rol === "Super administrador"  &&
+                    {user.id_rol === "Super administrador" &&
                         <div className="col-12 col-md-2 d-flex justify-content-center d-none d-md-table-cell">
                             <button
                                 onClick={handleConfig}
@@ -143,34 +164,56 @@ export default function Inspeccionados() {
                         </div>
                     }
 
-   
+
                 </form>
 
                 <table ref={tableRef} className="mt-3 table table-striped table-bordered table-sm">
                     <thead>
                         <tr>
-                            <th scope="col">Fecha Movimiento</th>
+                            <th scope="col">Fecha Inspcción</th>
                             <th className="text-center" >Contenedor</th>
-                            <th className="text-center" >Artículo</th>
                             <th className="text-center" >Serial</th>
-                               <th className="text-center" >Movimiento</th>
-                            <th className="text-center" >Username</th>
+                            <th className="text-center" >Movimiento</th>
+                            <th className="text-center" >Agente</th>
+                            <th className="text-center" >Inicio</th>
+                            <th className="text-center" >Fin</th>
+                            <th className="text-center" >Usuario</th>
+                            {user.id_rol === "Super administrador" && <th>Info</th>}
                         </tr>
                     </thead>
                     <tbody>
-                        {data.map((item, key) => (
-                            <tr key={key}>
-                                <td className="text-center">{formatDateToDDMMYYYY(item.fecha_de_uso)}</td>
-                                <td className="text-center">{item.contenedor.contenedor}</td>
-                                <td className="text-center">{item.producto.name.toLowerCase()
-                                    .split(' ')
-                                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                                    .join(' ')}</td>
-                                <td className="text-center">{item.serial}</td>
-                                <td className="text-center">{item.MotivoDeUso.motivo_de_uso}</td>
-                                <td className="text-center">{item.usuario.username}</td>
-                            </tr>
-                        ))}
+                        {data.map((item, key) => {
+
+                            const datos = {
+                                id: item.contenedor.id,
+                                timestamp: Date.now(),
+                                contenedor: item.contenedor.contenedor
+                            };
+
+
+                            const token = btoa(JSON.stringify(datos));
+                            const baseUrl = window.location.origin;
+                            const traceUrl = `${baseUrl}/tracecode?token=${token}`; // ❌ QUITÉ el } extra
+                            return (
+                                <tr key={key}>
+                                    <td className="text-center">{formatDateToDDMMYYYY(item?.Inspeccion?.fecha_inspeccion)}</td>
+                                    <td className="text-center">{item.contenedor.contenedor}</td>
+                                    <td className="text-center">{item.serial}</td>
+                                    <td className="text-center">{item.MotivoDeUso.motivo_de_uso}</td>
+                                    <td className="text-center">{item?.Inspeccion?.agente}</td>
+                                    <td className="text-center">{item?.Inspeccion?.hora_inicio}</td>
+                                    <td className="text-center">{item?.Inspeccion?.hora_fin}</td>
+                                    <td className="text-center">{item.usuario.nombre + " " + item.usuario.apellido}</td>
+                                    {user.id_rol === "Super administrador" && <td
+                                        className="text-center"
+                                        style={{ cursor: "pointer" }}
+                                        onClick={() => window.open(traceUrl)}
+                                    >
+                                        <GrCircleInformation />
+                                    </td>}
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
 

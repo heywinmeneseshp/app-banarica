@@ -75,6 +75,7 @@ export default function ShippingInfo() {
                 };
 
                 const contenedor = await paginarListado(1, 21, filtros);
+                console.log(contenedor);
                 const shipping = contenedor.data.filter(item => item.Contenedor.id === id);
 
                 if (shipping.length === 0) {
@@ -87,8 +88,7 @@ export default function ShippingInfo() {
 
                 // Procesar datos
                 const embarque = shipping[0].Embarque;
-                const serialMasReciente = shipping[0].serial_de_articulos
-                    .sort((a, b) => new Date(b.fecha_de_uso) - new Date(a.fecha_de_uso))[0];
+       
 
                 // Función helper para formatear fechas
                 const formatDate = (fecha) =>
@@ -114,13 +114,13 @@ export default function ShippingInfo() {
                 const diasCosechaUnicos = [...new Set(
                     shipping.map(item => formatDate(item.fecha))
                 )].join(', ');
-
+                console.log(shipping[0]);
                 setshippingData({
                     ...demoData,
                     finca: almacenesUnicos,
                     productos: productosUnicos,
                     diaCosecha: diasCosechaUnicos,
-                    inspeccionPuerto: formatDateTime(serialMasReciente?.fecha_de_uso),
+                    inspeccionPuerto: shipping[0]?.Inspeccion?.fecha_inspeccion?.split("T")[0] + " " + shipping[0]?.Inspeccion?.hora_inicio,
                     diaZarpe: formatDateTime(embarque?.fecha_zarpe),
                     diaLlegada: formatDateTime(embarque?.fecha_arribo),
                     puertoDestino: embarque?.Destino?.destino || 'N/A',

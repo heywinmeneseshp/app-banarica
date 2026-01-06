@@ -385,6 +385,14 @@ const endPoints = {
         update: (id) => `${API}/api/${VERSION}/motivoDeRechazo/${id}`,
         delete: (id) => `${API}/api/${VERSION}/motivoDeRechazo/${id}`
     },
+     inspecciones: {
+        list: `${API}/api/${VERSION}/inspeccion`, //Listo
+        findOne: (consecutivo) => `${API}/api/${VERSION}/inspeccion/${consecutivo}`,
+        pagination: (page, limit) => `${API}/api/${VERSION}/inspeccion/paginar?offset=${page}&limit=${limit}`,
+        create: `${API}/api/${VERSION}/inspeccion`,
+        update: (id) => `${API}/api/${VERSION}/inspeccion/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/inspeccion/${id}`
+    },
 
 
 
