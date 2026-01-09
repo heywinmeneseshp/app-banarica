@@ -7,6 +7,7 @@ import { useAuth } from "@hooks/useAuth";
 
 import { GrCircleInformation } from "react-icons/gr";
 import { paginarInspecciones } from "@services/api/inpecciones";
+import { listarSeriales } from "@services/api/seguridad";
 
 
 
@@ -40,20 +41,16 @@ export default function Inspeccionados() {
             const dataBusqueda = {
                 cons_producto: config,
                 cons_almacen: alamcenes,
-                available: [false],
-                motivo_de_uso: "INSP02",
                 contenedor: formData.get("contenedor"),
                 fecha_inspeccion_inicio: formData.get("fecha-inicio"),
                 fecha_inspeccion_fin: formData.get("fecha-fin"),
             };
 
-            console.log(dataBusqueda);
 
-        
-       
-           // const res = await listarSeriales(pagination, limit, dataBusqueda);
-            //setData(res.data);
-            //setTotal(res.total || res.data.length);
+            const res = await paginarInspecciones(pagination, limit, dataBusqueda);
+            console.log(res);
+            setData(res.data);
+            setTotal(res.total || res.data.length);
             console.log("Datos de seriales:", res.data);
         } catch (error) {
             console.error("Error al obtener seriales:", error);

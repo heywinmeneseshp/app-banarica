@@ -87,7 +87,7 @@ export default function Disponibles() {
 
         if (!tablaConsulta) {
             const response = await listarSeriales(false, false, data);
-            console.log(data, "heywin")
+            console.log(data, "heywin");
             excel(response, "seriales", "Artículos de seguridad");
         } else {
             const cons_almacen = formData.get("almacen");
