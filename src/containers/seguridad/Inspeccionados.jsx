@@ -7,7 +7,7 @@ import { useAuth } from "@hooks/useAuth";
 
 import { GrCircleInformation } from "react-icons/gr";
 import { paginarInspecciones } from "@services/api/inpecciones";
-import { listarSeriales } from "@services/api/seguridad";
+
 
 
 
