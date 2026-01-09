@@ -4,8 +4,9 @@ import { encontrarModulo } from "@services/api/configuracion";
 import InsumoConfig from "@assets/InsumoConfig";
 import { FaCog } from 'react-icons/fa';
 import { useAuth } from "@hooks/useAuth";
-import { listarSeriales } from "@services/api/seguridad";
+
 import { GrCircleInformation } from "react-icons/gr";
+import { paginarInspecciones } from "@services/api/inpecciones";
 
 
 
@@ -46,10 +47,13 @@ export default function Inspeccionados() {
                 fecha_inspeccion_fin: formData.get("fecha-fin"),
             };
 
-            console.log(formData.get("fecha-inicio"));
-            const res = await listarSeriales(pagination, limit, dataBusqueda);
-            setData(res.data);
-            setTotal(res.total || res.data.length);
+            console.log(dataBusqueda);
+
+        
+       
+           // const res = await listarSeriales(pagination, limit, dataBusqueda);
+            //setData(res.data);
+            //setTotal(res.total || res.data.length);
             console.log("Datos de seriales:", res.data);
         } catch (error) {
             console.error("Error al obtener seriales:", error);
