@@ -21,9 +21,6 @@ export default function Inspeccionados() {
         return `${hoy.getFullYear() + 1}-01-01`;
     };
 
-
-
-
     const [data, setData] = useState([]);
     const [total, setTotal] = useState(0);
     const [openConfig, setOpenConfig] = useState(false);
