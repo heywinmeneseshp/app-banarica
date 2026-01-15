@@ -54,9 +54,11 @@ const armarCombo = async (cons_combo, cons_producto) => {
     return res.data;
 };
 
-const paginarCombos = async (page, limit, nombre) => {
+const paginarCombos = async (page, limit, nombre, body) => {
     try {
-        const res = await axios.get(endPoints.combos.pagination(page,limit,nombre));
+        let element = body;
+        if (!element?.isBlock) element.isBlock = true;
+        const res = await axios.post(endPoints.combos.pagination(page, limit, nombre), element);
         return res.data;
     } catch {
         alert("Error al paginar combos");

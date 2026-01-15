@@ -35,7 +35,7 @@ const Combo = () => {
 
     async function listarItems(page, limit) {
         const nombre = buscardorRef.current.value;
-        const res = await paginarCombos(page, limit, nombre);
+        const res = await paginarCombos(page, limit, nombre, {isBlock: [true, false]});
         setTotal(res.total);
         setItems(res.data);
     }
