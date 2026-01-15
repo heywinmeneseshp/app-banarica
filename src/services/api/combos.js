@@ -57,7 +57,7 @@ const armarCombo = async (cons_combo, cons_producto) => {
 const paginarCombos = async (page, limit, nombre, body) => {
     try {
         let element = body;
-        if (!element?.isBlock) element.isBlock = true;
+        if (!element?.isBlock) element.isBlock = false;
         const res = await axios.post(endPoints.combos.pagination(page, limit, nombre), element);
         return res.data;
     } catch {
