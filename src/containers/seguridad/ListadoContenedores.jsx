@@ -162,7 +162,6 @@ const ListadoContenedores = () => {
       }
 
       e.target.style.color = "";
-      await listar();
     } catch (error) {
       console.error('Error al actualizar:', error);
       alert('Error al actualizar el registro');
@@ -194,7 +193,6 @@ const ListadoContenedores = () => {
     try {
       await actualizarListado(linea, { [config.field]: res.id });
       inputElement.style.color = "";
-      await listar();
     } catch (error) {
       console.error('Error al actualizar:', error);
       alert('Error al actualizar el registro');
@@ -209,7 +207,7 @@ const ListadoContenedores = () => {
     try {
       const endpoints = {
         embarque: () => paginarEmbarques(1, 20, { bl: value }),
-        producto: () => paginarCombos(1, 20, value)
+        producto: () => paginarCombos(1, 20, value, { isBlock: false })
       };
 
       if (endpoints[field]) {
@@ -286,7 +284,7 @@ const ListadoContenedores = () => {
     updateState({ openMasivo: true });
   }, [updateState]);
 
-   const handleActualizarMasivo = useCallback(() => {
+  const handleActualizarMasivo = useCallback(() => {
     updateState({ openActualizarMasivo: true });
   }, [updateState]);
 
@@ -403,7 +401,7 @@ const ListadoContenedores = () => {
       const [modulo, embarquesRes, productoRes, listadoList] = await Promise.all([
         encontrarModulo(`Relación_listado_${user.username}`),
         paginarEmbarques(1, 20, {}),
-        paginarCombos(1, 20, ""),
+        paginarCombos(1, 20, "", {isBlock: false}),
         paginarListado(state.pagination, state.limit, Object.entries({
           contenedor: debouncedFilters.contenedor,
           booking: debouncedFilters.booking,
@@ -475,11 +473,7 @@ const ListadoContenedores = () => {
     listar();
   }, [state.pagination, state.limit, debouncedFilters, state.openTransbordar, state.openMasivo]);
 
-  useEffect(() => {
-    if (!state.openConfigTabla && !state.openConfigInsumo && !state.isEditable) {
-      listar();
-    }
-  }, [state.openConfigTabla, state.openConfigInsumo, state.isEditable, state.openActualizarMasivo]);
+
 
   // Renderizado de filas COMPLETO
   const renderTableRow = useCallback((row, index) => {
@@ -754,9 +748,9 @@ const ListadoContenedores = () => {
             />
           </div>
 
-          
 
-           <button onClick={handleActualizarMasivo} className="btn btn-sm m-1 btn-primary">
+
+          <button onClick={handleActualizarMasivo} className="btn btn-sm m-1 btn-primary">
             Actualizar masivo
           </button>
 
@@ -777,45 +771,45 @@ const ListadoContenedores = () => {
 
       {/* Tabla COMPLETA */}
       <div className="table-responsive">
-      <table ref={tablaRef} className="table table-striped table-bordered table-sm mt-2">
-        <thead>
-          <tr>
-            <th className="text-custom-small text-center">
-              <input
-                className="form-check-input"
-                type="checkbox"
-                checked={state.checkAll}
-                onChange={handleCheckAll}
-              />
-            </th>
-            {renderHeader("Fecha")}
-            {renderHeader("Sem", true)}
-            {renderHeader("Bookin", true, "Booking")}
-            {renderHeader("BoL")}
-            {renderHeader("Naviera", true)}
-            {renderHeader("Buque", true)}
-            {renderHeader("Destino", true)}
-            {renderHeader("Llenado")}
-            {renderHeader("Contenedor")}
-            {state.configuracionTabla.includes("Insumos de segurdad") &&
-              state.configuracionInsumos.map((item, idx) => (
-                <th className="text-custom-small text-center text-white bg-secondary" key={idx}>
-                  {item.name.charAt(0).toUpperCase() + item.name.slice(1).toLowerCase()}
-                </th>
-              ))}
-            {renderHeader("Producto")}
-            {renderHeader("Cajas")}
-            {renderHeader("Pallets", true)}
-            {renderHeader("Peso Bruto", true)}
-            {renderHeader("Peso Neto", true)}
-            {renderHeader("QR", true)}
-          </tr>
-        </thead>
-        <tbody>
-          {state.tableData.map(renderTableRow)}
-        </tbody>
-      </table>
-</div>
+        <table ref={tablaRef} className="table table-striped table-bordered table-sm mt-2">
+          <thead>
+            <tr>
+              <th className="text-custom-small text-center">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={state.checkAll}
+                  onChange={handleCheckAll}
+                />
+              </th>
+              {renderHeader("Fecha")}
+              {renderHeader("Sem", true)}
+              {renderHeader("Bookin", true, "Booking")}
+              {renderHeader("BoL")}
+              {renderHeader("Naviera", true)}
+              {renderHeader("Buque", true)}
+              {renderHeader("Destino", true)}
+              {renderHeader("Llenado")}
+              {renderHeader("Contenedor")}
+              {state.configuracionTabla.includes("Insumos de segurdad") &&
+                state.configuracionInsumos.map((item, idx) => (
+                  <th className="text-custom-small text-center text-white bg-secondary" key={idx}>
+                    {item.name.charAt(0).toUpperCase() + item.name.slice(1).toLowerCase()}
+                  </th>
+                ))}
+              {renderHeader("Producto")}
+              {renderHeader("Cajas")}
+              {renderHeader("Pallets", true)}
+              {renderHeader("Peso Bruto", true)}
+              {renderHeader("Peso Neto", true)}
+              {renderHeader("QR", true)}
+            </tr>
+          </thead>
+          <tbody>
+            {state.tableData.map(renderTableRow)}
+          </tbody>
+        </table>
+      </div>
       <Paginacion
         setPagination={(page) => updateState({ pagination: page })}
         pagination={state.pagination}
@@ -894,7 +888,7 @@ const ListadoContenedores = () => {
           encabezados={{
             fecha: null, bl: null, contenedor: null,
             id_lugar_de_llenado: null, id_producto: null, cajas_unidades: null,
-          }}urologo
+          }} urologo
         />
       )}
 
