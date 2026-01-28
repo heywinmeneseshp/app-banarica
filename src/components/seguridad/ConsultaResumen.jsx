@@ -52,7 +52,7 @@ export default function ConsultaDetallada({ data, setPagination, limit, paginati
     const ajustarInventario = async (cons_almacen, cons_producto, index) => {
         try {
             // Mostrar loading en el botón específico
-            setLoadingIndex(index);
+        
 
             // 1. Obtener cantidad real de seriales disponibles
             const res = await listarSeriales(1, 10, { cons_almacen, cons_producto, available: true });
@@ -85,7 +85,7 @@ export default function ConsultaDetallada({ data, setPagination, limit, paginati
             // Puedes mostrar un mensaje de error aquí
         } finally {
             // Quitar el loading
-            setLoadingIndex(null);
+            window.alert("Datos actualizados");
         }
     };
 
