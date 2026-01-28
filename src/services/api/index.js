@@ -26,7 +26,7 @@ const endPoints = {
     semanas: {
         list: `${API}/api/${VERSION}/semanas`,
         findOne: (id) => `${API}/api/${VERSION}/semanas/${id}`,
-        filter:  `${API}/api/${VERSION}/semanas/filter`,
+        filter: `${API}/api/${VERSION}/semanas/filter`,
         findAllByCategory: (category) => `${API}/api/${VERSION}/semanas/categoria/${category}`,
         create: `${API}/api/${VERSION}/productos`,
         update: (id) => `${API}/api/${VERSION}/semanas/${id}`,
@@ -108,6 +108,7 @@ const endPoints = {
         add: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/stock/sumar/${cons_almacen}/${cons_producto}`,
         subtract: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/stock/restar/${cons_almacen}/${cons_producto}`,
         enable: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/stock/habilitar/${cons_almacen}/${cons_producto}`,
+        actualizar: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/stock/actualizar/${cons_almacen}/${cons_producto}`,
         disponible: (cons_almacen, cons_producto) => `${API}/api/${VERSION}/stock/disponible/${cons_almacen}/${cons_producto}`,
     },
     pedidos: {
@@ -205,8 +206,8 @@ const endPoints = {
     confi: {
         buscarModulo: (modulo) => `${API}/api/${VERSION}/confi/encontrar/${modulo}`,
         actualizarModulo: `${API}/api/${VERSION}/confi/actualizar`,
-        encontrarEmpresa:  `${API}/api/${VERSION}/empresa/1`,
-        actualizarEmpresa:  `${API}/api/${VERSION}/empresa/1`,
+        encontrarEmpresa: `${API}/api/${VERSION}/empresa/1`,
+        actualizarEmpresa: `${API}/api/${VERSION}/empresa/1`,
     },
     //TRANSPOTER
     ubicaciones: {
@@ -232,7 +233,7 @@ const endPoints = {
         create: `${API}/api/${VERSION}/galonesPorRuta`,
         update: (id) => `${API}/api/${VERSION}/galonesPorRuta/${id}`,
         delete: (id) => `${API}/api/${VERSION}/galonesPorRuta/${id}`,
-        consultar:  `${API}/api/${VERSION}/galonesPorRuta/consultar`,
+        consultar: `${API}/api/${VERSION}/galonesPorRuta/consultar`,
     },
     record_consumo: {
         list: `${API}/api/${VERSION}/record_consumo`,
@@ -360,7 +361,7 @@ const endPoints = {
         paginar: (offset, limit, nombre) => `${API}/api/${VERSION}/transbordo/paginar?offset=${offset}&limit=${limit}&destino=${nombre}`,
         update: (id) => `${API}/api/${VERSION}/transbordo/${id}`,
         delete: (id) => `${API}/api/${VERSION}/transbordo/${id}`,
-    }, 
+    },
     rechazos: {
         list: `${API}/api/${VERSION}/rechazo`, //Listo
         findOne: (consecutivo) => `${API}/api/${VERSION}/rechazo/${consecutivo}`,
@@ -385,7 +386,7 @@ const endPoints = {
         update: (id) => `${API}/api/${VERSION}/motivoDeRechazo/${id}`,
         delete: (id) => `${API}/api/${VERSION}/motivoDeRechazo/${id}`
     },
-     inspecciones: {
+    inspecciones: {
         list: `${API}/api/${VERSION}/inspeccion`, //Listo
         findOne: (consecutivo) => `${API}/api/${VERSION}/inspeccion/${consecutivo}`,
         pagination: (page, limit) => `${API}/api/${VERSION}/inspeccion/paginar?offset=${page}&limit=${limit}`,

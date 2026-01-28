@@ -103,6 +103,14 @@ const habilitarProductoEnAlmacen = async (cons_almacen, cons_producto, bool) => 
     }
 };
 
+const actualizarStockAlmacen = async (cons_almacen, cons_producto, change) => {
+    try {
+        await axios.post(endPoints.stock.actualizar(cons_almacen, cons_producto), change);
+    } catch (e) {
+        window.alert(e);
+    }
+};
+
 const filtrarPorProductoYAlmacen = async (cons_almacen, cons_producto) => {
     try {
         const res = await axios.get(endPoints.stock.filterAlmacenAndProduct(cons_almacen, cons_producto));
@@ -132,5 +140,6 @@ export {
     crearStock,
     filtrarPorProductoYAlmacen,
     filtradoGeneralStock,
-    actualizarNoDisponibles
+    actualizarNoDisponibles,
+    actualizarStockAlmacen
 };
