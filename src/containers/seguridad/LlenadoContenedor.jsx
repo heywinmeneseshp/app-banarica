@@ -153,7 +153,7 @@ const FormularioDinamico = () => {
       const itemContenedor = listado.find(i => i.Contenedor?.contenedor === getVal('contenedor'));
 
       if (!id_embarque || !itemContenedor) throw new Error("Booking o Contenedor no válido");
-      console.log(itemContenedor.id)
+      console.log(itemContenedor.id);
 
       await Promise.all([
         ...sectionsProduct.map((sec, index) => {
@@ -166,7 +166,7 @@ const FormularioDinamico = () => {
               id_producto: sec.producto,
               cajas_unidades: sec.totalCajas,
               habilitado: true
-            })
+            });
           } else {
             duplicarListado(itemContenedor.id).then(res => {
               actualizarListado(res.id, {
@@ -177,7 +177,7 @@ const FormularioDinamico = () => {
                 id_producto: sec.producto,
                 cajas_unidades: sec.totalCajas,
                 habilitado: true
-              })
+              });
             });
           }
 

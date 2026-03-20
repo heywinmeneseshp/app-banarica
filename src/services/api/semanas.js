@@ -43,9 +43,9 @@ const eliminarSemanas = async (body) => {
 };
 
 const paginarSemanas = async (consecutivo) => {
-    const res = await axios.post(endPoints.semanas.pagination(1,8, consecutivo))
-    return res.data
-}
+    const res = await axios.post(endPoints.semanas.pagination(1,8, consecutivo));
+    return res.data;
+};
 
 
 export {

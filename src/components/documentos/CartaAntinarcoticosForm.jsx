@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {  useState } from 'react';
 import useCartaAntinarcoticos from '@hooks/useCartaAntinarcoticos';
 
 // --- DATOS INICIALES (Todos mutables ahora) ---

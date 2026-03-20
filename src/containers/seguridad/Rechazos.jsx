@@ -44,9 +44,9 @@ const Rechazos = () => {
          
 
             let foundWeek = body.semana ? semana.filter(item => item.consecutivo ==  body.semana ) : "";
-            console.log(foundWeek)
-            body.semana = foundWeek[0]?.id
-                console.log(body.semana)
+            console.log(foundWeek);
+            body.semana = foundWeek[0]?.id;
+                console.log(body.semana);
             const [res, almacenes] = await Promise.all([
                 paginarRechazos(pagination, limit, body),
                 listarAlmacenes()
