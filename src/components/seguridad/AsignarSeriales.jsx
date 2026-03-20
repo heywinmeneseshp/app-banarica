@@ -155,7 +155,6 @@ export default function AsignarSeriales({ contenedor, setContenedor }) {
             setLoading(false);
             return;
         }
-        console.log(semana, fecha, seriales, contenedorID, usuarioID, motivo);
         // Envío de seriales válidos
         const res = await usarSeriales(semana, fecha, seriales, contenedorID, usuarioID, motivo);
 

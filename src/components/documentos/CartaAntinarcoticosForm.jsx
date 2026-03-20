@@ -46,7 +46,6 @@ const CartaAntinarcoticosForm = () => {
 
   const handleChangeLogo = (e) => {
     const {  value } = e.target;
-    console.log(urlLogo);
     setLogoUrl(value);
   };
 
@@ -193,8 +192,6 @@ const CartaAntinarcoticosForm = () => {
     printWindow.document.write('</body></html>');
     printWindow.document.close();
   };
-
-  useEffect(() => { console.log(urlLogo); }, []);
 
 
   return (

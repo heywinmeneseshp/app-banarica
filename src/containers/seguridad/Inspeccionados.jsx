@@ -45,10 +45,10 @@ export default function Inspeccionados() {
 
 
             const res = await paginarInspecciones(pagination, limit, dataBusqueda);
-            console.log(res);
+
             setData(res.data);
             setTotal(res.total || res.data.length);
-            console.log("Datos de seriales:", res.data);
+
         } catch (error) {
             console.error("Error al obtener seriales:", error);
         }

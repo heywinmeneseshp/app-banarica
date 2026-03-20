@@ -87,7 +87,6 @@ export default function NuevoCombo({ setAlert, setOpen, item, open }) {
                     autoClose: true
                 });
             } else {
-                console.log(data);
                 await actualizarCombos(item.consecutivo, data);
 
                 setAlert({

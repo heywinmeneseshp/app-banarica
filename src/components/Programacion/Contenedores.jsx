@@ -50,8 +50,8 @@ export default function Programador() {
             paginarProgramaciones(pagination, limit, body),
         ]);
 
-        console.log("heywin");
-        console.log(res);
+        ("heywin");
+        (res);
 
         // Actualización de los estados
         setUbicaciones(newUbicaciones);

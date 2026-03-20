@@ -31,7 +31,7 @@ const endPoints = {
         create: `${API}/api/${VERSION}/productos`,
         update: (id) => `${API}/api/${VERSION}/semanas/${id}`,
         delete: (id) => `${API}/api/${VERSION}/semanas/${id}`,
-        pagination: (page, limit, consecutivo) => `${API}/api/${VERSION}/semana/paginar?page=${page}&limit=${limit}&consecutivo=${consecutivo}`,
+        pagination: (page, limit, consecutivo) => `${API}/api/${VERSION}/semanas/paginar?offset=${page}&limit=${limit}&consecutivo=${consecutivo}`,
     },
     productos: {
         list: `${API}/api/${VERSION}/productos`,

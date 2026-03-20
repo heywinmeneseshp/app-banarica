@@ -8,6 +8,7 @@ import { TiDelete } from "react-icons/ti";
 import { FaSave } from "react-icons/fa";
 import { listarAlmacenes } from '@services/api/almacenes';
 import { actualizarListado } from '@services/api/listado';
+import { paginarSemanas } from '@services/api/semanas';
 
 
 
@@ -23,8 +24,10 @@ const Rechazos = () => {
     const [editando, setEditando] = useState(null);
     const [valoresEditados, setValoresEditados] = useState({});
     const [almacenes, setAlmacenes] = useState([]);
+    const [semana, setSemana] = useState([]);
 
     useEffect(() => {
+        buscarSemana();
         listar();
     }, []);
 
@@ -32,12 +35,18 @@ const Rechazos = () => {
         try {
             const formData = new FormData(formRef.current);
             const body = {
-                semana: formData.get("semana") || "",
+                semana: formData.get("semana"),
                 productor: formData.get("productor") || "",
                 contenedor: formData.get("contenedor") || "",
                 producto: formData.get("producto") || "",
             };
 
+         
+
+            let foundWeek = body.semana ? semana.filter(item => item.consecutivo ==  body.semana ) : "";
+            console.log(foundWeek)
+            body.semana = foundWeek[0]?.id
+                console.log(body.semana)
             const [res, almacenes] = await Promise.all([
                 paginarRechazos(pagination, limit, body),
                 listarAlmacenes()
@@ -52,9 +61,23 @@ const Rechazos = () => {
         }
     };
 
+
+
+    const buscarSemana = async () => {
+        try {
+            const formData = new FormData(formRef.current);
+            const week = await paginarSemanas(formData.get("semana"));
+            setSemana(week);
+        } catch (error) {
+            console.error("❌ Error al listar semanas:", error);
+        }
+    };
+
+
+
     const aprobarRechazo = async (rechazo) => {
         try {
-            console.log(rechazo);
+
             const { Contenedor, id_producto, cod_productor, almacene } = rechazo;
             const { Listados, contenedor } = Contenedor;
             const existeProductoRechazado = Listados.some(item => item.combo.id === id_producto);
@@ -107,7 +130,6 @@ const Rechazos = () => {
 
     const guardarEdicion = async (rechazo) => {
         try {
-            console.log(rechazo);
 
             const { Contenedor } = rechazo;
             const { Listados, contenedor } = Contenedor;
@@ -173,7 +195,6 @@ const Rechazos = () => {
                 id_motivo_de_rechazo: rechazo.id_motivo_de_rechazo,
             };
 
-            console.log(body);
 
             // Guardar cambios y actualizar la lista
             await actualizarRechazo(rechazo.id, body);
@@ -209,7 +230,25 @@ const Rechazos = () => {
                     <Col>
                         <Form.Group className="mb-0" controlId="semana">
                             <Form.Label className='mt-1 mb-1'>Sem</Form.Label>
-                            <Form.Control className='form-control-sm' onChange={() => listar()} type="text" name="semana" placeholder="Ingrese la semana" />
+                            <Form.Control
+                                className='form-control-sm'
+                                type="text"
+                                name="semana"
+                                placeholder="Ingrese la semana"
+                                list="lista-semanas" // <--- VINCULACIÓN AQUÍ
+                                onBlur={listar}
+                                onChange={(e) => {
+                                    // Tu función listar() existente
+                                    buscarSemana(e.target.value);
+                                }}
+                            />
+
+                            {/* 2. DEFINICIÓN DEL DATALIST */}
+                            <datalist id="lista-semanas">
+                                {semana.map((item) => (
+                                    <option key={item.id} value={item.consecutivo} />
+                                ))}
+                            </datalist>
                         </Form.Group>
                     </Col>
                     {/* Cliente */}

@@ -40,7 +40,6 @@ export default function Configuracion({ setOpen }) {
                 ]);
 
                 setSecurityCheck(Boolean(moduloSeguridad.habilitado));
-                console.log(moduloSemana);
                 setSemana(moduloSemana);
                 setEmpresa(empresaData);
                 setConfigUsuario(JSON.parse(userConfig.detalles));

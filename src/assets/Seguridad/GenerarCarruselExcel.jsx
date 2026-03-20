@@ -64,7 +64,7 @@ const buildCarruselList = (data, formData) => {
     const botella = res.serial_de_articulos
       .filter(item => item.cons_producto === formData.sello)
       .sort((a, b) => new Date(b.fecha_de_uso) - new Date(a.fecha_de_uso))
-      .pop().serial; // Toma el último elemento del array
+      .pop()?.serial; // Toma el último elemento del array
     const caja = items.reduce((acc, i) => acc + (i.cajas_unidades || 0), 0);
     const peso = items.reduce(
       (acc, i) => acc + ((i.combo?.peso_bruto || 0) * (i.cajas_unidades || 0)),

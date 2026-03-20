@@ -20,7 +20,6 @@ export default function ConsultaResumen({ data, setPagination, limit, pagination
         data.cons_almacen = data.cons_almacen == "" ? alamcenes : data.cons_almacen;
         listarSeriales(pagination, limit, { ...data, serial: data.serial ? data.serial : "" }).then(res => {
             setTabla(res.data ? res.data : []);
-            console.log(res.data);
             setTotal(res);
             setResults(res.total);
         });

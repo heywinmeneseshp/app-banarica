@@ -13,7 +13,6 @@ function CrearQRCode({ contenedor, setOpenQR }) {
     const canvasRef = useRef();
 
     useEffect(() => {
-        console.log(contenedor);
         if (contenedor.id) {
             // ✅ SOLUCIÓN: Crear un objeto JSON y codificarlo
             const datos = {

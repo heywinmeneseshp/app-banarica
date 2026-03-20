@@ -25,7 +25,6 @@ const Card = ({ vehiculos, setChange, km_recorridos, record_consumo_id, title, i
     let newDate = null;
 
     vehiculos.forEach(item => {
-      console.log(item);
       const itemDate = new Date(item.fecha);
       if (item.vehiculo?.placa == title && itemDate < vehiculoDate) {
         newDate = itemDate;

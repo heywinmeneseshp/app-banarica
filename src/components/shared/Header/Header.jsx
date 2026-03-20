@@ -36,7 +36,6 @@ const Header = () => {
 
     // Consulta la configuración de menú para el usuario
     encontrarModulo(usuario.username).then(res => {
-      console.log(res);
       const detalles = JSON.parse(res[0].detalles);
       setConfigMenu(detalles.menu || []);
       setConfigSubMenu(detalles.submenu || []);

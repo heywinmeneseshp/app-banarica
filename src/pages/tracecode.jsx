@@ -75,16 +75,13 @@ export default function ShippingInfo() {
                 };
 
                 const contenedor = await paginarListado(1, 21, filtros);
-                console.log(contenedor);
+
                 const shipping = contenedor.data.filter(item => item.Contenedor.id === id);
 
                 if (shipping.length === 0) {
                     console.warn('No se encontraron datos para el contenedor:', id);
                     return;
                 }
-
-                console.log('Shipping data:', shipping);
-                console.log('Almacenes:', shipping.map(item => item.almacen.nombre).join(', '));
 
                 // Procesar datos
                 const embarque = shipping[0].Embarque;
@@ -114,7 +111,7 @@ export default function ShippingInfo() {
                 const diasCosechaUnicos = [...new Set(
                     shipping.map(item => formatDate(item.fecha))
                 )].join(', ');
-                console.log(shipping[0]);
+
                 setshippingData({
                     ...demoData,
                     finca: almacenesUnicos,

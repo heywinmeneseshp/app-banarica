@@ -57,7 +57,6 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                 setTagMenu(detalles.menu || []);
                 setTagSubMenu(detalles.submenu || []);
                 setTagBotones(detalles.botones || []);
-                console.log(detalles);
             });
         }
         try {
@@ -194,7 +193,6 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                 });
             }
         } else {
-            console.log(data);
             if (data.password == null || data.password == "") delete data.password;
             if (data.username == null) delete data.username;
             if (data.id_rol == null) delete data.id_rol;
@@ -217,12 +215,10 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
             confUser = JSON.parse(res[0].detalles);
         } catch (err) {
             console.error("Error al parsear JSON:", err);
-            console.log("Contenido que falló:", res[0].detalles);
             // Puedes decidir cómo manejar el error aquí
         }
         confUser = JSON.stringify({ ...confUser, menu: tagMenu, submenu: tagSubMenu, botones: tagBotones });
         await actualizarModulo({ modulo: user.username, detalles: confUser });
-        console.log({ modulo: user.username, detalles: confUser });
         setOpen(false);
     };
 

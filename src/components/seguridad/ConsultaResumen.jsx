@@ -57,7 +57,6 @@ export default function ConsultaDetallada({ data, setPagination, limit, paginati
             // 1. Obtener cantidad real de seriales disponibles
             const res = await listarSeriales(1, 10, { cons_almacen, cons_producto, available: true });
             const cantidadReal = res.total;
-            console.log(`Cantidad real de ${cons_producto} en ${cons_almacen}: ${cantidadReal}`);
 
             // 2. Actualizar el stock en la base de datos
             await actualizarStockAlmacen(cons_almacen, cons_producto, { cantidad: cantidadReal });
@@ -73,9 +72,6 @@ export default function ConsultaDetallada({ data, setPagination, limit, paginati
                 }
                 return nuevaTabla;
             });
-
-            // 4. Opcional: Mostrar mensaje de éxito
-            console.log(`✅ Inventario ajustado: ${cons_producto} en ${cons_almacen} = ${cantidadReal}`);
 
             // 5. Opcional: Recargar datos completos si prefieres
             // await listar(data);

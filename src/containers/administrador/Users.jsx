@@ -37,7 +37,6 @@ const Users = () => {
                     return;
                 }
                 setUser(res.data.usuario);
-                console.log(res.data.usuario);
                 listarUsurios();
             } catch (error) {
                 window.alert("Error al cargar los usuarios: " + error.message);

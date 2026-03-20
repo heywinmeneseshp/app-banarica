@@ -82,8 +82,6 @@ const CargueMasivo = ({ setOpenMasivo, endPointCargueMasivo, encabezados, titulo
 
             setProgress(80);
 
-            console.log("Respuesta del servidor:", result);
-
             // Manejar diferentes tipos de respuesta
             if (!response.ok) {
                 // Error HTTP (4xx, 5xx)

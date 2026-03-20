@@ -138,15 +138,12 @@ const ListadoEmbarques = () => {
     const dataObject = inputs.reduce((acc, field) => {
       const inputElement = document.getElementById(field.id);
       acc[field.id] = inputElement?.value || '';
-      console.log(acc[field.id]);
       return acc;
     }, {});
     try {
-      console.log(pagination, limit, dataObject);
       const { data, total } = await paginarEmbarques(pagination, limit, dataObject);
       setTableData(data);
       setTotal(total);
-      console.log(data);
     } catch (error) {
       console.error('Error fetching data:', error);
       // Optionally, set state to indicate an error occurred

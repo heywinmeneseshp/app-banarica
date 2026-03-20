@@ -22,7 +22,6 @@ function VistaContenedor({ vistaCont, setVistaCont, correos, configProducts }) {
         if (vistaCont?.serial_de_articulos?.length) {
             filtrarProductosAsync();
         }
-        console.log(correos);
     }, [loading]);
 
     const filtrarProductosAsync = async () => {
@@ -145,7 +144,6 @@ function VistaContenedor({ vistaCont, setVistaCont, correos, configProducts }) {
             <p style="margin-top: 20px; color: #555;"><i>Por favor, revisar y tomar las acciones necesarias.</i></p>
         </div>
     `;
-       console.log(correos, "hhhhhh");
         await enviarEmail(
             correos,
             `Alerta: Inconsistencias en unidad ${contenedor} - ${fechaFormateada}`,

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FaPlus, FaMinus } from 'react-icons/fa';
 import Loader from '@components/shared/Loader';
@@ -14,595 +14,327 @@ import { listarMotivoDeUso } from '@services/api/motivoDeUso';
 import { listarMotivoDeRechazo } from '@services/api/motivoDeRechazo';
 import { agregarRechazo } from '@services/api/rechazos';
 
-// Constantes
 const MOTIVO_LLENADO_CONTENEDOR = "Lleneado de contenedor";
 const SERIALES_A_VERIFICAR = ["kit", "termografo"];
 
-// Jerarquía de campos
 const JERARQUIA_CAMPOS = {
-  semana: ['consignee', 'buque', 'destino', 'booking', ''],
-  consignee: ['buque', 'destino', 'booking', ''],
-  buque: ['destino', 'booking', ''],
-  destino: ['booking', ''],
-  booking: ['']
+  semana: ['consignee', 'buque', 'destino', 'booking', 'contenedor'],
+  consignee: ['buque', 'destino', 'booking', 'contenedor'],
+  buque: ['destino', 'booking', 'contenedor'],
+  destino: ['booking', 'contenedor'],
+  booking: ['contenedor']
 };
 
 const FormularioDinamico = () => {
-  // Fechas iniciales
-  const [fechaInicial, fechaFinal, today] = useMemo(() => {
-    const today = new Date();
-    const monthBefore = new Date(today);
-    const monthLater = new Date(today);
-    monthBefore.setMonth(monthBefore.getMonth() - 1);
-    monthLater.setMonth(monthLater.getMonth() + 1);
-    return [
-      monthBefore.toISOString().split('T')[0],
-      monthLater.toISOString().split('T')[0],
-      today.toISOString().split('T')[0]
-    ];
-  }, []);
-
-  // Estado principal del formulario
-  const [formData, setFormData] = useState({
-    fecha: today,
-    semana: '',
-    consignee: "",
-    buque: '',
-    destino: '',
-    booking: '',
-    contenedor: '',
-    kit: '',
-    termografo: ''
+  const inputsRef = useRef({});
+  const [loading, setLoading] = useState(false);
+  const [filtros, setFiltros] = useState({
+    semana: '', consignee: '', buque: '', destino: '', booking: '', contenedor: ''
   });
 
-  // Estados para opciones
-  const [semOptions, setSemOptions] = useState([]);
+  const [options, setOptions] = useState({
+    semanas: [], productos: [], almacenes: [], almacenByUser: [], motivosRechazo: []
+  });
   const [embarquesObjet, setEmbarquesObject] = useState([]);
   const [contenedores, setContenedores] = useState([]);
   const [listado, setListado] = useState([]);
-  const [productos, setProductos] = useState([]);
-  const [almacenes, setAlmacenes] = useState([]);
-  const [almacenByUser, setAlmacenByUser] = useState([]);
-  const [motivosRechazo, setMotivosRechazo] = useState([]);
-  const [loading, setLoading] = useState(false);
 
-  // Secciones dinámicas
-  const [sections, setSections] = useState([]);
+  // Secciones Dinámicas
   const [sectionsProduct, setSectionsProduct] = useState([]);
+  const [sectionsRechazo, setSectionsRechazo] = useState([]);
 
-  // Datos derivados para opciones de datalist
-  const { buquesOpciones, destinosOpciones, consigneeOpciones } = useMemo(() => {
-    if (!embarquesObjet.length) return { buquesOpciones: [], destinosOpciones: [], consigneeOpciones: [] };
-    
-    // Filtramos según lo que ya se ha seleccionado
-    let filteredEmbarques = embarquesObjet;
-    
-    if (formData.consignee) {
-      filteredEmbarques = filteredEmbarques.filter(res => res.cliente.cod === formData.consignee);
-    }
-    if (formData.buque) {
-      filteredEmbarques = filteredEmbarques.filter(res => res.Buque.buque === formData.buque);
-    }
-    if (formData.destino) {
-      filteredEmbarques = filteredEmbarques.filter(res => res.Destino.destino === formData.destino);
-    }
-    
-    const consignees = [...new Set(filteredEmbarques.map(res => res.cliente.cod))];
-    const buquesList = [...new Set(filteredEmbarques.map(res => res.Buque.buque))];
-    const destinosList = [...new Set(filteredEmbarques.map(res => res.Destino.destino))];
-    
-    return { 
-      buquesOpciones: buquesList, 
-      destinosOpciones: destinosList, 
-      consigneeOpciones: consignees 
+  const { today, fechaInicial, fechaFinal } = useMemo(() => {
+    const d = new Date();
+    const before = new Date(d); const later = new Date(d);
+    before.setMonth(d.getMonth() - 1); later.setMonth(d.getMonth() + 1);
+    return {
+      today: d.toISOString().split('T')[0],
+      fechaInicial: before.toISOString().split('T')[0],
+      fechaFinal: later.toISOString().split('T')[0]
     };
-  }, [embarquesObjet, formData.consignee, formData.buque, formData.destino]);
-
-  // Embarques filtrados para el datalist de booking
-  const embarquesFiltrados = useMemo(() => {
-    if (!embarquesObjet.length) return [];
-    
-    let filtered = embarquesObjet;
-    
-    if (formData.consignee) {
-      filtered = filtered.filter(res => res.cliente.cod === formData.consignee);
-    }
-    if (formData.buque) {
-      filtered = filtered.filter(res => res.Buque.buque === formData.buque);
-    }
-    if (formData.destino) {
-      filtered = filtered.filter(res => res.Destino.destino === formData.destino);
-    }
-    
-    return filtered.map(item => item.bl);
-  }, [embarquesObjet, formData.consignee, formData.buque, formData.destino]);
-
-  // Configuración de campos del formulario
-  const fields = useMemo(() => [
-    { label: "Fecha", id: "fecha", type: "date", className: "col-md-6 mb-3", required: true },
-    { label: "Semana", id: "semana", type: "text", className: "col-md-6 mb-3", datalist: semOptions, required: true },
-    { label: "Consignee", id: "consignee", type: "text", className: "col-md-6 mb-3", datalist: consigneeOpciones, required: true },
-    { label: "Buque", id: "buque", type: "text", className: "col-md-6 mb-3", datalist: buquesOpciones, required: true },
-    { label: "Destino", id: "destino", type: "text", className: "col-md-6 mb-3", datalist: destinosOpciones, required: true },
-    { label: "Booking", id: "booking", type: "text", className: "col-md-6 mb-3", datalist: embarquesFiltrados, required: true },
-    { label: "Contenedor", id: "contenedor", type: "text", className: "col-md-6 mb-3", datalist: contenedores, required: true },
-    { label: "Kit", id: "kit", type: "text", className: "col-md-6 mb-3" },
-    { label: "Termógrafo", id: "termografo", type: "text", className: "col-md-6 mb-3" }
-  ], [semOptions, consigneeOpciones, buquesOpciones, destinosOpciones, embarquesFiltrados, contenedores]);
-
-  // Inicialización
-  const initial = useCallback(async () => {
-    try {
-      const [weeks, productosData, motivos, almacenesData] = await Promise.all([
-        filtrarSemanaRangoMes(1, 1),
-        listarCombos(),
-        listarMotivoDeRechazo(),
-        listarAlmacenes()
-      ]);
-
-      setProductos(productosData);
-      setMotivosRechazo(motivos);
-      setAlmacenes(almacenesData);
-      setSemOptions(weeks.map(item => item.consecutivo));
-      setAlmacenByUser(JSON.parse(localStorage.getItem("almacenByUser") || "[]"));
-    } catch (error) {
-      console.error("Error en inicialización:", error);
-    }
   }, []);
 
-  // Cargar embarques por semana
-  const listarEmbarques = useCallback(async () => {
-    if (!formData.semana) return;
-    
+  const init = useCallback(async () => {
     try {
-      const embarquesList = await paginarEmbarques(1, 1000, { semana: formData.semana });
-      setEmbarquesObject(embarquesList.data);
-    } catch (error) {
-      console.error("Error al listar embarques:", error);
-    }
-  }, [formData.semana]);
-
-  // Listar contenedores
-  const listarContenedores = useCallback(async () => {
-    if (!formData.booking) return; // Solo buscar contenedores cuando hay booking
-    
-    try {
-      const list = await paginarListado(1, 10, {
-        contenedor: formData.contenedor,
-        fecha_inicial: fechaInicial,
-        fecha_final: fechaFinal,
-        habilitado: true,
+      const [weeks, prods, motivos, alms] = await Promise.all([
+        filtrarSemanaRangoMes(1, 1), listarCombos(),
+        listarMotivoDeRechazo(), listarAlmacenes()
+      ]);
+      setOptions({
+        semanas: weeks.map(w => w.consecutivo),
+        productos: prods, motivosRechazo: motivos, almacenes: alms,
+        almacenByUser: JSON.parse(localStorage.getItem("almacenByUser") || "[]")
       });
-      
-      setListado(list.data);
-      setContenedores(list.data.map(item => item.Contenedor?.contenedor || ''));
-    } catch (error) {
-      console.error("Error al listar contenedores:", error);
-    }
-  }, [formData.contenedor, formData.booking, fechaInicial, fechaFinal]);
+    } catch (e) { console.error(e); }
+  }, []);
 
-  // Efectos
-  useEffect(() => { initial(); }, [initial]);
-  useEffect(() => { listarEmbarques(); }, [listarEmbarques]);
-  useEffect(() => { 
-    if (formData.booking) {
-      listarContenedores(); 
-    }
-  }, [listarContenedores]);
+  useEffect(() => { init(); }, [init]);
 
-  // Handler para cambios en campos con limpieza de jerarquía
-  const handleChange = (e) => {
+  useEffect(() => {
+    if (filtros.semana) {
+      paginarEmbarques(1, 1000, { semana: filtros.semana }).then(res => setEmbarquesObject(res.data));
+    }
+  }, [filtros.semana]);
+
+  useEffect(() => {
+    if (filtros.booking) {
+      paginarListado(1, 10, { fecha_inicial: fechaInicial, fecha_final: fechaFinal, habilitado: true })
+        .then(res => {
+          setListado(res.data);
+          setContenedores(res.data.map(i => i.Contenedor?.contenedor || ''));
+        });
+    }
+  }, [filtros.booking, fechaInicial, fechaFinal]);
+
+  const datalists = useMemo(() => {
+    let filtered = embarquesObjet;
+    if (filtros.consignee) filtered = filtered.filter(r => r.cliente.cod === filtros.consignee);
+    if (filtros.buque) filtered = filtered.filter(r => r.Buque.buque === filtros.buque);
+    if (filtros.destino) filtered = filtered.filter(r => r.Destino.destino === filtros.destino);
+    return {
+      consignees: [...new Set(filtered.map(r => r.cliente.cod))],
+      buques: [...new Set(filtered.map(r => r.Buque.buque))],
+      destinos: [...new Set(filtered.map(r => r.Destino.destino))],
+      bookings: filtered.map(item => item.bl)
+    };
+  }, [embarquesObjet, filtros]);
+
+  const handleHierarchyChange = (e) => {
     const { id, value } = e.target;
-    
-    // Campos a limpiar basados en la jerarquía
-    const camposALimpiar = JERARQUIA_CAMPOS[id] || [];
-    
-    setFormData(prev => {
-      const nuevoEstado = { ...prev, [id]: value };
-      
-      // Limpiar campos inferiores en la jerarquía
-      camposALimpiar.forEach(campo => {
-        nuevoEstado[campo] = '';
+    const aLimpiar = JERARQUIA_CAMPOS[id] || [];
+    setFiltros(prev => {
+      const nuevo = { ...prev, [id]: value };
+      aLimpiar.forEach(c => {
+        nuevo[c] = '';
+        if (inputsRef.current[c]) inputsRef.current[c].value = '';
       });
-      
-      return nuevoEstado;
+      return nuevo;
     });
   };
 
+  // --- SOLUCIÓN: Lógica de agregar secciones corregida ---
   const addSection = (type) => {
-    const newSection = { 
-      id: Date.now(), 
-      cod_productor: "", 
-      producto: '', 
-      totalCajas: '',
-      ...(type === 'rechazo' && { codigoPallet: '', motivo_rechazo: '' })
-    };
-    
+    const newRow = { id: Date.now(), cod_productor: '', producto: '', totalCajas: '', pallet: '', motivo_rechazo: '' };
     if (type === 'producto') {
-      setSectionsProduct(prev => [...prev, newSection]);
-    } else {
-      setSections(prev => [...prev, newSection]);
+      setSectionsProduct(prev => [...prev, newRow]);
+    } else if (type === 'rechazo') {
+      setSectionsRechazo(prev => [...prev, newRow]);
     }
   };
 
-  const removeSection = (id, type) => {
+  const updateDynamicRow = (id, field, value, type) => {
     if (type === 'producto') {
-      setSectionsProduct(prev => prev.filter(section => section.id !== id));
+      setSectionsProduct(prev => prev.map(row => row.id === id ? { ...row, [field]: value } : row));
     } else {
-      setSections(prev => prev.filter(section => section.id !== id));
+      setSectionsRechazo(prev => prev.map(row => row.id === id ? { ...row, [field]: value } : row));
     }
-  };
-
-  const updateSection = (id, field, value, type) => {
-    const updateFn = type === 'producto' ? setSectionsProduct : setSections;
-    
-    updateFn(prev => prev.map(sec =>
-      sec.id === id ? { ...sec, [field]: value } : sec
-    ));
-  };
-
-  // Validaciones y procesamiento
-  const validarSeriales = async () => {
-    const serialesList = [];
-    
-    for (const item of SERIALES_A_VERIFICAR) {
-      if (formData[item]) {
-        const serial = await encontrarUnSerial({
-          bag_pack: formData[item],
-          available: [true],
-        });
-        
-        if (!serial[0]) {
-          const continuar = window.confirm(`El ${item} no existe. ¿Desea continuar?`);
-          if (!continuar) return null;
-        }
-        serialesList.push(formData[item]);
-      }
-    }
-    
-    return serialesList;
-  };
-
-  const validarDatos = () => {
-    if (!semOptions.includes(formData.semana)) {
-      window.alert(`La semana "${formData.semana}" no existe`);
-      return false;
-    }
-    
-    const user = JSON.parse(localStorage.getItem("usuario") || "{}");
-    if (!user.id) {
-      window.alert("Usuario no encontrado");
-      return false;
-    }
-    
-    const id_embarque = embarquesObjet.find(item => item.bl === formData.booking)?.id;
-    if (!id_embarque) {
-      window.alert("El booking no existe");
-      return false;
-    }
-    
-    const itemListado = listado.filter(item => item?.Contenedor?.contenedor === formData.contenedor);
-    const contenedorId = itemListado[0]?.id_contenedor;
-    if (!contenedorId) {
-      window.alert("El contenedor no existe");
-      return false;
-    }
-    
-    return { id_embarque, contenedorId, itemListado, user };
-  };
-
-  const procesarProductos = async (itemListado, id_embarque, contenedorId) => {
-    const listadoPredeterminado = itemListado.filter(item => item.combo.nombre === "Predeterminado");
-    
-    await Promise.all(sectionsProduct.map(async (element, index) => {
-      const { cod_productor: id_lugar_de_llenado, producto: id_producto, totalCajas: cajas_unidades } = element;
-      
-      if (!id_lugar_de_llenado) {
-        window.alert(`El almacén "${id_lugar_de_llenado}" no existe.`);
-        return;
-      }
-      
-      const payload = {
-        fecha: formData.fecha,
-        id_embarque,
-        id_contenedor: contenedorId,
-        id_lugar_de_llenado,
-        id_producto,
-        cajas_unidades,
-        habilitado: true,
-      };
-      
-      if (listadoPredeterminado[index]) {
-        await actualizarListado(listadoPredeterminado[index].id, payload);
-      } else {
-        const duplicado = await duplicarListado(itemListado[0].id);
-        await actualizarListado(duplicado.id, payload);
-      }
-    }));
-  };
-
-  const procesarRechazos = async (contenedorId, userId) => {
-    await Promise.all(sections.map(async item => {
-      const rechazo = {
-        id_producto: item.producto,
-        id_motivo_de_rechazo: item.motivo_rechazo,
-        cantidad: item.totalCajas,
-        serial_palet: item.codigoPallet,
-        cod_productor: item.cod_productor,
-        id_contenedor: contenedorId,
-        id_usuario: userId,
-        habilitado: false,
-      };
-      await agregarRechazo(rechazo);
-    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+    const getVal = (id) => inputsRef.current[id]?.value || filtros[id];
+
     try {
-      // Validar que todos los campos requeridos estén llenos
-      const camposRequeridos = ['semana', 'consignee', 'buque', 'destino', 'booking', 'contenedor'];
-      const camposFaltantes = camposRequeridos.filter(campo => !formData[campo]);
-      
-      if (camposFaltantes.length > 0) {
-        window.alert(`Por favor complete los siguientes campos: ${camposFaltantes.join(', ')}`);
-        return;
+      const serialesList = [];
+      for (const key of SERIALES_A_VERIFICAR) {
+        const val = inputsRef.current[key]?.value;
+        if (val) {
+          const res = await encontrarUnSerial({ bag_pack: val, available: [true] });
+          if (!res[0] && !window.confirm(`El ${key} "${val}" no existe. ¿Continuar?`)) {
+            setLoading(false); return;
+          }
+          serialesList.push(val);
+        }
       }
-      
-      // Validar seriales
-      const serialesList = await validarSeriales();
-      if (serialesList === null) return;
-      
-      // Validar datos básicos
-      const datosValidados = validarDatos();
-      if (!datosValidados) return;
-      const { id_embarque, contenedorId, itemListado, user } = datosValidados;
-      
-      // Obtener motivo de uso
-      const motivos = await listarMotivoDeUso();
-      const motivo = motivos.find(item => item.motivo_de_uso === MOTIVO_LLENADO_CONTENEDOR);
-      if (!motivo) {
-        window.alert(`El motivo "${MOTIVO_LLENADO_CONTENEDOR}" no existe`);
-        return;
-      }
-      
-      // Procesar en paralelo
+
+      const user = JSON.parse(localStorage.getItem("usuario") || "{}");
+      const id_embarque = embarquesObjet.find(i => i.bl === filtros.booking)?.id;
+      const itemContenedor = listado.find(i => i.Contenedor?.contenedor === getVal('contenedor'));
+
+      if (!id_embarque || !itemContenedor) throw new Error("Booking o Contenedor no válido");
+      console.log(itemContenedor.id)
+
       await Promise.all([
-        procesarProductos(itemListado, id_embarque, contenedorId),
-        procesarRechazos(contenedorId, user.id),
+        ...sectionsProduct.map((sec, index) => {
+          if (index == 0) {
+            actualizarListado(itemContenedor.id, {
+              fecha: inputsRef.current.fecha.value,
+              id_embarque,
+              id_contenedor: itemContenedor.id_contenedor,
+              id_lugar_de_llenado: sec.cod_productor,
+              id_producto: sec.producto,
+              cajas_unidades: sec.totalCajas,
+              habilitado: true
+            })
+          } else {
+            duplicarListado(itemContenedor.id).then(res => {
+              actualizarListado(res.id, {
+                fecha: inputsRef.current.fecha.value,
+                id_embarque,
+                id_contenedor: itemContenedor.id_contenedor,
+                id_lugar_de_llenado: sec.cod_productor,
+                id_producto: sec.producto,
+                cajas_unidades: sec.totalCajas,
+                habilitado: true
+              })
+            });
+          }
+
+        }),
+        ...sectionsRechazo.map(sec => agregarRechazo({
+          id_producto: sec.producto,
+          id_motivo_de_rechazo: sec.motivo_rechazo,
+          cantidad: sec.totalCajas,
+          serial_palet: sec.pallet,
+          cod_productor: sec.cod_productor,
+          id_contenedor: itemContenedor.id_contenedor,
+          id_usuario: user.id,
+          fecha_rechazo: inputsRef.current.fecha.value
+        }))
       ]);
-      
-      // Registrar seriales si existen
+
       if (serialesList.length > 0) {
-        await usarSeriales(formData.semana, formData.fecha, serialesList, contenedorId, user.id, motivo);
+        const motivos = await listarMotivoDeUso();
+        const motivo = motivos.find(m => m.motivo_de_uso === MOTIVO_LLENADO_CONTENEDOR);
+        await usarSeriales(filtros.semana, inputsRef.current.fecha.value, serialesList, itemContenedor.id_contenedor, user.id, motivo);
       }
-      
-      window.alert("Formulario enviado exitosamente");
-      
-    } catch (error) {
-      console.error("Error en el manejo del formulario:", error);
-      window.alert("Ocurrió un error al procesar la solicitud.");
+
+      window.alert("¡Éxito!");
+      window.location.reload();
+
+    } catch (err) {
+      window.alert(err.message);
     } finally {
-      // Resetear formulario
-      setSectionsProduct([]);
-      setSections([]);
-      setFormData({
-        fecha: today,
-        semana: '',
-        consignee: "",
-        buque: '',
-        destino: '',
-        booking: '',
-        contenedor: '',
-        kit: '',
-        termografo: ''
-      });
-      setEmbarquesObject([]);
-      setContenedores([]);
-      setListado([]);
       setLoading(false);
     }
   };
 
-  // Componentes reutilizables
-  const SeccionProducto = ({ section, type = 'producto' }) => (
-    <>
-      {/* Código Productor */}
-      <div className="col-md-2 mb-3">
-        <div className="input-group">
-          <span className="input-group-text">Cod:</span>
-          <select
-            className="form-control"
-            value={section.cod_productor}
-            required
-            onChange={(e) => updateSection(section.id, 'cod_productor', e.target.value, type)}
-          >
-            <option value=""></option>
-            {(type === 'producto' ? almacenByUser : almacenes).map((item, key) => (
-              <option key={key} value={type === 'producto' ? item.id : item.consecutivo}>
-                {item.consecutivo}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Campo adicional para rechazos */}
-      {type === 'rechazo' && (
-        <>
-          <div className="col-md-2 mb-3">
-            <div className="input-group">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Palet"
-                value={section.codigoPallet}
-                required
-                onChange={(e) => updateSection(section.id, 'codigoPallet', e.target.value, type)}
-              />
-            </div>
-          </div>
-          <div className="col-md-2 mb-3">
-            <div className="input-group">
-              <select
-                className="form-control"
-                value={section.motivo_rechazo}
-                required
-                onChange={(e) => updateSection(section.id, 'motivo_rechazo', e.target.value, type)}
-              >
-                <option value="">Seleccione el motivo</option>
-                {motivosRechazo.map((item, key) => (
-                  <option key={key} value={item.id}>
-                    {item.motivo_rechazo}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Producto */}
-      <div className={type === 'producto' ? "col-md-6 mb-3" : "col-md-3 mb-3"}>
-        <div className="input-group">
-          <span className="input-group-text">Producto:</span>
-          <select
-            className="form-control"
-            value={section.producto}
-            required
-            onChange={(e) => updateSection(section.id, 'producto', e.target.value, type)}
-          >
-            <option value=""></option>
-            {productos.map((item, key) => (
-              <option key={key} value={item.id}>
-                {item.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Cajas */}
-      <div className="col-md-2 mb-3">
-        <div className="input-group">
-          <span className="input-group-text">Cajas:</span>
-          <input
-            type="number"
-            className="form-control"
-            placeholder="00"
-            value={section.totalCajas}
-            required
-            onChange={(e) => updateSection(section.id, 'totalCajas', e.target.value, type)}
-          />
-        </div>
-      </div>
-
-      {/* Botón eliminar */}
-      <div className="col-md-1 mb-3">
-        <button
-          type="button"
-          className="btn btn-danger w-100"
-          onClick={() => removeSection(section.id, type)}
-        >
-          <FaMinus />
-        </button>
-      </div>
-    </>
-  );
-
   return (
     <>
       <Loader loading={loading} />
-      <form onSubmit={handleSubmit} className="container">
-        <div className="mb-4 mt-3 text-center">
-          <h2>Llenado de Contenedor</h2>
-        </div>
-        
-        {/* Campos principales */}
+      <form onSubmit={handleSubmit} className="container py-4">
+        <h2 className="text-center mb-4">Llenado de Contenedor</h2>
+
         <div className="row">
-          {fields.map(({ label, id, type, className, required, datalist }) => (
-            <div className={className} key={id}>
+          <div className="col-md-6 mb-3">
+            <div className="input-group">
+              <span className="input-group-text">Fecha</span>
+              <input type="date" className="form-control" ref={el => inputsRef.current.fecha = el} defaultValue={today} />
+            </div>
+          </div>
+
+          {[
+            { label: "Semana", id: "semana", list: options.semanas },
+            { label: "Consignee", id: "consignee", list: datalists.consignees },
+            { label: "Buque", id: "buque", list: datalists.buques },
+            { label: "Destino", id: "destino", list: datalists.destinos },
+            { label: "Booking", id: "booking", list: datalists.bookings },
+            { label: "Contenedor", id: "contenedor", list: contenedores },
+          ].map(f => (
+            <div className="col-md-6 mb-3" key={f.id}>
               <div className="input-group">
-                <span className="input-group-text">{label}</span>
+                <span className="input-group-text">{f.label}</span>
                 <input
-                  type={type}
-                  id={id}
-                  value={formData[id]}
-                  onChange={handleChange}
+                  type="text"
+                  id={f.id}
                   className="form-control"
-                  required={required || false}
-                  list={datalist ? `list-${id}` : undefined}
-                  disabled={id === 'contenedor' && !formData.booking} // Deshabilitar contenedor si no hay booking
+                  list={`l-${f.id}`}
+                  ref={el => inputsRef.current[f.id] = el}
+                  onChange={handleHierarchyChange}
+                  required
                 />
-                {datalist && (
-                  <datalist id={`list-${id}`}>
-                    {datalist.map((option, index) => (
-                      <option key={index} value={option} />
-                    ))}
-                  </datalist>
-                )}
+                <datalist id={`l-${f.id}`}>
+                  {f.list.map((o, i) => <option key={i} value={o} />)}
+                </datalist>
               </div>
             </div>
           ))}
 
-          <div></div>
-
-          {/* Botones para agregar secciones */}
           <div className="col-md-6 mb-3">
-            <button
-              type="button"
-              className="btn btn-primary w-100"
-              onClick={() => addSection('producto')}
-              disabled={!formData.contenedor} // Solo habilitar cuando hay contenedor
-            >
-              <FaPlus /> Asignar Cajas
+            <div className="input-group"><span className="input-group-text">Kit</span>
+              <input type="text" className="form-control" ref={el => inputsRef.current.kit = el} /></div>
+          </div>
+          <div className="col-md-6 mb-3">
+            <div className="input-group"><span className="input-group-text">Termógrafo</span>
+              <input type="text" className="form-control" ref={el => inputsRef.current.termografo = el} /></div>
+          </div>
+        </div>
+
+        <div className="row my-3">
+          <div className="col-md-6">
+            <button type="button" className="btn btn-primary w-100" onClick={() => addSection('producto')}>
+              <FaPlus /> Cajas Recibidas
             </button>
           </div>
-          
-          <div className="col-md-6 mb-3">
-            <button
-              type="button"
-              className="btn btn-warning w-100"
-              onClick={() => addSection('rechazo')}
-              disabled={!formData.contenedor} // Solo habilitar cuando hay contenedor
-            >
+          <div className="col-md-6">
+            <button type="button" className="btn btn-warning w-100" onClick={() => addSection('rechazo')}>
               <FaPlus /> Agregar Rechazo
             </button>
           </div>
-
-          {/* Sección de cajas recibidas */}
-          {sectionsProduct.length > 0 && (
-            <>
-              <div className="line"></div>
-              <h5 className="mb-3">Cajas Recibidas</h5>
-              {sectionsProduct.map(section => (
-                <SeccionProducto key={section.id} section={section} type="producto" />
-              ))}
-            </>
-          )}
-
-          {/* Sección de rechazos */}
-          {sections.length > 0 && (
-            <>
-              <div className="line"></div>
-              <h5 className="mb-3">Cajas Rechazadas</h5>
-              {sections.map(section => (
-                <SeccionProducto key={section.id} section={section} type="rechazo" />
-              ))}
-            </>
-          )}
-
-          {(sections.length > 0 || sectionsProduct.length > 0) && <div className="line"></div>}
         </div>
 
-        <button 
-          type="submit" 
-          className="btn btn-success w-100"
-          disabled={!formData.contenedor || loading}
-        >
-          {loading ? 'Procesando...' : 'Enviar'}
+        {/* --- RENDER SECCIÓN PRODUCTOS --- */}
+        {sectionsProduct.length > 0 && <h5 className="mt-4">Cajas Recibidas</h5>}
+        {sectionsProduct.map(s => (
+          <div key={s.id} className="row g-2 mb-2 align-items-center">
+            <div className="col-md-3">
+              <select className="form-select" required onChange={e => updateDynamicRow(s.id, 'cod_productor', e.target.value, 'producto')}>
+                <option value="">Productor</option>
+                {options.almacenByUser.map(a => <option key={a.id} value={a.id}>{a.consecutivo}</option>)}
+              </select>
+            </div>
+            <div className="col-md-5">
+              <select className="form-select" required onChange={e => updateDynamicRow(s.id, 'producto', e.target.value, 'producto')}>
+                <option value="">Producto</option>
+                {options.productos.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+              </select>
+            </div>
+            <div className="col-md-3">
+              <input type="number" className="form-control" placeholder="Cant" required onChange={e => updateDynamicRow(s.id, 'totalCajas', e.target.value, 'producto')} />
+            </div>
+            <div className="col-md-1">
+              <button type="button" className="btn btn-danger w-100" onClick={() => setSectionsProduct(prev => prev.filter(x => x.id !== s.id))}><FaMinus /></button>
+            </div>
+          </div>
+        ))}
+
+        {/* --- RENDER SECCIÓN RECHAZOS (CORREGIDO) --- */}
+        {sectionsRechazo.length > 0 && <h5 className="mt-4 text-warning">Cajas Rechazadas</h5>}
+        {sectionsRechazo.map(s => (
+          <div key={s.id} className="row g-2 mb-2 align-items-center border-start border-warning border-4 ps-2">
+            <div className="col-md-2">
+              <select className="form-select" required onChange={e => updateDynamicRow(s.id, 'cod_productor', e.target.value, 'rechazo')}>
+                <option value="">Cod</option>
+                {options.almacenes.map(a => <option key={a.id} value={a.consecutivo}>{a.consecutivo}</option>)}
+              </select>
+            </div>
+            <div className="col-md-2">
+              <input type="text" className="form-control" placeholder="Pallet" onChange={e => updateDynamicRow(s.id, 'pallet', e.target.value, 'rechazo')} />
+            </div>
+            <div className="col-md-3">
+              <select className="form-select" required onChange={e => updateDynamicRow(s.id, 'producto', e.target.value, 'rechazo')}>
+                <option value="">Producto</option>
+                {options.productos.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+              </select>
+            </div>
+            <div className="col-md-2">
+              <select className="form-select" required onChange={e => updateDynamicRow(s.id, 'motivo_rechazo', e.target.value, 'rechazo')}>
+                <option value="">Motivo</option>
+                {options.motivosRechazo.map(m => <option key={m.id} value={m.id}>{m.motivo_rechazo}</option>)}
+              </select>
+            </div>
+            <div className="col-md-2">
+              <input type="number" className="form-control" placeholder="Cant" required onChange={e => updateDynamicRow(s.id, 'totalCajas', e.target.value, 'rechazo')} />
+            </div>
+            <div className="col-md-1">
+              <button type="button" className="btn btn-danger w-100" onClick={() => setSectionsRechazo(prev => prev.filter(x => x.id !== s.id))}><FaMinus /></button>
+            </div>
+          </div>
+        ))}
+
+        <button type="submit" className="btn btn-success btn-lg w-100 mt-5" disabled={loading}>
+          {loading ? 'Guardando...' : 'Enviar Formulario'}
         </button>
       </form>
     </>
