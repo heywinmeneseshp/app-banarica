@@ -41,12 +41,12 @@ const Rechazos = () => {
                 producto: formData.get("producto") || "",
             };
 
-         
 
-            let foundWeek = body.semana ? semana.filter(item => item.consecutivo ==  body.semana ) : "";
+
+            let foundWeek = body.semana ? semana.filter(item => item.consecutivo == body.semana) : "";
             console.log(foundWeek);
             body.semana = foundWeek[0]?.id;
-                console.log(body.semana);
+            console.log(body.semana);
             const [res, almacenes] = await Promise.all([
                 paginarRechazos(pagination, limit, body),
                 listarAlmacenes()
@@ -55,6 +55,7 @@ const Rechazos = () => {
             setAlmacenes(almacenes);
             setLimit(100);
             setTableData(res.data);
+            console.log(res.data);
             setTotal(res.total);
         } catch (error) {
             console.error("❌ Error al listar datos:", error);
@@ -283,6 +284,8 @@ const Rechazos = () => {
                 <thead>
                     <tr>
                         <th>Semana</th>
+                        <th className='table-success'>Fecha Llenado</th>
+                        <th  className="table-danger">Fecha Rechazo</th>
                         <th>Productor</th>
                         <th>Contenedor</th>
                         <th>Producto</th>
@@ -300,6 +303,8 @@ const Rechazos = () => {
                                     <td className="text-custom-small text-center">
                                         {valoresEditados.semana || item?.Contenedor?.Listados[0]?.Embarque?.semana?.consecutivo}
                                     </td>
+                                    <td className="text-custom-small text-center">{(item?.Contenedor?.Listados[0]?.fecha || "").split("T")[0]}</td>
+                                    <td className="text-custom-small text-center">{(item?.fecha_rechazo)?.split("T")[0]}</td>
                                     <td>
                                         <input
                                             list={`almacenes-${item.combo.id}`}
@@ -314,8 +319,6 @@ const Rechazos = () => {
                                             ))}
                                         </datalist>
                                     </td>
-
-
                                     <td className="text-custom-small text-center">{valoresEditados.contenedor || item?.Contenedor?.contenedor}</td>
                                     <td>
                                         <input
@@ -357,6 +360,8 @@ const Rechazos = () => {
                             ) : (
                                 <>
                                     <td className="text-custom-small text-center">{item?.Contenedor?.Listados[0]?.Embarque?.semana?.consecutivo}</td>
+                                    <td className="text-custom-small text-center">{(item?.Contenedor?.Listados[0]?.fecha || "").split("T")[0]}</td>
+                                    <td className="text-custom-small text-center">{(item?.fecha_rechazo)?.split("T")[0]}</td>
                                     <td className="text-custom-small text-center">{item?.almacene?.nombre}</td>
                                     <td className="text-custom-small text-center">{item?.Contenedor?.contenedor}</td>
                                     <td className="text-custom-small text-center">{item?.combo?.nombre}</td>
