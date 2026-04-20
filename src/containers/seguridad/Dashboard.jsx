@@ -51,11 +51,32 @@ export default function Dashboard() {
                     encontrarModulo("Relación_seguridad"),
                     encontrarModulo(username),
                 ]);
-                const botonesList = JSON.parse(configBotonsRes[0].detalles).botones;
-                const detallesModulo = JSON.parse(moduloRes?.[0]?.detalles);
+                
+                // Validar respuesta de botones con fallback
+                let botonesList = [];
+                if (configBotonsRes && Array.isArray(configBotonsRes) && configBotonsRes.length > 0) {
+                    if (configBotonsRes[0].detalles) {
+                        try {
+                            botonesList = JSON.parse(configBotonsRes[0].detalles).botones || [];
+                        } catch (parseError) {
+                            console.warn('Error al parsear detalles de botones:', parseError);
+                            botonesList = [];
+                        }
+                    } else {
+                        console.warn('Detalles de botones vacío para el usuario');
+                        botonesList = [];
+                    }
+                } else {
+                    console.warn('No se encontró configuración de botones');
+                    botonesList = [];
+                }
+                
+                // Validar respuesta de módulo
+                const detallesModulo = moduloRes?.[0]?.detalles ? JSON.parse(moduloRes[0].detalles) : {};
+                
                 setBotones(botonesList);
                 setBloqueo(detallesModulo);
-                const consecutivos = detallesModulo.tags;
+                const consecutivos = detallesModulo.tags || [];
                 if (consecutivos.length === 0) return setConfig([]);
 
                 const producto = await filtrarProductos({ producto: { consecutivo: consecutivos, isBlock: false } });
@@ -63,6 +84,8 @@ export default function Dashboard() {
                 setConfig(resultado);
             } catch (error) {
                 console.error("Error al obtener configuración:", error);
+                setBotones([]);
+                setBloqueo({});
             }
         };
 

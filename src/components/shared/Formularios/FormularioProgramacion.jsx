@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import mas from "@public/images/mas.png";
 import menos from "@public/images/menos.png";
@@ -16,7 +16,9 @@ import { listarClientes } from "@services/api/clientes";
 import { agregarProgramaciones } from "@services/api/programaciones";
 import { agregarRutas, buscarRutaPost } from "@services/api/rutas";
 import { agregarProductosViaje } from "@services/api/productos_viaje";
-import { encontrarModulo } from "@services/api/configuracion";
+import { agregarConsumoRutaVehiculo } from "@services/api/consumoRutaVehiculo";
+import { listarSemanas } from "@services/api/semanas";
+import { listarEmbarques } from "@services/api/embarques";
 
 
 
@@ -71,6 +73,9 @@ function Interior({ rutaBool, change, setChange,
 
   const handleSubmit = async () => {
     const formData = new FormData(formRef.current);
+    if (!body?.fecha || !body?.semana || !body?.vehiculo || !body?.conductor) {
+      return alert("Fecha, semana, placa y conductor son datos obligatorios.");
+    }
     if (body.semana == 0) return alert("La casilla semama no puede ser 0");
     if (formData.get("origen") == formData.get("destino")) return alert("El origen y el destino no puede ser el mismo.");
     const buscarRuta = { ubicacion1: formData.get("origen"), ubicacion2: formData.get("destino") };
@@ -78,7 +83,30 @@ function Interior({ rutaBool, change, setChange,
     try {
       existeRuta = await buscarRutaPost(buscarRuta);
     } catch (e) {
+      const origenSeleccionado = listaUbicaciones.find((item) => String(item?.id) === String(buscarRuta.ubicacion1));
+      const destinoSeleccionado = listaUbicaciones.find((item) => String(item?.id) === String(buscarRuta.ubicacion2));
+      const confirmarCrearRuta = window.confirm(
+        `No existe una ruta entre "${origenSeleccionado?.ubicacion || 'origen'}" y "${destinoSeleccionado?.ubicacion || 'destino'}". Desea crearla ahora y asignar el consumo del vehiculo?`
+      );
+
+      if (!confirmarCrearRuta) {
+        return;
+      }
+
+      const consumoIngresado = window.prompt("Ingrese el consumo del vehículo para esta nueva ruta:");
+      const consumoPorKm = Number(consumoIngresado);
+
+      if (!consumoIngresado || Number.isNaN(consumoPorKm) || consumoPorKm <= 0) {
+        return alert("Debe ingresar un consumo por km valido para crear la nueva ruta.");
+      }
+
       existeRuta = await agregarRutas(buscarRuta);
+      await agregarConsumoRutaVehiculo({
+        vehiculo_id: body.vehiculo,
+        ruta_id: existeRuta.data.id,
+        consumo_por_km: consumoPorKm,
+        activo: true,
+      });
     }
     let contenedor = null;
     if (isCheckedContenedor) {
@@ -94,14 +122,28 @@ function Interior({ rutaBool, change, setChange,
       conductor_id: body.conductor,
       vehiculo_id: body.vehiculo,
       contenedor: contenedor,
+      bl: formData.get("bl") || body.bl || null,
       semana: body.semana,
       fecha: body.fecha,
       detalles: formData.get("detalles")
     };
 
-    if (body.semana == null) return alert("Por favor ingrese la fecha, la semana, la placa y el conductor del vehiculo.");
+    if (!body?.fecha || !body?.semana || !body?.vehiculo || !body?.conductor) {
+      return alert("Fecha, semana, placa y conductor son datos obligatorios.");
+    }
 
-    const { data } = await agregarProgramaciones(objetoProgramacion);
+    let data;
+    try {
+      ({ data } = await agregarProgramaciones(objetoProgramacion));
+    } catch (error) {
+      setAlert({
+        active: true,
+        mensaje: error.message || "No fue posible guardar la programacion.",
+        color: "danger",
+        autoClose: true
+      });
+      return;
+    }
     Array.from({ length: numero }).map((_, index) => {
       const objeto = {
         programacion_id: data.id,
@@ -144,6 +186,7 @@ function Interior({ rutaBool, change, setChange,
             required
             disabled={guardado}
           >
+            <option value=""></option>
             {listaUbicaciones.map((item, index) => {
               return (
                 <option key={index} value={item?.id}>{item?.ubicacion}</option>
@@ -161,6 +204,7 @@ function Interior({ rutaBool, change, setChange,
             required
             disabled={guardado}
           >
+            <option value=""></option>
             {listaUbicaciones.map((item, index) => {
               return (
                 <option key={index} value={item?.id}>{item?.ubicacion}</option>
@@ -179,6 +223,7 @@ function Interior({ rutaBool, change, setChange,
             onChange={() => isContainter()}
             disabled={guardado}
           >
+            <option value=""></option>
             <option value="Local">Local</option>
             <option value="Puerto">Puerto</option>
             <option value="Contenedor">Contenedor</option>
@@ -201,6 +246,19 @@ function Interior({ rutaBool, change, setChange,
             />
           </div>
         }
+
+        <div className={`mb-2 col-md-${isCheckedContenedor ? 3 : 2}`}>
+          <label htmlFor="bl" className="form-label mb-1">BL</label>
+          <input
+            type="text"
+            id="bl"
+            name="bl"
+            className="form-control form-control-sm"
+            value={body.bl || ""}
+            readOnly
+            disabled={guardado}
+          />
+        </div>
 
 
         <div className="mt-3 mb-2 col-md-3 d-flex justify-content-center align-items-center">
@@ -244,6 +302,7 @@ function Interior({ rutaBool, change, setChange,
               required
               disabled={guardado}
             >
+              <option value=""></option>
               {listaClientes.map((item, index) => {
                 return (
                   <option key={index} value={item?.id}>{item?.razon_social}</option>
@@ -321,28 +380,28 @@ function Interior({ rutaBool, change, setChange,
 export default function FormulariosProgramacion({ element, setOpen, setAlert }) {
 
   const formRef = useRef();
-  const [date, setDate] = useState("");
+  const [date] = useState("");
   const [listaConductores, setListaConductores] = useState([]);
   const [listaVehiculos, setListaVehiculos] = useState([]);
+  const [listaSemanas, setListaSemanas] = useState([]);
+  const [listaEmbarques, setListaEmbarques] = useState([]);
   const [ruta, setRuta] = useState([{ "1": false }]);
   const [change, setChange] = useState(false);
   const [body, setBody] = useState({});
   const [dataList, setDataList] = useState([]);
   const [onlyRead, setOnlyRead] = useState(false);
-  const [semana, setSemana] = useState();
+  const [semana] = useState("");
+  const [semanaSeleccionada, setSemanaSeleccionada] = useState("");
+  const [navieraSeleccionada, setNavieraSeleccionada] = useState("");
+  const [destinoSeleccionado, setDestinoSeleccionado] = useState("");
+  const [buqueSeleccionado, setBuqueSeleccionado] = useState("");
+  const [bookingSeleccionado, setBookingSeleccionado] = useState("");
 
 
   useEffect(() => {
-    const hoy = new Date();
-    const año = hoy.getFullYear();
-    const mes = hoy.getMonth() + 1; // Se suma 1 porque los meses comienzan desde 0
-    const dia = hoy.getDate();
-    const fechaHoy = `${año}-${mes < 10 ? '0' + mes : mes}-${dia < 10 ? '0' + dia : dia}`;
-    setDate(fechaHoy);
     listar();
     const res = ruta.find((item, key) => item[key + 1] == true);
     res ? setOnlyRead(true) : setOnlyRead(false);
-    encontrarModulo("Semana").then(res => setSemana(res[0].semana_actual));
   }, [change, body, ruta]);
 
 
@@ -371,19 +430,154 @@ export default function FormulariosProgramacion({ element, setOpen, setAlert }) 
   const listar = async () => {
     let conductores = await listarConductores();
     let vehiculos = await listarVehiculo();
+    let semanas = await listarSemanas();
+    let embarques = await listarEmbarques();
     setListaConductores(conductores);
     setListaVehiculos(vehiculos);
+    setListaSemanas(semanas || []);
+    setListaEmbarques(embarques || []);
   };
 
-  const guardarBody = () => {
+  const embarquesSemana = useMemo(() => {
+    if (!semanaSeleccionada) {
+      return [];
+    }
+
+    return listaEmbarques.filter((item) => String(item?.id_semana || '') === String(semanaSeleccionada));
+  }, [listaEmbarques, semanaSeleccionada]);
+
+  const navierasDisponibles = useMemo(() => {
+    const map = new Map();
+    embarquesSemana.forEach((item) => {
+      const id = String(item?.id_naviera || '');
+      const nombre = item?.Naviera?.navieras || '';
+      if (id && nombre && !map.has(id)) {
+        map.set(id, { id, nombre });
+      }
+    });
+    return Array.from(map.values());
+  }, [embarquesSemana]);
+
+  const embarquesNaviera = useMemo(() => {
+    if (!navieraSeleccionada) {
+      return [];
+    }
+
+    return embarquesSemana.filter((item) => String(item?.id_naviera || '') === String(navieraSeleccionada));
+  }, [embarquesSemana, navieraSeleccionada]);
+
+  const destinosDisponibles = useMemo(() => {
+    const map = new Map();
+    embarquesNaviera.forEach((item) => {
+      const id = String(item?.id_destino || '');
+      const nombre = item?.Destino?.destino || item?.Destino?.cod || '';
+      if (id && nombre && !map.has(id)) {
+        map.set(id, { id, nombre });
+      }
+    });
+    return Array.from(map.values());
+  }, [embarquesNaviera]);
+
+  const embarquesDestino = useMemo(() => {
+    if (!destinoSeleccionado) {
+      return [];
+    }
+
+    return embarquesNaviera.filter((item) => String(item?.id_destino || '') === String(destinoSeleccionado));
+  }, [embarquesNaviera, destinoSeleccionado]);
+
+  const buquesDisponibles = useMemo(() => {
+    const map = new Map();
+    embarquesDestino.forEach((item) => {
+      const id = String(item?.id_buque || '');
+      const nombre = item?.Buque?.buque || '';
+      if (id && nombre && !map.has(id)) {
+        map.set(id, { id, nombre });
+      }
+    });
+    return Array.from(map.values());
+  }, [embarquesDestino]);
+
+  const embarquesBuque = useMemo(() => {
+    if (!buqueSeleccionado) {
+      return [];
+    }
+
+    return embarquesDestino.filter((item) => String(item?.id_buque || '') === String(buqueSeleccionado));
+  }, [embarquesDestino, buqueSeleccionado]);
+
+  const bookingsDisponibles = useMemo(() => {
+    return embarquesBuque
+      .filter((item) => item?.booking)
+      .map((item) => ({
+        id: String(item.id),
+        booking: item.booking,
+        bl: item.bl || "",
+      }));
+  }, [embarquesBuque]);
+
+  const handleSemanaChange = (event) => {
+    const value = event.target.value;
+    const semanaActual = listaSemanas.find((item) => String(item?.id || '') === String(value));
+    setSemanaSeleccionada(value);
+    setNavieraSeleccionada("");
+    setDestinoSeleccionado("");
+    setBuqueSeleccionado("");
+    setBookingSeleccionado("");
+    guardarBody({ semana: semanaActual?.consecutivo || "", id_semana: value, bl: "" });
+  };
+
+  const handleNavieraChange = (event) => {
+    const value = event.target.value;
+    setNavieraSeleccionada(value);
+    setDestinoSeleccionado("");
+    setBuqueSeleccionado("");
+    setBookingSeleccionado("");
+    guardarBody({ bl: "" });
+  };
+
+  const handleDestinoChange = (event) => {
+    const value = event.target.value;
+    setDestinoSeleccionado(value);
+    setBuqueSeleccionado("");
+    setBookingSeleccionado("");
+    guardarBody({ bl: "" });
+  };
+
+  const handleBuqueChange = (event) => {
+    const value = event.target.value;
+    setBuqueSeleccionado(value);
+    setBookingSeleccionado("");
+    guardarBody({ bl: "" });
+  };
+
+  const handleBookingChange = (event) => {
+    const value = event.target.value;
+    setBookingSeleccionado(value);
+    const embarque = bookingsDisponibles.find((item) => item.id === value);
+    guardarBody({
+      booking: embarque?.booking || "",
+      bl: embarque?.bl || "",
+    });
+  };
+
+  const guardarBody = (overrides = {}) => {
     const formData = new FormData(formRef.current);
-    const body = {
-      semana: formData.get("semana"),
+    const semanaActual = listaSemanas.find((item) => String(item?.id || '') === String(overrides.id_semana ?? semanaSeleccionada));
+    const nextBody = {
+      semana: overrides.semana ?? semanaActual?.consecutivo ?? "",
       vehiculo: formData.get("vehiculo"),
       fecha: formData.get("fecha"),
-      conductor: formData.get("conductor")
+      conductor: formData.get("conductor"),
+      id_semana: overrides.id_semana ?? semanaSeleccionada,
+      id_naviera: navieraSeleccionada,
+      id_destino: destinoSeleccionado,
+      id_buque: buqueSeleccionado,
+      id_embarque: overrides.id_embarque ?? bookingSeleccionado,
+      booking: overrides.booking ?? bookingSeleccionado,
+      bl: overrides.bl ?? "",
     };
-    setBody(body);
+    setBody(nextBody);
   };
 
   const agregarRuta = () => {
@@ -417,6 +611,79 @@ export default function FormulariosProgramacion({ element, setOpen, setAlert }) 
                   <form ref={formRef} className="container">
                     <span className="col-md-12 row">
                       <div className="mb-2 col-md-3">
+                        <label htmlFor="semana" className="form-label mb-1">Semana</label>
+                        <select
+                          id="semana"
+                          name="semana"
+                          className="form-control form-control-sm"
+                          value={semanaSeleccionada}
+                          required
+                          disabled={onlyRead}
+                          onChange={handleSemanaChange}
+                        >
+                          <option value=""></option>
+                          {listaSemanas.map((item, index) => {
+                            return (
+                              <option key={index} value={item?.id}>{item?.consecutivo}</option>
+                            );
+                          })}
+                        </select>
+                      </div>
+
+                      <div className="mb-2 col-md-3">
+                        <label htmlFor="naviera" className="form-label mb-1">Naviera</label>
+                        <select
+                          id="naviera"
+                          name="naviera"
+                          className="form-control form-control-sm"
+                          value={navieraSeleccionada}
+                          disabled={onlyRead || !semanaSeleccionada}
+                          onChange={handleNavieraChange}
+                        >
+                          <option value=""></option>
+                          {navierasDisponibles.map((item) => (
+                            <option key={item.id} value={item.id}>{item.nombre}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="mb-2 col-md-3">
+                        <label htmlFor="destino_embarque" className="form-label mb-1">Destino</label>
+                        <select
+                          id="destino_embarque"
+                          name="destino_embarque"
+                          className="form-control form-control-sm"
+                          value={destinoSeleccionado}
+                          disabled={onlyRead || !navieraSeleccionada}
+                          onChange={handleDestinoChange}
+                        >
+                          <option value=""></option>
+                          {destinosDisponibles.map((item) => (
+                            <option key={item.id} value={item.id}>{item.nombre}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="mb-2 col-md-3">
+                        <label htmlFor="buque" className="form-label mb-1">Buque</label>
+                        <select
+                          id="buque"
+                          name="buque"
+                          className="form-control form-control-sm"
+                          value={buqueSeleccionado}
+                          disabled={onlyRead || !destinoSeleccionado}
+                          onChange={handleBuqueChange}
+                        >
+                          <option value=""></option>
+                          {buquesDisponibles.map((item) => (
+                            <option key={item.id} value={item.id}>{item.nombre}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </span>
+
+                    <span className="col-md-12 row">
+                      <div className="mb-2 col-md-3">
                         <label htmlFor={"fecha"} className="form-label mb-1">Fecha</label>
                         <input
                           type="date"
@@ -432,20 +699,20 @@ export default function FormulariosProgramacion({ element, setOpen, setAlert }) 
                       </div>
 
                       <div className="mb-2 col-md-2">
-                        <label htmlFor="semana" className="form-label mb-1">Semana</label>
-                        <input
-                          type="number"
-                          id="semana"
-                          name="semana"
+                        <label htmlFor="booking" className="form-label mb-1">Booking</label>
+                        <select
+                          id="booking"
+                          name="booking"
                           className="form-control form-control-sm"
-                          defaultValue={semana}
-                          min={1}
-                          max={53}
-                          required
-                          disabled={onlyRead}
-                          readOnly={onlyRead}
-                          onChange={() => guardarBody()}
-                        />
+                          value={bookingSeleccionado}
+                          disabled={onlyRead || !buqueSeleccionado}
+                          onChange={handleBookingChange}
+                        >
+                          <option value=""></option>
+                          {bookingsDisponibles.map((item) => (
+                            <option key={item.id} value={item.id}>{item.booking}</option>
+                          ))}
+                        </select>
                       </div>
 
 
@@ -459,6 +726,7 @@ export default function FormulariosProgramacion({ element, setOpen, setAlert }) 
                           disabled={onlyRead}
                           onChange={() => guardarBody()}
                         >
+                          <option value=""></option>
                           {listaVehiculos.map((item, index) => {
                             return (
                               <option key={index} value={item?.id}>{item?.placa}</option>
@@ -478,6 +746,7 @@ export default function FormulariosProgramacion({ element, setOpen, setAlert }) 
                           disabled={onlyRead}
                           onChange={() => guardarBody()}
                         >
+                          <option value=""></option>
                           {listaConductores.map((item, index) => {
                             return (
                               <option key={index} value={item?.id}>{item?.conductor}</option>

@@ -25,7 +25,10 @@ import Contenedores from '@components/Programacion/Contenedores';
 import Notificaciones from '@components/Programacion/Notificaciones';
 import Clientes from '@components/Maestros/Clientes';
 import HistorialConsumo from "@components/Programacion/HistorialConsumos";
+import HistoricoConsumoRuta from '@components/Programacion/HistoricoConsumoRuta';
+import SaldoCombustibleVehiculos from '@components/Programacion/SaldoCombustibleVehiculos';
 import ReportesConsumo from '@components/Programacion/Reportes';
+import ConsumoRutaVehiculo from '@components/Programacion/ConsumoRutaVehiculo';
 import MotivoDeRechazo from '@containers/administrador/MotivoDeRechazo';
 
 
@@ -60,7 +63,10 @@ export default function Adminsitrador() {
         {initialAdminMenu.adminMenu.contenedores && <Contenedores />}
         {initialAdminMenu.adminMenu.notificaciones && <Notificaciones />}
         {initialAdminMenu.adminMenu.historico && <HistorialConsumo />}
+        {initialAdminMenu.adminMenu.historicoRutaVehiculo && <HistoricoConsumoRuta />}
+        {initialAdminMenu.adminMenu.saldoCombustibleVehiculos && <SaldoCombustibleVehiculos />}
         {initialAdminMenu.adminMenu.reportesConsumo && <ReportesConsumo />}
+        {initialAdminMenu.adminMenu.consumoRutaVehiculo && <ConsumoRutaVehiculo />}
       </div>
 
     </>

@@ -17,7 +17,12 @@ export default function CategoriaVehiculos() {
         paginar={paginarUbicaciones}
         crear={agregarUbicacion}
         encabezados={{
-          "ID": "id", "Ubicacion": "ubicacion", "Detalle": "detalle", "Editar": "", "Activar": "activo"
+          "ID": "id",
+          "Cod": "cod",
+          "Ubicacion": "ubicacion",
+          "Detalle": "detalle",
+          "Editar": "",
+          "Activar": "activo"
         }}
 />
     </>

@@ -9,6 +9,7 @@ import { listarVehiculo } from "@services/api/vehiculos";
 import { listarClientes } from "@services/api/clientes";
 import { actualizarProgramaciones } from "@services/api/programaciones";
 import { agregarRutas, buscarRutaPost } from "@services/api/rutas";
+import { agregarConsumoRutaVehiculo } from "@services/api/consumoRutaVehiculo";
 
 
 
@@ -42,7 +43,30 @@ export default function FormulariosProgramacionEditar({ element, setOpen, setAle
     try {
       existeRuta = await buscarRutaPost(buscarRuta);
     } catch (e) {
+      const origenSeleccionado = listaUbicaciones.find((item) => String(item?.id) === String(buscarRuta.ubicacion1));
+      const destinoSeleccionado = listaUbicaciones.find((item) => String(item?.id) === String(buscarRuta.ubicacion2));
+      const confirmarCrearRuta = window.confirm(
+        `No existe una ruta entre "${origenSeleccionado?.ubicacion || 'origen'}" y "${destinoSeleccionado?.ubicacion || 'destino'}". Desea crearla ahora y asignar el consumo del vehiculo?`
+      );
+
+      if (!confirmarCrearRuta) {
+        return;
+      }
+
+      const consumoIngresado = window.prompt("Ingrese el consumo del vehículo para esta nueva ruta:");
+      const consumoPorKm = Number(consumoIngresado);
+
+      if (!consumoIngresado || Number.isNaN(consumoPorKm) || consumoPorKm <= 0) {
+        return alert("Debe ingresar un consumo por km valido para crear la nueva ruta.");
+      }
+
       existeRuta = await agregarRutas(buscarRuta);
+      await agregarConsumoRutaVehiculo({
+        vehiculo_id: formData.get("vehiculo"),
+        ruta_id: existeRuta.data.id,
+        consumo_por_km: consumoPorKm,
+        activo: true,
+      });
     }
     let contenedor = null;
     if (isCheckedContenedor) {
@@ -57,6 +81,7 @@ export default function FormulariosProgramacionEditar({ element, setOpen, setAle
       conductor_id: formData.get("conductor"),
       vehiculo_id: formData.get("vehiculo"),
       contenedor: contenedor,
+      bl: formData.get("bl") || null,
       semana: formData.get("semana"),
       fecha: formData.get("fecha"),
       detalles: formData.get("detalles"),
@@ -66,7 +91,17 @@ export default function FormulariosProgramacionEditar({ element, setOpen, setAle
       salida_destino: formData.get("salida_destino"),
     };
 
-    await actualizarProgramaciones(element.id, objetoProgramacion);
+    try {
+      await actualizarProgramaciones(element.id, objetoProgramacion);
+    } catch (error) {
+      setAlert({
+        active: true,
+        mensaje: error.message || "No fue posible guardar la programacion.",
+        color: "danger",
+        autoClose: true
+      });
+      return;
+    }
     setChange(!change);
     setOpen(false);
     setAlert({
@@ -324,6 +359,17 @@ export default function FormulariosProgramacionEditar({ element, setOpen, setAle
                           />
                         </div>
                       }
+
+                      <div className="mb-2 col-md-6">
+                        <label htmlFor="bl" className="form-label mb-1">BL</label>
+                        <input
+                          type="text"
+                          id="bl"
+                          name="bl"
+                          defaultValue={element.bl}
+                          className="form-control form-control-sm"
+                        />
+                      </div>
 
 
 

@@ -1,57 +1,80 @@
 import axios from 'axios';
 import endPoints from './index';
+
+const getErrorMessage = (error, fallback) => (
+  error?.response?.data?.message ||
+  error?.response?.data?.error ||
+  error?.message ||
+  fallback
+);
+
 const config = {
-    headers: {
-        accept: 'application/json',
-        'Content-Type': 'application/json'
-    }
+  headers: {
+    accept: 'application/json',
+    'Content-Type': 'application/json',
+  },
 };
+
 const agregarProgramaciones = async (programaciones) => {
-   try {
+  try {
     const url = endPoints.programaciones.create;
     const response = await axios.post(url, programaciones, config);
     return response.data;
-   }catch(e){
-    alert("Error al ingresar datos");
-   }
+  } catch (error) {
+    throw new Error(getErrorMessage(error, 'Error al ingresar datos'));
+  }
 };
 
-const eliminarProgramaciones = async(consecutivo) => {
+const eliminarProgramaciones = async (consecutivo) => {
+  try {
     const res = await axios.delete(endPoints.programaciones.delete(consecutivo));
     return res.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error, 'Error al eliminar la programacion'));
+  }
 };
 
-const actualizarProgramaciones = async(consecutivo, changes) => {
+const actualizarProgramaciones = async (consecutivo, changes) => {
+  try {
     const res = await axios.patch(endPoints.programaciones.update(consecutivo), changes);
     return res.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error, 'Error al actualizar la programacion'));
+  }
 };
 
-const buscarProgramaciones = async(consecutivo) => {
-    try {
+const buscarProgramaciones = async (consecutivo) => {
+  try {
     const res = await axios.get(endPoints.programaciones.findOne(consecutivo));
     return res.data;
-    } catch (e) {
-        alert("Error al buscar programaciones");
-    } 
+  } catch (error) {
+    throw new Error(getErrorMessage(error, 'Error al buscar programaciones'));
+  }
 };
 
-const listarProgramaciones = async() => {
-    try {
-        const res = await axios.get(endPoints.programaciones.list);
-        return res.data;
-    } catch (e){
-        alert("Error al listar programaciones");
-    }
+const listarProgramaciones = async () => {
+  try {
+    const res = await axios.get(endPoints.programaciones.list);
+    return res.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error, 'Error al listar programaciones'));
+  }
 };
 
 const paginarProgramaciones = async (page, limit, body) => {
-    try {
-        const res = await axios.post(endPoints.programaciones.pagination(page, limit), body);
-        return res.data;
-    } catch {
-        console.error("Error al paginar programación");
-    }
+  try {
+    const res = await axios.post(endPoints.programaciones.pagination(page, limit), body);
+    return res.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error, 'Error al paginar programacion'));
+  }
 };
 
-export { agregarProgramaciones, eliminarProgramaciones, actualizarProgramaciones,
-     buscarProgramaciones, listarProgramaciones, paginarProgramaciones };
+export {
+  agregarProgramaciones,
+  eliminarProgramaciones,
+  actualizarProgramaciones,
+  buscarProgramaciones,
+  listarProgramaciones,
+  paginarProgramaciones,
+};

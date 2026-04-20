@@ -1,7 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 //Services
 import endPoints from '@services/api';
-import { actualizarUsuario, agregarUsuario, cargarAlmacenesPorUsuario } from '@services/api/usuarios';
+import {
+    actualizarUsuario,
+    agregarUsuario,
+    cargarAlmacenesPorUsuario,
+    listarAlmacenesPorUsuario,
+    listarUsuarios,
+} from '@services/api/usuarios';
 //Hooks
 //Components
 //CSS
@@ -21,10 +27,26 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
     const [tagSubMenu, setTagSubMenu] = useState([]);
     const [menuSelected, setMenuSelected] = useState([]);
     const [tagBotones, setTagBotones] = useState([]);
+    const [usuariosDisponibles, setUsuariosDisponibles] = useState([]);
+    const [usuarioBase, setUsuarioBase] = useState('');
+    const [isCopyingAccess, setIsCopyingAccess] = useState(false);
 
     const configMenuKeys = menuPrincipal();
     const configSubMenuKeys = menuCompleto;
     const configBotones = botones;
+
+    const parseDetallesModulo = (response) => {
+        if (!response?.length) {
+            return {};
+        }
+
+        try {
+            return JSON.parse(response[0].detalles || "{}");
+        } catch (error) {
+            console.error("Error al parsear JSON:", error);
+            return {};
+        }
+    };
 
     const onChaneselectionTagsMenu = () => {
         const formData = new FormData(formRef.current);
@@ -35,7 +57,10 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
 
     useEffect(() => {
         async function listarAlmacenes() {
-            const res = await axios.get(endPoints.almacenes.list);
+            const [res, usuarios] = await Promise.all([
+                axios.get(endPoints.almacenes.list),
+                listarUsuarios(),
+            ]);
             if (user) {
                 const resB = await axios.get(endPoints.usuarios.almacenes.findByUsername(user?.username));
                 let array = new Array(res.data.length).fill(false);
@@ -52,12 +77,21 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                 setcheckedState(array);
             }
             setAlmacenes(res.data);
-            encontrarModulo(user?.username).then(res => {
-                const detalles = JSON.parse(res[0].detalles || "{}");
-                setTagMenu(detalles.menu || []);
-                setTagSubMenu(detalles.submenu || []);
-                setTagBotones(detalles.botones || []);
-            });
+            setUsuariosDisponibles(
+                (usuarios || []).filter((item) => item?.username && item.username !== user?.username),
+            );
+            if (user?.username) {
+                encontrarModulo(user.username).then(res => {
+                    const detalles = parseDetallesModulo(res);
+                    setTagMenu(detalles.menu || []);
+                    setTagSubMenu(detalles.submenu || []);
+                    setTagBotones(detalles.botones || []);
+                });
+            } else {
+                setTagMenu([]);
+                setTagSubMenu([]);
+                setTagBotones([]);
+            }
         }
         try {
             listarAlmacenes();
@@ -67,7 +101,45 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
 
     }, [user]);
 
+    const handleCopyAccess = async () => {
+        if (!usuarioBase) {
+            alert("Selecciona un usuario para copiar sus permisos y accesos");
+            return;
+        }
 
+        try {
+            setIsCopyingAccess(true);
+            const [sourceUser, sourceWarehouses, sourceConfig] = await Promise.all([
+                axios.get(endPoints.usuarios.findOne(usuarioBase)),
+                listarAlmacenesPorUsuario(usuarioBase),
+                encontrarModulo(usuarioBase),
+            ]);
+
+            const detalles = parseDetallesModulo(sourceConfig);
+            const almacenesHabilitados = new Set(
+                (sourceWarehouses || [])
+                    .filter((item) => item?.habilitado)
+                    .map((item) => item.id_almacen),
+            );
+
+            if (formRef.current?.elements?.id_rol && sourceUser?.data?.id_rol) {
+                formRef.current.elements.id_rol.value = sourceUser.data.id_rol;
+            }
+
+            setTagMenu(detalles.menu || []);
+            setTagSubMenu(detalles.submenu || []);
+            setTagBotones(detalles.botones || []);
+            setMenuSelected([]);
+            setcheckedState(
+                almacenes.map((almacen) => almacenesHabilitados.has(almacen.consecutivo)),
+            );
+        } catch (error) {
+            console.error("Error al copiar permisos del usuario:", error);
+            alert("No fue posible copiar los permisos y accesos del usuario seleccionado");
+        } finally {
+            setIsCopyingAccess(false);
+        }
+    };
 
     const handleChange = (position) => {
         const updatedCheckedState = checkedState.map((item, index) =>
@@ -171,12 +243,15 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
             alert("La contraseña debe coincidir");
             return;
         }
+        const targetUsername = user?.username || data.username;
         if (user == null) {
             try {
-                agregarUsuario(data);
-                almacenes.map((item, index) => {
-                    cargarAlmacenesPorUsuario(data.username, item.consecutivo, checkedState[index]);
-                });
+                await agregarUsuario(data);
+                await Promise.all(
+                    almacenes.map((item, index) =>
+                        cargarAlmacenesPorUsuario(data.username, item.consecutivo, checkedState[index]),
+                    ),
+                );
                 setAlert({
                     active: true,
                     mensaje: "El usuario ha sido creado con exito",
@@ -197,10 +272,11 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
             if (data.username == null) delete data.username;
             if (data.id_rol == null) delete data.id_rol;
             delete data.isBlock;
-            actualizarUsuario(user.username, data);
-            almacenes.map((item, index) => {
-                cargarAlmacenesPorUsuario(user.username, item.consecutivo, checkedState[index]);
-            }
+            await actualizarUsuario(user.username, data);
+            await Promise.all(
+                almacenes.map((item, index) =>
+                    cargarAlmacenesPorUsuario(user.username, item.consecutivo, checkedState[index]),
+                ),
             );
             setAlert({
                 active: true,
@@ -209,16 +285,16 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                 autoClose: true
             });
         }
-        const res = await encontrarModulo(user.username);
         let confUser = {};
         try {
-            confUser = JSON.parse(res[0].detalles);
+            const res = await encontrarModulo(targetUsername);
+            confUser = parseDetallesModulo(res);
         } catch (err) {
             console.error("Error al parsear JSON:", err);
             // Puedes decidir cómo manejar el error aquí
         }
         confUser = JSON.stringify({ ...confUser, menu: tagMenu, submenu: tagSubMenu, botones: tagBotones });
-        await actualizarModulo({ modulo: user.username, detalles: confUser });
+        await actualizarModulo({ modulo: targetUsername, detalles: confUser });
         setOpen(false);
     };
 
@@ -425,6 +501,38 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                                 {/* Configuración de menú y almacenes */}
                                 {!profile && !changePass && (
                                     <>
+
+                                        {!user && (
+                                            <div className="row g-3 mt-1 mb-1">
+                                                <h6 className='mb-0'>Copiar permisos y accesos</h6>
+                                                <div className="col-md-8">
+                                                    <select
+                                                        id="usuarioBase"
+                                                        name="usuarioBase"
+                                                        className="form-select form-select-sm"
+                                                        value={usuarioBase}
+                                                        onChange={(event) => setUsuarioBase(event.target.value)}
+                                                    >
+                                                        <option value="">Seleccione un usuario</option>
+                                                        {usuariosDisponibles.map((item) => (
+                                                            <option key={item.username} value={item.username}>
+                                                                {item.nombre} {item.apellido} ({item.username})
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div className="col-md-4 d-flex align-items-end">
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-outline-primary w-100"
+                                                        onClick={handleCopyAccess}
+                                                        disabled={!usuarioBase || isCopyingAccess}
+                                                    >
+                                                        {isCopyingAccess ? 'Copiando...' : 'Copiar accesos'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {/**Habilitar Menú*/}
                                         <div className="row g-3 mt-1 mb-1">

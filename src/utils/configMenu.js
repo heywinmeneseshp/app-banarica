@@ -1,6 +1,5 @@
-
 const menuCompleto = {
-    'maestros': [
+    maestros: [
         ["bodegas", "Almacenes"],
         ["categorias", "Categoria productos"],
         ["categoriaVehiculos", "Categoria vehiculos"],
@@ -16,7 +15,7 @@ const menuCompleto = {
         ["usuarios", "Usuarios"],
         ["vehiculos", "Vehiculos"]
     ],
-    'seguridad': [
+    seguridad: [
         ["/Listado", "Contenedores"],
         ["/Dashboard", "Dashboard"],
         ["/Disponibles", "Disponibles"],
@@ -24,35 +23,37 @@ const menuCompleto = {
         ["/InspLleno", "Insp Lleno"],
         ["/Lector", "Insp Vacio"],
         ["/LlenadoContenedor", "Llenado"],
-        ["/Recepcion", "Recepción"],
+        ["/Recepcion", "Recepcion"],
         ["/Rechazos", "Rechazos"],
         ["/Transferencias", "Transferencias"],
-         ["/Inspeccionados", "Inspeccionados"]
+        ["/Inspeccionados", "Inspeccionados"]
     ],
-    'programaciones': [
+    programaciones: [
         ["contenedores", "Contenedores"],
         ["historico", "Historico"],
+        ["historicoRutaVehiculo", "Historico Ruta Vehiculo"],
+        ["saldoCombustibleVehiculos", "Saldo Combustible"],
         ["programador", "Programador"],
-        ["reportesConsumo", "Reportes"]
+        ["reportesConsumo", "Reportes"],
+        ["consumoRutaVehiculo", "Consumo Ruta Vehiculo"]
     ],
-    'almacen': [],
-    'informes': [],
+    almacen: [],
+    informes: [],
 };
 
 const botones = [
-    'dashboard_descargar_carrusel',
-    'dashboard_descargar_relacion',
-    'dashboard_agregar',
-    'disponibles_serial',
-    'disponibles_detallado',
-    'contenedores_edicion',
-    'dashboard_configuracion',
-    'dashboard_seriales',
+    "dashboard_descargar_carrusel",
+    "dashboard_descargar_relacion",
+    "dashboard_agregar",
+    "disponibles_serial",
+    "disponibles_detallado",
+    "contenedores_edicion",
+    "dashboard_configuracion",
+    "dashboard_seriales",
 ];
 
 const menuPrincipal = () => {
     return Object.keys(menuCompleto);
 };
-
 
 export { menuPrincipal, menuCompleto, botones };

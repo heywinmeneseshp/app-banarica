@@ -1,5 +1,6 @@
 import axios from 'axios';
 import endPoints from './index';
+import { listarUbicaciones } from './ubicaciones';
 
 const config = {
     headers: {
@@ -14,7 +15,8 @@ const agregarRutas = async (rutas) => {
         const response = await axios.post(url, rutas, config);
         return response.data;
     } catch (error) {
-        throw new Error("Error al ingresar datos de rutas: " + error.message);
+        const message = error.response?.data?.message || error.response?.data?.error || error.message;
+        throw new Error("Error al ingresar datos de rutas: " + message);
     }
 };
 
@@ -25,7 +27,8 @@ const buscarRutaPost = async (rutas) => {
         const response = await axios.post(url, rutas,config);
         return response.data;
     } catch (error) {
-        throw new Error("Error al ingresar datos de rutas: " + error.message);
+        const message = error.response?.data?.message || error.response?.data?.error || error.message;
+        throw new Error("Error al ingresar datos de rutas: " + message);
     }
 };
 
@@ -34,7 +37,8 @@ const eliminarRutas = async(id) => {
         const res = await axios.delete(endPoints.rutas.delete(id));
         return res.data;
     } catch (error) {
-        throw new Error("Error al eliminar rutas: " + error.message);
+        const message = error.response?.data?.message || error.response?.data?.error || error.message;
+        throw new Error("Error al eliminar rutas: " + message);
     }
 };
 
@@ -43,7 +47,8 @@ const actualizarRutas = async(consecutivo, changes) => {
         const res = await axios.patch(endPoints.rutas.update(consecutivo), changes);
         return res.data;
     } catch (error) {
-        throw new Error("Error al actualizar rutas: " + error.message);
+        const message = error.response?.data?.message || error.response?.data?.error || error.message;
+        throw new Error("Error al actualizar rutas: " + message);
     }
 };
 
@@ -52,16 +57,32 @@ const buscarRutas = async(consecutivo) => {
         const res = await axios.get(endPoints.rutas.findOne(consecutivo));
         return res.data;
     } catch (error) {
-        throw new Error("Error al buscar rutas: " + error.message);
+        const message = error.response?.data?.message || error.response?.data?.error || error.message;
+        throw new Error("Error al buscar rutas: " + message);
     }
 };
 
 const listarRutas = async() => {
     try {
-        const res = await axios.get(endPoints.rutas.list);
-        return res.data;
+        const [res, ubicaciones] = await Promise.all([
+            axios.get(endPoints.rutas.list),
+            listarUbicaciones(),
+        ]);
+
+        const ubicacionesMap = new Map(
+            (ubicaciones || []).map((item) => [String(item.id), item.ubicacion])
+        );
+
+        const rutas = (res.data || []).map((item) => ({
+            ...item,
+            origen: ubicacionesMap.get(String(item.ubicacion1)) || item.origen || item.ubicacion1,
+            destino: ubicacionesMap.get(String(item.ubicacion2)) || item.destino || item.ubicacion2,
+        }));
+
+        return rutas;
     } catch (error) {
-        throw new Error("Error al listar rutas: " + error.message);
+        const message = error.response?.data?.message || error.response?.data?.error || error.message;
+        throw new Error("Error al listar rutas: " + message);
     }
 };
 
@@ -74,7 +95,8 @@ const paginarRutas = async (page, limit, nombre) => {
         });
         return res.data;
     } catch (error) {
-        throw new Error("Error al paginar rutas: " + error.message);
+        const message = error.response?.data?.message || error.response?.data?.error || error.message;
+        throw new Error("Error al paginar rutas: " + message);
     }
 };
 

@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
-import Cookie from 'js-cookie';
 //Services
 import { actualizarUsuario } from '@services/api/usuarios';
 import endPoints from '@services/api';
+import { fetchAuthenticatedProfile } from '@services/api/auth';
 //Components
 import NuevoUsuario from '@components/administrador/NuevoUsuario';
 import Alertas from '@assets/Alertas';
@@ -11,7 +11,6 @@ import Paginacion from '@components/Paginacion';
 //Hooks
 import useAlert from '@hooks/useAlert';
 import excel from "@hooks/useExcel";
-//Bootstrap
 //CSS
 import styles from '@styles/Listar.module.css';
 
@@ -25,18 +24,27 @@ const Users = () => {
     const [total, setTotal] = useState(0);
     const limit = 10;
 
+    const listarUsurios = useCallback(async () => {
+        const username = buscardorRef.current?.value || '';
+        const res = await axios.get(endPoints.usuarios.pagination(pagination, limit, username));
+        setTotal(res.data.total);
+        setUsuarios(res.data.data);
+    }, [pagination]);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                var token = Cookie.get('token');
-                axios.defaults.headers.Authorization = 'Bearer ' + token;
-                const res = await axios.get(endPoints.auth.profile);
-                if (res.data.usuario.isBlock) {
-                    window.alert("El usuario está deshabilitado, por favor comuníquese con el administrador");
+                const profile = await fetchAuthenticatedProfile();
+                if (!profile) {
                     return;
                 }
-                setUser(res.data.usuario);
+
+                if (profile.usuario.isBlock) {
+                    window.alert("El usuario esta deshabilitado, por favor comuniquese con el administrador");
+                    return;
+                }
+
+                setUser(profile.usuario);
                 listarUsurios();
             } catch (error) {
                 window.alert("Error al cargar los usuarios: " + error.message);
@@ -44,17 +52,7 @@ const Users = () => {
         };
 
         fetchData();
-    }, [alert, pagination]);
-
-
-
-
-    async function listarUsurios() {
-        const username = buscardorRef.current.value;
-        const res = await axios.get(endPoints.usuarios.pagination(pagination, limit, username));
-        setTotal(res.data.total);
-        setUsuarios(res.data.data);
-    }
+    }, [alert, listarUsurios]);
 
     const onChangeBuscador = () => {
         setPagination(1);
@@ -78,7 +76,7 @@ const Users = () => {
 
     const handleActivar = (usuario) => {
         try {
-            const deleteUser = window.confirm("¿Está seguro que desea eliminar el usuario?");
+            const deleteUser = window.confirm("Esta seguro que desea eliminar el usuario?");
             if (!deleteUser) return;
             const changes = { isBlock: !usuario.isBlock };
             actualizarUsuario(usuario.username, changes);
@@ -106,9 +104,7 @@ const Users = () => {
                 <div className={styles.botones}>
                     <button onClick={handleNuevo} type="button" className="btn btn-success btn-sm w-100">Nuevo</button>
                 </div>
-                <div className={styles.botones}>
-                
-                </div>
+                <div className={styles.botones}></div>
                 <div className={styles.buscar}>
                     <input ref={buscardorRef} onChange={onChangeBuscador} className="form-control form-control-sm w-90" type="text" placeholder="Buscar"></input>
                 </div>
@@ -120,7 +116,6 @@ const Users = () => {
             <table className="table">
                 <thead className={styles.letter}>
                     <tr>
-                       
                         <th scope="col">Cod</th>
                         <th scope="col">Nombre</th>
                         <th scope="col">Usuario</th>
@@ -133,38 +128,33 @@ const Users = () => {
                 </thead>
                 <tbody className={styles.letter}>
                     {usuarios.map((usuario, index) => {
-                        const allowDelete = usuario.username != user?.username;
+                        const allowDelete = usuario.username !== user?.username;
 
-                        if (usuario.isBlock == true) {
-                            return;
-                        } else {
-
-                              return (
-                        <tr key={index} >
-                         
-                            <td >{usuario.id}</td>
-                            <td>{usuario.nombre + " " + usuario.apellido}</td>
-                            <td>{usuario.username}</td>
-                            <td>{usuario.id_rol}</td>
-                            <td>{usuario.tel}</td>
-                            <td>{usuario.email}</td>
-                            <td>
-                                <button onClick={() => handleEditar(usuario)} type="button" className="btn btn-warning btn-sm w-80">Editar</button>
-                            </td>
-                            <td>
-                                {!usuario.isBlock && allowDelete && <button onClick={() => handleActivar(usuario)} type="button" className="btn btn-danger btn-sm w-80">Eliminar</button>}
-                            </td>
-                        </tr>);
+                        if (usuario.isBlock === true) {
+                            return null;
                         }
-                      
-                    }
-                    )}
 
+                        return (
+                            <tr key={index}>
+                                <td>{usuario.id}</td>
+                                <td>{usuario.nombre + " " + usuario.apellido}</td>
+                                <td>{usuario.username}</td>
+                                <td>{usuario.id_rol}</td>
+                                <td>{usuario.tel}</td>
+                                <td>{usuario.email}</td>
+                                <td>
+                                    <button onClick={() => handleEditar(usuario)} type="button" className="btn btn-warning btn-sm w-80">Editar</button>
+                                </td>
+                                <td>
+                                    {!usuario.isBlock && allowDelete && <button onClick={() => handleActivar(usuario)} type="button" className="btn btn-danger btn-sm w-80">Eliminar</button>}
+                                </td>
+                            </tr>
+                        );
+                    })}
                 </tbody>
             </table>
             <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
             {open && <NuevoUsuario setOpen={setOpen} setAlert={setAlert} user={user} />}
-
         </div>
     );
 };

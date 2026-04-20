@@ -1,10 +1,26 @@
 import React, { useState, useContext, createContext } from 'react';
 import axios from 'axios';
 import endPoints from '@services/api';
-import Cookie from 'js-cookie';
 import { useRouter } from 'next/router';
+import { loginWithCredentials } from '@services/api/auth';
+import {
+    getStoredUser,
+    setStoredUser,
+    setStoredWarehouses,
+    sortWarehousesByName,
+} from 'utils/session';
 
-const AuthContext = createContext();
+const defaultAuthContext = {
+    user: null,
+    login: null,
+    almacenByUser: [],
+    setAlmacenByUser: () => {},
+    setUser: () => {},
+    getUser: () => null,
+    isLoggingIn: false,
+};
+
+const AuthContext = createContext(defaultAuthContext);
 
 export function ProviderAuth({ children }) {
     const auth = useProviderAuth();
@@ -12,58 +28,41 @@ export function ProviderAuth({ children }) {
 }
 
 export const useAuth = () => {
-    return useContext(AuthContext);
+    return useContext(AuthContext) || defaultAuthContext;
 };
 
 function useProviderAuth() {
     const [user, setUser] = useState(null);
     const [almacenByUser, setAlmacenByUser] = useState([]);
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
     const router = useRouter();
 
     const login = async (username, password) => {
         try {
-            const { data } = await axios.post(endPoints.auth.login, { username: username, password: password });
+            setIsLoggingIn(true);
+            await loginWithCredentials(username, password);
 
-            const expire = 1 / 24;
-
-            Cookie.set('token', data.token, { expires: expire });
-            axios.defaults.headers.Authorization = 'Bearer ' + data.token;
             const res = await axios.get(endPoints.auth.profile);
-            if (res.data.usuario.isBlock == true) return window.alert("El usuario esta deshabilitado, por favor comuníquese con el administrador");
+            if (res.data.usuario.isBlock) {
+                return window.alert("El usuario esta deshabilitado, por favor comuniquese con el administrador");
+            }
+
             setUser(res.data.usuario);
+            setStoredUser(res.data.usuario);
 
-            //Guardar usuario en local storage
-            const usuario = res.data.usuario;
-
-            const usuarioComoCadena = JSON.stringify(usuario);
-
-            localStorage.setItem('usuario', usuarioComoCadena);
-
-            const almacenes = res.data.almacenes.sort((a, b) => {
-                if (a.nombre == b.nombre) {
-                    return 0;
-                }
-                if (a.nombre < b.nombre) {
-                    return -1;
-                }
-                return 1;
-            });
+            const almacenes = sortWarehousesByName(res.data.almacenes);
             setAlmacenByUser(almacenes);
-            const almacenesComoCadena = JSON.stringify(almacenes);
-            localStorage.setItem('almacenByUser', almacenesComoCadena);
+            setStoredWarehouses(almacenes);
+
             router.push('/');
         } catch (e) {
-            alert('Contraseña o usuario incorrecto');
+            alert(e?.response?.data?.message || 'Contrasena o usuario incorrecto');
+        } finally {
+            setIsLoggingIn(false);
         }
-
-
     };
 
-    const getUser = () => {
-        const usuario = localStorage.getItem('usuario');
-        const usuarioComoObjeto = JSON.parse(usuario);
-        return usuarioComoObjeto;
-    };
+    const getUser = () => getStoredUser();
 
-    return { user, login, almacenByUser, setAlmacenByUser, setUser, getUser };
+    return { user, login, almacenByUser, setAlmacenByUser, setUser, getUser, isLoggingIn };
 }

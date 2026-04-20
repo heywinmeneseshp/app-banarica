@@ -6,6 +6,14 @@ const endPoints = {
     auth: { //Crear
         login: `${API}/api/${VERSION}/auth/login`,
         profile: `${API}/api/${VERSION}/auth/profile`,
+        recoverPassword:
+            process.env.NEXT_PUBLIC_AUTH_RECOVERY_URL || `${API}/api/${VERSION}/auth/recovery`,
+        changePassword:
+            process.env.NEXT_PUBLIC_AUTH_CHANGE_PASSWORD_URL ||
+            `${API}/api/${VERSION}/auth/changePassword`,
+        runPasswordPolicy:
+            process.env.NEXT_PUBLIC_AUTH_PASSWORD_POLICY_URL ||
+            `${API}/api/${VERSION}/auth/password-policy/run`,
     },
     usuarios: {
         list: `${API}/api/${VERSION}/usuarios`,
@@ -244,6 +252,8 @@ const endPoints = {
         delete: (id) => `${API}/api/${VERSION}/record_consumo/${id}`,
         consultarConsumo: `${API}/api/${VERSION}/record_consumo/sin-liquidar`,
         liquidar: `${API}/api/${VERSION}/record_consumo/liquidar`,
+        previewLiquidacionRuta: `${API}/api/${VERSION}/record_consumo/preview-liquidacion-ruta`,
+        liquidarRuta: `${API}/api/${VERSION}/record_consumo/liquidar-ruta`,
     },
     programaciones: {
         list: `${API}/api/${VERSION}/programaciones`,
@@ -252,6 +262,12 @@ const endPoints = {
         create: `${API}/api/${VERSION}/programaciones`,
         update: (id) => `${API}/api/${VERSION}/programaciones/${id}`,
         delete: (id) => `${API}/api/${VERSION}/programaciones/${id}`,
+    },
+    consumoRutaVehiculo: {
+        list: `${API}/api/${VERSION}/consumoRutaVehiculo`,
+        create: `${API}/api/${VERSION}/consumoRutaVehiculo`,
+        update: (id) => `${API}/api/${VERSION}/consumoRutaVehiculo/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/consumoRutaVehiculo/${id}`,
     },
     rutas: {
         list: `${API}/api/${VERSION}/rutas`,
@@ -291,6 +307,8 @@ const endPoints = {
         list: `${API}/api/${VERSION}/tanqueo`,
         findOne: (id) => `${API}/api/${VERSION}/tanqueo/${id}`,
         findAll: `${API}/api/${VERSION}/tanqueo/encontrar`,
+        cargarCombustible: `${API}/api/${VERSION}/tanqueo/cargar-combustible`,
+        ajustarSaldo: `${API}/api/${VERSION}/tanqueo/ajustar-saldo`,
         pagination: (page, limit, item) => `${API}/api/${VERSION}/tanqueo/paginar?page=${page}&limit=${limit}&item=${item}`,
         create: `${API}/api/${VERSION}/tanqueo`,
         update: (id) => `${API}/api/${VERSION}/tanqueo/${id}`,

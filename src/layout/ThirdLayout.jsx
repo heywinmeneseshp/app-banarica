@@ -1,50 +1,46 @@
-import React from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
-import Cookie from 'js-cookie';
-import axios from 'axios';
 //Hooks
 import { useAuth } from '@hooks/useAuth';
-import endPoints from '@services/api';
+import { fetchAuthenticatedProfile, syncSessionFromProfile } from '@services/api/auth';
+import { clearSession, getStoredWarehouses, getToken } from 'utils/session';
 //Component
 import Footer from "@components/Footer";
 import Header from '@components/shared/Header/Header';
 //CSS
 import styles from '@styles/Layout.module.css';
-import { useEffect } from 'react';
 
 export default function ThirdLayout({ children }) {
     const router = useRouter();
-    const { user, setUser } = useAuth();
-    useEffect(() => {
-        listar();
-    }, []);
+    const { user, setUser, setAlmacenByUser } = useAuth();
 
-    const listar = async () => {
-        const token = Cookie.get('token');
+    const listar = useCallback(async () => {
+        const token = getToken();
         if (!token) {
-            localStorage.clear();
+            clearSession();
             setUser(null);
             router.push('/login');
-            window.alert("Tu sesión ha caducado. Por favor, inicia sesión nuevamente para continuar utilizando la aplicación.");
-        } else {
-            Cookie.set('token', token, { expires: 1 / 48 });
-            axios.defaults.headers.Authorization = 'Bearer ' + token;
-            try {
-                const res = await axios.get(endPoints.auth.profile);
-                if (res.data.usuario.isBlock === true) {
-                    return window.alert("El usuario está deshabilitado, por favor comuníquese con el administrador");
-                }
-                setUser(res.data.usuario);
-                // Guardar usuario en localStorage
-                const usuario = res.data.usuario;
-                const usuarioComoCadena = JSON.stringify(usuario);
-                localStorage.setItem('usuario', usuarioComoCadena);
-            } catch (error) {
-                console.error("Error al obtener el perfil del usuario:", error);
-                // Manejar el error apropiadamente, posiblemente redirigir a una página de error
-            }
+            window.alert("Tu sesion ha caducado. Por favor, inicia sesion nuevamente para continuar utilizando la aplicacion.");
+            return;
         }
-    };
+
+        try {
+            const profile = await fetchAuthenticatedProfile(token);
+            if (profile.usuario.isBlock) {
+                return window.alert("El usuario esta deshabilitado, por favor comuniquese con el administrador");
+            }
+
+            const { usuario } = syncSessionFromProfile(profile);
+            setUser(usuario);
+            setAlmacenByUser(getStoredWarehouses());
+        } catch (error) {
+            console.error("Error al obtener el perfil del usuario:", error);
+        }
+    }, [router, setAlmacenByUser, setUser]);
+
+    useEffect(() => {
+        listar();
+    }, [listar]);
 
     if (user) {
         return (

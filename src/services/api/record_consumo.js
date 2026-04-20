@@ -1,5 +1,11 @@
 import axios from 'axios';
 import endPoints from './index';
+const getErrorMessage = (error, fallback) => (
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    error?.message ||
+    fallback
+);
 
 const config = {
     headers: {
@@ -73,13 +79,31 @@ const liquidarConsumoRutas = async (body) => {
     try {
         const res = await axios.post(endPoints.record_consumo.liquidar, body);
         return res.data;
-    } catch {
-        alert("Consulta de consumo exitosa");
+    } catch (error) {
+        throw new Error(getErrorMessage(error, "Error al liquidar consumo"));
+    }
+};
+
+const previewLiquidacionRuta = async (body) => {
+    try {
+        const res = await axios.post(endPoints.record_consumo.previewLiquidacionRuta, body);
+        return res.data?.data || res.data;
+    } catch (error) {
+        throw new Error(getErrorMessage(error, "Error al calcular la preliquidacion por ruta"));
+    }
+};
+
+const liquidarRutaDia = async (body) => {
+    try {
+        const res = await axios.post(endPoints.record_consumo.liquidarRuta, body);
+        return res.data?.data || res.data;
+    } catch (error) {
+        throw new Error(getErrorMessage(error, "Error al liquidar el dia por ruta"));
     }
 };
 
 export {
     agregarRecord_consumo, encontrarUnConsumo, consultarConsumo,
     eliminarRecord_consumo, listarRecord_consumo, paginarRecord_consumo,
-    actualizarRecord_consumo, liquidarConsumoRutas
+    actualizarRecord_consumo, liquidarConsumoRutas, previewLiquidacionRuta, liquidarRutaDia
 };

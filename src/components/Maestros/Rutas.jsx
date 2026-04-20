@@ -14,7 +14,7 @@ import { useEffect, useState } from 'react';
 
 export default function Rutas() {
 
-  const [ubicaciones, setUbicaciones ] = useState();
+  const [ubicaciones, setUbicaciones ] = useState([]);
 
   useEffect(() => {
     listar();

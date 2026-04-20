@@ -7,31 +7,43 @@ const config = {
     }
 };
 const agregarUbicacion = async (Ubicacion) => {
-   try {
-    const url = endPoints.ubicaciones.create;
-    const response = await axios.post(url, Ubicacion, config);
-    return response.data;
-   }catch(e){
-    alert("Error al ingresar datos");
-   }
+    try {
+        const url = endPoints.ubicaciones.create;
+        const response = await axios.post(url, Ubicacion, config);
+        return response.data;
+    } catch (error) {
+        const message = error.response?.data?.message || error.response?.data?.error || error.message;
+        throw new Error(`Error al ingresar ubicacion: ${message}`);
+    }
 };
 
 const eliminarUbicacion = async(consecutivo) => {
-    const res = await axios.delete(endPoints.ubicaciones.delete(consecutivo));
-    return res.data;
+    try {
+        const res = await axios.delete(endPoints.ubicaciones.delete(consecutivo));
+        return res.data;
+    } catch (error) {
+        const message = error.response?.data?.message || error.response?.data?.error || error.message;
+        throw new Error(`Error al eliminar ubicacion: ${message}`);
+    }
 };
 
 const actualizarUbicacion = async(consecutivo, changes) => {
-    const res = await axios.patch(endPoints.ubicaciones.update(consecutivo), changes);
-    return res.data;
+    try {
+        const res = await axios.patch(endPoints.ubicaciones.update(consecutivo), changes);
+        return res.data;
+    } catch (error) {
+        const message = error.response?.data?.message || error.response?.data?.error || error.message;
+        throw new Error(`Error al actualizar ubicacion: ${message}`);
+    }
 };
 
 const buscarUbicacion = async(consecutivo) => {
     try {
     const res = await axios.get(endPoints.ubicaciones.findOne(consecutivo));
     return res.data;
-    } catch (e) {
-        alert("Error al buscar Ubicacion");
+    } catch (error) {
+        const message = error.response?.data?.message || error.response?.data?.error || error.message;
+        throw new Error(`Error al buscar ubicacion: ${message}`);
     } 
 };
 
@@ -39,8 +51,9 @@ const listarUbicaciones = async() => {
     try {
         const res = await axios.get(endPoints.ubicaciones.list);
         return res.data;
-    } catch (e){
-        alert("Error al listar Ubicaciones");
+    } catch (error){
+        const message = error.response?.data?.message || error.response?.data?.error || error.message;
+        throw new Error(`Error al listar ubicaciones: ${message}`);
     }
 };
 
@@ -48,8 +61,9 @@ const paginarUbicaciones = async (page, limit, nombre) => {
     try {
         const res = await axios.get(endPoints.ubicaciones.pagination(page, limit, nombre));
         return res.data;
-    } catch {
-        alert("Error al paginar ubicaciones");
+    } catch (error) {
+        const message = error.response?.data?.message || error.response?.data?.error || error.message;
+        throw new Error(`Error al paginar ubicaciones: ${message}`);
     }
 };
 

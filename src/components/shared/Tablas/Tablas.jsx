@@ -392,7 +392,7 @@ export default function Tablas({
                         const nuevaLista = listas?.[headerKey];
 
                         if (nuevaLista) {
-                          itemName = nuevaLista.find((newI) => newI.id === itemName)?.nombre || itemName;
+                          itemName = nuevaLista.find((newI) => String(newI.id) === String(itemName))?.nombre || itemName;
                         }
 
                         return (

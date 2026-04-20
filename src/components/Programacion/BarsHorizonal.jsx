@@ -14,7 +14,9 @@ import {
 
 
 export default function BarHorizontal({ data }) {
-
+  const hasBalanceSeries = data.some(
+    (item) => item?.Cargado !== undefined || item?.Consumido !== undefined,
+  );
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -34,7 +36,14 @@ export default function BarHorizontal({ data }) {
         <Tooltip />
         <Legend />
         <ReferenceLine x={0} stroke="#000" />
-        <Bar dataKey="Recorrido" fill="#0d6efd" />
+        {hasBalanceSeries ? (
+          <>
+            <Bar dataKey="Cargado" name="Cargado" fill="#198754" />
+            <Bar dataKey="Consumido" name="Consumido" fill="#dc3545" />
+          </>
+        ) : (
+          <Bar dataKey="Recorrido" name="Recorrido" fill="#0d6efd" />
+        )}
       </BarChart>
     </ResponsiveContainer>
   );
