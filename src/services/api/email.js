@@ -14,7 +14,8 @@ const enviarEmail = async (destinatario, asunto, cuerpo) => {
         const response = await axios.post(endPoints.email.send, body, config);
         return response.data;
     } catch (e) {
-        alert("Error al enviar el correo");
+        console.error("Error al enviar el correo:", e);
+        return null;
     }
 };
 

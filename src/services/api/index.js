@@ -216,6 +216,8 @@ const endPoints = {
         actualizarModulo: `${API}/api/${VERSION}/confi/actualizar`,
         encontrarEmpresa: `${API}/api/${VERSION}/empresa/1`,
         actualizarEmpresa: `${API}/api/${VERSION}/empresa/1`,
+        encontrarEmail: `${API}/api/${VERSION}/confi/email`,
+        actualizarEmail: `${API}/api/${VERSION}/confi/email`,
     },
     //TRANSPOTER
     ubicaciones: {
@@ -321,6 +323,7 @@ const endPoints = {
     },
     email: {
         send: `${API}/api/${VERSION}/email/send`,
+        config: `${API}/api/${VERSION}/email/config`,
     },
     //LOGISTICA
     contenedores: {

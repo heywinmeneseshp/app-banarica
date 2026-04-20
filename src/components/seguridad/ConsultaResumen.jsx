@@ -1,146 +1,118 @@
-import React from "react";
-import { GrUpdate } from "react-icons/gr";
-//CSS
+import React, { useEffect, useState } from "react";
+
 import styles from "@styles/Seguridad.module.css";
 import Paginacion from "@components/Paginacion";
-import { useEffect } from "react";
-import { useState } from "react";
-import { filtrarCategorias } from "@services/api/categorias";
-import { useAuth } from "@hooks/useAuth";
-import { actualizarStockAlmacen, filtradoGeneralStock } from "@services/api/stock";
 import { listarSeriales } from "@services/api/seguridad";
+import { useAuth } from "@hooks/useAuth";
 
-export default function ConsultaDetallada({ data, setPagination, limit, pagination, setResults }) {
-    const [total, setTotal] = useState(0);
-    const [tabla, setTabla] = useState([]);
+export default function ConsultaResumen({
+    data,
+    setPagination,
+    limit,
+    pagination,
+    setResults,
+    configBotons = []
+}) {
     const { almacenByUser } = useAuth();
+    const [tabla, setTabla] = useState([]);
+    const [total, setTotal] = useState(0);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        listar(data);
-    }, [data, limit, pagination]);
+        const listar = async () => {
+            try {
+                setLoading(true);
 
-    async function listar(data) {
-        let categoria = await filtrarCategorias(1, 1, "Seguridad");
-        let body = {
-            "producto": {
-                "cons_categoria": categoria?.data[0]?.consecutivo,
-                "consecutivo": data?.cons_producto ? data?.cons_producto : ""
-            },
-            "almacen": {
-                "consecutivo": data?.cons_almacen ? data?.cons_almacen : ""
-            },
-            "pagination": {
-                "offset": pagination,
-                "limit": limit
-            },
-            "stock": {
-                "isBlock": false
+                const almacenes = almacenByUser.map((item) => item.consecutivo);
+                const filtros = {
+                    ...data,
+                    cons_almacen:
+                        !data?.cons_almacen || data.cons_almacen.length === 0
+                            ? almacenes
+                            : data.cons_almacen,
+                    serial: data?.serial || "",
+                };
+
+                const res = await listarSeriales(pagination, limit, filtros);
+                setTabla(res?.data || []);
+                setTotal(res?.total || 0);
+                setResults(res?.total || 0);
+            } catch (error) {
+                console.error("Error al cargar resumen de disponibles:", error);
+                setTabla([]);
+                setTotal(0);
+                setResults(0);
+            } finally {
+                setLoading(false);
             }
         };
-        if (data.cons_almacen == "") body.almacen.consecutivo = almacenByUser.map(item => item.consecutivo);
-        const res = await filtradoGeneralStock(body);
-        const result = res.data.sort((a, b) => {
-            if (a.cantidad > b.cantidad) return 1;
-            if (a.cantidad < b.cantidad) return -1;
-            return 0;
-        });
-        setTotal(res.total);
-        setTabla(result);
-        setResults(res.total);
-    }
 
-    const ajustarInventario = async (cons_almacen, cons_producto, index) => {
-        try {
-            // Mostrar loading en el botón específico
-        
+        listar();
+    }, [almacenByUser, data, pagination, limit, setResults]);
 
-            // 1. Obtener cantidad real de seriales disponibles
-            const res = await listarSeriales(1, 10, { cons_almacen, cons_producto, available: true });
-            const cantidadReal = res.total;
-
-            // 2. Actualizar el stock en la base de datos
-            await actualizarStockAlmacen(cons_almacen, cons_producto, { cantidad: cantidadReal });
-
-            // 3. Actualizar la tabla localmente (sin recargar toda la página)
-            setTabla(prevTabla => {
-                const nuevaTabla = [...prevTabla];
-                if (nuevaTabla[index]) {
-                    nuevaTabla[index] = {
-                        ...nuevaTabla[index],
-                        cantidad: cantidadReal
-                    };
-                }
-                return nuevaTabla;
-            });
-
-            // 5. Opcional: Recargar datos completos si prefieres
-            // await listar(data);
-
-        } catch (error) {
-            console.error("❌ Error al ajustar inventario:", error);
-            // Puedes mostrar un mensaje de error aquí
-        } finally {
-            // Quitar el loading
-            window.alert("Datos actualizados");
-        }
-    };
+    const totalColumnas = configBotons.includes("disponibles_serial") ? 8 : 7;
 
     return (
-        <>
-            <span className={styles.tabla_text}>
-                <table className="table table-striped table-bordered table-sm mb-1">
-                    <thead>
+        <span className={styles.tabla_text}>
+            <table className="table table-striped table-bordered table-sm mb-1">
+                <thead>
+                    <tr>
+                        <th className="text-custom-small text-center">Alm</th>
+                        <th className="text-custom-small text-center">Articulo</th>
+                        {configBotons.includes("disponibles_serial") && (
+                            <th className="text-custom-small text-center">Serial Interno</th>
+                        )}
+                        <th className="text-custom-small text-center">Serial Externo</th>
+                        <th className="text-custom-small text-center">S Pack</th>
+                        <th className="text-custom-small text-center">M Pack</th>
+                        <th className="text-custom-small text-center">L Pack</th>
+                        <th className="text-custom-small text-center">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {loading && (
                         <tr>
-                            <th className="text-custom-small text-center" scope="col">Alm</th>
-                            <th className="text-custom-small text-center"></th>
-                            <th className="text-custom-small text-center">Cod</th>
-                            <th className="text-custom-small text-center">Artículo</th>
-                            <th className="text-custom-small text-center">Cantidad</th>
-                            <th className="text-custom-small text-center">Actualizar</th>
+                            <td colSpan={totalColumnas} className="text-center">
+                                Cargando resultados...
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        {tabla.map((item, index) => (
-                            <tr key={index}>
-                                <td className="text-custom-small text-center">{item.cons_almacen}</td>
-                                <td className="text-custom-small text-center">{item.almacen.nombre}</td>
-                                <td className="text-custom-small text-center">{item.cons_producto}</td>
-                                <td className="text-custom-small text-center">{item.producto.name}</td>
-                                <td className="text-custom-small text-center">
-                                    <span className={item.cantidad < 0 ? "text-danger fw-bold" : ""}>
-                                        {item.cantidad}
-                                    </span>
-                                </td>
-                                <td className="text-custom-small text-center">
-                                    <GrUpdate
-                                        size={14}
-                                        title="Actualizar inventario"
-                                        onClick={() =>
-                                            ajustarInventario(item.cons_almacen, item.cons_producto, index)
-                                        }
-                                        style={{
-                                            color: "#0d6efd",
-                                            cursor: "pointer",
-                                            transition: "transform 0.15s ease, color 0.15s ease",
-                                        }}
-                                        onMouseEnter={e => {
-                                            e.currentTarget.style.color = "#0b5ed7";
-                                            e.currentTarget.style.transform = "scale(1.15)";
-                                        }}
-                                        onMouseLeave={e => {
-                                            e.currentTarget.style.color = "#0d6efd";
-                                            e.currentTarget.style.transform = "scale(1)";
-                                        }}
-                                    />
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-                <span className="container">
-                    <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
-                </span>
+                    )}
+
+                    {!loading && tabla.length === 0 && (
+                        <tr>
+                            <td colSpan={totalColumnas} className="text-center">
+                                No hay resultados para los filtros seleccionados.
+                            </td>
+                        </tr>
+                    )}
+
+                    {tabla.map((item, index) => (
+                        <tr key={index}>
+                            <td className="text-custom-small text-center">{item.cons_almacen}</td>
+                            <td className="text-custom-small text-center">{item.producto.name}</td>
+                            {configBotons.includes("disponibles_serial") && (
+                                <td className="text-custom-small text-center">{item.serial}</td>
+                            )}
+                            <td className="text-custom-small text-center">{item.bag_pack}</td>
+                            <td className="text-custom-small text-center">{item.s_pack}</td>
+                            <td className="text-custom-small text-center">{item.m_pack}</td>
+                            <td className="text-custom-small text-center">{item.l_pack}</td>
+                            <td className="text-custom-small text-center">
+                                {item.available === true ? "Disponible" : "Usado"}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+
+            <span className="container">
+                <Paginacion
+                    setPagination={setPagination}
+                    pagination={pagination}
+                    total={total}
+                    limit={limit}
+                />
             </span>
-        </>
+        </span>
     );
 }
