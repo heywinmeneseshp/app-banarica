@@ -389,7 +389,8 @@ export default function FormulariosProgramacion({ element, setOpen, setAlert }) 
   const [change, setChange] = useState(false);
   const [body, setBody] = useState({});
   const [dataList, setDataList] = useState([]);
-const [onlyRead, setOnlyRead] = useState(false);
+  const [onlyRead, setOnlyRead] = useState(false);
+  const [semana] = useState("");
   const [semanaSeleccionada, setSemanaSeleccionada] = useState("");
   const [navieraSeleccionada, setNavieraSeleccionada] = useState("");
   const [destinoSeleccionado, setDestinoSeleccionado] = useState("");

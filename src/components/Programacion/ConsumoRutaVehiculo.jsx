@@ -118,8 +118,8 @@ export default function ConsumoRutaVehiculo() {
         <div className="card-body">
           <div className="row g-3">
             <div className="col-md-4">
-              <label htmlFor="vehiculo_id" className="form-label">Vehiculo</label>
-              <select id="vehiculo_id" name="vehiculo_id" value={form.vehiculo_id} onChange={handleChange} className="form-select">
+              <label className="form-label">Vehiculo</label>
+              <select name="vehiculo_id" value={form.vehiculo_id} onChange={handleChange} className="form-select">
                 <option value="">Seleccione vehiculo</option>
                 {vehiculos.map((vehiculo) => (
                   <option key={vehiculo.id} value={vehiculo.id}>
@@ -129,8 +129,8 @@ export default function ConsumoRutaVehiculo() {
               </select>
             </div>
             <div className="col-md-4">
-              <label htmlFor="ruta_id" className="form-label">Ruta</label>
-              <select id="ruta_id" name="ruta_id" value={form.ruta_id} onChange={handleChange} className="form-select">
+              <label className="form-label">Ruta</label>
+              <select name="ruta_id" value={form.ruta_id} onChange={handleChange} className="form-select">
                 <option value="">Seleccione ruta</option>
                 {rutas.map((ruta) => (
                   <option key={ruta.id} value={ruta.id}>
@@ -140,9 +140,8 @@ export default function ConsumoRutaVehiculo() {
               </select>
             </div>
             <div className="col-md-2">
-              <label htmlFor="consumo_por_km" className="form-label">Galones consumidos</label>
+              <label className="form-label">Galones consumidos</label>
               <input
-                id="consumo_por_km"
                 type="number"
                 step="0.01"
                 min="0"
