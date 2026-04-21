@@ -36,6 +36,23 @@ const VALIDACIONES = {
 
 const CONFIG_TABLA_DEFAULT = ["Fecha", "Sem", "BoL", "Naviera", "Destino", "Llenado", "Contenedor", "Insumos de segurdad", "Producto", "Cajas", "Peso Neto", "QR"];
 
+const safeStorageGet = (key, fallback) => {
+  if (typeof window === "undefined") {
+    return fallback;
+  }
+
+  const value = window.localStorage.getItem(key);
+  return value ?? fallback;
+};
+
+const safeStorageGetJson = (key, fallback) => {
+  try {
+    return JSON.parse(safeStorageGet(key, JSON.stringify(fallback)));
+  } catch (error) {
+    return fallback;
+  }
+};
+
 const FILTER_FIELDS = [
   { id: "semana", label: "Sem", placeholder: "Ingrese la semana" },
   { id: "cliente", label: "Cliente", placeholder: "Ingrese Cliente" },
@@ -62,14 +79,14 @@ const useDebounce = (value, delay) => {
 
 // Hook personalizado para el estado del listado
 const useListadoState = () => {
-  const [state, setState] = useState({
+  const [state, setState] = useState(() => ({
     tableData: [],
     pagination: 1,
-    limit: parseInt(localStorage.getItem('listadoLimit')) || 50,
+    limit: parseInt(safeStorageGet('listadoLimit', '50'), 10) || 50,
     total: 0,
     configuracionInsumos: [],
-    configuracionTabla: JSON.parse(localStorage.getItem("ListadoConfig") || JSON.stringify(CONFIG_TABLA_DEFAULT)),
-    almacenes: JSON.parse(localStorage.getItem('almacenByUser') || '[]'),
+    configuracionTabla: safeStorageGetJson("ListadoConfig", CONFIG_TABLA_DEFAULT),
+    almacenes: safeStorageGetJson('almacenByUser', []),
     embarques: [],
     productos: [],
     check: [],
@@ -84,7 +101,7 @@ const useListadoState = () => {
     isEditable: false,
     openQR: false,
     loading: false
-  });
+  }));
 
   const updateState = useCallback((updates) => {
     setState(prev => ({ ...prev, ...updates }));
@@ -108,6 +125,7 @@ const ListadoContenedores = () => {
 
   const { state, updateState } = useListadoState();
   const debouncedFilters = useDebounce(filters, 500);
+  const [draftLimit, setDraftLimit] = useState(() => String(state.limit));
 
   // Memoized values
   const selectedItems = useMemo(() =>
@@ -118,6 +136,10 @@ const ListadoContenedores = () => {
   const updateFilters = useCallback((newFilters) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
   }, []);
+
+  useEffect(() => {
+    setDraftLimit(String(state.limit));
+  }, [state.limit]);
 
   // Funciones de utilidad
   const aplicarColor = useCallback((data = []) => {
@@ -314,6 +336,10 @@ const ListadoContenedores = () => {
     });
   }, [updateState]);
 
+  const commitLimitChange = useCallback(() => {
+    handleLimitChange(draftLimit);
+  }, [draftLimit, handleLimitChange]);
+
   // Exportación optimizada
   const handleExport = useCallback(() => {
     try {
@@ -447,7 +473,12 @@ const ListadoContenedores = () => {
 
       aplicarColor(listadoList.data);
     } catch (error) {
-      console.error('Error al cargar datos:', error);
+      console.error('Error al cargar datos:', {
+        message: error?.message,
+        status: error?.response?.status,
+        url: error?.config?.url,
+        data: error?.response?.data,
+      });
       alert('Error al cargar los datos del listado');
       updateState({ loading: false });
     }
@@ -471,7 +502,7 @@ const ListadoContenedores = () => {
   // Efectos optimizados
   useEffect(() => {
     listar();
-  }, [state.pagination, state.limit, debouncedFilters, state.openTransbordar, state.openMasivo]);
+  }, [state.pagination, state.limit, debouncedFilters, state.openTransbordar, state.openMasivo, state.openActualizarMasivo, listar]);
 
 
 
@@ -740,9 +771,16 @@ const ListadoContenedores = () => {
             <Form.Control
               type="number"
               className="form-control-sm"
-              value={state.limit}
+              value={draftLimit}
               style={{ maxWidth: "60px" }}
-              onChange={(e) => handleLimitChange(e.target.value)}
+              onChange={(e) => setDraftLimit(e.target.value)}
+              onBlur={commitLimitChange}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  commitLimitChange();
+                }
+              }}
               min={1}
               max={200}
             />
@@ -888,7 +926,7 @@ const ListadoContenedores = () => {
           encabezados={{
             fecha: null, bl: null, contenedor: null,
             id_lugar_de_llenado: null, id_producto: null, cajas_unidades: null,
-          }} urologo
+          }}
         />
       )}
 

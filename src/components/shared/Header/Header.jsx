@@ -12,7 +12,7 @@ import Configuracion from '@components/administrador/Configuracion';
 
 import { encontrarEmpresa, encontrarModulo } from '@services/api/configuracion';
 import { menuCompleto } from 'utils/configMenu';
-import { clearSession, getStoredUser, getStoredWarehouses } from 'utils/session';
+import { clearSession, getStoredUser, getStoredWarehouses, getToken } from 'utils/session';
 
 const Header = () => {
   const router = useRouter();
@@ -27,10 +27,14 @@ const Header = () => {
   const [configSubMenu, setConfigSubMenu] = useState([]);
 
   useEffect(() => {
-    const usuario = getStoredUser();
-    setUser(usuario);
+    const token = getToken();
+    const usuario = user || getStoredUser();
 
-    if (!usuario) {
+    if (usuario && !user) {
+      setUser(usuario);
+    }
+
+    if (!usuario || !token) {
       return;
     }
 
@@ -72,6 +76,10 @@ const Header = () => {
         }
       }
     }).catch(error => {
+      if (error?.response?.status === 401) {
+        return;
+      }
+
       console.error('Error al obtener módulos:', error);
       // Fallback en caso de error en la llamada
       if (usuario.id_rol === "Super administrador") {
@@ -81,7 +89,7 @@ const Header = () => {
     });
 
     setAlmacenByUser(getStoredWarehouses());
-  }, [setUser, setAlmacenByUser]);
+  }, [user, setUser, setAlmacenByUser]);
 
   const handleProfile = () => setOpenProfile(prev => !prev);
 

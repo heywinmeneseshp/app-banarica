@@ -22,7 +22,7 @@ const eliminarContenedor = async (body) => {
 };
 
 const filtrarContenedor = async (body) => {
-    const res = await axios.post(endPoints.contenedores.create, body);
+    const res = await axios.post(endPoints.contenedores.filter, body);
     return res.data;
 };
 

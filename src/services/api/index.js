@@ -159,6 +159,7 @@ const endPoints = {
         filter: `${API}/api/${VERSION}/traslados/filter`,
         pagination: (page, limit) => `${API}/api/${VERSION}/traslados/paginar?page=${page}&limit=${limit}`,
         create: `${API}/api/${VERSION}/traslados`,
+        execute: `${API}/api/${VERSION}/traslados/ejecutar`,
         update: (id) => `${API}/api/${VERSION}/traslados/modificar/${id}`,
         delete: (id) => `${API}/api/${VERSION}/traslados/${id}`
     },
@@ -328,6 +329,7 @@ const endPoints = {
     //LOGISTICA
     contenedores: {
         create: `${API}/api/${VERSION}/contenedor`,
+        filter: `${API}/api/${VERSION}/contenedor/paginar?offset=1&limit=50`,
         findOne: (id) => `${API}/api/${VERSION}/contenedor/${id}`,
         update: (id) => `${API}/api/${VERSION}/contenedor/${id}`,
         delete: (id) => `${API}/api/${VERSION}/contenedor/${id}`,

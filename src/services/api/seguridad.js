@@ -10,7 +10,6 @@ const config = {
     }
 };
 
-
 const encontrarUnSerial = async (data) => {
     const res = await axios.post(endPoints.seguridad.encontrarSerial, data);
     return res.data;
@@ -38,19 +37,27 @@ const listarUsuariosSeguridad = async (offset, limit, username) => {
 
 const cargarSeriales = async (dataExcel, remision, pedido, semana, fecha, observaciones, username) => {
     try {
+        const res = dataExcel.find((item) => item.cons_producto == null);
+        if (res?.cons_producto === null) {
+            return { message: "Existen articulos sin codigo ID.", bool: false };
+        }
 
-        const res = dataExcel.find(item => item.cons_producto == null);
-        if (res?.cons_producto === null) return { message: "Existen artículos sin código ID.", bool: false };
-       
-        await axios.post(endPoints.seguridad.CargarSeriales, {data: dataExcel,
-            remision, pedido, semana, fecha, observaciones, username
+        const response = await axios.post(endPoints.seguridad.CargarSeriales, {
+            data: dataExcel,
+            remision,
+            pedido,
+            semana,
+            fecha,
+            observaciones,
+            username,
         });
-        return { message: "Se han cargado los datos con éxito.", bool: true };
+
+        return response.data;
     } catch (error) {
-        window.alert(JSON.stringify(error.response.data.message));
+        const message = error?.response?.data?.message || "No fue posible cargar la recepcion.";
+        window.alert(JSON.stringify(message));
         throw error;
     }
-
 };
 
 const actualizarSeriales = async (dataList) => {
@@ -89,49 +96,49 @@ const verificarAndActualizarSeriales = async (data, cons_almacen) => {
                 available: false,
                 cons_almacen: cons_almacen
             };
-            property = property.includes("Precinto plástico") ? "Precinto plástico" : property;
+            property = property.includes("Precinto plastico") ? "Precinto plastico" : property;
             const existe = await encontrarUnSerial({ serial: newData.serial, producto: { name: property } });
             if (existe == null) {
                 if (confirm(`No existe ${property} con serial ${newData.serial} ¿Desea corregir el serial?`)) {
                     newData.serial = prompt(`Por favor, corrija el serial, ${property}:`, newData.serial);
                     const res = await encontrarUnSerial({ producto: { name: property } });
-                    newData['cons_producto'] = res?.producto.consecutivo;
+                    newData.cons_producto = res?.producto.consecutivo;
                 } else {
                     const { producto } = await encontrarUnSerial({ producto: { name: property } });
-                    newData['cons_producto'] = producto.consecutivo;
+                    newData.cons_producto = producto.consecutivo;
                 }
             } else {
-                newData['cons_producto'] = existe.producto.consecutivo;
+                newData.cons_producto = existe.producto.consecutivo;
             }
             updatedData.push(newData);
         }
-    };
+    }
     return updatedData;
 };
 
 const exportarArticulosConSerial = async (updatedSeriales, cons_almacen, cons_movimiento) => {
     const res = await actualizarSeriales(updatedSeriales);
-    res.data.forEach(element => {
-         if (element) {
-             const dataHistorial = {
-                 cons_movimiento: cons_movimiento,
-                 cons_producto: element.current.cons_producto,
-                 cons_almacen_gestor: cons_almacen,
-                 cons_almacen_receptor: element.previous.cons_almacen,
-                 cons_lista_movimientos: "EX",
-                 tipo_movimiento: "Salida",
-                 razon_movimiento: "Exportación",
-                 cantidad: 1
-             };
-             agregarHistorial(dataHistorial);
-             restar(element.previous.cons_almacen, dataHistorial.cons_producto, dataHistorial.cantidad);
-         }
-     });
+    res.data.forEach((element) => {
+        if (element) {
+            const dataHistorial = {
+                cons_movimiento: cons_movimiento,
+                cons_producto: element.current.cons_producto,
+                cons_almacen_gestor: cons_almacen,
+                cons_almacen_receptor: element.previous.cons_almacen,
+                cons_lista_movimientos: "EX",
+                tipo_movimiento: "Salida",
+                razon_movimiento: "Exportacion",
+                cantidad: 1
+            };
+            agregarHistorial(dataHistorial);
+            restar(element.previous.cons_almacen, dataHistorial.cons_producto, dataHistorial.cantidad);
+        }
+    });
 };
 
 const inspeccionAntinarcoticos = async (Formulario, rechazos) => {
     try {
-        const response = await axios.post(endPoints.seguridad.inspeccionAntinarcoticos, {formulario: Formulario, rechazos: rechazos});
+        const response = await axios.post(endPoints.seguridad.inspeccionAntinarcoticos, { formulario: Formulario, rechazos: rechazos });
         return response.data;
     } catch (e) {
         alert("Error al actualizar data list");
@@ -139,19 +146,16 @@ const inspeccionAntinarcoticos = async (Formulario, rechazos) => {
 };
 
 const usarSeriales = async (semana, fecha, seriales, contenedorID, id_usuario, motivo_de_uso) => {
-
     const body = {
-        "formulario": {
-          "bolsa": seriales,
-          "fecha": fecha,
-          "semana": semana,
-          "contenedorId": contenedorID,
-          "id_usuario": id_usuario
+        formulario: {
+            bolsa: seriales,
+            fecha: fecha,
+            semana: semana,
+            contenedorId: contenedorID,
+            id_usuario: id_usuario
         },
-        "motivo_de_uso": motivo_de_uso
-      };
-
-
+        motivo_de_uso: motivo_de_uso
+    };
 
     try {
         const response = await axios.post(endPoints.seguridad.usarSeriales, body);
@@ -161,10 +165,16 @@ const usarSeriales = async (semana, fecha, seriales, contenedorID, id_usuario, m
     }
 };
 
-
-
 export {
-    listarSeriales, listarUsuariosSeguridad, cargarSeriales,
-    actualizarSeriales, listarProductosSeguridad, exportarArticulosConSerial, encontrarUnSerial,
-    verificarAndActualizarSeriales, actualizarSerial, inspeccionAntinarcoticos, usarSeriales
+    listarSeriales,
+    listarUsuariosSeguridad,
+    cargarSeriales,
+    actualizarSeriales,
+    listarProductosSeguridad,
+    exportarArticulosConSerial,
+    encontrarUnSerial,
+    verificarAndActualizarSeriales,
+    actualizarSerial,
+    inspeccionAntinarcoticos,
+    usarSeriales
 };

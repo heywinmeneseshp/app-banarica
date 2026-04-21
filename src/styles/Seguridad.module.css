@@ -76,6 +76,33 @@
     align-items: center;
 }
 
+.transferSummaryCard {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    border: 1px solid #d9e7dd;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f8fcf9 0%, #eef8f1 100%);
+}
+
+.transferSummaryTable {
+    margin-bottom: 18px;
+    padding: 14px 16px 10px;
+    border: 1px solid #e3e6ea;
+    border-radius: 8px;
+    background-color: #ffffff;
+}
+
+.transferSummaryHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 12px;
+}
+
 /*d-flex align-items-center mb-2*/
 .resumen {
     display: grid;
@@ -192,6 +219,15 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         row-gap: 5px;
+    }
+
+    .transferSummaryCard {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .transferSummaryHeader {
+        flex-direction: column;
+        align-items: flex-start;
     }
 
 }
