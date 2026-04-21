@@ -1,369 +1,929 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { paginarListado } from '@services/api/listado';
-import { encontrarContenedor } from '@services/api/contenedores';
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
+import { FaBoxOpen, FaCheckCircle, FaClipboardList, FaPrint, FaRoute, FaShippingFast, FaTimesCircle, FaUserShield } from "react-icons/fa";
+import { encontrarContenedor } from "@services/api/contenedores";
+import { listarInspecciones, paginarInspecciones } from "@services/api/inpecciones";
+import { paginarListado } from "@services/api/listado";
+import { paginarRechazos } from "@services/api/rechazos";
+import { listarSeriales } from "@services/api/seguridad";
+import { decodeTraceToken } from "@utils/tracecode";
+import { getContainerReturnInfo, isContainerReturned } from "@utils/contenedorEstado";
 
-export default function ShippingInfo() {
-    const router = useRouter();
-    const { token } = router.query;
-    const [containerId, setContainerId] = useState('');
-    const [loading, setLoading] = useState(false);
+const EMPTY_DATA = {
+  contenedor: null,
+  listados: [],
+  emptyInspection: null,
+  otherInspections: [],
+  antinarcoticsRows: [],
+  serialesContenedor: [],
+  rechazos: [],
+  usersMap: new Map(),
+  tokenData: null
+};
 
-    const demoData = {
-        paisOrigen: "Colombia",
-        finca: "Null",
-        productos: "Null",
-        diaCosecha: "Null",
-        inspeccionPuerto: "Null",
-        diaZarpe: "Null",
-        diaLlegada: "Null",
-        puertoDestino: "Null",
-        transito: "Null",
-        contenedor: "Null"
+const formatDate = (value) => {
+  if (!value) return "No registrado";
+
+  if (typeof value === "string") {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      const [, year, month, day] = match;
+      return `${day}/${month}/${year}`;
+    }
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  return date.toLocaleDateString("es-CO", {
+    timeZone: "America/Bogota"
+  });
+};
+
+const formatDateTime = (value) => {
+  if (!value) return "No registrado";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  return date.toLocaleString("es-CO", {
+    timeZone: "America/Bogota"
+  });
+};
+
+const formatNumber = (value, digits = 0) => {
+  const parsed = Number(value);
+  if (Number.isNaN(parsed)) return "0";
+
+  return parsed.toLocaleString("es-CO", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits
+  });
+};
+
+const getFullName = (user) => {
+  if (!user) return "No registrado";
+
+  const fullName = [user.nombre, user.apellido].filter(Boolean).join(" ").trim();
+  return fullName || user.username || "No registrado";
+};
+
+const getUserLabel = (usersMap, userId, fallbackUser = null) => {
+  if (fallbackUser) return getFullName(fallbackUser);
+  if (!userId) return "No registrado";
+  return usersMap.get(userId) || `Usuario #${userId}`;
+};
+
+const uniqueStrings = (values = []) =>
+  [...new Set(values.filter(Boolean).map((item) => String(item).trim()).filter(Boolean))];
+
+const getTransitDays = (start, end) => {
+  if (!start || !end) return "No calculado";
+
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return "No calculado";
+  }
+
+  const diff = Math.abs(endDate.getTime() - startDate.getTime());
+  return `${Math.floor(diff / (1000 * 60 * 60 * 24))} dias`;
+};
+
+const parseFoodResult = (text) => {
+  const normalized = String(text || "").toLowerCase();
+
+  if (normalized.includes("resultado: apto")) return "Apto para alimentos";
+  if (normalized.includes("resultado: no apto")) return "No apto para alimentos";
+
+  return "No registrado";
+};
+
+const buildUsersMap = (...collections) => {
+  const users = new Map();
+
+  collections.flat().forEach((item) => {
+    const user = item?.usuario;
+    if (user?.id) {
+      users.set(user.id, getFullName(user));
+    }
+  });
+
+  return users;
+};
+
+const groupAntinarcoticsRows = (rows = []) => {
+  const grouped = new Map();
+
+  rows.forEach((row) => {
+    const inspection = row?.Inspeccion || {};
+    const key = [
+      inspection.id || "sin-id",
+      inspection.fecha_inspeccion || "",
+      inspection.hora_inicio || "",
+      inspection.hora_fin || "",
+      inspection.agente || ""
+    ].join("|");
+
+    const current = grouped.get(key) || {
+      inspection,
+      seriales: [],
+      usuarios: new Set()
     };
 
-    const [shippingData, setshippingData] = useState(demoData);
+    current.seriales.push(row);
 
-    // Función para decodificar el ID (para usar en tracecode)
-    const decodeContenedorId = (token) => {
-        try {
-            const decoded = atob(token);
-            const datos = JSON.parse(decoded);
-            return datos.id; // Retorna el ID original
-        } catch (error) {
-            console.error('Error decodificando token:', error);
-            return null;
-        }
-    };
-
-    const diasTranscurridos = (fecha1, fecha2) => {
-        if (!fecha1 || !fecha2) return 'N/A';
-
-        const date1 = new Date(fecha1);
-        const date2 = new Date(fecha2);
-
-        const utc1 = Date.UTC(date1.getFullYear(), date1.getMonth(), date1.getDate());
-        const utc2 = Date.UTC(date2.getFullYear(), date2.getMonth(), date2.getDate());
-
-        return Math.floor(Math.abs(utc2 - utc1) / (1000 * 60 * 60 * 24));
-    };
-
-
-
-    useEffect(() => {
-        const fetchContainerData = async () => {
-            if (!token) return;
-
-            try {
-                const id = decodeContenedorId(token);
-                setContainerId(id);
-                setLoading(true);
-
-                const res = await encontrarContenedor(id);
-                const filtros = {
-                    contenedor: res.contenedor,
-                    booking: '',
-                    bl: '',
-                    destino: '',
-                    naviera: '',
-                    cliente: '',
-                    semana: '',
-                    buque: '',
-                    llenado: '',
-                    producto: '',
-                    habilitado: true
-                };
-
-                const contenedor = await paginarListado(1, 21, filtros);
-
-                const shipping = contenedor.data.filter(item => item.Contenedor.id === id);
-
-                if (shipping.length === 0) {
-                    console.warn('No se encontraron datos para el contenedor:', id);
-                    return;
-                }
-
-                // Procesar datos
-                const embarque = shipping[0].Embarque;
-       
-
-                // Función helper para formatear fechas
-                const formatDate = (fecha) =>
-                    fecha ? new Date(fecha).toLocaleDateString('es-CO', { timeZone: 'America/Bogota' }) : 'N/A';
-
-                const formatDateTime = (fecha) =>
-                    fecha ? new Date(fecha).toLocaleString('es-CO', { timeZone: 'America/Bogota' }) : 'N/A';
-
-                // Calcular días transcurridos de forma segura
-                const calcularTransito = (zarpe, arribo) => {
-                    if (!zarpe || !arribo) return 'N/A';
-                    try {
-                        return diasTranscurridos(zarpe, arribo);
-                    } catch (error) {
-                        console.error('Error calculando tránsito:', error);
-                        return 'N/A';
-                    }
-                };
-
-                // Obtener datos únicos
-                const almacenesUnicos = [...new Set(shipping.map(item => item.almacen.nombre))].join(', ');
-                const productosUnicos = [...new Set(shipping.map(item => item.combo.nombre))].join(', ');
-                const diasCosechaUnicos = [...new Set(
-                    shipping.map(item => formatDate(item.fecha))
-                )].join(', ');
-
-                setshippingData({
-                    ...demoData,
-                    finca: almacenesUnicos,
-                    productos: productosUnicos,
-                    diaCosecha: diasCosechaUnicos,
-                    inspeccionPuerto: shipping[0]?.Inspeccion?.fecha_inspeccion?.split("T")[0] + " " + shipping[0]?.Inspeccion?.hora_inicio,
-                    diaZarpe: formatDateTime(embarque?.fecha_zarpe),
-                    diaLlegada: formatDateTime(embarque?.fecha_arribo),
-                    puertoDestino: embarque?.Destino?.destino || 'N/A',
-                    transito: calcularTransito(embarque?.fecha_zarpe, embarque?.fecha_arribo),
-                    contenedor: shipping[0].Contenedor.contenedor
-                });
-
-            } catch (error) {
-                console.error('Error fetching container data:', error);
-                // Aquí podrías agregar un manejo de errores visual
-            } finally {
-                setTimeout(() => setLoading(false), 800);
-            }
-        };
-
-        fetchContainerData();
-    }, [token]);
-
-    if (loading) {
-        return (
-            <div className="min-vh-100 d-flex justify-content-center align-items-center" style={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-            }}>
-                <div className="text-center text-white">
-                    <div className="spinner-border mb-3" style={{ width: '3rem', height: '3rem' }}>
-                        <span className="visually-hidden">Cargando...</span>
-                    </div>
-                    <h4 className="mb-2">Cargando información</h4>
-                    <p className="mb-0 opacity-75">Contenedor: {shippingData.contenedor}</p>
-                </div>
-            </div>
-        );
+    const userName = getFullName(row?.usuario);
+    if (userName !== "No registrado") {
+      current.usuarios.add(userName);
     }
 
-    return (
-        <div className="min-vh-100" style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            fontFamily: 'Segoe UI, system-ui, sans-serif'
-        }}>
-            {/* Header con efecto glassmorphism */}
-            <div className="pt-5">
-                <div className="container">
-                    <div className="row justify-content-center">
-                        <div className="col-12 col-lg-10">
-                            <div className="text-center text-white mb-3">
-                                <div className="position-relative d-inline-block">
-                                    <h1 className="display-4 fw-bold mb-3 text-shadow">
-                                        Información de Envío
-                                    </h1>
-                                </div>
-                                <p className="fs-5 opacity-90 mb-4">
-                                    Seguimiento completo del proceso de exportación
-                                </p>
+    grouped.set(key, current);
+  });
 
-                                {containerId && (
-                                    <div className="alert alert-success d-inline-flex align-items-center border-0 shadow-sm" style={{
-                                        background: 'rgba(255, 255, 255, 0.95)'
-                                    }}>
-                                        <i className="bi bi-check-circle-fill text-success me-2"></i>
-                                        <span className="text-dark fw-semibold">Contenedor: {shippingData.contenedor}</span>
-                                    </div>
-                                )}
-                            </div>
+  return Array.from(grouped.values()).sort((a, b) => {
+    const left = new Date(b.inspection?.fecha_inspeccion || 0).getTime();
+    const right = new Date(a.inspection?.fecha_inspeccion || 0).getTime();
+    return left - right;
+  });
+};
 
-                            {/* Tarjeta principal */}
-                            <div className="card border-0 rounded-4 shadow-lg mb-5" style={{
-                                background: 'rgba(255, 255, 255, 0.95)',
-                                backdropFilter: 'blur(10px)'
-                            }}>
-                                <div className="card-body p-4 p-lg-5">
-
-                                    {/* Timeline Superior */}
-                                    <div className="row mb-5">
-                                        <div className="col-12">
-                                            <div className="d-flex justify-content-between align-items-center position-relative">
-                                                {/* Línea de tiempo */}
-                                                <div className="position-absolute top-50 start-0 end-0 h-2 bg-light rounded"></div>
-
-                                                {[
-                                                    { icon: '🌱', label: 'Cosecha', date: shippingData.diaCosecha },
-                                                    { icon: '🔍', label: 'Inspección', date: shippingData.inspeccionPuerto },
-                                                    { icon: '🚢', label: 'Zarpe', date: shippingData.diaZarpe },
-                                                    { icon: '🏁', label: 'Llegada', date: shippingData.diaLlegada }
-                                                ].map((step, index) => (
-                                                    <div key={index} className="text-center position-relative z-1">
-                                                        <div className="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2 shadow"
-                                                            style={{ width: '60px', height: '60px', fontSize: '1.5rem' }}>
-                                                            {step.icon}
-                                                        </div>
-                                                        <div className="fw-bold text-dark">{step.label}</div>
-                                                        <div className="text-muted small">{step.date}</div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="row g-4">
-                                        {/* Columna Izquierda - Información de Origen */}
-                                        <div className="col-12 col-lg-6">
-                                            <div className="rounded-4 p-4 h-100" style={{
-                                                background: 'linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%)',
-                                                border: '2px solid rgba(102, 126, 234, 0.1)'
-                                            }}>
-                                                <div className="d-flex align-items-center mb-4">
-                                                    <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3"
-                                                        style={{ width: '50px', height: '50px' }}>
-                                                        <i className="bi bi-geo-alt-fill fs-5"></i>
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="fw-bold text-primary mb-1">Origen</h4>
-                                                        <p className="text-muted mb-0">Información de procedencia</p>
-                                                    </div>
-                                                </div>
-
-                                                {[
-                                                    { icon: '🇨🇴', label: 'País Origen', value: shippingData.paisOrigen },
-                                                    { icon: '🏠', label: 'Finca', value: shippingData.finca },
-                                                    { icon: '📦', label: 'Productos', value: shippingData.productos },
-                                                    { icon: '📅', label: 'Cosecha', value: shippingData.diaCosecha }
-                                                ].map((item, index) => (
-                                                    <div key={index} className="mb-4 pb-3 border-bottom border-light">
-                                                        <div className="d-flex align-items-start">
-                                                            <span className="fs-4 me-3">{item.icon}</span>
-                                                            <div className="flex-grow-1">
-                                                                <div className="fw-semibold text-dark mb-1">{item.label}</div>
-                                                                <div className="fs-5 text-primary fw-bold">{item.value}</div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Columna Derecha - Información de Logística */}
-                                        <div className="col-12 col-lg-6">
-                                            <div className="rounded-4 p-4 h-100" style={{
-                                                background: 'linear-gradient(135deg, #fff8f8 0%, #fff0f0 100%)',
-                                                border: '2px solid rgba(118, 75, 162, 0.1)'
-                                            }}>
-                                                <div className="d-flex align-items-center mb-4">
-                                                    <div className="bg-purple text-white rounded-circle d-flex align-items-center justify-content-center me-3"
-                                                        style={{ width: '50px', height: '50px', background: '#764ba2' }}>
-                                                        <i className="bi bi-truck fs-5"></i>
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="fw-bold mb-1" style={{ color: '#764ba2' }}>Logística</h4>
-                                                        <p className="text-muted mb-0">Información de transporte</p>
-                                                    </div>
-                                                </div>
-
-                                                {[
-                                                    { icon: '🔍', label: 'Inspección Puerto', value: shippingData.inspeccionPuerto },
-                                                    { icon: '⛴️', label: 'Día de Zarpe', value: shippingData.diaZarpe },
-                                                    { icon: '🏁', label: 'Llegada Destino', value: shippingData.diaLlegada },
-                                                    { icon: '📍', label: 'Puerto Destino', value: shippingData.puertoDestino },
-                                                    { icon: '⏱️', label: 'Tránsito', value: shippingData.transito }
-                                                ].map((item, index) => (
-                                                    <div key={index} className="mb-4 pb-3 border-bottom border-light">
-                                                        <div className="d-flex align-items-start">
-                                                            <span className="fs-4 me-3">{item.icon}</span>
-                                                            <div className="flex-grow-1">
-                                                                <div className="fw-semibold text-dark mb-1">{item.label}</div>
-                                                                <div className="fs-5 fw-bold" style={{ color: '#764ba2' }}>{item.value}</div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Resumen con estadísticas */}
-                                    <div className="row mt-5">
-                                        <div className="col-12">
-                                            <div className="rounded-4 p-4 text-white shadow" style={{
-                                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                                            }}>
-                                                <h5 className="fw-bold mb-4 d-flex align-items-center">
-                                                    <i className="bi bi-graph-up-arrow me-2"></i>
-                                                    Resumen del Envío
-                                                </h5>
-                                                <div className="row g-3">
-                                                    {[
-                                                        { label: 'Origen', value: shippingData.paisOrigen, icon: '🌎' },
-                                                        { label: 'Destino', value: shippingData.puertoDestino, icon: '🎯' },
-                                                        { label: 'Duración', value: shippingData.transito, icon: '⏰' },
-                                                        { label: 'Tipos de Producto', value: `${shippingData.productos.split(',').length} tipos`, icon: '📊' }
-                                                    ].map((stat, index) => (
-                                                        <div key={index} className="col-6 col-md-3">
-                                                            <div className="text-center p-3 rounded-3" style={{
-                                                                background: 'rgba(255, 255, 255, 0.2)',
-                                                                backdropFilter: 'blur(10px)'
-                                                            }}>
-                                                                <div className="fs-2 mb-2">{stat.icon}</div>
-                                                                <div className="fw-bold fs-5">{stat.value}</div>
-                                                                <div className="small opacity-90">{stat.label}</div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Botones de Acción */}
-                                    <div className="row mt-5">
-                                        <div className="col-12">
-                                            <div className="d-flex flex-column flex-lg-row gap-3 justify-content-center">
-                                                <button
-                                                    className="btn btn-primary btn-lg fw-semibold px-5 py-3 rounded-pill shadow flex-fill d-flex align-items-center justify-content-center"
-                                                    onClick={() => window.print()}
-                                                >
-                                                    <i className="bi bi-printer me-2"></i>
-                                                    Imprimir Información
-                                                </button>
-
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Mensaje informativo */}
-                            {!containerId && (
-                                <div className="card border-0 rounded-4 shadow-sm mb-4" style={{
-                                    background: 'rgba(255, 255, 255, 0.9)'
-                                }}>
-                                    <div className="card-body text-center p-4">
-                                        <div className="text-warning mb-3">
-                                            <i className="bi bi-info-circle-fill fs-1"></i>
-                                        </div>
-                                        <h5 className="text-dark mb-3">Información General</h5>
-                                        <p className="text-muted mb-3">
-                                            Para ver información específica de un contenedor, agrega el parámetro <code>id</code> a la URL.
-                                        </p>
-                                        <div className="bg-light rounded-3 p-3">
-                                            <code className="text-primary">/shipping?id=CTN-12345</code>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
+const MetricCard = ({ label, value, icon, valueClassName = "text-dark" }) => (
+  <div className="col-12 col-md-6 col-xl-3">
+    <div className="card border-0 shadow-sm h-100" style={metricCardStyle}>
+      <div className="card-body">
+        <div className="d-flex align-items-center gap-3">
+          <div
+            className="rounded-circle d-flex align-items-center justify-content-center text-white"
+            style={{
+              width: 52,
+              height: 52,
+              background: "linear-gradient(135deg, #1e5fa4 0%, #0f9d7a 100%)",
+              boxShadow: "0 10px 20px rgba(15, 157, 122, 0.18)"
+            }}
+          >
+            {icon}
+          </div>
+          <div>
+            <div className="small text-uppercase" style={{ color: "#6b7b93", letterSpacing: "0.04em", fontWeight: 700 }}>{label}</div>
+            <div className={`fw-bold fs-5 ${valueClassName}`}>{value}</div>
+          </div>
         </div>
+      </div>
+    </div>
+  </div>
+);
+
+const SimpleListCard = ({ title, items, emptyText = "No registrado" }) => (
+  <div className="card border-0 shadow-sm h-100" style={sectionCardStyle}>
+    <div className="card-header fw-semibold" style={sectionHeaderStyle}>{title}</div>
+    <div className="card-body">
+      {items.length === 0 ? (
+        <span className="text-muted">{emptyText}</span>
+      ) : (
+        <div className="d-flex flex-wrap gap-2">
+          {items.map((item) => (
+            <span
+              key={item}
+              className="badge border"
+              style={{
+                background: "linear-gradient(180deg, #ffffff 0%, #f2f8ff 100%)",
+                color: "#163b6d",
+                borderColor: "rgba(30, 95, 164, 0.14)",
+                padding: "0.45rem 0.7rem"
+              }}
+            >
+              {item}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+const centeredTableCellStyle = {
+  textAlign: "center",
+  verticalAlign: "middle"
+};
+
+const heroCardStyle = {
+  background: "linear-gradient(135deg, #163b6d 0%, #1e5fa4 45%, #0f9d7a 100%)",
+  color: "#ffffff",
+  borderRadius: "24px",
+  overflow: "hidden"
+};
+
+const sectionCardStyle = {
+  background: "rgba(255, 255, 255, 0.96)",
+  borderRadius: "22px",
+  overflow: "hidden",
+  boxShadow: "0 18px 45px rgba(16, 52, 96, 0.08)"
+};
+
+const sectionHeaderStyle = {
+  background: "linear-gradient(90deg, #eef6ff 0%, #f4fbf9 100%)",
+  color: "#163b6d",
+  borderBottom: "1px solid rgba(22, 59, 109, 0.08)"
+};
+
+const metricCardStyle = {
+  background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,246,255,0.98) 100%)",
+  borderRadius: "18px",
+  border: "1px solid rgba(30, 95, 164, 0.10)"
+};
+
+const tableHeaderStyle = {
+  ...centeredTableCellStyle,
+  background: "#edf5ff",
+  color: "#163b6d",
+  fontWeight: 700
+};
+
+export default function TracecodePage() {
+  const router = useRouter();
+  const { token } = router.query;
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [detail, setDetail] = useState(EMPTY_DATA);
+
+  useEffect(() => {
+    const loadDetail = async () => {
+      if (!token) return;
+
+      setLoading(true);
+      setError("");
+
+      try {
+        const decoded = decodeTraceToken(token);
+        if (!decoded?.id) {
+          throw new Error("El token del contenedor no es valido.");
+        }
+
+        const contenedor = await encontrarContenedor(decoded.id);
+        const contenedorCodigo = contenedor?.contenedor || decoded?.contenedor || "";
+
+        const [
+          listadoResponse,
+          inspeccionesResponse,
+          rechazosResponse,
+          serialesContenedor,
+          inspeccionesGlobales
+        ] = await Promise.all([
+          paginarListado(1, 200, { contenedor: contenedorCodigo }),
+          paginarInspecciones(1, 200, { contenedor: contenedorCodigo }),
+          paginarRechazos(1, 200, { contenedor: contenedorCodigo }),
+          listarSeriales(null, null, { id_contenedor: decoded.id }),
+          listarInspecciones()
+        ]);
+
+        const listados = (listadoResponse?.data || []).filter(
+          (item) => item?.Contenedor?.id === decoded.id
+        );
+
+        const antinarcoticsRows = (inspeccionesResponse?.data || []).filter(
+          (item) => item?.contenedor?.id === decoded.id
+        );
+
+        const rechazos = (rechazosResponse?.data || []).filter(
+          (item) => item?.Contenedor?.id === decoded.id
+        );
+
+        const usersMap = buildUsersMap(serialesContenedor || [], antinarcoticsRows || [], rechazos || []);
+        const inspeccionesContenedor = (inspeccionesGlobales || []).filter(
+          (item) => item?.id_contenedor === decoded.id
+        );
+
+        const emptyInspection =
+          inspeccionesContenedor.find((item) =>
+            String(item?.zona || "").toLowerCase().includes("vacio")
+          ) || null;
+
+        const otherInspections = inspeccionesContenedor.filter((item) => item?.id !== emptyInspection?.id);
+
+        setDetail({
+          contenedor,
+          listados,
+          emptyInspection,
+          otherInspections,
+          antinarcoticsRows,
+          serialesContenedor: Array.isArray(serialesContenedor) ? serialesContenedor : [],
+          rechazos,
+          usersMap,
+          tokenData: decoded
+        });
+      } catch (err) {
+        console.error("Error cargando tracecode:", err);
+        setError(err?.message || "No fue posible cargar la ficha del contenedor.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDetail();
+  }, [token]);
+
+  const computed = useMemo(() => {
+    const { contenedor, listados, emptyInspection, otherInspections, antinarcoticsRows, serialesContenedor, rechazos, usersMap } = detail;
+
+    if (!contenedor) return null;
+
+    const firstRow = listados[0] || null;
+    const embarque = firstRow?.Embarque || null;
+
+    const uniqueProducts = uniqueStrings(listados.map((item) => item?.combo?.nombre));
+    const uniqueFarms = uniqueStrings(listados.map((item) => item?.almacen?.nombre));
+    const harvestDates = uniqueStrings(listados.map((item) => formatDate(item?.fecha)));
+
+    const totalBoxes = listados.reduce((acc, item) => acc + Number(item?.cajas_unidades || 0), 0);
+    const totalNetWeight = listados.reduce(
+      (acc, item) => acc + (Number(item?.combo?.peso_neto || 0) * Number(item?.cajas_unidades || 0)),
+      0
     );
+    const totalGrossWeight = listados.reduce(
+      (acc, item) => acc + (Number(item?.combo?.peso_bruto || 0) * Number(item?.cajas_unidades || 0)),
+      0
+    );
+    const totalPallets = listados.reduce((acc, item) => {
+      const cajas = Number(item?.cajas_unidades || 0);
+      const cajasPorPalet = Number(item?.combo?.cajas_por_palet || 1);
+      return acc + Math.ceil(cajas / cajasPorPalet);
+    }, 0);
+
+    const antinarcoticsSerials = new Set(antinarcoticsRows.map((item) => item?.serial).filter(Boolean));
+    const emptyInspectionSerials = serialesContenedor.filter(
+      (item) => item?.id_contenedor === contenedor.id && !antinarcoticsSerials.has(item?.serial)
+    );
+    const allUsedSerials = serialesContenedor.filter((item) => item?.id_contenedor === contenedor.id);
+
+    const emptyInspectionUsers = uniqueStrings(
+      emptyInspectionSerials.map((item) => getUserLabel(usersMap, item?.id_usuario, item?.usuario))
+    );
+
+    const antinarcoticsUsers = uniqueStrings(
+      antinarcoticsRows.map((item) => getUserLabel(usersMap, item?.id_usuario, item?.usuario))
+    );
+
+    const rejectionUsers = uniqueStrings(
+      rechazos.map((item) => getUserLabel(usersMap, item?.id_usuario, item?.usuario))
+    );
+
+    const groupedAntinarcotics = groupAntinarcoticsRows(antinarcoticsRows);
+    const returnedInfo = getContainerReturnInfo(contenedor);
+    const statusReturned = isContainerReturned(contenedor);
+
+    const relatedUsers = uniqueStrings([
+      ...emptyInspectionUsers,
+      ...antinarcoticsUsers,
+      ...rejectionUsers
+    ]);
+
+    return {
+      embarque,
+      uniqueProducts,
+      uniqueFarms,
+      harvestDates,
+      totalBoxes,
+      totalNetWeight,
+      totalGrossWeight,
+      totalPallets,
+      allUsedSerials,
+      emptyInspectionSerials,
+      emptyInspectionUsers,
+      antinarcoticsUsers,
+      rejectionUsers,
+      groupedAntinarcotics,
+      returnedInfo,
+      statusReturned,
+      relatedUsers,
+      hasFullInspection: groupedAntinarcotics.length > 0 || otherInspections.length > 0,
+      emptyFoodStatus: parseFoodResult(emptyInspection?.observaciones)
+    };
+  }, [detail]);
+
+  if (loading) {
+    return (
+      <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
+        <div className="text-center">
+          <div className="spinner-border text-primary mb-3" role="status" />
+          <h5 className="mb-1">Cargando ficha del contenedor</h5>
+          <div className="text-muted">Consultando inspecciones, usuarios y trazabilidad.</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
+        <div className="card border-0 shadow-sm" style={{ maxWidth: 620 }}>
+          <div className="card-body p-4">
+            <h4 className="text-danger mb-3">No fue posible mostrar la ficha</h4>
+            <p className="mb-0 text-muted">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!detail.contenedor || !computed) {
+    return (
+      <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
+        <div className="text-center text-muted">
+          <h4 className="mb-2">Sin informacion para mostrar</h4>
+          <p className="mb-0">Abre esta pagina con un token valido de tracecode.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const { contenedor, listados, emptyInspection, rechazos } = detail;
+  const {
+    embarque,
+    uniqueProducts,
+    uniqueFarms,
+    harvestDates,
+    totalBoxes,
+    totalNetWeight,
+    totalGrossWeight,
+    totalPallets,
+    allUsedSerials,
+    emptyInspectionSerials,
+    emptyInspectionUsers,
+    antinarcoticsUsers,
+    groupedAntinarcotics,
+    returnedInfo,
+    statusReturned,
+    relatedUsers,
+    hasFullInspection,
+    emptyFoodStatus
+  } = computed;
+
+  return (
+    <div
+      className="min-vh-100 py-4"
+      style={{ background: "linear-gradient(180deg, #f6f8fb 0%, #eef3f9 100%)" }}
+    >
+      <div className="container">
+        <div className="card border-0 shadow-sm mb-4" style={heroCardStyle}>
+          <div className="card-body p-4 p-lg-5">
+            <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+              <div>
+                <div
+                  className="small fw-semibold mb-2"
+                  style={{ textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.72)" }}
+                >
+                  Tracecode del contenedor
+                </div>
+                <h1 className="mb-1">{contenedor.contenedor}</h1>
+                <div style={{ color: "rgba(255,255,255,0.84)" }}>
+                  Semana {embarque?.semana?.consecutivo || "No registrada"} • BL {embarque?.bl || "No registrado"}
+                </div>
+              </div>
+
+              <div className="d-flex flex-wrap gap-2">
+                <span className={`badge fs-6 ${statusReturned ? "text-bg-danger" : "text-bg-light text-dark"}`}>
+                  {statusReturned ? "Devuelto / fuera de operacion" : "Activo"}
+                </span>
+                {emptyInspection && (
+                  <span className="badge fs-6 text-bg-warning text-dark">
+                    Inspeccion vacio registrada
+                  </span>
+                )}
+                <span className={`badge fs-6 ${hasFullInspection ? "text-bg-success" : "text-bg-secondary"}`}>
+                  {hasFullInspection ? "Inspeccion lleno / antinarcoticos" : "Sin inspeccion lleno"}
+                </span>
+              </div>
+            </div>
+
+            <div className="row g-3 mb-4">
+              <MetricCard label="Productos" value={uniqueProducts.length || 0} icon={<FaBoxOpen />} />
+              <MetricCard label="Cajas" value={formatNumber(totalBoxes)} icon={<FaClipboardList />} />
+              <MetricCard label="Pallets" value={formatNumber(totalPallets)} icon={<FaShippingFast />} />
+              <MetricCard label="Usuarios" value={relatedUsers.length || 0} icon={<FaUserShield />} />
+            </div>
+
+            <div className="d-flex flex-column flex-md-row gap-2">
+              <button type="button" className="btn btn-light fw-semibold px-4" onClick={() => window.print()}>
+                <FaPrint className="me-2" />
+                Imprimir ficha
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="row g-4 mb-4">
+          <div className="col-12 col-lg-6">
+            <div className="card border-0 shadow-sm h-100" style={sectionCardStyle}>
+              <div className="card-header fw-semibold" style={sectionHeaderStyle}>Logistica del embarque</div>
+              <div className="card-body">
+                <div className="row g-3">
+                  <div className="col-12 col-md-6">
+                    <div className="text-muted small">Booking</div>
+                    <div className="fw-semibold">{embarque?.booking || "No registrado"}</div>
+                  </div>
+                  <div className="col-12 col-md-6">
+                    <div className="text-muted small">Destino</div>
+                    <div className="fw-semibold">{embarque?.Destino?.destino || "No registrado"}</div>
+                  </div>
+                  <div className="col-12 col-md-6">
+                    <div className="text-muted small">Naviera</div>
+                    <div className="fw-semibold">{embarque?.Naviera?.navieras || embarque?.Naviera?.cod || "No registrada"}</div>
+                  </div>
+                  <div className="col-12 col-md-6">
+                    <div className="text-muted small">Buque</div>
+                    <div className="fw-semibold">{embarque?.Buque?.buque || "No registrado"}</div>
+                  </div>
+                  <div className="col-12 col-md-6">
+                    <div className="text-muted small">Fecha zarpe</div>
+                    <div className="fw-semibold">{formatDateTime(embarque?.fecha_zarpe)}</div>
+                  </div>
+                  <div className="col-12 col-md-6">
+                    <div className="text-muted small">Fecha arribo</div>
+                    <div className="fw-semibold">{formatDateTime(embarque?.fecha_arribo)}</div>
+                  </div>
+                  <div className="col-12">
+                    <div className="text-muted small">Tiempo de transito</div>
+                    <div className="fw-semibold">{getTransitDays(embarque?.fecha_zarpe, embarque?.fecha_arribo)}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-12 col-lg-6">
+            <div className="card border-0 shadow-sm h-100" style={sectionCardStyle}>
+              <div className="card-header fw-semibold" style={sectionHeaderStyle}>Resumen de carga</div>
+              <div className="card-body">
+                <div className="row g-3">
+                  <div className="col-12 col-md-6">
+                    <div className="text-muted small">Fincas / lugares de llenado</div>
+                    <div className="fw-semibold">{uniqueFarms.join(", ") || "No registrado"}</div>
+                  </div>
+                  <div className="col-12 col-md-6">
+                    <div className="text-muted small">Fechas de cosecha / carga</div>
+                    <div className="fw-semibold">{harvestDates.join(", ") || "No registrado"}</div>
+                  </div>
+                  <div className="col-12">
+                    <div className="text-muted small">Productos</div>
+                    <div className="fw-semibold">{uniqueProducts.join(", ") || "No registrado"}</div>
+                  </div>
+                  <div className="col-12 col-md-6">
+                    <div className="text-muted small">Peso neto estimado</div>
+                    <div className="fw-semibold">{formatNumber(totalNetWeight, 1)} kg</div>
+                  </div>
+                  <div className="col-12 col-md-6">
+                    <div className="text-muted small">Peso bruto estimado</div>
+                    <div className="fw-semibold">{formatNumber(totalGrossWeight, 1)} kg</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="row g-4 mb-4">
+          <div className="col-12 col-lg-6">
+            <SimpleListCard title="Usuarios relacionados" items={relatedUsers} emptyText="No se identificaron usuarios relacionados." />
+          </div>
+
+          <div className="col-12 col-lg-6">
+            <div className="card border-0 shadow-sm h-100" style={sectionCardStyle}>
+              <div className="card-header fw-semibold" style={sectionHeaderStyle}>Estado del contenedor</div>
+              <div className="card-body">
+                <div className="d-flex align-items-center gap-3 mb-3">
+                  {statusReturned ? (
+                    <FaTimesCircle className="text-danger fs-3" />
+                  ) : (
+                    <FaCheckCircle className="text-success fs-3" />
+                  )}
+                  <div>
+                    <div className="fw-semibold">
+                      {statusReturned ? "Contenedor devuelto o marcado en mal estado" : "Contenedor habilitado"}
+                    </div>
+                    <div className="text-muted small">
+                      Creado: {formatDateTime(contenedor?.createdAt)} • Actualizado: {formatDateTime(contenedor?.updatedAt)}
+                    </div>
+                  </div>
+                </div>
+
+                {returnedInfo ? (
+                  <>
+                    <div className="text-muted small">Motivo de devolucion</div>
+                    <div className="fw-semibold mb-2">{returnedInfo?.motivo || "No registrado"}</div>
+                    <div className="text-muted small">Fecha de devolucion</div>
+                    <div className="fw-semibold mb-2">{formatDateTime(returnedInfo?.fecha)}</div>
+                    <div className="text-muted small">Origen</div>
+                    <div className="fw-semibold">{returnedInfo?.origen || "No registrado"}</div>
+                  </>
+                ) : (
+                  <span className="text-muted">No hay novedad de devolucion para este contenedor.</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {emptyInspection && (
+          <div className="card border-0 shadow-sm mb-4" style={sectionCardStyle}>
+            <div className="card-header d-flex align-items-center justify-content-between" style={sectionHeaderStyle}>
+              <span className="fw-semibold">Inspeccion contenedor vacio</span>
+              <span className="badge text-bg-success">Registrada</span>
+            </div>
+            <div className="card-body">
+              <div className="row g-4">
+                <div className="col-12 col-lg-4">
+                  <div className="text-muted small">Fecha de inspeccion</div>
+                  <div className="fw-semibold mb-3">{formatDateTime(emptyInspection?.fecha_inspeccion)}</div>
+
+                  <div className="text-muted small">Agente</div>
+                  <div className="fw-semibold mb-3">{emptyInspection?.agente || "No registrado"}</div>
+
+                  <div className="text-muted small">Horario</div>
+                  <div className="fw-semibold mb-3">
+                    {emptyInspection?.hora_inicio || "No registrado"} - {emptyInspection?.hora_fin || "No registrado"}
+                  </div>
+
+                  <div className="text-muted small">Validacion alimentos</div>
+                  <div className={`fw-semibold ${emptyFoodStatus.includes("No apto") ? "text-danger" : "text-success"}`}>
+                    {emptyFoodStatus}
+                  </div>
+                </div>
+
+                <div className="col-12 col-lg-4">
+                  <div className="text-muted small">Usuarios que registraron insumos / vacio</div>
+                  <div className="fw-semibold mb-3">
+                    {emptyInspectionUsers.join(", ") || "No registrado"}
+                  </div>
+
+                  <div className="text-muted small">Cantidad de seriales asociados</div>
+                  <div className="fw-semibold mb-3">{emptyInspectionSerials.length}</div>
+
+                  <div className="text-muted small">Zona</div>
+                  <div className="fw-semibold">{emptyInspection?.zona || "No registrada"}</div>
+                </div>
+
+                <div className="col-12 col-lg-4">
+                  <div className="text-muted small">Observaciones</div>
+                  <div className="border rounded p-3 bg-light-subtle" style={{ whiteSpace: "pre-wrap" }}>
+                    {emptyInspection?.observaciones || "Sin observaciones registradas."}
+                  </div>
+                </div>
+
+                <div className="col-12">
+                  <div className="table-responsive">
+                    <table className="table table-sm table-bordered table-hover align-middle text-center mb-0">
+                      <thead>
+                        <tr>
+                          <th style={tableHeaderStyle}>Serial</th>
+                          <th style={tableHeaderStyle}>Producto</th>
+                          <th style={tableHeaderStyle}>Usuario</th>
+                          <th style={tableHeaderStyle}>Fecha de uso</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {emptyInspectionSerials.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="text-center text-muted py-3">
+                              No se encontraron seriales asociados a la inspeccion vacio.
+                            </td>
+                          </tr>
+                        ) : (
+                          emptyInspectionSerials.map((item) => (
+                            <tr key={item.id || item.serial}>
+                              <td style={centeredTableCellStyle}>{item.serial || "No registrado"}</td>
+                              <td style={centeredTableCellStyle}>{item?.producto?.name || item?.producto?.nombre || item.cons_producto || "No registrado"}</td>
+                              <td style={centeredTableCellStyle}>{getUserLabel(detail.usersMap, item?.id_usuario, item?.usuario)}</td>
+                              <td style={centeredTableCellStyle}>{formatDate(item?.fecha_de_uso || item?.updatedAt)}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="card border-0 shadow-sm mb-4" style={sectionCardStyle}>
+          <div className="card-header d-flex align-items-center justify-content-between" style={sectionHeaderStyle}>
+            <span className="fw-semibold">Inspeccion lleno / antinarcoticos</span>
+            <span className={`badge ${hasFullInspection ? "text-bg-success" : "text-bg-secondary"}`}>
+              {hasFullInspection ? "Registrada" : "No registrada"}
+            </span>
+          </div>
+          <div className="card-body">
+            {!hasFullInspection ? (
+              <div className="text-muted">No hay inspecciones de contenedor lleno asociadas a este contenedor.</div>
+            ) : (
+              <div className="row g-4">
+                <div className="col-12">
+                  <div className="row g-3">
+                    <MetricCard label="Eventos inspeccion" value={groupedAntinarcotics.length || detail.otherInspections.length} icon={<FaRoute />} />
+                    <MetricCard label="Seriales usados" value={detail.antinarcoticsRows.length} icon={<FaBoxOpen />} />
+                    <MetricCard label="Usuarios" value={antinarcoticsUsers.length || 0} icon={<FaUserShield />} />
+                    <MetricCard label="Rechazos" value={rechazos.length} icon={<FaClipboardList />} valueClassName={rechazos.length ? "text-danger" : "text-dark"} />
+                  </div>
+                </div>
+
+                {groupedAntinarcotics.map((group, index) => (
+                  <div className="col-12" key={`${group.inspection?.id || "anti"}-${index}`}>
+                    <div className="border rounded p-3">
+                      <div className="row g-3">
+                        <div className="col-12 col-lg-4">
+                          <div className="text-muted small">Fecha</div>
+                          <div className="fw-semibold mb-2">{formatDateTime(group.inspection?.fecha_inspeccion)}</div>
+                          <div className="text-muted small">Agente</div>
+                          <div className="fw-semibold mb-2">{group.inspection?.agente || "No registrado"}</div>
+                          <div className="text-muted small">Horario</div>
+                          <div className="fw-semibold">
+                            {group.inspection?.hora_inicio || "No registrado"} - {group.inspection?.hora_fin || "No registrado"}
+                          </div>
+                        </div>
+
+                        <div className="col-12 col-lg-4">
+                          <div className="text-muted small">Zona</div>
+                          <div className="fw-semibold mb-2">{group.inspection?.zona || "No registrada"}</div>
+                          <div className="text-muted small">Usuarios del registro</div>
+                          <div className="fw-semibold">{Array.from(group.usuarios).join(", ") || "No registrado"}</div>
+                        </div>
+
+                        <div className="col-12 col-lg-4">
+                          <div className="text-muted small">Observaciones</div>
+                          <div className="border rounded p-3 bg-light-subtle" style={{ whiteSpace: "pre-wrap" }}>
+                            {group.inspection?.observaciones || "Sin observaciones registradas."}
+                          </div>
+                        </div>
+
+                        <div className="col-12">
+                          <div className="table-responsive">
+                            <table className="table table-sm table-bordered table-hover align-middle text-center mb-0">
+                              <thead>
+                                <tr>
+                                  <th style={tableHeaderStyle}>Serial</th>
+                                  <th style={tableHeaderStyle}>Articulo</th>
+                                  <th style={tableHeaderStyle}>Movimiento</th>
+                                  <th style={tableHeaderStyle}>Usuario</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {group.seriales.map((item) => (
+                                  <tr key={item.id || item.serial}>
+                                    <td style={centeredTableCellStyle}>{item.serial || "No registrado"}</td>
+                                    <td style={centeredTableCellStyle}>{item?.producto?.name || item?.producto?.nombre || item?.cons_producto || "No registrado"}</td>
+                                    <td style={centeredTableCellStyle}>{item?.MotivoDeUso?.motivo_de_uso || "No registrado"}</td>
+                                    <td style={centeredTableCellStyle}>{getUserLabel(detail.usersMap, item?.id_usuario, item?.usuario)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="card border-0 shadow-sm mb-4" style={sectionCardStyle}>
+          <div className="card-header fw-semibold" style={sectionHeaderStyle}>Todos los seriales usados en el contenedor</div>
+          <div className="card-body">
+            <div className="table-responsive">
+              <table className="table table-sm table-bordered table-hover align-middle text-center mb-0">
+                <thead>
+                  <tr>
+                    <th style={tableHeaderStyle}>Serial</th>
+                    <th style={tableHeaderStyle}>Articulo</th>
+                    <th style={tableHeaderStyle}>Motivo de uso</th>
+                    <th style={tableHeaderStyle}>Usuario</th>
+                    <th style={tableHeaderStyle}>Movimiento</th>
+                    <th style={tableHeaderStyle}>Fecha de uso</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allUsedSerials.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="text-center text-muted py-3">
+                        No se encontraron seriales usados para este contenedor.
+                      </td>
+                    </tr>
+                  ) : (
+                    allUsedSerials.map((item) => (
+                      <tr key={item.id || item.serial}>
+                        <td style={centeredTableCellStyle}>{item.serial || "No registrado"}</td>
+                        <td style={centeredTableCellStyle}>{item?.producto?.name || item?.producto?.nombre || item?.cons_producto || "No registrado"}</td>
+                        <td style={centeredTableCellStyle}>{item?.MotivoDeUso?.motivo_de_uso || "No registrado"}</td>
+                        <td style={centeredTableCellStyle}>{getUserLabel(detail.usersMap, item?.id_usuario, item?.usuario)}</td>
+                        <td style={centeredTableCellStyle}>{item?.cons_movimiento || "No registrado"}</td>
+                        <td style={centeredTableCellStyle}>{formatDate(item?.fecha_de_uso || item?.updatedAt)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div className="card border-0 shadow-sm mb-4" style={sectionCardStyle}>
+          <div className="card-header fw-semibold" style={sectionHeaderStyle}>Lineas de listado del contenedor</div>
+          <div className="card-body">
+            <div className="table-responsive">
+              <table className="table table-sm table-bordered table-hover align-middle text-center mb-0">
+                <thead>
+                  <tr>
+                    <th style={tableHeaderStyle}>Fecha</th>
+                    <th style={tableHeaderStyle}>Producto</th>
+                    <th style={tableHeaderStyle}>Cajas</th>
+                    <th style={tableHeaderStyle}>Pallets</th>
+                    <th style={tableHeaderStyle}>Llenado</th>
+                    <th style={tableHeaderStyle}>Semana</th>
+                    <th style={tableHeaderStyle}>BL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {listados.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="text-center text-muted py-3">
+                        No hay lineas de listado registradas para este contenedor.
+                      </td>
+                    </tr>
+                  ) : (
+                    listados.map((item) => {
+                      const cajas = Number(item?.cajas_unidades || 0);
+                      const cajasPorPalet = Number(item?.combo?.cajas_por_palet || 1);
+                      const pallets = Math.ceil(cajas / cajasPorPalet);
+
+                      return (
+                        <tr key={item.id}>
+                          <td style={centeredTableCellStyle}>{formatDate(item?.fecha)}</td>
+                          <td style={centeredTableCellStyle}>{item?.combo?.nombre || "No registrado"}</td>
+                          <td style={centeredTableCellStyle}>{formatNumber(cajas)}</td>
+                          <td style={centeredTableCellStyle}>{formatNumber(pallets)}</td>
+                          <td style={centeredTableCellStyle}>{item?.almacen?.nombre || "No registrado"}</td>
+                          <td style={centeredTableCellStyle}>{item?.Embarque?.semana?.consecutivo || "No registrado"}</td>
+                          <td style={centeredTableCellStyle}>{item?.Embarque?.bl || "No registrado"}</td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div className="card border-0 shadow-sm" style={sectionCardStyle}>
+          <div className="card-header fw-semibold" style={sectionHeaderStyle}>Rechazos asociados</div>
+          <div className="card-body">
+            <div className="table-responsive">
+              <table className="table table-sm table-bordered table-hover align-middle text-center mb-0">
+                <thead>
+                  <tr>
+                    <th style={tableHeaderStyle}>Fecha</th>
+                    <th style={tableHeaderStyle}>Producto</th>
+                    <th style={tableHeaderStyle}>Cantidad</th>
+                    <th style={tableHeaderStyle}>Pallet</th>
+                    <th style={tableHeaderStyle}>Motivo</th>
+                    <th style={tableHeaderStyle}>Productor</th>
+                    <th style={tableHeaderStyle}>Usuario</th>
+                    <th style={tableHeaderStyle}>Observaciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rechazos.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="text-center text-muted py-3">
+                        No hay rechazos registrados para este contenedor.
+                      </td>
+                    </tr>
+                  ) : (
+                    rechazos.map((item) => (
+                      <tr key={item.id}>
+                        <td style={centeredTableCellStyle}>{formatDate(item?.fecha_rechazo || item?.createdAt)}</td>
+                        <td style={centeredTableCellStyle}>{item?.combo?.nombre || "No registrado"}</td>
+                        <td style={centeredTableCellStyle}>{formatNumber(item?.cantidad || 0)}</td>
+                        <td style={centeredTableCellStyle}>{item?.serial_palet || "No registrado"}</td>
+                        <td style={centeredTableCellStyle}>{item?.MotivoDeRechazo?.motivo_rechazo || "No registrado"}</td>
+                        <td style={centeredTableCellStyle}>{item?.almacene?.nombre || item?.cod_productor || "No registrado"}</td>
+                        <td style={centeredTableCellStyle}>{getUserLabel(detail.usersMap, item?.id_usuario, item?.usuario)}</td>
+                        <td style={centeredTableCellStyle}>{item?.observaciones || "Sin observaciones"}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

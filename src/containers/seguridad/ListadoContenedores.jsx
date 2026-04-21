@@ -2,7 +2,7 @@ import Paginacion from '@components/shared/Tablas/Paginacion';
 import { actualizarListado, duplicarListado, paginarListado } from '@services/api/listado';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Form, Col, Row, Button } from 'react-bootstrap';
-import { FaQrcode } from 'react-icons/fa';
+import { FaExternalLinkAlt, FaQrcode } from 'react-icons/fa';
 import Image from "next/image";
 import config from '@public/images/configuracion.png';
 import styles from '@styles/header.module.css';
@@ -21,6 +21,7 @@ import Transbordar from '@assets/Seguridad/Listado/Transbordar';
 import CargarExcel from '@assets/Seguridad/Listado/CargueMasivo';
 import endPoints from '@services/api';
 import { filterActiveContainerRows } from '@utils/contenedorEstado';
+import { buildTracecodeUrl } from '@utils/tracecode';
 
 // Constantes
 const COLORES_PASTEL = [
@@ -243,32 +244,15 @@ const ListadoContenedores = () => {
     }
   }, [updateState]);
 
-  // Operaciones en lote optimizadas
-  const ejecutarOperacionLote = useCallback(async (operacion, mensajeError) => {
-    if (selectedItems.length === 0) {
-      alert('Por favor selecciona al menos un item');
-      return;
-    }
-
-    try {
-      await operacion(selectedItems);
-      await listar();
-    } catch (error) {
-      console.error(mensajeError, error);
-      alert(mensajeError);
-    }
-  }, [selectedItems]);
-
-  const duplicarLinea = useCallback(() =>
+  const duplicarLinea = () =>
     ejecutarOperacionLote(
       async (items) => {
         await Promise.all(items.map(item => duplicarListado(item.id)));
       },
       'Error al duplicar las líneas seleccionadas'
-    ), [ejecutarOperacionLote]
-  );
+    );
 
-  const eliminarLinea = useCallback(() =>
+  const eliminarLinea = () =>
     ejecutarOperacionLote(
       async (items) => {
         await Promise.all(items.map(item =>
@@ -280,8 +264,7 @@ const ListadoContenedores = () => {
         });
       },
       'Error al eliminar las líneas seleccionadas'
-    ), [ejecutarOperacionLote, state.check.length, updateState]
-  );
+    );
 
   // Handlers simples optimizados
   const toggleEdit = useCallback(() => {
@@ -413,6 +396,20 @@ const ListadoContenedores = () => {
     }
   }, [state.tableData, state.configuracionTabla, state.configuracionInsumos]);
 
+  const openTracecode = useCallback((contenedor) => {
+    if (!contenedor?.id) {
+      window.alert("No fue posible identificar el contenedor.");
+      return;
+    }
+
+    const traceUrl = buildTracecodeUrl({
+      id: contenedor.id,
+      contenedor: contenedor.contenedor
+    });
+
+    window.open(traceUrl, "_blank", "noopener,noreferrer");
+  }, []);
+
   const renderHeader = useCallback((name, highlight = false, label = null) => {
     return state.configuracionTabla.includes(name) && (
       <th className={`text-custom-small text-center ${highlight ? 'text-white bg-secondary' : ''}`}>
@@ -427,7 +424,7 @@ const ListadoContenedores = () => {
 
     try {
       const [modulo, embarquesRes, productoRes, listadoList] = await Promise.all([
-        encontrarModulo(`Relación_listado_${user.username}`),
+        encontrarModulo(`Relación_listado_${user.username}`).catch(() => []),
         paginarEmbarques(1, 20, {}),
         paginarCombos(1, 20, "", {isBlock: false}),
         paginarListado(state.pagination, state.limit, Object.entries({
@@ -451,8 +448,22 @@ const ListadoContenedores = () => {
       ]);
 
       // Configuración de insumos
-      const detalles = JSON.parse(modulo[0]?.detalles || '{"tags":[]}');
-      const consecutivos = detalles.tags;
+      const rawDetalles = modulo?.[0]?.detalles;
+      let consecutivos = [];
+
+      try {
+        const detalles = rawDetalles ? JSON.parse(rawDetalles) : null;
+
+        if (Array.isArray(detalles)) {
+          consecutivos = detalles
+            .map((item) => item?.consecutivo || item?.id || item)
+            .filter(Boolean);
+        } else if (Array.isArray(detalles?.tags)) {
+          consecutivos = detalles.tags.filter(Boolean);
+        }
+      } catch (configError) {
+        console.warn("No fue posible leer la configuración de insumos del listado:", configError);
+      }
       let insumosConfig = [];
 
       if (consecutivos.length > 0) {
@@ -507,6 +518,22 @@ const ListadoContenedores = () => {
   useEffect(() => {
     listar();
   }, [state.pagination, state.limit, debouncedFilters, state.openTransbordar, state.openMasivo, state.openActualizarMasivo, listar]);
+
+  // Operaciones en lote optimizadas
+  async function ejecutarOperacionLote(operacion, mensajeError) {
+    if (selectedItems.length === 0) {
+      alert('Por favor selecciona al menos un item');
+      return;
+    }
+
+    try {
+      await operacion(selectedItems);
+      await listar();
+    } catch (error) {
+      console.error(mensajeError, error);
+      alert(mensajeError);
+    }
+  }
 
 
 
@@ -680,9 +707,20 @@ const ListadoContenedores = () => {
             </button>
           </td>
         )}
+
+        <td className="text-custom-small text-center">
+          <button
+            type="button"
+            style={{ all: 'unset', cursor: 'pointer' }}
+            onClick={() => openTracecode(Contenedor)}
+            title={`Ver detalle de ${Contenedor?.contenedor || "contenedor"}`}
+          >
+            <FaExternalLinkAlt />
+          </button>
+        </td>
       </tr>
     );
-  }, [state.configuracionTabla, state.isEditable, state.check, state.tableData, state.bol, state.configuracionInsumos, state.embarques, state.almacenes, state.productos, handleCellEdit, handleDatalist, onChangeCasilla, handleChecks, updateState]);
+  }, [state.configuracionTabla, state.isEditable, state.check, state.tableData, state.bol, state.configuracionInsumos, state.embarques, state.almacenes, state.productos, handleCellEdit, handleDatalist, onChangeCasilla, handleChecks, openTracecode, updateState]);
 
   return (
     <>
@@ -845,6 +883,7 @@ const ListadoContenedores = () => {
               {renderHeader("Peso Bruto", true)}
               {renderHeader("Peso Neto", true)}
               {renderHeader("QR", true)}
+              <th className="text-custom-small text-center text-white bg-secondary">Detalle</th>
             </tr>
           </thead>
           <tbody>
