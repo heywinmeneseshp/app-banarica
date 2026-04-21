@@ -26,16 +26,17 @@ export default function Alerta({ data }) {
     };
 
     useEffect(() => {
-        setColor("warning");
-        let texto = data.tipo_movimiento;
-        if (data.tipo_movimiento == "Pedido") setColor("success");
+        let nextColor = "warning";
+        let nextTexto = data.tipo_movimiento;
+        if (data.tipo_movimiento == "Pedido") nextColor = "success";
         if (data.tipo_movimiento == "Liquidacion") {
-            setColor("danger");
-            texto = "Liquidación";
+            nextColor = "danger";
+            nextTexto = "Liquidación";
         }
-        if (data.tipo_movimiento == "Devolucion") texto = "Devolución";
-        setTexto(texto);
-    });
+        if (data.tipo_movimiento == "Devolucion") nextTexto = "Devolución";
+        setColor(nextColor);
+        setTexto(nextTexto);
+    }, [data.tipo_movimiento]);
 
     return (
         <>

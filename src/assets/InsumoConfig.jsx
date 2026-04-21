@@ -18,7 +18,8 @@ function InsumoConfig({ handleConfig, modulo_confi }) {
   useEffect(() => {
     listarProductos().then(res => setProductos(res || []));
     encontrarModulo(modulo_confi).then(res => {
-      const response = JSON.parse(res[0].detalles);
+      const detalles = res?.[0]?.detalles;
+      const response = detalles ? JSON.parse(detalles) : {};
       setTags(response?.tags || []);
       setTiempoBloque({
         hora_inicial: response.hora_inicial,
@@ -26,10 +27,8 @@ function InsumoConfig({ handleConfig, modulo_confi }) {
         fecha_inicio: response.fecha_inicio,
         correos_alerta: response.correos_alerta
       });
-
-
     });
-  }, []);
+  }, [modulo_confi]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -216,3 +215,4 @@ function InsumoConfig({ handleConfig, modulo_confi }) {
 }
 
 export default InsumoConfig;
+

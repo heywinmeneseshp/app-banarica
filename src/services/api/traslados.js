@@ -23,12 +23,8 @@ const agregarTraslado = async (data) => {
 };
 
 const ejecutarTraslado = async (data) => {
-    try {
-        const response = await axios.post(endPoints.traslados.execute, data, config);
-        return response.data;
-    } catch (err) {
-        throw err;
-    }
+    const response = await axios.post(endPoints.traslados.execute, data, config);
+    return response.data;
 };
 
 const eliminarTraslado = async (consecutivo) => {
