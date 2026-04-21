@@ -4,6 +4,7 @@ import { Col, Form, Row } from 'react-bootstrap';
 import { paginarListado } from '@services/api/listado';
 import { agregarTransbordo } from '@services/api/transbordo';
 import { listarSeriales } from '@services/api/seguridad';
+import { filterActiveContainerRows } from '@utils/contenedorEstado';
 
 const Transbordar = ({ setOpen }) => {
 
@@ -24,16 +25,17 @@ const Transbordar = ({ setOpen }) => {
             habilitado: true,
         };
         const res = await paginarListado(1, 20, object);
-        const contenedoresConDuplicados = res.data.map(item => item?.Contenedor?.contenedor);
+        const rows = filterActiveContainerRows(res.data || []);
+        const contenedoresConDuplicados = rows.map(item => item?.Contenedor?.contenedor);
         const contSinDuplicados = contenedoresConDuplicados.filter((item, index) => {
             return contenedoresConDuplicados.indexOf(item) === index;
         });
         setContenedores(contSinDuplicados);
-        const semConDuplicados = res.data.map(item => item.Embarque.semana.consecutivo);
+        const semConDuplicados = rows.map(item => item.Embarque.semana.consecutivo);
         const semSinDuplicados = semConDuplicados.filter((item, index) => {
             return semConDuplicados.indexOf(item) === index;
         });
-        setListado(res.data);
+        setListado(rows);
         setSemana(semSinDuplicados);
     };
 

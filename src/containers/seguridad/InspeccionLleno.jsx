@@ -8,6 +8,7 @@ import { encontrarUnSerial, inspeccionAntinarcoticos } from "@services/api/segur
 import { FaPlus, FaMinus } from 'react-icons/fa';
 import Loader from "@components/shared/Loader";
 import { listarAlmacenes } from "@services/api/almacenes";
+import { filterActiveContainerRows } from "@utils/contenedorEstado";
 
 const CONTAINER_LENGTH = 11;
 
@@ -162,7 +163,9 @@ export default function InspeccionLLeno() {
 
     try {
       const listado = await paginarListado(1, 10, filters);
-      const result = listado.data.map(item => item?.Contenedor).filter(item => item != null);
+      const result = filterActiveContainerRows(listado.data || [])
+        .map(item => item?.Contenedor)
+        .filter(item => item != null);
       const uniqueResult = [...new Set(result)];
       setContenedores(uniqueResult);
       setValidation(prev => ({ ...prev, contenedor: uniqueResult.length > 0 }));

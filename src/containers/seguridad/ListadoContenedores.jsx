@@ -20,6 +20,7 @@ import * as XLSX from 'xlsx';
 import Transbordar from '@assets/Seguridad/Listado/Transbordar';
 import CargarExcel from '@assets/Seguridad/Listado/CargueMasivo';
 import endPoints from '@services/api';
+import { filterActiveContainerRows } from '@utils/contenedorEstado';
 
 // Constantes
 const COLORES_PASTEL = [
@@ -59,7 +60,8 @@ const FILTER_FIELDS = [
   { id: "booking", label: "Booking", placeholder: "Ingrese el Booking" },
   { id: "BoL", label: "Bill of Loading", placeholder: "Ingrese el BL" },
   { id: "naviera", label: "Naviera", placeholder: "Ingrese la Naviera" },
-  { id: "destino", label: "Destino", placeholder: "Ingrese el Buque" },
+  { id: "destino", label: "Destino", placeholder: "Ingrese el Destino" },
+  { id: "buque", label: "Buque", placeholder: "Ingrese el Buque" },
   { id: "llenado", label: "Llenado", placeholder: "Lugar de Llenado" },
   { id: "contenedor", label: "Contenedor", placeholder: "DUMY0000001" },
   { id: "producto", label: "Producto", placeholder: "Ingrese el Producto" },
@@ -119,7 +121,7 @@ const ListadoContenedores = () => {
   // Estados
   const [filters, setFilters] = useState({
     semana: '', cliente: '', booking: '', BoL: '', naviera: '',
-    destino: '', llenado: '', contenedor: '', producto: '',
+    destino: '', buque: '', llenado: '', contenedor: '', producto: '',
     fecha_inicial: '', fecha_final: ''
   });
 
@@ -436,7 +438,7 @@ const ListadoContenedores = () => {
           naviera: debouncedFilters.naviera,
           cliente: debouncedFilters.cliente,
           semana: debouncedFilters.semana,
-          buque: debouncedFilters.destino,
+          buque: debouncedFilters.buque,
           fecha_inicial: debouncedFilters.fecha_inicial,
           fecha_final: debouncedFilters.fecha_final,
           llenado: debouncedFilters.llenado,
@@ -460,18 +462,20 @@ const ListadoContenedores = () => {
         ).filter(Boolean);
       }
 
+      const visibleRows = filterActiveContainerRows(listadoList.data);
+
       updateState({
-        tableData: listadoList.data,
-        total: listadoList.total,
+        tableData: visibleRows,
+        total: visibleRows.length,
         configuracionInsumos: insumosConfig,
         embarques: embarquesRes.data,
         productos: productoRes.data,
-        check: new Array(listadoList.data.length).fill(false),
+        check: new Array(visibleRows.length).fill(false),
         checkAll: false,
         loading: false
       });
 
-      aplicarColor(listadoList.data);
+      aplicarColor(visibleRows);
     } catch (error) {
       console.error('Error al cargar datos:', {
         message: error?.message,

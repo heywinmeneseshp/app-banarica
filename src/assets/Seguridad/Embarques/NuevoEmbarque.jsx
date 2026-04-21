@@ -39,7 +39,7 @@ function NuevoEmbarque({ setAlert, element, setOpen, actualizar, crear }) {
         buques = buques.filter(item => item.id_naviera == formData.get('id_naviera'));
 
         setListas({
-            'Sem': semanas.map(item => ({ id: item.id, nombre: item.semana })),
+            'Sem': semanas.map(item => ({ id: item.id, nombre: item.consecutivo })),
             'Cliente': cliente.map(item => ({ id: item.id, nombre: item.razon_social })),
             'Naviera': naviera.map(item => ({ id: item.id, nombre: item.navieras })),
             'Buque': buques.map(item => ({ id: item.id, nombre: item.buque })),

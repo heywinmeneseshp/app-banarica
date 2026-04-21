@@ -217,6 +217,24 @@ const Rechazos = () => {
         listar();
     };
 
+    const getListadoRelacionado = (rechazo) => {
+        const listados = rechazo?.Contenedor?.Listados || [];
+        return listados.find((item) => item?.id_producto === rechazo?.id_producto) || listados[0] || null;
+    };
+
+    const formatDateValue = (value) => {
+        if (!value) return "";
+
+        if (typeof value === "string") {
+            if (value.includes("T")) return value.split("T")[0];
+            const parsedStringDate = new Date(value);
+            return Number.isNaN(parsedStringDate.getTime()) ? value : parsedStringDate.toISOString().split("T")[0];
+        }
+
+        const parsedDate = new Date(value);
+        return Number.isNaN(parsedDate.getTime()) ? "" : parsedDate.toISOString().split("T")[0];
+    };
+
 
     return (
 
@@ -296,15 +314,17 @@ const Rechazos = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {tableData.map((item, key) => (
+                    {tableData.map((item, key) => {
+                        const listadoRelacionado = getListadoRelacionado(item);
+                        return (
                         <tr key={key}>
                             {editando === item.id ? (
                                 <>
                                     <td className="text-custom-small text-center">
-                                        {valoresEditados.semana || item?.Contenedor?.Listados[0]?.Embarque?.semana?.consecutivo}
+                                        {valoresEditados.semana || listadoRelacionado?.Embarque?.semana?.consecutivo}
                                     </td>
-                                    <td className="text-custom-small text-center">{(item?.Contenedor?.Listados[0]?.fecha || "").split("T")[0]}</td>
-                                    <td className="text-custom-small text-center">{(item?.fecha_rechazo)?.split("T")[0]}</td>
+                                    <td className="text-custom-small text-center">{formatDateValue(listadoRelacionado?.fecha)}</td>
+                                    <td className="text-custom-small text-center">{formatDateValue(item?.fecha_rechazo)}</td>
                                     <td>
                                         <input
                                             list={`almacenes-${item.combo.id}`}
@@ -359,9 +379,9 @@ const Rechazos = () => {
                                 </>
                             ) : (
                                 <>
-                                    <td className="text-custom-small text-center">{item?.Contenedor?.Listados[0]?.Embarque?.semana?.consecutivo}</td>
-                                    <td className="text-custom-small text-center">{(item?.Contenedor?.Listados[0]?.fecha || "").split("T")[0]}</td>
-                                    <td className="text-custom-small text-center">{(item?.fecha_rechazo)?.split("T")[0]}</td>
+                                    <td className="text-custom-small text-center">{listadoRelacionado?.Embarque?.semana?.consecutivo}</td>
+                                    <td className="text-custom-small text-center">{formatDateValue(listadoRelacionado?.fecha)}</td>
+                                    <td className="text-custom-small text-center">{formatDateValue(item?.fecha_rechazo)}</td>
                                     <td className="text-custom-small text-center">{item?.almacene?.nombre}</td>
                                     <td className="text-custom-small text-center">{item?.Contenedor?.contenedor}</td>
                                     <td className="text-custom-small text-center">{item?.combo?.nombre}</td>
@@ -385,7 +405,8 @@ const Rechazos = () => {
                                 </>
                             )}
                         </tr>
-                    ))}
+                        );
+                    })}
                 </tbody>
             </table>
             <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />

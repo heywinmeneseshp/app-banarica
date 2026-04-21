@@ -8,6 +8,7 @@
            "@containers/*": ["containers/*"],
            "@context/*": ["context/*"],
            "@hooks/*": ["hooks/*"],
+           "@utils/*": ["utils/*"],
            "@public/*": ["./../public/*"],
            "@styles/*": ["styles/*"],
            "@templates/*": ["templates/*"],

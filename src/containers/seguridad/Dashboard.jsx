@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { DownloadTableExcel } from 'react-export-table-to-excel';
 
 
@@ -12,6 +12,8 @@ import VistaContenedor from "@assets/Seguridad/VistaContenedor";
 import AsignarSeriales from "@components/seguridad/AsignarSeriales";
 import { useAuth } from "@hooks/useAuth";
 import GenerarCarruselExcel from "@assets/Seguridad/GenerarCarruselExcel";
+import DevolverContenedorModal from "@components/seguridad/DevolverContenedorModal";
+import { filterActiveContainerRows } from "@utils/contenedorEstado";
 
 export default function Dashboard() {
     const formRef = useRef();
@@ -42,6 +44,10 @@ export default function Dashboard() {
     const [bloqueo, setBloqueo] = useState({});
     const user = getUser();
     const [openCarrusel, setOpenCarrusel] = useState(false);
+    const [contenedorDevuelto, setContenedorDevuelto] = useState(null);
+    const [refreshTick, setRefreshTick] = useState(0);
+
+    const dataVisible = useMemo(() => filterActiveContainerRows(data), [data]);
 
     useEffect(() => {
         const fetchConfiguracion = async () => {
@@ -106,7 +112,7 @@ export default function Dashboard() {
 
         fetchConfiguracion();
         fetchData();
-    }, [offset, startDate, endDate, openConfig, contenedor]);
+    }, [offset, startDate, endDate, openConfig, contenedor, refreshTick]);
 
     const handleStartDateChange = (e) => {
         const value = e.target.value;
@@ -232,10 +238,11 @@ export default function Dashboard() {
                             })}
                             {(botones.includes("dashboard_agregar") || user.id_rol == "Super administrador") && <th></th>}
                             {(botones.includes('dashboard_seriales') || user.id_rol == "Super administrador") && <th></th>}
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
-                        {data.map((item, key) => {
+                        {dataVisible.map((item, key) => {
                             const date = new Date(item.fecha);
                             const day = String(date.getUTCDate()).padStart(2, '0');
                             const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Meses son base 0
@@ -285,6 +292,15 @@ export default function Dashboard() {
                                             <FaEye />
                                         </button>
                                     </td>}
+                                    <td className="text-custom-small text-center align-middle" style={{ padding: '2px', width: '70px' }}>
+                                        <button
+                                            onClick={() => setContenedorDevuelto(item?.Contenedor)}
+                                            type="button"
+                                            className="btn btn-danger btn-sm"
+                                        >
+                                            Devolver
+                                        </button>
+                                    </td>
                                 </tr>
                             );
 
@@ -298,6 +314,15 @@ export default function Dashboard() {
             </div>
             {openCarrusel && <GenerarCarruselExcel data={data} setOpen={setOpenCarrusel} />}
             {contenedor && <AsignarSeriales contenedor={contenedor} setContenedor={setContenedor} />}
+            {contenedorDevuelto && (
+                <DevolverContenedorModal
+                    contenedor={contenedorDevuelto}
+                    usuario={user}
+                    origen="dashboard"
+                    onClose={() => setContenedorDevuelto(null)}
+                    onSuccess={() => setRefreshTick((value) => value + 1)}
+                />
+            )}
         </>
     );
 }

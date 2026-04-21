@@ -13,6 +13,7 @@ import { Container } from "react-bootstrap";
 import { filtrarPedidos } from "@services/api/pedidos";
 import { listarCategorias } from "@services/api/categorias";
 import excel from "@hooks/useExcel";
+import { getAppBaseUrl } from "@utils/appUrl";
 
 
 export default function InfoPedidos() {
@@ -60,7 +61,7 @@ export default function InfoPedidos() {
     const onDescargar = async () => {
         const formData = new FormData(formRef.current);
         const consecutivo = formData.get("consecutivo");
-        window.open(process.env.NEXT_PUBLIC_OWN_URL + "/Documento/Pedido/" + consecutivo);
+        window.open(getAppBaseUrl() + "/Documento/Pedido/" + consecutivo);
     };
 
     const onDescargarExcel = async () => {

@@ -15,6 +15,7 @@ import InspeccionVacio from "@containers/seguridad/InpeccionVacio";
 import LlenadoContenedor from "@containers/seguridad/LlenadoContenedor";
 import Rechazos from "@containers/seguridad/Rechazos";
 import Inspeccionados from "@containers/seguridad/Inspeccionados";
+import ContenedoresDevueltos from "@containers/seguridad/ContenedoresDevueltos";
 //Components
 
 
@@ -37,6 +38,7 @@ export default function Seguridad() {
                 {(router?.query.item == "Transferencias") && <Transferencias />}
                 {(router?.query.item == "LlenadoContenedor") && <LlenadoContenedor/>}
                  {(router?.query.item == "Inspeccionados") && <Inspeccionados/>}
+                {(router?.query.item == "Devueltos") && <ContenedoresDevueltos/>}
             </div>
         </RootLayout>
     );

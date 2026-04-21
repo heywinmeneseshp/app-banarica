@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import AppContext from "@context/AppContext";
+import { getAppBaseUrl } from "@utils/appUrl";
 
 //Bootstrap
 import Alert from 'react-bootstrap/Alert';
@@ -19,7 +20,7 @@ export default function Alerta({ data }) {
     const onButton = () => {
         gestionNotificacion.ingresarNotificacion(data);
         if (data.tipo_movimiento == "Pedido") {
-            window.open(process.env.NEXT_PUBLIC_OWN_URL + "/Documento/Pedido/" + data.cons_movimiento);
+            window.open(getAppBaseUrl() + "/Documento/Pedido/" + data.cons_movimiento);
         } else {
             router.push(`/Movimiento/${data.tipo_movimiento}/${data.cons_movimiento}`);
         }

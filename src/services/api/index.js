@@ -1,6 +1,7 @@
+import { getAppBaseUrl } from "@utils/appUrl";
+
 const API = process.env.NEXT_PUBLIC_API_URL;
 const VERSION = process.env.NEXT_PUBLIC_API_VERSION;
-const OWN_URL = process.env.NEXT_PUBLIC_OWN_URL;
 
 const endPoints = {
     auth: { //Crear
@@ -190,10 +191,10 @@ const endPoints = {
     },
     document: {
         pedido: `${API}/api/${VERSION}/documentos/pedido`,
-        stock: (cons_almacen, cons_categoria) => `${OWN_URL}/Documento/Stock/${cons_almacen}?cons_categoria=${cons_categoria}`,
-        movimientos: (consecutivo) => `${OWN_URL}/Documento/Movimiento/${consecutivo}`,
-        traslados: (consecutivo) => `${OWN_URL}/Documento/Traslado/${consecutivo}`,
-        barcodes: `${OWN_URL}/Documento/Barcodes`
+        stock: (cons_almacen, cons_categoria) => `${getAppBaseUrl()}/Documento/Stock/${cons_almacen}?cons_categoria=${cons_categoria}`,
+        movimientos: (consecutivo) => `${getAppBaseUrl()}/Documento/Movimiento/${consecutivo}`,
+        traslados: (consecutivo) => `${getAppBaseUrl()}/Documento/Traslado/${consecutivo}`,
+        barcodes: `${getAppBaseUrl()}/Documento/Barcodes`
     },
     seguridad: {
         listarProductos: `${API}/api/${VERSION}/seguridad/listar-articulos`,
@@ -318,9 +319,9 @@ const endPoints = {
         delete: (id) => `${API}/api/${VERSION}/tanqueo/${id}`,
     },
     reporteConsumo: {
-        semana: (sem, anho) => `${OWN_URL}/Documento/ReporteConsumo?anho=${anho}&sem=${sem}`,
-        mes: (mes, anho) => `${OWN_URL}/Documento/ReporteConsumo?mes=${mes}&anho=${anho}`,
-        consumoVehiculo: (query) => `${OWN_URL}/Documento/HistorialConsumo?${query}`,
+        semana: (sem, anho) => `${getAppBaseUrl()}/Documento/ReporteConsumo?anho=${anho}&sem=${sem}`,
+        mes: (mes, anho) => `${getAppBaseUrl()}/Documento/ReporteConsumo?mes=${mes}&anho=${anho}`,
+        consumoVehiculo: (query) => `${getAppBaseUrl()}/Documento/HistorialConsumo?${query}`,
     },
     email: {
         send: `${API}/api/${VERSION}/email/send`,

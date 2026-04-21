@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@hooks/useAuth";
 import { actualizarNotificaciones } from "@services/api/notificaciones";
 import { actualizarPedido } from "@services/api/pedidos";
+import { getAppBaseUrl } from "@utils/appUrl";
 import Alert from 'react-bootstrap/Alert';
 import styles from "@styles/almacen/almacen.module.css";
 
@@ -10,7 +11,7 @@ export default function Alerta({ data, setChange }) {
     const [color, setColor] = useState(null);
 
     const onVer = () => {
-        window.open(`${process.env.NEXT_PUBLIC_OWN_URL}/Documento/Pedido/${data.cons_movimiento}`);
+        window.open(`${getAppBaseUrl()}/Documento/Pedido/${data.cons_movimiento}`);
         if (user?.id_rol === "Super administrador") {
             actualizarNotificaciones(data.id, { visto: true });
         }

@@ -6,6 +6,11 @@ const crearInspeccion = async (body) => {
     return res.data;
 };
 
+const listarInspecciones = async () => {
+    const res = await axios.get(endPoints.inspecciones.list);
+    return res.data;
+};
+
 const actualizarInspeccion = async (id, body) => {
     const res = await axios.patch(endPoints.inspecciones.update(id), body);
     return res.data;
@@ -25,6 +30,7 @@ const eliminarInspeccion = async (id) => {
 
 
 export {
+    listarInspecciones,
     crearInspeccion,
     actualizarInspeccion,
     paginarInspecciones,

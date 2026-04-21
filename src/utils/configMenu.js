@@ -26,7 +26,8 @@ const menuCompleto = {
         ["/Recepcion", "Recepcion"],
         ["/Rechazos", "Rechazos"],
         ["/Transferencias", "Transferencias"],
-        ["/Inspeccionados", "Inspeccionados"]
+        ["/Inspeccionados", "Inspeccionados"],
+        ["/Devueltos", "Devueltos"]
     ],
     programaciones: [
         ["contenedores", "Contenedores"],

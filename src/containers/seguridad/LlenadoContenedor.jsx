@@ -12,6 +12,7 @@ import { encontrarUnSerial, usarSeriales } from '@services/api/seguridad';
 import { listarMotivoDeUso } from '@services/api/motivoDeUso';
 import { listarMotivoDeRechazo } from '@services/api/motivoDeRechazo';
 import { agregarRechazo } from '@services/api/rechazos';
+import { filterActiveContainerRows } from '@utils/contenedorEstado';
 
 const MOTIVO_LLENADO_CONTENEDOR = "Lleneado de contenedor";
 const SERIALES_A_VERIFICAR = ["kit", "termografo"];
@@ -116,7 +117,7 @@ const FormularioDinamico = () => {
       habilitado: true
     })
       .then((res) => {
-        const listadoFiltrado = (res.data || []).filter(
+        const listadoFiltrado = filterActiveContainerRows(res.data || []).filter(
           (item) => item.Embarque?.bl === filtros.booking
         );
         setListado(listadoFiltrado);
