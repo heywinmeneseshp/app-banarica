@@ -1,11 +1,20 @@
 import React, { useState } from "react";
 import { Button } from "react-bootstrap";
-import * as XLSX from "xlsx"; // 📌 Importa xlsx para leer el archivo
+import * as XLSX from "xlsx";
+import axios from "axios";
 import styles2 from "@components/shared/Formularios/Formularios.module.css";
 import excel from "@hooks/useExcel";
 import Loader from "@components/shared/Loader";
+import { getToken } from "utils/session";
 
-const CargueMasivo = ({ setOpenMasivo, endPointCargueMasivo, encabezados, titulo }) => {
+const CargueMasivo = ({
+    setOpenMasivo,
+    endPointCargueMasivo,
+    encabezados,
+    titulo,
+    authRequired = false,
+    onSuccess
+}) => {
     const [archivo, setArchivo] = useState(null);
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -22,18 +31,15 @@ const CargueMasivo = ({ setOpenMasivo, endPointCargueMasivo, encabezados, titulo
             reader.onload = (e) => {
                 const binaryStr = e.target.result;
                 const workbook = XLSX.read(binaryStr, { type: "binary" });
-                const sheetName = workbook.SheetNames[0]; // Toma la primera hoja
+                const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
-                let jsonData = XLSX.utils.sheet_to_json(sheet); // Convierte a JSON
+                let jsonData = XLSX.utils.sheet_to_json(sheet);
 
-                // Verifica si la columna "fecha" existe y si tiene valores en formato numérico
-                jsonData = jsonData.map(row => {
-                    // eslint-disable-next-line no-prototype-builtins
-                    if (row.hasOwnProperty("fecha") && !isNaN(row.fecha)) {
-                        // Convertir de formato serial de Excel a fecha YYYY-MM-DD
+                jsonData = jsonData.map((row) => {
+                    if (Object.prototype.hasOwnProperty.call(row, "fecha") && !Number.isNaN(Number(row.fecha))) {
                         const fechaConvertida = new Date((row.fecha - 25569) * 86400 * 1000)
                             .toISOString()
-                            .split('T')[0];
+                            .split("T")[0];
                         row.fecha = fechaConvertida;
                     }
                     return row;
@@ -63,52 +69,55 @@ const CargueMasivo = ({ setOpenMasivo, endPointCargueMasivo, encabezados, titulo
         setProgress(10);
 
         try {
-            const response = await fetch(endPointCargueMasivo, {
-                method: "POST",
+            const requestConfig = {
                 headers: {
                     "Content-Type": "application/json"
-                },
-                body: JSON.stringify(data)
-            });
+                }
+            };
 
-            setProgress(50);
+            if (authRequired) {
+                const token = getToken();
+                if (!token) {
+                    throw new Error("No se encontro sesion activa para realizar este cargue.");
+                }
 
-            let result;
-            try {
-                result = await response.json();
-            } catch (jsonError) {
-                throw new Error("Error al procesar la respuesta del servidor");
+                requestConfig.headers.Authorization = `Bearer ${token}`;
             }
+
+            const response = await axios.post(endPointCargueMasivo, data, requestConfig);
+            const result = response?.data || {};
 
             setProgress(80);
 
-            // Manejar diferentes tipos de respuesta
-            if (!response.ok) {
-                // Error HTTP (4xx, 5xx)
-                throw new Error(result?.message || `Error ${response.status}: ${response.statusText}`);
-            }
-
             if (result?.error) {
-                // Error de lógica del servidor
                 throw new Error(result.message || "Error en el procesamiento de los datos");
             }
 
-            if (result?.results?.some(item => item.error)) {
-                // Algunos registros fallaron en actualización masiva
-                const errores = result.results.filter(item => item.error);
-                const mensajeErrores = errores.map(err =>
-                    `Fecha: ${err.fecha}, Contenedor: ${err.contenedor} - ${err.message}`
-                ).join('\n');
+            if (result?.results?.some((item) => item.error)) {
+                const errores = result.results.filter((item) => item.error);
+                const mensajeErrores = errores.map((err) => {
+                    const referencia = [
+                        err.fila ? `Fila ${err.fila}` : null,
+                        err.fecha ? `Fecha: ${err.fecha}` : null,
+                        err.contenedor ? `Contenedor: ${err.contenedor}` : null
+                    ]
+                        .filter(Boolean)
+                        .join(", ");
+
+                    return `${referencia || "Registro"} - ${err.message}`;
+                }).join("\n");
 
                 alert(`Carga parcialmente exitosa. Errores encontrados:\n${mensajeErrores}`);
             } else {
-                alert("Carga exitosa");
+                alert(result?.message || "Carga exitosa");
                 setOpenMasivo(false);
+                if (typeof onSuccess === "function") {
+                    onSuccess(result);
+                }
             }
-
         } catch (error) {
             console.error("Error al enviar los datos:", error);
-            alert("Error al cargar los datos: " + error.message);
+            alert("Error al cargar los datos: " + (error?.response?.data?.message || error.message));
         } finally {
             setProgress(100);
             setTimeout(() => {
@@ -118,9 +127,9 @@ const CargueMasivo = ({ setOpenMasivo, endPointCargueMasivo, encabezados, titulo
         }
     };
 
-    function handleDescargarPlantilla() {
+    const handleDescargarPlantilla = () => {
         excel([encabezados], "Plantilla", `Cargue Masivo de ${titulo}`);
-    }
+    };
 
     return (
         <>
@@ -131,11 +140,12 @@ const CargueMasivo = ({ setOpenMasivo, endPointCargueMasivo, encabezados, titulo
                         <div className="card-header d-flex justify-content-between">
                             <span>
                                 <span className="fw-bold me-2">Cargar Archivo Excel</span>
-                                {titulo &&
+                                {titulo && (
                                     <span>
                                         <span className="fw-bold me-2">|</span>
                                         <span>{titulo}</span>
-                                    </span>}
+                                    </span>
+                                )}
                             </span>
                             <button
                                 type="button"
@@ -155,7 +165,7 @@ const CargueMasivo = ({ setOpenMasivo, endPointCargueMasivo, encabezados, titulo
                                                 style={{ textDecoration: "none" }}
                                                 onClick={handleDescargarPlantilla}
                                             >
-                                                plantilla aquí
+                                                plantilla aqui
                                             </button>.
                                         </p>
                                     </div>
@@ -186,14 +196,12 @@ const CargueMasivo = ({ setOpenMasivo, endPointCargueMasivo, encabezados, titulo
                                     </div>
                                 </div>
 
-                                {/* 🔹 Barra de Progreso */}
                                 {loading && (
                                     <div className="mt-3 text-center">
                                         <progress value={progress} max="100" style={{ width: "80%" }}></progress>
                                         <p className="text-primary mt-2">Cargando... {progress}%</p>
                                     </div>
                                 )}
-
                             </div>
                         </div>
                     </div>

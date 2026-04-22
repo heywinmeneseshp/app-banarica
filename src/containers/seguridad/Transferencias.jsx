@@ -24,7 +24,7 @@ const buildTransferSummary = (items) => {
 
 const getItemKey = (item) => `${item.cons_producto}-${item.serial || item.id}`;
 
-const TransferListModal = ({ show, onClose, items, onRemove }) => {
+const TransferListModal = ({ show, onClose, items, onRemove, mostrarSerial }) => {
     const [selectedItemsToDelete, setSelectedItemsToDelete] = useState([]);
 
     useEffect(() => {
@@ -100,7 +100,7 @@ const TransferListModal = ({ show, onClose, items, onRemove }) => {
                                                     />
                                                 </th>
                                                 <th>Articulo</th>
-                                                <th>Serial Int</th>
+                                                {mostrarSerial && <th>Serial Int</th>}
                                                 <th>Serial Ext</th>
                                                 <th>S Pack</th>
                                                 <th>M Pack</th>
@@ -123,7 +123,7 @@ const TransferListModal = ({ show, onClose, items, onRemove }) => {
                                                             />
                                                         </td>
                                                         <td>{item.cons_producto}</td>
-                                                        <td>{item.serial || "-"}</td>
+                                                        {mostrarSerial && <td>{item.serial || "-"}</td>}
                                                         <td>{item.bag_pack || "-"}</td>
                                                         <td>{item.s_pack || "-"}</td>
                                                         <td>{item.m_pack || "-"}</td>
@@ -188,7 +188,6 @@ export default function Transferencias() {
 
     const [itemsToTransfer, setItemsToTransfer] = useState([]);
     const [showModal, setShowModal] = useState(false);
-    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
     const [semanaData, setSemanaData] = useState(null);
     const [bool, setBool] = useState(false);
@@ -235,16 +234,39 @@ export default function Transferencias() {
     }, [buscarArticulos]);
 
     useEffect(() => {
-        listarProductosSeguridad().then((res) => setProductos(res.filter((item) => item.serial === true)));
-
-        encontrarModulo("Semana").then((res) => setSemanaData(res[0]));
-
-        setMostrarSerial(user.id_roll !== "Super usuario");
         const origenInicial = almacenByUser?.[0]?.consecutivo || "";
         const destinoInicial = almacenByUser.find((item) => item.consecutivo !== origenInicial)?.consecutivo || origenInicial;
         setOrigenSeleccionado(origenInicial);
         setDestinoSeleccionado(destinoInicial);
-    }, [user.id_roll, almacenByUser]);
+
+        const loadConfig = async () => {
+            listarProductosSeguridad().then((res) => setProductos(res.filter((item) => item.serial === true)));
+            encontrarModulo("Semana").then((res) => setSemanaData(res[0]));
+
+            if (user?.id_rol === "Super administrador") {
+                setMostrarSerial(true);
+                return;
+            }
+
+            if (!user?.username) {
+                setMostrarSerial(false);
+                return;
+            }
+
+            try {
+                const config = await encontrarModulo(user.username);
+                const detallesRaw = config?.[0]?.detalles;
+                const detalles = detallesRaw ? JSON.parse(detallesRaw) : {};
+                const botones = Array.isArray(detalles?.botones) ? detalles.botones : [];
+                setMostrarSerial(botones.includes("disponibles_serial"));
+            } catch (error) {
+                console.error("Error cargando permisos de serial interno en transferencias:", error);
+                setMostrarSerial(false);
+            }
+        };
+
+        loadConfig();
+    }, [user?.id_rol, user?.username, almacenByUser]);
 
     const onChanageBuscar = (e) => {
         setFeedback(null);
@@ -324,7 +346,6 @@ export default function Transferencias() {
         setCheckAll(false);
         setChecks([]);
         setFeedback(null);
-        setShowAdvancedFilters(false);
         buscarArticulos();
     };
 
@@ -543,6 +564,7 @@ export default function Transferencias() {
                 onClose={() => setShowModal(false)}
                 items={itemsToTransfer}
                 onRemove={removeItemFromTransfer}
+                mostrarSerial={mostrarSerial}
             />
 
             <form ref={formRef} onSubmit={handleSubmit} className="py-2">
@@ -569,101 +591,95 @@ export default function Transferencias() {
 
                 <div className="card border-0 shadow-sm mb-2">
                     <div className="card-body py-2 px-3">
-                        <div className="row g-2">
-                            <div className="col-12 col-md-6 col-xl-3">
-                                <label htmlFor="origen" className="form-label fw-semibold small mb-1">Origen</label>
-                                <select
-                                    className="form-select form-select-sm"
-                                    id="origen"
-                                    name="origen"
-                                    value={origenSeleccionado}
-                                    onChange={onChanageBuscar}
-                                    disabled={bool}
-                                >
-                                    {almacenByUser.map((item, index) => (
-                                        <option key={index} value={item.consecutivo}>{item.nombre}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="col-12 col-md-6 col-xl-3">
-                                <label htmlFor="destino" className="form-label fw-semibold small mb-1">Destino</label>
-                                <select
-                                    className="form-select form-select-sm"
-                                    id="destino"
-                                    name="destino"
-                                    value={destinoSeleccionado}
-                                    onChange={handleDestinoChange}
-                                    disabled={bool}
-                                >
-                                    {almacenByUser.map((item, index) => (
-                                        <option
-                                            key={index}
-                                            value={item.consecutivo}
-                                            disabled={item.consecutivo === origenSeleccionado}
-                                        >
-                                            {item.nombre}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="col-12 col-md-6 col-xl-3">
-                                <label htmlFor="producto" className="form-label fw-semibold small mb-1">Articulo</label>
-                                <select
-                                    className="form-select form-select-sm"
-                                    id="producto"
-                                    name="producto"
-                                    disabled={bool}
-                                    onChange={onChanageBuscar}
-                                >
-                                    <option value="">Todos</option>
-                                    {productos.map((item, index) => (
-                                        <option key={index} value={item.consecutivo}>{item.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="col-12 col-md-6 col-xl-3">
-                                <label htmlFor="semana" className="form-label fw-semibold small mb-1">Semana</label>
-                                <input
-                                    type="number"
-                                    className="form-control form-control-sm"
-                                    id="semana"
-                                    name="semana"
-                                    min={semanaData ? semanaData.semana_actual - semanaData.semana_previa : 0}
-                                    max={semanaData ? semanaData.semana_actual * 1 + semanaData.semana_siguiente : 99}
-                                    required
-                                    disabled={bool}
-                                />
-                            </div>
-
-                            <div className="col-12 col-md-6 col-xl-3">
-                                <label htmlFor="fecha" className="form-label fw-semibold small mb-1">Fecha</label>
-                                <input
-                                    type="date"
-                                    className="form-control form-control-sm"
-                                    id="fecha"
-                                    name="fecha"
-                                    defaultValue={fechaActual}
-                                    disabled={bool}
-                                />
-                            </div>
+                        <div className="row g-3">
                             <div className="col-12">
-                                <button
-                                    type="button"
-                                    className="btn btn-link btn-sm px-0 text-decoration-none"
-                                    onClick={() => setShowAdvancedFilters((prev) => !prev)}
-                                    disabled={bool}
-                                >
-                                    {showAdvancedFilters ? "Ocultar filtros avanzados" : "Mostrar filtros avanzados"}
-                                </button>
+                                <div className="row row-cols-1 row-cols-md-2 row-cols-xl-5 g-2">
+                                    <div className="col">
+                                        <label htmlFor="origen" className="form-label fw-semibold small mb-1">Origen</label>
+                                        <select
+                                            className="form-select form-select-sm"
+                                            id="origen"
+                                            name="origen"
+                                            value={origenSeleccionado}
+                                            onChange={onChanageBuscar}
+                                            disabled={bool}
+                                        >
+                                            {almacenByUser.map((item, index) => (
+                                                <option key={index} value={item.consecutivo}>{item.nombre}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="col">
+                                        <label htmlFor="destino" className="form-label fw-semibold small mb-1">Destino</label>
+                                        <select
+                                            className="form-select form-select-sm"
+                                            id="destino"
+                                            name="destino"
+                                            value={destinoSeleccionado}
+                                            onChange={handleDestinoChange}
+                                            disabled={bool}
+                                        >
+                                            {almacenByUser.map((item, index) => (
+                                                <option
+                                                    key={index}
+                                                    value={item.consecutivo}
+                                                    disabled={item.consecutivo === origenSeleccionado}
+                                                >
+                                                    {item.nombre}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="col">
+                                        <label htmlFor="producto" className="form-label fw-semibold small mb-1">Articulo</label>
+                                        <select
+                                            className="form-select form-select-sm"
+                                            id="producto"
+                                            name="producto"
+                                            disabled={bool}
+                                            onChange={onChanageBuscar}
+                                        >
+                                            <option value="">Todos</option>
+                                            {productos.map((item, index) => (
+                                                <option key={index} value={item.consecutivo}>{item.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="col">
+                                        <label htmlFor="fecha" className="form-label fw-semibold small mb-1">Fecha</label>
+                                        <input
+                                            type="date"
+                                            className="form-control form-control-sm"
+                                            id="fecha"
+                                            name="fecha"
+                                            defaultValue={fechaActual}
+                                            disabled={bool}
+                                        />
+                                    </div>
+
+                                    <div className="col">
+                                        <label htmlFor="semana" className="form-label fw-semibold small mb-1">Semana</label>
+                                        <input
+                                            type="number"
+                                            className="form-control form-control-sm"
+                                            id="semana"
+                                            name="semana"
+                                            min={semanaData ? semanaData.semana_actual - semanaData.semana_previa : 0}
+                                            max={semanaData ? semanaData.semana_actual * 1 + semanaData.semana_siguiente : 99}
+                                            required
+                                            disabled={bool}
+                                        />
+                                    </div>
+                                </div>
                             </div>
 
-                            {showAdvancedFilters && (
-                                <>
+                            <div className="col-12">
+                                <div className="row row-cols-1 row-cols-md-2 row-cols-xl-5 g-2">
                                     {mostrarSerial && (
-                                        <div className="col-12 col-md-6 col-xl-3">
+                                        <div className="col">
                                             <label htmlFor="serial" className="form-label fw-semibold small mb-1">Serial Int</label>
                                             <input
                                                 type="text"
@@ -676,7 +692,7 @@ export default function Transferencias() {
                                         </div>
                                     )}
 
-                                    <div className="col-12 col-md-6 col-xl-3">
+                                    <div className="col">
                                         <label htmlFor="bag_pack" className="form-label fw-semibold small mb-1">Serial Ext</label>
                                         <input
                                             type="text"
@@ -688,7 +704,7 @@ export default function Transferencias() {
                                         />
                                     </div>
 
-                                    <div className="col-12 col-md-6 col-xl-2">
+                                    <div className="col">
                                         <label htmlFor="s_pack" className="form-label fw-semibold small mb-1">S Pack</label>
                                         <input
                                             type="text"
@@ -700,7 +716,7 @@ export default function Transferencias() {
                                         />
                                     </div>
 
-                                    <div className="col-12 col-md-6 col-xl-2">
+                                    <div className="col">
                                         <label htmlFor="m_pack" className="form-label fw-semibold small mb-1">M Pack</label>
                                         <input
                                             type="text"
@@ -712,7 +728,7 @@ export default function Transferencias() {
                                         />
                                     </div>
 
-                                    <div className="col-12 col-md-6 col-xl-2">
+                                    <div className="col">
                                         <label htmlFor="l_pack" className="form-label fw-semibold small mb-1">L Pack</label>
                                         <input
                                             type="text"
@@ -723,8 +739,8 @@ export default function Transferencias() {
                                             disabled={bool}
                                         />
                                     </div>
-                                </>
-                            )}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -829,8 +845,8 @@ export default function Transferencias() {
                         </div>
 
                         <div className="table-responsive">
-                            <table className="table table-sm table-striped table-hover align-middle mb-2">
-                                <thead className="table-light">
+                            <table className="table table-sm table-striped table-hover align-middle text-center mb-2">
+                                <thead className="table-light align-middle text-center">
                                     <tr>
                                         <th className="text-center">
                                             <input
@@ -842,17 +858,17 @@ export default function Transferencias() {
                                                 checked={checkAll}
                                             />
                                         </th>
-                                        <th>Alm</th>
-                                        <th>Articulo</th>
-                                        {mostrarSerial && <th>Serial Int</th>}
-                                        <th>Serial Ext</th>
-                                        <th>S Pack</th>
-                                        <th>M Pack</th>
-                                        <th>L Pack</th>
-                                        <th className="d-none d-md-table-cell">Estado</th>
+                                        <th className="text-center">Alm</th>
+                                        <th className="text-center">Articulo</th>
+                                        {mostrarSerial && <th className="text-center">Serial Int</th>}
+                                        <th className="text-center">Serial Ext</th>
+                                        <th className="text-center">S Pack</th>
+                                        <th className="text-center">M Pack</th>
+                                        <th className="text-center">L Pack</th>
+                                        <th className="d-none d-md-table-cell text-center">Estado</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody className="align-middle text-center">
                                     {tabla.length === 0 && (
                                         <tr>
                                             <td colSpan={mostrarSerial ? 9 : 8} className="text-center text-muted py-4">
@@ -861,7 +877,7 @@ export default function Transferencias() {
                                         </tr>
                                     )}
                                     {tabla.map((item, index) => (
-                                        <tr key={item.id || `${item.cons_producto}-${index}`}>
+                                        <tr key={item.id || `${item.cons_producto}-${index}`} className="align-middle text-center">
                                             <td className="text-center">
                                                 <input
                                                     className="form-check-input"
@@ -872,14 +888,14 @@ export default function Transferencias() {
                                                     onChange={() => hadleChecks(index)}
                                                 />
                                             </td>
-                                            <td>{item?.cons_almacen}</td>
-                                            <td>{item?.cons_producto}</td>
-                                            {mostrarSerial && <td>{item?.serial}</td>}
-                                            <td>{item?.bag_pack}</td>
-                                            <td>{item?.s_pack}</td>
-                                            <td>{item?.m_pack}</td>
-                                            <td>{item?.l_pack}</td>
-                                            <td className="d-none d-md-table-cell">
+                                            <td className="text-center">{item?.cons_almacen}</td>
+                                            <td className="text-center">{item?.cons_producto}</td>
+                                            {mostrarSerial && <td className="text-center">{item?.serial}</td>}
+                                            <td className="text-center">{item?.bag_pack}</td>
+                                            <td className="text-center">{item?.s_pack}</td>
+                                            <td className="text-center">{item?.m_pack}</td>
+                                            <td className="text-center">{item?.l_pack}</td>
+                                            <td className="d-none d-md-table-cell text-center">
                                                 <span className={`badge ${item?.available === true ? "text-bg-success" : "text-bg-secondary"}`}>
                                                     {item?.available === true ? "Disponible" : "Usado"}
                                                 </span>

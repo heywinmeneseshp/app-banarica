@@ -16,6 +16,7 @@ import LlenadoContenedor from "@containers/seguridad/LlenadoContenedor";
 import Rechazos from "@containers/seguridad/Rechazos";
 import Inspeccionados from "@containers/seguridad/Inspeccionados";
 import ContenedoresDevueltos from "@containers/seguridad/ContenedoresDevueltos";
+import Transbordados from "@containers/seguridad/Transbordados";
 //Components
 
 
@@ -37,8 +38,9 @@ export default function Seguridad() {
                 {(router?.query.item == "Rechazos") &&   <Rechazos />}
                 {(router?.query.item == "Transferencias") && <Transferencias />}
                 {(router?.query.item == "LlenadoContenedor") && <LlenadoContenedor/>}
-                 {(router?.query.item == "Inspeccionados") && <Inspeccionados/>}
+                {(router?.query.item == "Inspeccionados") && <Inspeccionados/>}
                 {(router?.query.item == "Devueltos") && <ContenedoresDevueltos/>}
+                {(router?.query.item == "Transbordados") && <Transbordados/>}
             </div>
         </RootLayout>
     );

@@ -8,7 +8,7 @@ import Loader from "@components/shared/Loader";
 import { actualizarSerial } from "@services/api/seguridad";
 
 
-function VistaContenedor({ vistaCont, setVistaCont, correos, configProducts }) {
+function VistaContenedor({ vistaCont, setVistaCont, correos, configProducts, canViewSerials = true }) {
     const { getUser } = useAuth();
     const [items, setItems] = useState([]);
     const [serialChecks, setSerialChecks] = useState({});
@@ -17,36 +17,41 @@ function VistaContenedor({ vistaCont, setVistaCont, correos, configProducts }) {
     const [serialesSinRevision, setSerialesSinRevision] = useState([]);
     const user = getUser();
 
-
     useEffect(() => {
+        const filtrarProductosAsync = async () => {
+            try {
+                const usuario = user;
+                let sinRevisar = usuario.id_rol === "Super administrador" ? vistaCont.serial_de_articulos : vistaCont.serial_de_articulos.filter(item => (item.revisado == false) && configProducts.includes(item.cons_producto));
+                sinRevisar = sinRevisar.filter(item => configProducts.includes(item.cons_producto) == true);
+                setSerialesSinRevision(sinRevisar);
+                const consecutivos = sinRevisar.map(item => item.cons_producto);
+                const productos = await filtrarProductos({ producto: { consecutivo: consecutivos } });
+                setItems(productos);
+
+                const initialChecks = {};
+                const initialMassApprove = {};
+                productos.forEach(({ consecutivo }) => {
+                    const seriales = vistaCont.serial_de_articulos.filter(articulo => articulo.cons_producto === consecutivo);
+                    seriales.forEach(({ serial }) => initialChecks[serial] = false);
+                    initialMassApprove[consecutivo] = false;
+                });
+                setSerialChecks(initialChecks);
+                setMassApproveActive(initialMassApprove);
+            } catch (error) {
+                console.error("Error al filtrar productos:", error);
+            }
+        };
+
+        if (!canViewSerials) {
+            setItems([]);
+            setSerialesSinRevision([]);
+            return;
+        }
+
         if (vistaCont?.serial_de_articulos?.length) {
             filtrarProductosAsync();
         }
-    }, [loading]);
-
-    const filtrarProductosAsync = async () => {
-        try {
-            const usuario = user;
-            let sinRevisar = usuario.id_rol === "Super administrador" ? vistaCont.serial_de_articulos : vistaCont.serial_de_articulos.filter(item => (item.revisado == false) && configProducts.includes(item.cons_producto));
-            sinRevisar = sinRevisar.filter(item => configProducts.includes(item.cons_producto) == true);
-            setSerialesSinRevision(sinRevisar);
-            const consecutivos = sinRevisar.map(item => item.cons_producto);
-            const productos = await filtrarProductos({ producto: { consecutivo: consecutivos } });
-            setItems(productos);
-
-            const initialChecks = {};
-            const initialMassApprove = {};
-            productos.forEach(({ consecutivo }) => {
-                const seriales = vistaCont.serial_de_articulos.filter(articulo => articulo.cons_producto === consecutivo);
-                seriales.forEach(({ serial }) => initialChecks[serial] = false);
-                initialMassApprove[consecutivo] = false;
-            });
-            setSerialChecks(initialChecks);
-            setMassApproveActive(initialMassApprove);
-        } catch (error) {
-            console.error("Error al filtrar productos:", error);
-        }
-    };
+    }, [loading, canViewSerials, vistaCont, user, configProducts]);
 
     const handleCheck = serial => {
      
@@ -175,38 +180,49 @@ function VistaContenedor({ vistaCont, setVistaCont, correos, configProducts }) {
                     <div className="card-body">
                         <div className="container">
                             <Loader loading={loading} />
-                            <div className="row">
-                                {items.map(({ consecutivo, name }) => (
-                                    <div key={consecutivo} className="col-12 mb-3">
-                                        <div className="p-3 border rounded shadow-sm">
-                                            <div className="d-flex justify-content-between align-items-center">
-                                                <h5 className="text-center mb-2" style={{ fontSize: '1.1rem' }}>{name}</h5>
-                                                <button onClick={() => handleMassApproveToggle(consecutivo)} className="btn p-0">
-                                                    {massApproveActive[consecutivo] ? <BsCheckCircle size={24} /> : <BsXCircle size={24} />}
-                                                </button>
+                            {!canViewSerials ? (
+                                <div className="alert alert-warning mb-0 text-center">
+                                    Los seriales solo se pueden consultar dentro del horario configurado para operadores.
+                                </div>
+                            ) : (
+                                <div className="row">
+                                    {items.map(({ consecutivo, name }) => (
+                                        <div key={consecutivo} className="col-12 mb-3">
+                                            <div className="p-3 border rounded shadow-sm">
+                                                <div className="d-flex justify-content-between align-items-center">
+                                                    <h5 className="text-center mb-2" style={{ fontSize: '1.1rem' }}>{name}</h5>
+                                                    <button onClick={() => handleMassApproveToggle(consecutivo)} className="btn p-0">
+                                                        {massApproveActive[consecutivo] ? <BsCheckCircle size={24} /> : <BsXCircle size={24} />}
+                                                    </button>
+                                                </div>
+                                                <ul className="list-unstyled m-0">
+                                                    {vistaCont.serial_de_articulos.filter(({ cons_producto }) => cons_producto === consecutivo)
+                                                        .map(({ serial, fecha_de_uso }) => (
+                                                            <li key={serial} className="d-flex justify-content-between align-items-center py-2 mb-1 border-bottom">
+                                                                <div>
+                                                                    <div className="text-muted">Fecha: {fecha_de_uso.split("T")[0]}</div>
+                                                                    <div className="text-muted">Serial: {serial}</div>
+                                                                </div>
+                                                                <button className="btn p-0" onClick={() => handleCheck(serial)}>
+                                                                    {serialChecks[serial] ? <BsCheckCircle className="text-success" size={24} /> : <BsXCircle className="text-danger" size={24} />}
+                                                                </button>
+                                                            </li>
+                                                        ))}
+                                                </ul>
                                             </div>
-                                            <ul className="list-unstyled m-0">
-                                                {vistaCont.serial_de_articulos.filter(({ cons_producto }) => cons_producto === consecutivo)
-                                                    .map(({ serial, fecha_de_uso }) => (
-                                                        <li key={serial} className="d-flex justify-content-between align-items-center py-2 mb-1 border-bottom">
-                                                            <div>
-                                                                <div className="text-muted">Fecha: {fecha_de_uso.split("T")[0]}</div>
-                                                                <div className="text-muted">Serial: {serial}</div>
-                                                            </div>
-                                                            <button className="btn p-0" onClick={() => handleCheck(serial)}>
-                                                                {serialChecks[serial] ? <BsCheckCircle className="text-success" size={24} /> : <BsXCircle className="text-danger" size={24} />}
-                                                            </button>
-                                                        </li>
-                                                    ))}
-                                            </ul>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                     <div className="card-footer text-center">
-                        <button onClick={handleConfirm} className="btn btn-primary" style={{ fontSize: '1.2rem', padding: '10px 25px', borderRadius: '25px' }}>
+                        <button
+                            onClick={handleConfirm}
+                            disabled={!canViewSerials}
+                            className="btn btn-primary"
+                            style={{ fontSize: '1.2rem', padding: '10px 25px', borderRadius: '25px' }}
+                        >
                             Confirmar
                         </button>
                     </div>

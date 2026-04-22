@@ -27,7 +27,8 @@ const menuCompleto = {
         ["/Rechazos", "Rechazos"],
         ["/Transferencias", "Transferencias"],
         ["/Inspeccionados", "Inspeccionados"],
-        ["/Devueltos", "Devueltos"]
+        ["/Devueltos", "Devueltos"],
+        ["/Transbordados", "Transbordados"]
     ],
     programaciones: [
         ["contenedores", "Contenedores"],
@@ -48,6 +49,9 @@ const botones = [
     "dashboard_agregar",
     "disponibles_serial",
     "disponibles_detallado",
+    "disponibles_corregir_serial",
+    "inspeccionados_corregir_contenedor",
+    "inspeccion_vacio_cargue_masivo",
     "contenedores_edicion",
     "dashboard_configuracion",
     "dashboard_seriales",

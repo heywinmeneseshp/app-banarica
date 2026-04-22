@@ -18,25 +18,39 @@ const Transbordar = ({ setOpen }) => {
     };
 
     const filtrarContenedores = async () => {
-        const formData = new FormData(formRef.current);
-        const object = {
-            contenedor: formData.get('contenedor') || '',
-            semana: formData.get('semana') || '',
-            habilitado: true,
-        };
-        const res = await paginarListado(1, 20, object);
-        const rows = filterActiveContainerRows(res.data || []);
-        const contenedoresConDuplicados = rows.map(item => item?.Contenedor?.contenedor);
-        const contSinDuplicados = contenedoresConDuplicados.filter((item, index) => {
-            return contenedoresConDuplicados.indexOf(item) === index;
-        });
-        setContenedores(contSinDuplicados);
-        const semConDuplicados = rows.map(item => item.Embarque.semana.consecutivo);
-        const semSinDuplicados = semConDuplicados.filter((item, index) => {
-            return semConDuplicados.indexOf(item) === index;
-        });
-        setListado(rows);
-        setSemana(semSinDuplicados);
+        if (!formRef.current) return;
+
+        try {
+            const formData = new FormData(formRef.current);
+            const object = {
+                contenedor: String(formData.get('contenedor') || '').trim().toUpperCase(),
+                semana: String(formData.get('semana') || '').trim(),
+                habilitado: true,
+            };
+            const res = await paginarListado(1, 20, object);
+            const rows = filterActiveContainerRows(res?.data || []);
+            const contenedoresConDuplicados = rows
+                .map(item => item?.Contenedor?.contenedor)
+                .filter(Boolean);
+            const contSinDuplicados = contenedoresConDuplicados.filter((item, index) => {
+                return contenedoresConDuplicados.indexOf(item) === index;
+            });
+            setContenedores(contSinDuplicados);
+
+            const semConDuplicados = rows
+                .map(item => item?.Embarque?.semana?.consecutivo)
+                .filter(Boolean);
+            const semSinDuplicados = semConDuplicados.filter((item, index) => {
+                return semConDuplicados.indexOf(item) === index;
+            });
+            setListado(rows);
+            setSemana(semSinDuplicados);
+        } catch (error) {
+            console.error('Error al filtrar contenedores para transbordo:', error);
+            setContenedores([]);
+            setSemana([]);
+            setListado([]);
+        }
     };
 
 
@@ -44,27 +58,36 @@ const Transbordar = ({ setOpen }) => {
     const handleTransbordar = async (e) => {
         e.preventDefault();
         const formData = new FormData(formRef.current);
-        const container = formData.get('nuevo-contenedor');
-        const semana = formData.get('semana');
-        const oldContainer = formData.get('contenedor');
+        const container = String(formData.get('nuevo-contenedor') || '').trim().toUpperCase();
+        const semana = String(formData.get('semana') || '').trim();
+        const oldContainer = String(formData.get('contenedor') || '').trim().toUpperCase();
         const observaciones = formData.get('observaciones');
         const fecha = formData.get('fecha');
         const kit = formData.get('kit');
-        const existeCont = listado.filter(item => item?.Contenedor?.contenedor == oldContainer);
-        if (existeCont.length == 0) return window.alert("El contenedor no existe");
+        const existeCont = listado.filter(item => item?.Contenedor?.contenedor === oldContainer);
+        if (existeCont.length === 0) return window.alert("El contenedor no existe");
+
+        const contenedorOrigen = existeCont[0]?.Contenedor;
+        if (!contenedorOrigen?.id) return window.alert("No fue posible identificar el contenedor de origen.");
+
         const kitContent = await listarSeriales(null, null, {
             bag_pack: kit,
             available: [true],
         });
-        if (kitContent.Length == 0) return window.alert("El Kit no existe");
+        const serialesDisponibles = Array.isArray(kitContent?.data)
+            ? kitContent.data
+            : Array.isArray(kitContent)
+                ? kitContent
+                : [];
+        if (serialesDisponibles.length === 0) return window.alert("El Kit no existe");
 
-        const usuario = JSON.parse(localStorage.getItem('usuario'));
+        const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
         const transbordo = {
-            id_contenedor_viejo: oldContainer.id,
+            id_contenedor_viejo: contenedorOrigen.id,
             nuevo_contenedor: container,
             fecha_transbordo: fecha,
             habilitado: true,
-            seriales: kitContent,
+            seriales: serialesDisponibles,
             lineas_listado: existeCont,
             usuario: usuario,
             observaciones: observaciones,

@@ -15,6 +15,58 @@ import GenerarCarruselExcel from "@assets/Seguridad/GenerarCarruselExcel";
 import DevolverContenedorModal from "@components/seguridad/DevolverContenedorModal";
 import { filterActiveContainerRows } from "@utils/contenedorEstado";
 
+const SECURITY_MODULE_KEYS = [
+    "Relación_seguridad",
+    "Relacion_seguridad",
+    "RelaciÃ³n_seguridad"
+];
+
+const toMinutes = (timeValue) => {
+    if (!timeValue || typeof timeValue !== "string" || !timeValue.includes(":")) {
+        return null;
+    }
+
+    const [hours, minutes] = timeValue.split(":").map(Number);
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+        return null;
+    }
+
+    return (hours * 60) + minutes;
+};
+
+const canOperatorViewSerialsBySchedule = (bloqueo, isSuperAdmin) => {
+    if (isSuperAdmin) {
+        return true;
+    }
+
+    const { fecha_inicio, hora_inicial, hora_final } = bloqueo || {};
+    if (!fecha_inicio || !hora_inicial || !hora_final) {
+        return true;
+    }
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startDate = new Date(`${fecha_inicio}T00:00:00`);
+
+    if (Number.isNaN(startDate.getTime()) || today < startDate) {
+        return true;
+    }
+
+    const startMinutes = toMinutes(hora_inicial);
+    const endMinutes = toMinutes(hora_final);
+    const currentMinutes = (now.getHours() * 60) + now.getMinutes();
+
+    if (startMinutes === null || endMinutes === null) {
+        return true;
+    }
+
+    if (startMinutes <= endMinutes) {
+        return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+    }
+
+    return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+};
+
 export default function Dashboard() {
     const formRef = useRef();
     const tableRef = useRef(null);
@@ -46,17 +98,23 @@ export default function Dashboard() {
     const [openCarrusel, setOpenCarrusel] = useState(false);
     const [contenedorDevuelto, setContenedorDevuelto] = useState(null);
     const [refreshTick, setRefreshTick] = useState(0);
+    const username = user?.username;
+    const isSuperAdmin = user.id_rol == "Super administrador";
 
     const dataVisible = useMemo(() => filterActiveContainerRows(data), [data]);
+    const canViewSerialsBySchedule = useMemo(
+        () => canOperatorViewSerialsBySchedule(bloqueo, isSuperAdmin),
+        [bloqueo, isSuperAdmin]
+    );
 
     useEffect(() => {
         const fetchConfiguracion = async () => {
             try {
-                const username = user?.username;
-                const [moduloRes, configBotonsRes] = await Promise.all([
-                    encontrarModulo("Relación_seguridad"),
+                const [moduloResults, configBotonsRes] = await Promise.all([
+                    Promise.all(SECURITY_MODULE_KEYS.map((modulo) => encontrarModulo(modulo).catch(() => []))),
                     encontrarModulo(username),
                 ]);
+                const moduloRes = moduloResults.find((result) => Array.isArray(result) && result.length > 0) || [];
                 
                 // Validar respuesta de botones con fallback
                 let botonesList = [];
@@ -112,11 +170,11 @@ export default function Dashboard() {
 
         fetchConfiguracion();
         fetchData();
-    }, [offset, startDate, endDate, openConfig, contenedor, refreshTick]);
+    }, [offset, startDate, endDate, openConfig, contenedor, refreshTick, username]);
 
     const handleStartDateChange = (e) => {
         const value = e.target.value;
-        if ((value < bloqueo.fecha_inicio) && (user.id_rol != "Super administrador")) {
+        if ((value < bloqueo.fecha_inicio) && (!isSuperAdmin)) {
             alert("La fecha inicial no puede ser anterior a la fecha de bloqueo");
             return;
         }
@@ -150,7 +208,7 @@ export default function Dashboard() {
                                 onChange={handleStartDateChange}
                                 type="date"
                                 id="fecha-inicio"
-                                min={user.id_rol == "Super administrador" ? "2024-01-01" : bloqueo.fecha_inicio}
+                                min={isSuperAdmin ? "2024-01-01" : bloqueo.fecha_inicio}
                                 name="fecha-inicio"
                                 className="form-control"
                                 aria-label="Fecha inicio"
@@ -236,8 +294,8 @@ export default function Dashboard() {
                                 let title = item.name.charAt(0).toUpperCase() + item.name.toLowerCase().slice(1);
                                 return (<th className="d-none d-md-table-cell" key={key}>{title}</th>);
                             })}
-                            {(botones.includes("dashboard_agregar") || user.id_rol == "Super administrador") && <th></th>}
-                            {(botones.includes('dashboard_seriales') || user.id_rol == "Super administrador") && <th></th>}
+                            {(botones.includes("dashboard_agregar") || isSuperAdmin) && <th></th>}
+                            {(botones.includes('dashboard_seriales') || isSuperAdmin) && <th></th>}
                             <th></th>
                         </tr>
                     </thead>
@@ -248,16 +306,20 @@ export default function Dashboard() {
                             const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Meses son base 0
                             const year = date.getUTCFullYear();
                             const fecha = `${year}-${month}-${day}`;
-                            const seriales = item?.serial_de_articulos;
+                            const seriales = item?.serial_de_articulos || [];
                             return (
                                 <tr key={key}>
                                     <th>{fecha}</th>
                                     <td className="text-center">{item?.Contenedor?.contenedor}</td>
                                     {configuracion.map((itemConfig, key) => {
                                         const serial = seriales.find(item2 => itemConfig.consecutivo === item2.cons_producto);
-                                        return (<td className="text-center d-none d-md-table-cell" key={key}>{serial?.revisado == false ? serial?.serial : ""}</td>);
+                                        return (
+                                            <td className="text-center d-none d-md-table-cell" key={key}>
+                                                {canViewSerialsBySchedule && serial?.revisado == false ? serial?.serial : ""}
+                                            </td>
+                                        );
                                     })}
-                                    {(botones.includes("dashboard_agregar") || user.id_rol == "Super administrador") && <td className="text-custom-small text-center align-middle" style={{ padding: '2px', width: '45px' }}>
+                                    {(botones.includes("dashboard_agregar") || isSuperAdmin) && <td className="text-custom-small text-center align-middle" style={{ padding: '2px', width: '45px' }}>
                                         <button
 
                                             type="button"
@@ -275,11 +337,19 @@ export default function Dashboard() {
                                             <FaPlus />
                                         </button>
                                     </td>}
-                                    {(botones.includes('dashboard_seriales') || user.id_rol == "Super administrador") && <td className="text-custom-small text-center align-middle" style={{ padding: '2px', width: '45px' }}>
+                                    {(botones.includes('dashboard_seriales') || isSuperAdmin) && <td className="text-custom-small text-center align-middle" style={{ padding: '2px', width: '45px' }}>
                                         <button
-                                            onClick={() => setVistaCont(item)}
+                                            onClick={() => {
+                                                if (!canViewSerialsBySchedule) {
+                                                    alert("Los seriales solo se pueden consultar dentro del horario configurado.");
+                                                    return;
+                                                }
+                                                setVistaCont(item);
+                                            }}
                                             type="button"
                                             className="btn btn-warning btn-sm"
+                                            disabled={!canViewSerialsBySchedule}
+                                            title={!canViewSerialsBySchedule ? "Fuera del horario permitido" : "Ver seriales"}
                                             style={{
                                                 display: 'flex',
                                                 justifyContent: 'center',
@@ -309,8 +379,16 @@ export default function Dashboard() {
                 </table>
 
                 <Paginacion setPagination={setOffset} pagination={offset} total={total} limit={25} />
-                {openConfig && <InsumoConfig handleConfig={handleConfig} modulo_confi={"Relación_seguridad"} />}
-                {vistaCont && <VistaContenedor configProducts={bloqueo.tags} vistaCont={vistaCont} setVistaCont={setVistaCont} correos={bloqueo?.correos_alerta} />}
+                {openConfig && <InsumoConfig handleConfig={handleConfig} modulo_confi={SECURITY_MODULE_KEYS[0]} />}
+                {vistaCont && (
+                    <VistaContenedor
+                        configProducts={bloqueo.tags}
+                        vistaCont={vistaCont}
+                        setVistaCont={setVistaCont}
+                        correos={bloqueo?.correos_alerta}
+                        canViewSerials={canViewSerialsBySchedule}
+                    />
+                )}
             </div>
             {openCarrusel && <GenerarCarruselExcel data={data} setOpen={setOpenCarrusel} />}
             {contenedor && <AsignarSeriales contenedor={contenedor} setContenedor={setContenedor} />}

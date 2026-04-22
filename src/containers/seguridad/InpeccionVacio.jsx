@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import { FaCheckCircle, FaCog, FaMinusCircle, FaRedo } from "react-icons/fa";
+import { FaCheckCircle, FaCog, FaFileExcel, FaMinusCircle, FaRedo } from "react-icons/fa";
 import { LiaUndoAltSolid } from "react-icons/lia";
 import { crearListado } from "@services/api/listado";
 import { useAuth } from "@hooks/useAuth";
@@ -9,9 +9,11 @@ import { filtrarSemanaRangoMes } from "@services/api/semanas";
 import { encontrarModulo } from "@services/api/configuracion";
 import { crearInspeccion } from "@services/api/inpecciones";
 import { filtrarContenedor } from "@services/api/contenedores";
+import endPoints from "@services/api";
 import Loader from "@components/shared/Loader";
 import InsumoInspeccVacio from "@components/seguridad/InsumoInspeccVacio";
 import DevolverContenedorModal from "@components/seguridad/DevolverContenedorModal";
+import CargueMasivo from "@assets/Seguridad/Listado/CargueMasivo";
 
 const FIELD_CONFIG = {
   semana: {
@@ -117,13 +119,16 @@ export default function InspeccionVacio() {
     inputFields: [],
     loading: false,
     openConfig: false,
+    openMasivo: false,
     semanas: [],
     fieldErrors: {},
     formValues: {},
     inspectionChecks: createInspectionChecks(),
     foodValidation: createFoodValidation(),
     foodValidationResult: null,
-    contenedorDevuelto: null
+    contenedorDevuelto: null,
+    canBulkUpload: false,
+    massUploadHeaders: {}
   });
 
   const {
@@ -132,19 +137,45 @@ export default function InspeccionVacio() {
     inputFields,
     loading,
     openConfig,
+    openMasivo,
     semanas,
     fieldErrors,
     formValues,
     inspectionChecks,
     foodValidation,
     foodValidationResult,
-    contenedorDevuelto
+    contenedorDevuelto,
+    canBulkUpload,
+    massUploadHeaders
   } = state;
 
   const setStateValue = (key, value) => setState((prev) => ({ ...prev, [key]: value }));
   const capitalizarPrimeraLetra = useCallback(
     (text) => (text ? text.charAt(0).toUpperCase() + text.slice(1).toLowerCase() : ""),
     []
+  );
+
+  const canManageMassUpload = useCallback(
+    async (moduleConfig) => {
+      if (user?.id_rol === "Super administrador") {
+        return true;
+      }
+
+      if (!user?.username) {
+        return false;
+      }
+
+      try {
+        const config = moduleConfig || (await encontrarModulo(user.username));
+        const details = JSON.parse(config?.[0]?.detalles || "{}");
+        const botones = Array.isArray(details?.botones) ? details.botones : [];
+        return botones.includes("inspeccion_vacio_cargue_masivo");
+      } catch (error) {
+        console.error("No fue posible validar el permiso de cargue masivo:", error);
+        return false;
+      }
+    },
+    [user?.id_rol, user?.username]
   );
 
   const persistDigitalForm = useCallback(
@@ -165,11 +196,17 @@ export default function InspeccionVacio() {
     try {
       setStateValue("loading", true);
 
-      const [semanasData, moduloSemana, moduloInsumos] = await Promise.all([
+      const requests = [
         filtrarSemanaRangoMes(1, 1),
         encontrarModulo("Semana"),
         encontrarModulo("Insumos_inspeccion_vacio")
-      ]);
+      ];
+
+      if (user?.id_rol !== "Super administrador" && user?.username) {
+        requests.push(encontrarModulo(user.username));
+      }
+
+      const [semanasData, moduloSemana, moduloInsumos, moduloUsuario] = await Promise.all(requests);
 
       const inputsGuardados = JSON.parse(localStorage.getItem(STORAGE_KEYS.INSPECCION_VACIO) || "{}");
       const digitalForm = JSON.parse(localStorage.getItem(STORAGE_KEYS.FORMULARIO_DIGITAL) || "{}");
@@ -180,12 +217,27 @@ export default function InspeccionVacio() {
       const insumos = JSON.parse(moduloInsumos[0]?.detalles || "[]").map((item) => ({
         label: capitalizarPrimeraLetra(item.name),
         id: item.id,
+        name: item.name,
+        consecutivo: item.consecutivo,
         placeholder: `${item.consecutivo}00000`,
         type: "text",
         eliminar: true,
         required: true,
         errorMsg: "Debe completar el campo"
       }));
+
+      const massUploadHeadersValue = {
+        semana: "",
+        fecha: "",
+        contenedor: "",
+        ...insumos.reduce((acc, item) => {
+          acc[item.consecutivo || item.name] = "";
+          return acc;
+        }, {}),
+        observaciones: ""
+      };
+
+      const canBulkUploadValue = await canManageMassUpload(moduloUsuario);
 
       const camposBase = Object.entries(FIELD_CONFIG).map(([id, config]) => ({
         id,
@@ -220,13 +272,15 @@ export default function InspeccionVacio() {
           typeof digitalForm.foodValidationResult === "boolean"
             ? digitalForm.foodValidationResult
             : null,
+        canBulkUpload: canBulkUploadValue,
+        massUploadHeaders: massUploadHeadersValue,
         loading: false
       }));
     } catch (error) {
       console.error("Error al resetear insumos:", error);
       setStateValue("loading", false);
     }
-  }, [capitalizarPrimeraLetra]);
+  }, [canManageMassUpload, capitalizarPrimeraLetra, user?.id_rol, user?.username]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -543,17 +597,30 @@ export default function InspeccionVacio() {
   return (
     <div className="container py-4">
       <div className="text-center mb-4">
-        <h2>Inspección contenedor vacío</h2>
-        {user.id_rol === "Super administrador" && (
-          <button
-            onClick={() => setStateValue("openConfig", true)}
-            type="button"
-            className="btn btn-link p-0"
-            aria-label="Configuración"
-          >
-            <FaCog style={{ color: "rgba(0, 0, 0, 0.3)" }} size={20} />
-          </button>
-        )}
+        <h2>Inspeccion contenedor vacio</h2>
+        <div className="d-flex justify-content-center align-items-center gap-3 mt-2">
+          {canBulkUpload && (
+            <button
+              type="button"
+              className="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-2"
+              onClick={() => setStateValue("openMasivo", true)}
+            >
+              <FaFileExcel />
+              Cargue masivo Excel
+            </button>
+          )}
+
+          {user.id_rol === "Super administrador" && (
+            <button
+              onClick={() => setStateValue("openConfig", true)}
+              type="button"
+              className="btn btn-link p-0"
+              aria-label="Configuracion"
+            >
+              <FaCog style={{ color: "rgba(0, 0, 0, 0.3)" }} size={20} />
+            </button>
+          )}
+        </div>
       </div>
 
       <form ref={formRef} onSubmit={handleSubmit} noValidate>
@@ -753,6 +820,16 @@ export default function InspeccionVacio() {
       </form>
 
       {openConfig && <InsumoInspeccVacio setOpenConfig={(val) => setStateValue("openConfig", val)} />}
+      {openMasivo && (
+        <CargueMasivo
+          setOpenMasivo={(val) => setStateValue("openMasivo", val)}
+          endPointCargueMasivo={endPoints.seguridad.inspeccionVacioMasivo}
+          encabezados={massUploadHeaders}
+          titulo="Inspeccion vacio"
+          authRequired
+          onSuccess={() => resetInsumos()}
+        />
+      )}
       {contenedorDevuelto && (
         <DevolverContenedorModal
           contenedor={contenedorDevuelto}

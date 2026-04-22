@@ -1,14 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { FaMinus, FaPlus } from "react-icons/fa";
+import { FaCog, FaMinus, FaPlus } from "react-icons/fa";
 import Loader from "@components/shared/Loader";
 import { listarAlmacenes } from "@services/api/almacenes";
 import { listarCombos } from "@services/api/combos";
+import { actualizarModulo, encontrarModulo } from "@services/api/configuracion";
+import { paginarInspecciones } from "@services/api/inpecciones";
 import { paginarListado } from "@services/api/listado";
 import { encontrarUnSerial, inspeccionAntinarcoticos } from "@services/api/seguridad";
 import { filterActiveContainerRows } from "@utils/contenedorEstado";
 
 const CONTAINER_LENGTH = 11;
+const INSPECCION_LLENO_ALERT_MODULE = "Inspeccion_lleno_alertas";
 
 const getSearchWindow = () => {
   const today = new Date();
@@ -43,6 +46,116 @@ const createEmptySection = () => ({
   producto: "",
   totalCajas: ""
 });
+
+const InspeccionLlenoAlertConfigModal = ({ show, onClose }) => {
+  const [correos, setCorreos] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!show) {
+      return;
+    }
+
+    const loadConfig = async () => {
+      try {
+        const response = await encontrarModulo(INSPECCION_LLENO_ALERT_MODULE);
+        const detalles = response?.[0]?.detalles ? JSON.parse(response[0].detalles) : {};
+        setCorreos(detalles?.correos_alerta || "");
+      } catch (error) {
+        console.error("Error cargando configuracion de alertas de inspeccion lleno:", error);
+        setCorreos("");
+      }
+    };
+
+    loadConfig();
+  }, [show]);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+
+    try {
+      await actualizarModulo({
+        modulo: INSPECCION_LLENO_ALERT_MODULE,
+        detalles: JSON.stringify({
+          correos_alerta: correos
+        })
+      });
+      window.alert("Correos de alerta guardados exitosamente.");
+      onClose();
+    } catch (error) {
+      window.alert(error?.message || "No fue posible guardar la configuracion de correos.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!show) {
+    return null;
+  }
+
+  return (
+    <div className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 overflow-auto" style={{ zIndex: 1055 }}>
+      <div className="container-fluid min-vh-100 d-flex align-items-start align-items-md-center justify-content-center py-3 py-md-4 px-2">
+        <div className="card border-0 shadow w-100" style={{ maxWidth: "820px", maxHeight: "92vh" }}>
+          <div className="card-header bg-white border-bottom py-3 px-3 px-md-4">
+            <div className="d-flex justify-content-between align-items-start gap-3">
+              <div>
+                <h4 className="mb-1 fw-bold">Configuracion de alertas</h4>
+                <p className="mb-0 text-muted">
+                  Define a que correos se notificara cuando una segunda inspeccion lleno quede pendiente por aprobacion.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="btn btn-link p-0 text-secondary text-decoration-none flex-shrink-0"
+                onClick={onClose}
+                aria-label="Cerrar"
+              >
+                <i className="bi bi-x-lg fs-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <div className="card-body p-3 p-md-4 overflow-auto">
+            <form onSubmit={handleSubmit}>
+              <div className="card border">
+                <div className="card-body p-3 p-md-4">
+                  <div className="mb-3">
+                    <h5 className="mb-1 fw-bold">Correos de alerta</h5>
+                    <p className="mb-0 text-muted">
+                      Separa varios destinatarios con coma.
+                    </p>
+                  </div>
+
+                  <div className="input-group">
+                    <span className="input-group-text fw-semibold">Correos</span>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={correos}
+                      onChange={(event) => setCorreos(event.target.value)}
+                      placeholder="correo1@empresa.com, correo2@empresa.com"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="d-flex justify-content-end gap-2 mt-3">
+                <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={saving}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn-success" disabled={saving}>
+                  {saving ? "Guardando..." : "Guardar"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const InputField = ({
   label,
@@ -160,6 +273,11 @@ const DynamicSection = ({ section, onUpdate, onRemove, products, almacenes }) =>
 
 export default function InspeccionLLeno() {
   const searchWindow = useMemo(() => getSearchWindow(), []);
+  const currentUser = useMemo(
+    () => (typeof window !== "undefined" ? JSON.parse(localStorage.getItem("usuario") || "{}") : {}),
+    []
+  );
+  const isSuperAdmin = currentUser?.id_rol === "Super administrador";
 
   const [formData, setFormData] = useState(createInitialFormData);
   const [products, setProducts] = useState([]);
@@ -167,6 +285,7 @@ export default function InspeccionLLeno() {
   const [almacenes, setAlmacenes] = useState([]);
   const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [openAlertConfig, setOpenAlertConfig] = useState(false);
   const [validation, setValidation] = useState({ bolsa: true, contenedor: true });
 
   const containerSuggestions = useMemo(
@@ -305,6 +424,21 @@ export default function InspeccionLLeno() {
     return selectedContainer;
   }, [contenedores, formData.bolsa, formData.contenedor]);
 
+  const countFullInspections = useCallback(async (containerCode) => {
+    const response = await paginarInspecciones(1, 200, {
+      contenedor: containerCode
+    });
+
+    const rows = Array.isArray(response?.data) ? response.data : [];
+    const inspectionIds = new Set(
+      rows
+        .map((item) => item?.Inspeccion?.id)
+        .filter(Boolean)
+    );
+
+    return inspectionIds.size;
+  }, []);
+
   const handleSubmit = useCallback(async (event) => {
     event.preventDefault();
     setLoading(true);
@@ -312,8 +446,20 @@ export default function InspeccionLLeno() {
     try {
       const selectedContainer = await validateForm();
       const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+      const isSuperAdmin = usuario?.id_rol === "Super administrador";
+      const inspectionCount = await countFullInspections(selectedContainer.contenedor);
 
-      await inspeccionAntinarcoticos(
+      if (inspectionCount >= 1) {
+        const shouldContinue = window.confirm(
+          "Este contenedor ya fue inspeccionado anteriormente. ¿Estas seguro de enviarlo nuevamente?"
+        );
+
+        if (!shouldContinue) {
+          return;
+        }
+      }
+
+      const response = await inspeccionAntinarcoticos(
         {
           ...formData,
           bolsa: String(formData.bolsa || "").trim().toUpperCase(),
@@ -324,14 +470,18 @@ export default function InspeccionLLeno() {
         sections
       );
 
-      window.alert("Datos cargados con éxito");
+      if (!isSuperAdmin && response?.pending_approval) {
+        window.alert("La inspeccion fue enviada, pero no sera aprobada hasta que un Super administrador la autorice.");
+      } else {
+        window.alert(response?.message || "Datos cargados con exito");
+      }
       resetForm();
     } catch (error) {
       window.alert(error.message || "No fue posible guardar la inspección.");
     } finally {
       setLoading(false);
     }
-  }, [formData, resetForm, sections, validateForm]);
+  }, [countFullInspections, formData, resetForm, sections, validateForm]);
 
   useEffect(() => {
     const initializeData = async () => {
@@ -357,11 +507,30 @@ export default function InspeccionLLeno() {
 
       <form onSubmit={handleSubmit}>
         <div className="container py-3">
-          <div className="text-center mb-4">
-            <h2 className="mb-2">Inspección Lleno</h2>
-            <p className="text-muted mb-0">
-              Registra la inspección antinarcóticos del contenedor lleno.
-            </p>
+          <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
+            <div className="text-center text-md-start">
+              <h2 className="mb-2">Inspección Lleno</h2>
+              <p className="text-muted mb-0">
+                Registra la inspección antinarcóticos del contenedor lleno.
+              </p>
+            </div>
+
+            {isSuperAdmin && (
+              <button
+                type="button"
+                className="btn btn-link text-decoration-none p-0 align-self-center align-self-md-auto"
+                onClick={() => setOpenAlertConfig(true)}
+                title="Configurar correos de alerta"
+              >
+                <FaCog
+                  style={{
+                    height: "25px",
+                    width: "25px",
+                    color: "rgb(0 0 0 / 30%)"
+                  }}
+                />
+              </button>
+            )}
           </div>
 
           <div className="card border-0 shadow-sm">
@@ -524,6 +693,7 @@ export default function InspeccionLLeno() {
           </div>
         </div>
       </form>
+      <InspeccionLlenoAlertConfigModal show={openAlertConfig} onClose={() => setOpenAlertConfig(false)} />
     </>
   );
 }

@@ -550,7 +550,7 @@ const ListadoContenedores = () => {
     const existeRechazo = cajasPorContenedor === sumaToriaCajas ? "" : "text-danger";
 
     return (
-      <tr key={row.id}>
+      <tr key={row.id} className="align-middle">
         <td className="text-custom-small text-center">
           <input
             className="form-check-input"
@@ -567,7 +567,7 @@ const ListadoContenedores = () => {
                 type="date"
                 defaultValue={fecha?.slice(0, 10)}
                 onBlur={e => handleCellEdit(row, "fecha", e)}
-                className="date-input custom-input"
+                className="date-input custom-input text-center"
                 style={{ width: "90px", padding: 0 }}
               />
             ) : (
@@ -588,19 +588,24 @@ const ListadoContenedores = () => {
 
         {state.configuracionTabla.includes("BoL") && (
           <td className="text-custom-small text-center">
-            <input
-              list={`${row.id}-embarques`}
-              id={`${row.id}-embarque`}
-              style={{ width: "100px", padding: 0 }}
-              defaultValue={Embarque?.bl}
-              disabled={!state.isEditable}
-              onChange={() => onChangeCasilla(`${row.id}-embarque`, 'embarque')}
-              onBlur={() => handleDatalist(`${row.id}-embarque`, 'embarque', row.id)}
-              className="form-control custom-input"
-            />
-            <datalist id={`${row.id}-embarques`}>
-              {state.embarques.map((item, i) => <option key={i} value={item.bl} />)}
-            </datalist>
+            {state.isEditable ? (
+              <>
+                <input
+                  list={`${row.id}-embarques`}
+                  id={`${row.id}-embarque`}
+                  style={{ width: "100px", padding: 0 }}
+                  defaultValue={Embarque?.bl}
+                  onChange={() => onChangeCasilla(`${row.id}-embarque`, 'embarque')}
+                  onBlur={() => handleDatalist(`${row.id}-embarque`, 'embarque', row.id)}
+                  className="form-control custom-input text-center"
+                />
+                <datalist id={`${row.id}-embarques`}>
+                  {state.embarques.map((item, i) => <option key={i} value={item.bl} />)}
+                </datalist>
+              </>
+            ) : (
+              Embarque?.bl
+            )}
           </td>
         )}
 
@@ -618,18 +623,23 @@ const ListadoContenedores = () => {
 
         {state.configuracionTabla.includes("Llenado") && (
           <td className="text-custom-small text-center">
-            <input
-              list={`${row.id}-almacenes`}
-              id={`${row.id}-almacen`}
-              defaultValue={almacen?.nombre}
-              style={{ width: "110px", padding: 0 }}
-              disabled={!state.isEditable}
-              onBlur={() => handleDatalist(`${row.id}-almacen`, 'almacen', row.id)}
-              className="form-control custom-input"
-            />
-            <datalist id={`${row.id}-almacenes`}>
-              {state.almacenes.map((item, i) => <option key={i} value={item.nombre} />)}
-            </datalist>
+            {state.isEditable ? (
+              <>
+                <input
+                  list={`${row.id}-almacenes`}
+                  id={`${row.id}-almacen`}
+                  defaultValue={almacen?.nombre}
+                  style={{ width: "110px", padding: 0 }}
+                  onBlur={() => handleDatalist(`${row.id}-almacen`, 'almacen', row.id)}
+                  className="form-control custom-input text-center"
+                />
+                <datalist id={`${row.id}-almacenes`}>
+                  {state.almacenes.map((item, i) => <option key={i} value={item.nombre} />)}
+                </datalist>
+              </>
+            ) : (
+              almacen?.nombre
+            )}
           </td>
         )}
 
@@ -666,7 +676,7 @@ const ListadoContenedores = () => {
               defaultValue={combo?.nombre}
               disabled={!state.isEditable}
               onBlur={() => handleDatalist(`${row.id}-producto`, 'producto', row.id)}
-              className="form-control custom-input"
+              className="form-control custom-input text-center"
             />
             <datalist id="productos">
               {state.productos.map((item, i) => <option key={i} value={item.nombre} />)}
@@ -851,8 +861,8 @@ const ListadoContenedores = () => {
 
       {/* Tabla COMPLETA */}
       <div className="table-responsive">
-        <table ref={tablaRef} className="table table-striped table-bordered table-sm mt-2">
-          <thead>
+        <table ref={tablaRef} className="table table-striped table-bordered table-sm mt-2 text-center align-middle">
+          <thead className="align-middle">
             <tr>
               <th className="text-custom-small text-center">
                 <input
@@ -886,7 +896,7 @@ const ListadoContenedores = () => {
               <th className="text-custom-small text-center text-white bg-secondary">Detalle</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="align-middle">
             {state.tableData.map(renderTableRow)}
           </tbody>
         </table>

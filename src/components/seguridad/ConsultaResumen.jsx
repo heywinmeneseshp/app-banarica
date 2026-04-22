@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { FaUndoAlt } from "react-icons/fa";
 
 import styles from "@styles/Seguridad.module.css";
 import Paginacion from "@components/Paginacion";
-import { listarSeriales } from "@services/api/seguridad";
+import CorregirSerialModal from "@components/seguridad/CorregirSerialModal";
+import { corregirAsignacionSerial, listarSeriales } from "@services/api/seguridad";
 import { useAuth } from "@hooks/useAuth";
 
 export default function ConsultaResumen({
@@ -13,10 +15,16 @@ export default function ConsultaResumen({
     setResults,
     configBotons = []
 }) {
-    const { almacenByUser } = useAuth();
+    const { almacenByUser, getUser } = useAuth();
     const [tabla, setTabla] = useState([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [serialSeleccionado, setSerialSeleccionado] = useState(null);
+    const [corrigiendo, setCorrigiendo] = useState(false);
+
+    const user = getUser();
+    const canCorrectSerials =
+        user?.id_rol === "Super administrador" || configBotons.includes("disponibles_corregir_serial");
 
     useEffect(() => {
         const listar = async () => {
@@ -50,7 +58,55 @@ export default function ConsultaResumen({
         listar();
     }, [almacenByUser, data, pagination, limit, setResults]);
 
-    const totalColumnas = configBotons.includes("disponibles_serial") ? 8 : 7;
+    const totalColumnas =
+        (configBotons.includes("disponibles_serial") ? 8 : 7) + (canCorrectSerials ? 1 : 0);
+
+    const abrirCorreccion = (item) => {
+        setSerialSeleccionado(item);
+    };
+
+    const cerrarCorreccion = () => {
+        setSerialSeleccionado(null);
+        setCorrigiendo(false);
+    };
+
+    const ejecutarCorreccion = async ({ modoCorreccion, serialCorrecto, observaciones }) => {
+        if (!serialSeleccionado?.serial) {
+            return;
+        }
+
+        if (modoCorreccion === "reemplazar" && !serialCorrecto.trim()) {
+            window.alert("Debes indicar el serial correcto para el reemplazo.");
+            return;
+        }
+
+        try {
+            setCorrigiendo(true);
+            await corregirAsignacionSerial({
+                serial_errado: serialSeleccionado.serial,
+                serial_correcto: modoCorreccion === "reemplazar" ? serialCorrecto.trim().toUpperCase() : "",
+                observaciones: observaciones.trim()
+            });
+
+            const res = await listarSeriales(pagination, limit, {
+                ...data,
+                cons_almacen:
+                    !data?.cons_almacen || data.cons_almacen.length === 0
+                        ? almacenByUser.map((item) => item.consecutivo)
+                        : data.cons_almacen,
+                serial: data?.serial || "",
+            });
+
+            setTabla(res?.data || []);
+            setTotal(res?.total || 0);
+            setResults(res?.total || 0);
+            cerrarCorreccion();
+        } catch (error) {
+            console.error("Error corrigiendo serial:", error);
+        } finally {
+            setCorrigiendo(false);
+        }
+    };
 
     return (
         <span className={styles.tabla_text}>
@@ -67,6 +123,7 @@ export default function ConsultaResumen({
                         <th className="text-custom-small text-center">M Pack</th>
                         <th className="text-custom-small text-center">L Pack</th>
                         <th className="text-custom-small text-center">Estado</th>
+                        {canCorrectSerials && <th className="text-custom-small text-center">Corregir</th>}
                     </tr>
                 </thead>
                 <tbody>
@@ -100,6 +157,22 @@ export default function ConsultaResumen({
                             <td className="text-custom-small text-center">
                                 {item.available === true ? "Disponible" : "Usado"}
                             </td>
+                            {canCorrectSerials && (
+                                <td className="text-custom-small text-center">
+                                    {item.available === false ? (
+                                        <button
+                                            type="button"
+                                            className="btn btn-outline-warning btn-sm"
+                                            onClick={() => abrirCorreccion(item)}
+                                            title={`Corregir serial ${item.serial}`}
+                                        >
+                                            <FaUndoAlt />
+                                        </button>
+                                    ) : (
+                                        <span className="text-muted">-</span>
+                                    )}
+                                </td>
+                            )}
                         </tr>
                     ))}
                 </tbody>
@@ -113,6 +186,14 @@ export default function ConsultaResumen({
                     limit={limit}
                 />
             </span>
+
+            <CorregirSerialModal
+                open={Boolean(serialSeleccionado)}
+                serialSeleccionado={serialSeleccionado}
+                loading={corrigiendo}
+                onClose={cerrarCorreccion}
+                onConfirm={ejecutarCorreccion}
+            />
         </span>
     );
 }

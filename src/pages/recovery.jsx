@@ -158,31 +158,33 @@ export default function Recovery() {
                         </p>
                     </div>
 
-                    <form className={styles.form} onSubmit={handleRecoveryRequest}>
-                        <p className={styles.sectionTitle}>Solicitar recuperacion</p>
-                        <div className="mb-3">
-                            <label className="mb-2" htmlFor="recovery-username">Usuario</label>
-                            <input
-                                id="recovery-username"
-                                name="recovery-username"
-                                type="text"
-                                className="form-control"
-                                placeholder="Ingresa tu usuario"
-                                ref={usernameRef}
-                                disabled={isRequesting}
-                            />
-                        </div>
+                    {!hasRecoveryToken && (
+                        <form className={styles.form} onSubmit={handleRecoveryRequest}>
+                            <p className={styles.sectionTitle}>Solicitar recuperacion</p>
+                            <div className="mb-3">
+                                <label className="mb-2" htmlFor="recovery-username">Usuario</label>
+                                <input
+                                    id="recovery-username"
+                                    name="recovery-username"
+                                    type="text"
+                                    className="form-control"
+                                    placeholder="Ingresa tu usuario"
+                                    ref={usernameRef}
+                                    disabled={isRequesting}
+                                />
+                            </div>
 
-                        <div className="d-grid mb-4">
-                            <button
-                                type="submit"
-                                className={`btn btn-primary ${styles.submitButton}`}
-                                disabled={isRequesting}
-                            >
-                                {isRequesting ? 'Enviando...' : 'Enviar correo de recuperacion'}
-                            </button>
-                        </div>
-                    </form>
+                            <div className="d-grid mb-4">
+                                <button
+                                    type="submit"
+                                    className={`btn btn-primary ${styles.submitButton}`}
+                                    disabled={isRequesting}
+                                >
+                                    {isRequesting ? 'Enviando...' : 'Enviar correo de recuperacion'}
+                                </button>
+                            </div>
+                        </form>
+                    )}
 
                     {status.message && (
                         <div

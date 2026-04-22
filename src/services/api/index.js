@@ -205,7 +205,12 @@ const endPoints = {
         CargarSeriales: `${API}/api/${VERSION}/seguridad/cargar-seriales`,
         encontrarSerial: `${API}/api/${VERSION}/seguridad/encontrar-serial`,
         inspeccionAntinarcoticos: `${API}/api/${VERSION}/seguridad/inspeccion-antinarcoticos`,
-        usarSeriales: `${API}/api/${VERSION}/seguridad/usar-seriales`
+        aprobarInspeccionLleno: `${API}/api/${VERSION}/seguridad/aprobar-inspeccion-lleno`,
+        rechazarInspeccionLleno: `${API}/api/${VERSION}/seguridad/rechazar-inspeccion-lleno`,
+        usarSeriales: `${API}/api/${VERSION}/seguridad/usar-seriales`,
+        corregirSerial: `${API}/api/${VERSION}/seguridad/corregir-serial`,
+        corregirInspeccionContenedor: `${API}/api/${VERSION}/seguridad/corregir-inspeccion-contenedor`,
+        inspeccionVacioMasivo: `${API}/api/${VERSION}/seguridad/inspeccion-vacio-masivo`
     },
     etiquetas: {
         crearEtiqueta: `${API}/api/${VERSION}/etiquetas`,
@@ -382,7 +387,19 @@ const endPoints = {
         list: `${API}/api/${VERSION}/transbordo`,
         create: `${API}/api/${VERSION}/transbordo`,
         findOne: (id) => `${API}/api/${VERSION}/transbordo/${id}`,
-        paginar: (offset, limit, nombre) => `${API}/api/${VERSION}/transbordo/paginar?offset=${offset}&limit=${limit}&destino=${nombre}`,
+        paginar: (offset, limit, filtros = {}) => {
+            const params = new URLSearchParams({
+                offset: String(offset),
+                limit: String(limit),
+            });
+
+            if (filtros.contenedor_viejo) params.set("contenedor_viejo", filtros.contenedor_viejo);
+            if (filtros.contenedor_nuevo) params.set("contenedor_nuevo", filtros.contenedor_nuevo);
+            if (filtros.fecha_inicial) params.set("fecha_inicial", filtros.fecha_inicial);
+            if (filtros.fecha_final) params.set("fecha_final", filtros.fecha_final);
+
+            return `${API}/api/${VERSION}/transbordo/paginar?${params.toString()}`;
+        },
         update: (id) => `${API}/api/${VERSION}/transbordo/${id}`,
         delete: (id) => `${API}/api/${VERSION}/transbordo/${id}`,
     },

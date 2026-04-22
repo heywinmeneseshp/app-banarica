@@ -1,40 +1,47 @@
-import React, { useEffect, useRef, useState } from "react";
-import Paginacion from "@components/shared/Tablas/Paginacion";
-import { encontrarModulo } from "@services/api/configuracion";
-import InsumoConfig from "@assets/InsumoConfig";
-import { FaCog } from 'react-icons/fa';
-import { useAuth } from "@hooks/useAuth";
-
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { FaCheckCircle, FaCog, FaExchangeAlt } from "react-icons/fa";
 import { GrCircleInformation } from "react-icons/gr";
+import { Dropdown } from "react-bootstrap";
+
+import Paginacion from "@components/shared/Tablas/Paginacion";
+import CorregirInspeccionContenedorModal from "@components/seguridad/CorregirInspeccionContenedorModal";
+import { encontrarModulo } from "@services/api/configuracion";
 import { paginarInspecciones } from "@services/api/inpecciones";
-
-
-
+import { aprobarInspeccionLleno, corregirInspeccionContenedor, rechazarInspeccionLleno } from "@services/api/seguridad";
+import InsumoConfig from "@assets/InsumoConfig";
+import { useAuth } from "@hooks/useAuth";
 
 export default function Inspeccionados() {
     const formRef = useRef();
     const tableRef = useRef(null);
     const { getUser, almacenByUser } = useAuth();
+    const user = getUser();
+
+    const [data, setData] = useState([]);
+    const [total, setTotal] = useState(0);
+    const [openConfig, setOpenConfig] = useState(false);
+    const [pagination, setPagination] = useState(1);
+    const [canCorrectContainer, setCanCorrectContainer] = useState(false);
+    const [inspeccionSeleccionada, setInspeccionSeleccionada] = useState(null);
+    const [corrigiendoContenedor, setCorrigiendoContenedor] = useState(false);
+    const [aprobandoInspeccionId, setAprobandoInspeccionId] = useState(null);
+    const [rechazandoInspeccionId, setRechazandoInspeccionId] = useState(null);
+
+    const limit = 30;
 
     const ultimoDiaDelAnio = () => {
         const hoy = new Date();
         return `${hoy.getFullYear() + 1}-01-01`;
     };
 
-    const [data, setData] = useState([]);
-    const [total, setTotal] = useState(0);
-    const [openConfig, setOpenConfig] = useState(false);
-    const [pagination, setPagination] = useState(1);
-    const user = getUser();
-    const limit = 30;
-
-    const fetchSeriales = async () => {
+    const fetchSeriales = useCallback(async () => {
         try {
             const formData = new FormData(formRef.current);
-            const alamcenes = almacenByUser?.map(item => item.consecutivo) || [];
+            const alamcenes = almacenByUser?.map((item) => item.consecutivo) || [];
             let config = await encontrarModulo("InspeccionesConfig");
             config = JSON.parse(config[0].detalles);
             config = config.tags;
+
             const dataBusqueda = {
                 cons_producto: config,
                 cons_almacen: alamcenes,
@@ -43,36 +50,152 @@ export default function Inspeccionados() {
                 fecha_inspeccion_fin: formData.get("fecha-fin"),
             };
 
-
             const res = await paginarInspecciones(pagination, limit, dataBusqueda);
 
-            setData(res.data);
-            setTotal(res.total || res.data.length);
+            const rows = (res.data || []).filter((item) => {
+                const respuestaMovimiento = String(item?.movimiento?.respuesta || "").toLowerCase();
+                return !respuestaMovimiento.includes("rechazada");
+            });
 
+            setData(rows);
+            setTotal(rows.length || 0);
         } catch (error) {
             console.error("Error al obtener seriales:", error);
+            setData([]);
+            setTotal(0);
         }
-    };
+    }, [almacenByUser, limit, pagination]);
 
     useEffect(() => {
         fetchSeriales();
-    }, [pagination, limit, almacenByUser, openConfig]); // Agregué startDate y endDate
+    }, [fetchSeriales, openConfig]);
 
+    useEffect(() => {
+        const loadPermissions = async () => {
+            if (user?.id_rol === "Super administrador") {
+                setCanCorrectContainer(true);
+                return;
+            }
+
+            if (!user?.username) {
+                setCanCorrectContainer(false);
+                return;
+            }
+
+            try {
+                const config = await encontrarModulo(user.username);
+                const detallesRaw = config?.[0]?.detalles;
+                const detalles = detallesRaw ? JSON.parse(detallesRaw) : {};
+                const botones = Array.isArray(detalles?.botones) ? detalles.botones : [];
+                setCanCorrectContainer(botones.includes("inspeccionados_corregir_contenedor"));
+            } catch (error) {
+                console.error("Error cargando permisos de correccion de contenedor:", error);
+                setCanCorrectContainer(false);
+            }
+        };
+
+        loadPermissions();
+    }, [user?.id_rol, user?.username]);
 
     const handleFilter = () => {
         fetchSeriales();
     };
 
-
     const handleConfig = () => {
         setOpenConfig(!openConfig);
     };
 
-    // Función para formatear fecha a DD-MM-YYYY
+    const abrirCorreccionContenedor = (item) => {
+        setInspeccionSeleccionada(item);
+    };
+
+    const cerrarCorreccionContenedor = () => {
+        setInspeccionSeleccionada(null);
+        setCorrigiendoContenedor(false);
+    };
+
+    const ejecutarCorreccionContenedor = async ({ contenedorCorrecto, observaciones }) => {
+        if (!inspeccionSeleccionada?.Inspeccion?.id) {
+            return;
+        }
+
+        if (!contenedorCorrecto) {
+            window.alert("Debes indicar el contenedor correcto.");
+            return;
+        }
+
+        try {
+            setCorrigiendoContenedor(true);
+            await corregirInspeccionContenedor({
+                id_inspeccion: inspeccionSeleccionada.Inspeccion.id,
+                contenedor_correcto: contenedorCorrecto,
+                observaciones,
+            });
+            await fetchSeriales();
+            cerrarCorreccionContenedor();
+        } catch (error) {
+            console.error("Error corrigiendo contenedor inspeccionado:", error);
+        } finally {
+            setCorrigiendoContenedor(false);
+        }
+    };
+
+    const aprobarInspeccionPendiente = async (item) => {
+        const idInspeccion = item?.Inspeccion?.id;
+        if (!idInspeccion) {
+            return;
+        }
+
+        try {
+            setAprobandoInspeccionId(idInspeccion);
+            const response = await aprobarInspeccionLleno({ id_inspeccion: idInspeccion });
+            await fetchSeriales();
+            window.alert(response?.message || "Inspeccion aprobada exitosamente.");
+        } catch (error) {
+            console.error("Error aprobando inspeccion lleno:", error);
+        } finally {
+            setAprobandoInspeccionId(null);
+        }
+    };
+
+    const rechazarInspeccionPendiente = async (item) => {
+        const idInspeccion = item?.Inspeccion?.id;
+        if (!idInspeccion) {
+            return;
+        }
+
+        const observaciones = window.prompt("Observaciones del rechazo:", "") || "";
+        if (!window.confirm("¿Estas seguro de rechazar esta inspeccion? Esto devolvera los seriales al inventario.")) {
+            return;
+        }
+
+        try {
+            setRechazandoInspeccionId(idInspeccion);
+            const response = await rechazarInspeccionLleno({
+                id_inspeccion: idInspeccion,
+                observaciones
+            });
+            await fetchSeriales();
+            window.alert(response?.message || "Inspeccion rechazada exitosamente.");
+        } catch (error) {
+            console.error("Error rechazando inspeccion lleno:", error);
+        } finally {
+            setRechazandoInspeccionId(null);
+        }
+    };
+
+    const getInspectionStatus = (item) => {
+        if (item?.Inspeccion?.habilitado) {
+            return { label: "Aprobada", className: "bg-success" };
+        }
+
+        return { label: "Pendiente", className: "bg-warning text-dark" };
+    };
+
     const formatDateToDDMMYYYY = (dateString) => {
         const d = new Date(dateString);
-        const dia = String(d.getUTCDate()).padStart(2, '0');
-        const mes = String(d.getUTCMonth() + 1).padStart(2, '0');
+        const dia = String(d.getUTCDate()).padStart(2, "0");
+        const mes = String(d.getUTCMonth() + 1).padStart(2, "0");
         const anio = d.getUTCFullYear();
         return `${dia}-${mes}-${anio}`;
     };
@@ -83,7 +206,6 @@ export default function Inspeccionados() {
                 <h2>Unidades Inspeccionadas</h2>
 
                 <form ref={formRef} className="row mt-3 g-2 align-items-center">
-                    {/* Columna 1: Fecha de Inicio */}
                     <div className="col-12 col-md-3">
                         <div className="input-group">
                             <span className="input-group-text" id="start-date-addon">Fecha Inicio:</span>
@@ -99,7 +221,6 @@ export default function Inspeccionados() {
                         </div>
                     </div>
 
-                    {/* Columna 2: Fecha de Fin */}
                     <div className="col-12 col-md-3">
                         <div className="input-group">
                             <span className="input-group-text" id="end-date-addon">Fecha Fin:</span>
@@ -125,90 +246,151 @@ export default function Inspeccionados() {
                                 id="contenedor"
                                 name="contenedor"
                                 className="form-control"
-                                aria-label="Fecha fin"
-                                aria-describedby="end-date-addon"
+                                aria-label="Contenedor"
+                                aria-describedby="end-contendor-addon"
                             />
                         </div>
                     </div>
 
-                    {/* Columna 3: Icono de Configuración */}
-                    {user.id_rol === "Super administrador" &&
+                    {user?.id_rol === "Super administrador" && (
                         <div className="col-12 col-md-2 d-flex justify-content-center d-none d-md-table-cell">
                             <button
                                 onClick={handleConfig}
                                 type="button"
                                 className="btn btn-link"
                                 style={{
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                    height: '25px',
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    height: "25px",
                                     width: "auto",
                                     margin: "auto",
                                     padding: "0px"
                                 }}
                             >
-                                <FaCog style={{
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                    height: '25px',
-                                    width: "auto",
-                                    margin: "auto",
-                                    padding: "0px",
-                                    color: "rgb(0 0 0 / 30%)"
-                                }} />
+                                <FaCog
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        height: "25px",
+                                        width: "auto",
+                                        margin: "auto",
+                                        padding: "0px",
+                                        color: "rgb(0 0 0 / 30%)"
+                                    }}
+                                />
                             </button>
                         </div>
-                    }
-
-
+                    )}
                 </form>
 
                 <table ref={tableRef} className="mt-3 table table-striped table-bordered table-sm">
                     <thead>
                         <tr>
-                            <th scope="col">Fecha Inspcción</th>
-                            <th className="text-center" >Contenedor</th>
-                            <th className="text-center" >Serial</th>
-                            <th className="text-center" >Movimiento</th>
-                            <th className="text-center" >Agente</th>
-                            <th className="text-center" >Inicio</th>
-                            <th className="text-center" >Fin</th>
-                            <th className="text-center" >Usuario</th>
-                            {user.id_rol === "Super administrador" && <th>Info</th>}
+                            <th scope="col">Fecha Inspccion</th>
+                            <th className="text-center">Contenedor</th>
+                            <th className="text-center">Serial</th>
+                            <th className="text-center">Movimiento</th>
+                            <th className="text-center">Agente</th>
+                            <th className="text-center">Inicio</th>
+                            <th className="text-center">Fin</th>
+                            <th className="text-center">Usuario</th>
+                            {user?.id_rol === "Super administrador" && <th className="text-center">Accion</th>}
+                            {canCorrectContainer && <th className="text-center">Corregir</th>}
+                            {user?.id_rol === "Super administrador" && <th>Info</th>}
                         </tr>
                     </thead>
                     <tbody>
                         {data.map((item, key) => {
-
+                            const status = getInspectionStatus(item);
+                            const canResolvePending = item?.Inspeccion?.id && !item?.Inspeccion?.habilitado && status.label === "Pendiente";
                             const datos = {
-                                id: item.contenedor.id,
+                                id: item?.contenedor?.id,
                                 timestamp: Date.now(),
-                                contenedor: item.contenedor.contenedor
+                                contenedor: item?.contenedor?.contenedor
                             };
-
 
                             const token = btoa(JSON.stringify(datos));
                             const baseUrl = window.location.origin;
-                            const traceUrl = `${baseUrl}/tracecode?token=${token}`; // ❌ QUITÉ el } extra
+                            const traceUrl = `${baseUrl}/tracecode?token=${token}`;
+
                             return (
                                 <tr key={key}>
                                     <td className="text-center">{formatDateToDDMMYYYY(item?.Inspeccion?.fecha_inspeccion)}</td>
-                                    <td className="text-center">{item.contenedor.contenedor}</td>
-                                    <td className="text-center">{item.serial}</td>
-                                    <td className="text-center">{item.MotivoDeUso.motivo_de_uso}</td>
+                                    <td className="text-center">{item?.contenedor?.contenedor}</td>
+                                    <td className="text-center">{item?.serial}</td>
+                                    <td className="text-center">{item?.MotivoDeUso?.motivo_de_uso}</td>
                                     <td className="text-center">{item?.Inspeccion?.agente}</td>
                                     <td className="text-center">{item?.Inspeccion?.hora_inicio}</td>
                                     <td className="text-center">{item?.Inspeccion?.hora_fin}</td>
-                                    <td className="text-center">{item.usuario.nombre + " " + item.usuario.apellido}</td>
-                                    {user.id_rol === "Super administrador" && <td
-                                        className="text-center"
-                                        style={{ cursor: "pointer" }}
-                                        onClick={() => window.open(traceUrl)}
-                                    >
-                                        <GrCircleInformation />
-                                    </td>}
+                                    <td className="text-center">{`${item?.usuario?.nombre || ""} ${item?.usuario?.apellido || ""}`.trim()}</td>
+                                    {user?.id_rol === "Super administrador" && (
+                                        <td className="text-center">
+                                            {canResolvePending ? (
+                                                <Dropdown align="end">
+                                                    <Dropdown.Toggle
+                                                        variant="outline-secondary"
+                                                        size="sm"
+                                                        id={`acciones-inspeccion-${item?.Inspeccion?.id}`}
+                                                        className="d-inline-flex align-items-center justify-content-center"
+                                                    >
+                                                        ⋮
+                                                    </Dropdown.Toggle>
+
+                                                    <Dropdown.Menu>
+                                                        <Dropdown.Item
+                                                            onClick={() => aprobarInspeccionPendiente(item)}
+                                                            disabled={aprobandoInspeccionId === item?.Inspeccion?.id}
+                                                        >
+                                                            {aprobandoInspeccionId === item?.Inspeccion?.id ? "Aprobando..." : "Aprobar"}
+                                                        </Dropdown.Item>
+                                                        <Dropdown.Item
+                                                            onClick={() => rechazarInspeccionPendiente(item)}
+                                                            disabled={rechazandoInspeccionId === item?.Inspeccion?.id}
+                                                            className="text-danger"
+                                                        >
+                                                            {rechazandoInspeccionId === item?.Inspeccion?.id ? "Rechazando..." : "Rechazar"}
+                                                        </Dropdown.Item>
+                                                    </Dropdown.Menu>
+                                                </Dropdown>
+                                            ) : (
+                                                <span
+                                                    title={status.label}
+                                                    className="d-inline-flex align-items-center justify-content-center"
+                                                    style={{ color: "#198754", fontSize: "1.2rem" }}
+                                                >
+                                                    <FaCheckCircle />
+                                                </span>
+                                            )}
+                                        </td>
+                                    )}
+                                    {canCorrectContainer && (
+                                        <td className="text-center">
+                                            {item?.Inspeccion?.id ? (
+                                                <button
+                                                    type="button"
+                                                    title={`Corregir contenedor ${item?.contenedor?.contenedor || ""}`}
+                                                    onClick={() => abrirCorreccionContenedor(item)}
+                                                    className="btn p-0 border-0 bg-transparent d-inline-flex align-items-center justify-content-center"
+                                                    style={{ color: "#f0ad4e", fontSize: "1.15rem" }}
+                                                >
+                                                    <FaExchangeAlt />
+                                                </button>
+                                            ) : (
+                                                <span className="text-muted">-</span>
+                                            )}
+                                        </td>
+                                    )}
+                                    {user?.id_rol === "Super administrador" && (
+                                        <td
+                                            className="text-center"
+                                            style={{ cursor: "pointer" }}
+                                            onClick={() => window.open(traceUrl)}
+                                        >
+                                            <GrCircleInformation />
+                                        </td>
+                                    )}
                                 </tr>
                             );
                         })}
@@ -217,8 +399,14 @@ export default function Inspeccionados() {
 
                 <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
                 {openConfig && <InsumoConfig handleConfig={handleConfig} modulo_confi={"InspeccionesConfig"} />}
+                <CorregirInspeccionContenedorModal
+                    open={Boolean(inspeccionSeleccionada)}
+                    loading={corrigiendoContenedor}
+                    inspeccionSeleccionada={inspeccionSeleccionada}
+                    onClose={cerrarCorreccionContenedor}
+                    onConfirm={ejecutarCorreccionContenedor}
+                />
             </div>
-
         </>
     );
 }

@@ -140,8 +140,10 @@ const inspeccionAntinarcoticos = async (Formulario, rechazos) => {
     try {
         const response = await axios.post(endPoints.seguridad.inspeccionAntinarcoticos, { formulario: Formulario, rechazos: rechazos });
         return response.data;
-    } catch (e) {
-        alert("Error al actualizar data list");
+    } catch (error) {
+        const message = error?.response?.data?.message || "No fue posible guardar la inspeccion.";
+        window.alert(message);
+        throw error;
     }
 };
 
@@ -165,6 +167,50 @@ const usarSeriales = async (semana, fecha, seriales, contenedorID, id_usuario, m
     }
 };
 
+const corregirAsignacionSerial = async (body) => {
+    try {
+        const response = await axios.post(endPoints.seguridad.corregirSerial, body, config);
+        return response.data;
+    } catch (error) {
+        const message = error?.response?.data?.message || "No fue posible corregir el serial.";
+        window.alert(message);
+        throw error;
+    }
+};
+
+const corregirInspeccionContenedor = async (body) => {
+    try {
+        const response = await axios.post(endPoints.seguridad.corregirInspeccionContenedor, body, config);
+        return response.data;
+    } catch (error) {
+        const message = error?.response?.data?.message || "No fue posible corregir el contenedor de la inspeccion.";
+        window.alert(message);
+        throw error;
+    }
+};
+
+const aprobarInspeccionLleno = async (body) => {
+    try {
+        const response = await axios.post(endPoints.seguridad.aprobarInspeccionLleno, body, config);
+        return response.data;
+    } catch (error) {
+        const message = error?.response?.data?.message || "No fue posible aprobar la inspeccion.";
+        window.alert(message);
+        throw error;
+    }
+};
+
+const rechazarInspeccionLleno = async (body) => {
+    try {
+        const response = await axios.post(endPoints.seguridad.rechazarInspeccionLleno, body, config);
+        return response.data;
+    } catch (error) {
+        const message = error?.response?.data?.message || "No fue posible rechazar la inspeccion.";
+        window.alert(message);
+        throw error;
+    }
+};
+
 export {
     listarSeriales,
     listarUsuariosSeguridad,
@@ -176,5 +222,9 @@ export {
     verificarAndActualizarSeriales,
     actualizarSerial,
     inspeccionAntinarcoticos,
-    usarSeriales
+    usarSeriales,
+    corregirAsignacionSerial,
+    corregirInspeccionContenedor,
+    aprobarInspeccionLleno,
+    rechazarInspeccionLleno
 };

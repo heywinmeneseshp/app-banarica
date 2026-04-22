@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import { FaBoxOpen, FaCheckCircle, FaClipboardList, FaPrint, FaRoute, FaShippingFast, FaTimesCircle, FaUserShield } from "react-icons/fa";
+import { FaBoxOpen, FaCheckCircle, FaClipboardList, FaEdit, FaPrint, FaRoute, FaShippingFast, FaTimesCircle, FaUserShield } from "react-icons/fa";
+import CorregirSerialModal from "@components/seguridad/CorregirSerialModal";
+import { useAuth } from "@hooks/useAuth";
+import { encontrarModulo } from "@services/api/configuracion";
 import { encontrarContenedor } from "@services/api/contenedores";
 import { listarInspecciones, paginarInspecciones } from "@services/api/inpecciones";
 import { paginarListado } from "@services/api/listado";
 import { paginarRechazos } from "@services/api/rechazos";
-import { listarSeriales } from "@services/api/seguridad";
+import { corregirAsignacionSerial, listarSeriales } from "@services/api/seguridad";
 import { decodeTraceToken } from "@utils/tracecode";
 import { getContainerReturnInfo, isContainerReturned } from "@utils/contenedorEstado";
 
@@ -244,86 +247,123 @@ const tableHeaderStyle = {
 export default function TracecodePage() {
   const router = useRouter();
   const { token } = router.query;
+  const { getUser } = useAuth();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [detail, setDetail] = useState(EMPTY_DATA);
+  const [canCorrectSerials, setCanCorrectSerials] = useState(false);
+  const [serialSeleccionado, setSerialSeleccionado] = useState(null);
+  const [corrigiendoSerial, setCorrigiendoSerial] = useState(false);
+
+  const user = getUser();
+
+  const loadPermissions = useCallback(async () => {
+    if (!user?.username) {
+      setCanCorrectSerials(false);
+      return;
+    }
+
+    if (user?.id_rol === "Super administrador") {
+      setCanCorrectSerials(true);
+      return;
+    }
+
+    try {
+      const config = await encontrarModulo(user.username);
+      const detalles = config?.[0]?.detalles;
+      const botones = Array.isArray(detalles)
+        ? detalles
+        : Array.isArray(detalles?.botones)
+          ? detalles.botones
+          : [];
+
+      setCanCorrectSerials(botones.includes("disponibles_corregir_serial"));
+    } catch (permissionError) {
+      console.error("No fue posible cargar permisos para correccion de seriales:", permissionError);
+      setCanCorrectSerials(false);
+    }
+  }, [user]);
+
+  const loadDetail = useCallback(async () => {
+    if (!token) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const decoded = decodeTraceToken(token);
+      if (!decoded?.id) {
+        throw new Error("El token del contenedor no es valido.");
+      }
+
+      const contenedor = await encontrarContenedor(decoded.id);
+      const contenedorCodigo = contenedor?.contenedor || decoded?.contenedor || "";
+
+      const [
+        listadoResponse,
+        inspeccionesResponse,
+        rechazosResponse,
+        serialesContenedor,
+        inspeccionesGlobales
+      ] = await Promise.all([
+        paginarListado(1, 200, { contenedor: contenedorCodigo }),
+        paginarInspecciones(1, 200, { contenedor: contenedorCodigo }),
+        paginarRechazos(1, 200, { contenedor: contenedorCodigo }),
+        listarSeriales(null, null, { id_contenedor: decoded.id }),
+        listarInspecciones()
+      ]);
+
+      const listados = (listadoResponse?.data || []).filter(
+        (item) => item?.Contenedor?.id === decoded.id
+      );
+
+      const antinarcoticsRows = (inspeccionesResponse?.data || []).filter(
+        (item) => item?.contenedor?.id === decoded.id
+      );
+
+      const rechazos = (rechazosResponse?.data || []).filter(
+        (item) => item?.Contenedor?.id === decoded.id
+      );
+
+      const usersMap = buildUsersMap(serialesContenedor || [], antinarcoticsRows || [], rechazos || []);
+      const inspeccionesContenedor = (inspeccionesGlobales || []).filter(
+        (item) => item?.id_contenedor === decoded.id
+      );
+
+      const emptyInspection =
+        inspeccionesContenedor.find((item) =>
+          String(item?.zona || "").toLowerCase().includes("vacio")
+        ) || null;
+
+      const otherInspections = inspeccionesContenedor.filter((item) => item?.id !== emptyInspection?.id);
+
+      setDetail({
+        contenedor,
+        listados,
+        emptyInspection,
+        otherInspections,
+        antinarcoticsRows,
+        serialesContenedor: Array.isArray(serialesContenedor) ? serialesContenedor : [],
+        rechazos,
+        usersMap,
+        tokenData: decoded
+      });
+    } catch (err) {
+      console.error("Error cargando tracecode:", err);
+      setError(err?.message || "No fue posible cargar la ficha del contenedor.");
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
 
   useEffect(() => {
-    const loadDetail = async () => {
-      if (!token) return;
-
-      setLoading(true);
-      setError("");
-
-      try {
-        const decoded = decodeTraceToken(token);
-        if (!decoded?.id) {
-          throw new Error("El token del contenedor no es valido.");
-        }
-
-        const contenedor = await encontrarContenedor(decoded.id);
-        const contenedorCodigo = contenedor?.contenedor || decoded?.contenedor || "";
-
-        const [
-          listadoResponse,
-          inspeccionesResponse,
-          rechazosResponse,
-          serialesContenedor,
-          inspeccionesGlobales
-        ] = await Promise.all([
-          paginarListado(1, 200, { contenedor: contenedorCodigo }),
-          paginarInspecciones(1, 200, { contenedor: contenedorCodigo }),
-          paginarRechazos(1, 200, { contenedor: contenedorCodigo }),
-          listarSeriales(null, null, { id_contenedor: decoded.id }),
-          listarInspecciones()
-        ]);
-
-        const listados = (listadoResponse?.data || []).filter(
-          (item) => item?.Contenedor?.id === decoded.id
-        );
-
-        const antinarcoticsRows = (inspeccionesResponse?.data || []).filter(
-          (item) => item?.contenedor?.id === decoded.id
-        );
-
-        const rechazos = (rechazosResponse?.data || []).filter(
-          (item) => item?.Contenedor?.id === decoded.id
-        );
-
-        const usersMap = buildUsersMap(serialesContenedor || [], antinarcoticsRows || [], rechazos || []);
-        const inspeccionesContenedor = (inspeccionesGlobales || []).filter(
-          (item) => item?.id_contenedor === decoded.id
-        );
-
-        const emptyInspection =
-          inspeccionesContenedor.find((item) =>
-            String(item?.zona || "").toLowerCase().includes("vacio")
-          ) || null;
-
-        const otherInspections = inspeccionesContenedor.filter((item) => item?.id !== emptyInspection?.id);
-
-        setDetail({
-          contenedor,
-          listados,
-          emptyInspection,
-          otherInspections,
-          antinarcoticsRows,
-          serialesContenedor: Array.isArray(serialesContenedor) ? serialesContenedor : [],
-          rechazos,
-          usersMap,
-          tokenData: decoded
-        });
-      } catch (err) {
-        console.error("Error cargando tracecode:", err);
-        setError(err?.message || "No fue posible cargar la ficha del contenedor.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadDetail();
-  }, [token]);
+  }, [loadDetail]);
+
+  useEffect(() => {
+    loadPermissions();
+  }, [loadPermissions]);
 
   const computed = useMemo(() => {
     const { contenedor, listados, emptyInspection, otherInspections, antinarcoticsRows, serialesContenedor, rechazos, usersMap } = detail;
@@ -402,6 +442,42 @@ export default function TracecodePage() {
       emptyFoodStatus: parseFoodResult(emptyInspection?.observaciones)
     };
   }, [detail]);
+
+  const abrirCorreccion = (serial) => {
+    setSerialSeleccionado(serial);
+  };
+
+  const cerrarCorreccion = () => {
+    setSerialSeleccionado(null);
+    setCorrigiendoSerial(false);
+  };
+
+  const ejecutarCorreccion = async ({ modoCorreccion, serialCorrecto, observaciones }) => {
+    if (!serialSeleccionado?.serial) {
+      return;
+    }
+
+    if (modoCorreccion === "reemplazar" && !serialCorrecto.trim()) {
+      window.alert("Debes indicar el serial correcto para el reemplazo.");
+      return;
+    }
+
+    try {
+      setCorrigiendoSerial(true);
+      await corregirAsignacionSerial({
+        serial_errado: serialSeleccionado.serial,
+        serial_correcto: modoCorreccion === "reemplazar" ? serialCorrecto.trim().toUpperCase() : "",
+        observaciones
+      });
+
+      await loadDetail();
+      cerrarCorreccion();
+    } catch (correctionError) {
+      console.error("Error corrigiendo serial desde tracecode:", correctionError);
+    } finally {
+      setCorrigiendoSerial(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -805,12 +881,13 @@ export default function TracecodePage() {
                     <th style={tableHeaderStyle}>Usuario</th>
                     <th style={tableHeaderStyle}>Movimiento</th>
                     <th style={tableHeaderStyle}>Fecha de uso</th>
+                    {canCorrectSerials && <th style={tableHeaderStyle}>Corregir</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {allUsedSerials.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="text-center text-muted py-3">
+                      <td colSpan={canCorrectSerials ? 7 : 6} className="text-center text-muted py-3">
                         No se encontraron seriales usados para este contenedor.
                       </td>
                     </tr>
@@ -823,6 +900,18 @@ export default function TracecodePage() {
                         <td style={centeredTableCellStyle}>{getUserLabel(detail.usersMap, item?.id_usuario, item?.usuario)}</td>
                         <td style={centeredTableCellStyle}>{item?.cons_movimiento || "No registrado"}</td>
                         <td style={centeredTableCellStyle}>{formatDate(item?.fecha_de_uso || item?.updatedAt)}</td>
+                        {canCorrectSerials && (
+                          <td style={centeredTableCellStyle}>
+                            <button
+                              type="button"
+                              className="btn btn-outline-warning btn-sm"
+                              onClick={() => abrirCorreccion(item)}
+                              title={`Corregir serial ${item.serial}`}
+                            >
+                              <FaEdit />
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     ))
                   )}
@@ -923,6 +1012,14 @@ export default function TracecodePage() {
             </div>
           </div>
         </div>
+
+        <CorregirSerialModal
+          open={Boolean(serialSeleccionado)}
+          serialSeleccionado={serialSeleccionado}
+          loading={corrigiendoSerial}
+          onClose={cerrarCorreccion}
+          onConfirm={ejecutarCorreccion}
+        />
       </div>
     </div>
   );

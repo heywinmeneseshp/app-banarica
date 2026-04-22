@@ -53,9 +53,9 @@ const listarTransbordo = async () => {
     }
 };
 
-const paginarTransbordo = async (page, limit, nombre) => {
+const paginarTransbordo = async (page, limit, filtros = {}) => {
     try {
-        const res = await axios.get(endPoints.Transbordo.pagination(page, limit, nombre));
+        const res = await axios.get(endPoints.Transbordo.paginar(page, limit, filtros));
         return res.data;
     } catch {
         alert("Error al paginar.Transbordo");
