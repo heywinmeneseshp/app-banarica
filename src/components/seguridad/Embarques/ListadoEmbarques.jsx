@@ -434,6 +434,7 @@ const ListadoEmbarques = () => {
         endPointCargueMasivo={endPoints.Embarques.create + "/actualizar-masivo"}
         encabezados={{
           bl: null,
+          semana: null,
           booking: null,
           viaje: null,
           anuncio: null,
