@@ -210,7 +210,8 @@ const endPoints = {
         usarSeriales: `${API}/api/${VERSION}/seguridad/usar-seriales`,
         corregirSerial: `${API}/api/${VERSION}/seguridad/corregir-serial`,
         corregirInspeccionContenedor: `${API}/api/${VERSION}/seguridad/corregir-inspeccion-contenedor`,
-        inspeccionVacioMasivo: `${API}/api/${VERSION}/seguridad/inspeccion-vacio-masivo`
+        inspeccionVacioMasivo: `${API}/api/${VERSION}/seguridad/inspeccion-vacio-masivo`,
+        inspeccionVacio: `${API}/api/${VERSION}/seguridad/inspeccion-vacio`
     },
     etiquetas: {
         crearEtiqueta: `${API}/api/${VERSION}/etiquetas`,

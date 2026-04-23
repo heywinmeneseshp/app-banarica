@@ -2,12 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/router";
 import { FaCheckCircle, FaCog, FaFileExcel, FaMinusCircle, FaRedo } from "react-icons/fa";
 import { LiaUndoAltSolid } from "react-icons/lia";
-import { crearListado } from "@services/api/listado";
 import { useAuth } from "@hooks/useAuth";
-import { encontrarUnSerial } from "@services/api/seguridad";
+import { crearInspeccionVacio, encontrarUnSerial } from "@services/api/seguridad";
 import { filtrarSemanaRangoMes } from "@services/api/semanas";
 import { encontrarModulo } from "@services/api/configuracion";
-import { crearInspeccion } from "@services/api/inpecciones";
 import { filtrarContenedor } from "@services/api/contenedores";
 import endPoints from "@services/api";
 import Loader from "@components/shared/Loader";
@@ -41,7 +39,6 @@ const FIELD_CONFIG = {
 const STORAGE_KEYS = {
   INSPECCION_VACIO: "inspecVacio",
   OBSERVACIONES: "observaciones",
-  USUARIO: "usuario",
   FORMULARIO_DIGITAL: "inspecVacioDigital"
 };
 
@@ -519,7 +516,6 @@ export default function InspeccionVacio() {
       }
 
       try {
-        const usuario = JSON.parse(localStorage.getItem(STORAGE_KEYS.USUARIO));
         const fullObservations = buildInspectionSummary({
           baseObservaciones: observaciones,
           inspectionChecks,
@@ -527,31 +523,20 @@ export default function InspeccionVacio() {
           foodValidationResult
         });
 
-        const itemListado = await crearListado({
+        const response = await crearInspeccionVacio({
           fecha: formValues.fecha || getCurrentDate(),
           contenedor: String(formValues.contenedor || "").toUpperCase(),
           observaciones: fullObservations,
-          usuario,
           seriales,
-          semana: semanaValue
+          semana: semanaValue,
+          hora_inicio: getCurrentTime(),
+          hora_fin: getCurrentTime(),
+          agente:
+            [user?.nombre, user?.apellido].filter(Boolean).join(" ").trim() || user?.username || "Sistema",
+          zona: "Inspeccion vacio"
         });
 
-        const listadoCreado = itemListado?.data;
-        if (listadoCreado?.id_contenedor) {
-          await crearInspeccion({
-            id_contenedor: listadoCreado.id_contenedor,
-            fecha_inspeccion: formValues.fecha || getCurrentDate(),
-            hora_inicio: getCurrentTime(),
-            hora_fin: getCurrentTime(),
-            agente:
-              [user?.nombre, user?.apellido].filter(Boolean).join(" ") || user?.username || "Sistema",
-            zona: "Inspección vacío",
-            observaciones: fullObservations,
-            habilitado: true
-          });
-        }
-
-        window.alert(itemListado.message || "Guardado exitoso.");
+        window.alert(response?.message || "Guardado exitoso.");
 
         setState((prev) => ({
           ...prev,
@@ -574,8 +559,8 @@ export default function InspeccionVacio() {
           router.push("/Seguridad/Dashboard");
         }
       } catch (error) {
-        console.error("Error al crear listado:", error);
-        window.alert("Ocurrió un error. Por favor intenta nuevamente.");
+        console.error("Error al guardar inspeccion vacio:", error);
+        window.alert(error?.message || "Ocurrió un error. Por favor intenta nuevamente.");
       } finally {
         setStateValue("loading", false);
       }

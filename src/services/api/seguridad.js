@@ -211,6 +211,17 @@ const rechazarInspeccionLleno = async (body) => {
     }
 };
 
+const crearInspeccionVacio = async (body) => {
+    try {
+        const response = await axios.post(endPoints.seguridad.inspeccionVacio, body, config);
+        return response.data;
+    } catch (error) {
+        const message = error?.response?.data?.message || "No fue posible guardar la inspeccion vacio.";
+        window.alert(message);
+        throw error;
+    }
+};
+
 export {
     listarSeriales,
     listarUsuariosSeguridad,
@@ -226,5 +237,6 @@ export {
     corregirAsignacionSerial,
     corregirInspeccionContenedor,
     aprobarInspeccionLleno,
-    rechazarInspeccionLleno
+    rechazarInspeccionLleno,
+    crearInspeccionVacio
 };

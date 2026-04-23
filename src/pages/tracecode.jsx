@@ -9,6 +9,7 @@ import { listarInspecciones, paginarInspecciones } from "@services/api/inpeccion
 import { paginarListado } from "@services/api/listado";
 import { paginarRechazos } from "@services/api/rechazos";
 import { corregirAsignacionSerial, listarSeriales } from "@services/api/seguridad";
+import { getToken } from "utils/session";
 import { decodeTraceToken } from "@utils/tracecode";
 import { getContainerReturnInfo, isContainerReturned } from "@utils/contenedorEstado";
 
@@ -101,6 +102,48 @@ const parseFoodResult = (text) => {
   if (normalized.includes("resultado: no apto")) return "No apto para alimentos";
 
   return "No registrado";
+};
+
+const parseEmptyInspectionDetails = (text) => {
+  const raw = String(text || "");
+  const [baseBlock = "", partsBlock = "", foodBlock = ""] = raw.split("\n\n");
+
+  const baseObservaciones = String(baseBlock || "").trim();
+
+  const partsText = partsBlock.replace(/^Formulario digital inspección vacío -> Partes:\s*/i, "").trim();
+  const foodText = foodBlock.replace(/^Validación alimentos ->\s*/i, "").trim();
+
+  const partes = partsText
+    ? partsText.split(" | ").map((item) => {
+      const match = item.match(/^(.+?):\s*(OK|Pendiente)(?:\s*\((.*)\))?$/i);
+      return {
+        parte: match?.[1]?.trim() || item,
+        estado: match?.[2]?.trim() || "No registrado",
+        observacion: match?.[3]?.trim() || ""
+      };
+    })
+    : [];
+
+  const foodItems = foodText
+    ? foodText
+      .replace(/\.\s*Resultado:\s*(Apto|No apto).*$/i, "")
+      .split(" | ")
+      .map((item) => {
+        const [condicion, estado] = item.split(":");
+        return {
+          condicion: String(condicion || "").trim(),
+          estado: String(estado || "").trim()
+        };
+      })
+      .filter((item) => item.condicion)
+    : [];
+
+  return {
+    baseObservaciones,
+    partes,
+    foodItems,
+    foodResult: parseFoodResult(raw)
+  };
 };
 
 const buildUsersMap = (...collections) => {
@@ -257,6 +300,7 @@ export default function TracecodePage() {
   const [corrigiendoSerial, setCorrigiendoSerial] = useState(false);
 
   const user = getUser();
+  const isAuthenticated = Boolean(getToken() && user);
 
   const loadPermissions = useCallback(async () => {
     if (!user?.username) {
@@ -287,6 +331,7 @@ export default function TracecodePage() {
 
   const loadDetail = useCallback(async () => {
     if (!token) return;
+    if (!isAuthenticated) return;
 
     setLoading(true);
     setError("");
@@ -355,11 +400,18 @@ export default function TracecodePage() {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [isAuthenticated, token]);
 
   useEffect(() => {
+    if (!router.isReady) return;
+
+    if (!isAuthenticated) {
+      router.replace(`/login?next=${encodeURIComponent(router.asPath || "/tracecode")}`);
+      return;
+    }
+
     loadDetail();
-  }, [loadDetail]);
+  }, [isAuthenticated, loadDetail, router]);
 
   useEffect(() => {
     loadPermissions();
@@ -536,6 +588,7 @@ export default function TracecodePage() {
     hasFullInspection,
     emptyFoodStatus
   } = computed;
+  const emptyInspectionDetails = parseEmptyInspectionDetails(emptyInspection?.observaciones);
 
   return (
     <div
@@ -744,7 +797,74 @@ export default function TracecodePage() {
                 <div className="col-12 col-lg-4">
                   <div className="text-muted small">Observaciones</div>
                   <div className="border rounded p-3 bg-light-subtle" style={{ whiteSpace: "pre-wrap" }}>
-                    {emptyInspection?.observaciones || "Sin observaciones registradas."}
+                    {emptyInspectionDetails.baseObservaciones || "Sin observaciones generales registradas."}
+                  </div>
+                </div>
+
+                <div className="col-12">
+                  <div className="row g-3">
+                    <div className="col-12 col-xl-8">
+                      <div className="card border-0 bg-light h-100">
+                        <div className="card-body">
+                          <div className="fw-semibold mb-3">Inspección física de la unidad</div>
+                          {emptyInspectionDetails.partes.length === 0 ? (
+                            <span className="text-muted">No se encontraron detalles estructurados de la inspección física.</span>
+                          ) : (
+                            <div className="table-responsive">
+                              <table className="table table-sm table-bordered align-middle text-center mb-0">
+                                <thead>
+                                  <tr>
+                                    <th style={tableHeaderStyle}>Parte</th>
+                                    <th style={tableHeaderStyle}>Estado</th>
+                                    <th style={tableHeaderStyle}>Observación</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {emptyInspectionDetails.partes.map((item) => (
+                                    <tr key={item.parte}>
+                                      <td style={centeredTableCellStyle}>{item.parte}</td>
+                                      <td style={centeredTableCellStyle}>
+                                        <span className={`badge ${item.estado === "OK" ? "text-bg-success" : "text-bg-secondary"}`}>
+                                          {item.estado}
+                                        </span>
+                                      </td>
+                                      <td style={centeredTableCellStyle}>{item.observacion || "Sin observación"}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="col-12 col-xl-4">
+                      <div className="card border-0 bg-light h-100">
+                        <div className="card-body">
+                          <div className="fw-semibold mb-3">Validación para alimentos</div>
+                          {emptyInspectionDetails.foodItems.length === 0 ? (
+                            <span className="text-muted">No se encontraron detalles estructurados de validación.</span>
+                          ) : (
+                            <div className="d-flex flex-column gap-2 mb-3">
+                              {emptyInspectionDetails.foodItems.map((item) => (
+                                <div key={item.condicion} className="d-flex justify-content-between align-items-center border rounded px-3 py-2 bg-white">
+                                  <span>{item.condicion}</span>
+                                  <span className={`badge ${String(item.estado).toLowerCase() === "sí" ? "text-bg-success" : "text-bg-danger"}`}>
+                                    {item.estado || "No"}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className="text-muted small">Resultado final</div>
+                          <div className={`fw-semibold ${emptyInspectionDetails.foodResult.includes("No apto") ? "text-danger" : "text-success"}`}>
+                            {emptyInspectionDetails.foodResult}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
