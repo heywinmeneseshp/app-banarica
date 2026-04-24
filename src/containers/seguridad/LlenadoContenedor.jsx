@@ -26,6 +26,7 @@ const JERARQUIA_CAMPOS = {
 };
 
 const getItemId = (item) => item?.id || item?.consecutivo;
+const normalizeCode = (value) => String(value || '').trim().toUpperCase();
 
 const buildEmptyRow = () => ({
   id: Date.now() + Math.random(),
@@ -47,7 +48,7 @@ const FormularioDinamico = () => {
   });
   const [embarquesObjet, setEmbarquesObject] = useState([]);
   const [contenedores, setContenedores] = useState([]);
-  const [listado, setListado] = useState([]);
+  const [selectedContenedor, setSelectedContenedor] = useState(null);
   const [sectionsProduct, setSectionsProduct] = useState([]);
   const [sectionsRechazo, setSectionsRechazo] = useState([]);
 
@@ -105,34 +106,44 @@ const FormularioDinamico = () => {
   }, [filtros.semana]);
 
   useEffect(() => {
-    if (!filtros.booking) {
-      setListado([]);
+    if (!filtros.contenedor || normalizeCode(filtros.contenedor).length < 3) {
       setContenedores([]);
+      setSelectedContenedor(null);
       return;
     }
 
-    paginarListado(1, 100, {
+    paginarListado(1, 25, {
       fecha_inicial: fechaInicial,
       fecha_final: fechaFinal,
-      habilitado: true
+      habilitado: true,
+      contenedor: normalizeCode(filtros.contenedor)
     })
       .then((res) => {
         const listadoFiltrado = filterActiveContainerRows(res.data || []).filter(
-          (item) => item.Embarque?.bl === filtros.booking
+          (item) => normalizeCode(item.Contenedor?.contenedor).includes(normalizeCode(filtros.contenedor))
         );
-        setListado(listadoFiltrado);
-        setContenedores(
-          listadoFiltrado
-            .map((item) => item.Contenedor?.contenedor || '')
-            .filter(Boolean)
+
+        const uniqueContenedores = Array.from(
+          new Map(
+            listadoFiltrado
+              .filter((item) => item?.Contenedor?.contenedor)
+              .map((item) => [normalizeCode(item.Contenedor?.contenedor), item])
+          ).values()
         );
+
+        setContenedores(uniqueContenedores);
+
+        const exactMatch = uniqueContenedores.find(
+          (item) => normalizeCode(item.Contenedor?.contenedor) === normalizeCode(filtros.contenedor)
+        );
+        setSelectedContenedor(exactMatch || null);
       })
       .catch((error) => {
         console.error("Error al cargar contenedores:", error);
-        setListado([]);
         setContenedores([]);
+        setSelectedContenedor(null);
       });
-  }, [filtros.booking, fechaInicial, fechaFinal]);
+  }, [filtros.contenedor, fechaInicial, fechaFinal]);
 
   const datalists = useMemo(() => {
     let filtered = embarquesObjet;
@@ -163,6 +174,10 @@ const FormularioDinamico = () => {
       });
       return nuevo;
     });
+
+    if (id === 'contenedor') {
+      setSelectedContenedor(null);
+    }
   };
 
   const addSection = (type) => {
@@ -218,10 +233,28 @@ const FormularioDinamico = () => {
       }
 
       const user = JSON.parse(localStorage.getItem("usuario") || "{}");
-      const id_embarque = embarquesObjet.find((item) => item.bl === filtros.booking)?.id;
-      const itemContenedor = listado.find(
-        (item) => item.Contenedor?.contenedor === getVal('contenedor')
-      );
+      const bookingIngresado = normalizeCode(getVal('booking'));
+      const contenedorIngresado = normalizeCode(getVal('contenedor'));
+
+      const id_embarque = embarquesObjet.find(
+        (item) => normalizeCode(item.bl) === bookingIngresado
+      )?.id;
+
+      let itemContenedor = selectedContenedor;
+
+      if (!itemContenedor && contenedorIngresado) {
+        const exactMatch = await paginarListado(1, 25, {
+          fecha_inicial: fechaInicial,
+          fecha_final: fechaFinal,
+          habilitado: true,
+          contenedor: contenedorIngresado
+        });
+
+        const rows = filterActiveContainerRows(exactMatch?.data || []);
+        itemContenedor = rows.find(
+          (item) => normalizeCode(item.Contenedor?.contenedor) === contenedorIngresado
+        );
+      }
 
       if (!id_embarque || !itemContenedor) {
         throw new Error("Booking o contenedor no válido");
@@ -327,9 +360,16 @@ const FormularioDinamico = () => {
                   required
                 />
                 <datalist id={`l-${field.id}`}>
-                  {field.list.map((option, index) => (
-                    <option key={`${field.id}-${index}`} value={option} />
-                  ))}
+                  {field.id === 'contenedor'
+                    ? contenedores.map((option) => (
+                      <option
+                        key={`${field.id}-${option?.id}-${option?.id_contenedor}`}
+                        value={option?.Contenedor?.contenedor || ''}
+                      />
+                    ))
+                    : field.list.map((option, index) => (
+                      <option key={`${field.id}-${index}`} value={option} />
+                    ))}
                 </datalist>
               </div>
             </div>
