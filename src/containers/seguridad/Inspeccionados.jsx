@@ -202,12 +202,14 @@ export default function Inspeccionados() {
 
     return (
         <>
-            <div className="container">
-                <h2>Unidades Inspeccionadas</h2>
+            <div className="container-fluid px-0">
+                <div className="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-2 mb-3">
+                    <h2 className="mb-0">Unidades Inspeccionadas</h2>
+                </div>
 
                 <form ref={formRef} className="row mt-3 g-2 align-items-center">
                     <div className="col-12 col-md-3">
-                        <div className="input-group">
+                        <div className="input-group flex-nowrap">
                             <span className="input-group-text" id="start-date-addon">Fecha Inicio:</span>
                             <input
                                 onChange={handleFilter}
@@ -222,7 +224,7 @@ export default function Inspeccionados() {
                     </div>
 
                     <div className="col-12 col-md-3">
-                        <div className="input-group">
+                        <div className="input-group flex-nowrap">
                             <span className="input-group-text" id="end-date-addon">Fecha Fin:</span>
                             <input
                                 defaultValue={ultimoDiaDelAnio()}
@@ -238,7 +240,7 @@ export default function Inspeccionados() {
                     </div>
 
                     <div className="col-12 col-md-3">
-                        <div className="input-group">
+                        <div className="input-group flex-nowrap">
                             <span className="input-group-text" id="end-contendor-addon">Contenedor:</span>
                             <input
                                 onChange={handleFilter}
@@ -253,52 +255,33 @@ export default function Inspeccionados() {
                     </div>
 
                     {user?.id_rol === "Super administrador" && (
-                        <div className="col-12 col-md-2 d-flex justify-content-center d-none d-md-table-cell">
+                        <div className="col-12 col-md-2 d-flex justify-content-md-center justify-content-start">
                             <button
                                 onClick={handleConfig}
                                 type="button"
-                                className="btn btn-link"
-                                style={{
-                                    display: "flex",
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    height: "25px",
-                                    width: "auto",
-                                    margin: "auto",
-                                    padding: "0px"
-                                }}
+                                className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center"
                             >
-                                <FaCog
-                                    style={{
-                                        display: "flex",
-                                        justifyContent: "center",
-                                        alignItems: "center",
-                                        height: "25px",
-                                        width: "auto",
-                                        margin: "auto",
-                                        padding: "0px",
-                                        color: "rgb(0 0 0 / 30%)"
-                                    }}
-                                />
+                                <FaCog />
                             </button>
                         </div>
                     )}
                 </form>
 
-                <table ref={tableRef} className="mt-3 table table-striped table-bordered table-sm">
-                    <thead>
+                <div className="table-responsive mt-3">
+                <table ref={tableRef} className="table table-striped table-bordered table-sm align-middle mb-0">
+                    <thead className="table-light">
                         <tr>
-                            <th scope="col">Fecha Inspccion</th>
-                            <th className="text-center">Contenedor</th>
-                            <th className="text-center">Serial</th>
-                            <th className="text-center">Movimiento</th>
-                            <th className="text-center">Agente</th>
-                            <th className="text-center">Inicio</th>
-                            <th className="text-center">Fin</th>
-                            <th className="text-center">Usuario</th>
-                            {user?.id_rol === "Super administrador" && <th className="text-center">Accion</th>}
-                            {canCorrectContainer && <th className="text-center">Corregir</th>}
-                            {user?.id_rol === "Super administrador" && <th>Info</th>}
+                            <th scope="col" className="text-center text-nowrap">Fecha Inspccion</th>
+                            <th className="text-center text-nowrap">Contenedor</th>
+                            <th className="text-center text-nowrap">Serial</th>
+                            <th className="text-center text-nowrap">Movimiento</th>
+                            <th className="text-center text-nowrap">Agente</th>
+                            <th className="text-center text-nowrap">Inicio</th>
+                            <th className="text-center text-nowrap">Fin</th>
+                            <th className="text-center text-nowrap">Usuario</th>
+                            {user?.id_rol === "Super administrador" && <th className="text-center text-nowrap">Accion</th>}
+                            {canCorrectContainer && <th className="text-center text-nowrap">Corregir</th>}
+                            {user?.id_rol === "Super administrador" && <th className="text-center text-nowrap">Info</th>}
                         </tr>
                     </thead>
                     <tbody>
@@ -396,6 +379,7 @@ export default function Inspeccionados() {
                         })}
                     </tbody>
                 </table>
+                </div>
 
                 <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
                 {openConfig && <InsumoConfig handleConfig={handleConfig} modulo_confi={"InspeccionesConfig"} />}

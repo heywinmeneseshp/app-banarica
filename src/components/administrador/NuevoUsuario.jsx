@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-//Services
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import axios from 'axios';
+
 import endPoints from '@services/api';
 import {
     actualizarUsuario,
@@ -8,102 +9,131 @@ import {
     listarAlmacenesPorUsuario,
     listarUsuarios,
 } from '@services/api/usuarios';
-//Hooks
-//Components
-//CSS
-import styles from "@components/shared/Formularios/Formularios.module.css";
-import axios from 'axios';
 import { actualizarModulo, encontrarModulo } from '@services/api/configuracion';
 import { botones, menuCompleto, menuPrincipal } from 'utils/configMenu';
 
+const parseDetallesModulo = (response) => {
+    if (!response?.length) {
+        return {};
+    }
 
+    try {
+        return JSON.parse(response[0].detalles || "{}");
+    } catch (error) {
+        console.error("Error al parsear configuracion del modulo:", error);
+        return {};
+    }
+};
 
-export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
+export default function NuevoUsuario({ setAlert, setOpen, user }) {
     const formRef = useRef(null);
-    const [checkedState, setcheckedState] = useState([]);
     const [almacenes, setAlmacenes] = useState([]);
-    const [changePass, setChangePass] = useState(false);
+    const [checkedState, setCheckedState] = useState([]);
     const [tagMenu, setTagMenu] = useState([]);
     const [tagSubMenu, setTagSubMenu] = useState([]);
-    const [menuSelected, setMenuSelected] = useState([]);
     const [tagBotones, setTagBotones] = useState([]);
+    const [menuSelected, setMenuSelected] = useState([]);
     const [usuariosDisponibles, setUsuariosDisponibles] = useState([]);
     const [usuarioBase, setUsuarioBase] = useState('');
     const [isCopyingAccess, setIsCopyingAccess] = useState(false);
+    const [loading, setLoading] = useState(false);
 
-    const configMenuKeys = menuPrincipal();
-    const configSubMenuKeys = menuCompleto;
-    const configBotones = botones;
+    const isEditing = Boolean(user);
+    const actionLabel = isEditing ? 'Editar usuario' : 'Agregar usuario';
+    const actionColor = isEditing ? 'warning' : 'success';
 
-    const parseDetallesModulo = (response) => {
-        if (!response?.length) {
-            return {};
-        }
-
-        try {
-            return JSON.parse(response[0].detalles || "{}");
-        } catch (error) {
-            console.error("Error al parsear JSON:", error);
-            return {};
-        }
-    };
-
-    const onChaneselectionTagsMenu = () => {
-        const formData = new FormData(formRef.current);
-        const menuSeleccionado = formData.get('selectionTagsMenu');
-        const res = configSubMenuKeys[menuSeleccionado] || [];
-        setMenuSelected(res);
-    };
+    const configMenuKeys = useMemo(() => menuPrincipal(), []);
+    const configSubMenuKeys = useMemo(() => menuCompleto, []);
+    const configBotones = useMemo(() => botones, []);
 
     useEffect(() => {
-        async function listarAlmacenes() {
-            const [res, usuarios] = await Promise.all([
-                axios.get(endPoints.almacenes.list),
-                listarUsuarios(),
-            ]);
-            if (user) {
-                const resB = await axios.get(endPoints.usuarios.almacenes.findByUsername(user?.username));
-                let array = new Array(res.data.length).fill(false);
-                res.data.map((almacen, index) => {
-                    resB.data.map(item => {
-                        if (almacen.consecutivo === item.id_almacen) {
-                            array[index] = item.habilitado;
-                        }
-                    });
-                });
-                setcheckedState(array);
-            } else {
-                const array = new Array(res.data.length).fill(false);
-                setcheckedState(array);
+        const loadData = async () => {
+            try {
+                const [almacenesResponse, usuariosResponse] = await Promise.all([
+                    axios.get(endPoints.almacenes.list),
+                    listarUsuarios(),
+                ]);
+
+                const almacenesData = almacenesResponse.data || [];
+                setAlmacenes(almacenesData);
+                setCheckedState(new Array(almacenesData.length).fill(false));
+                setUsuariosDisponibles(
+                    (usuariosResponse || []).filter((item) => item?.username && item.username !== user?.username),
+                );
+
+                if (!user?.username) {
+                    setTagMenu([]);
+                    setTagSubMenu([]);
+                    setTagBotones([]);
+                    return;
+                }
+
+                const [almacenesUsuario, configUsuario] = await Promise.all([
+                    axios.get(endPoints.usuarios.almacenes.findByUsername(user.username)),
+                    encontrarModulo(user.username),
+                ]);
+
+                const almacenesHabilitados = new Set(
+                    (almacenesUsuario?.data || [])
+                        .filter((item) => item?.habilitado)
+                        .map((item) => item.id_almacen),
+                );
+
+                setCheckedState(
+                    almacenesData.map((almacen) => almacenesHabilitados.has(almacen.consecutivo)),
+                );
+
+                const detalles = parseDetallesModulo(configUsuario);
+                setTagMenu(detalles.menu || []);
+                setTagSubMenu(detalles.submenu || []);
+                setTagBotones(detalles.botones || []);
+            } catch (error) {
+                console.error("Error cargando datos del usuario:", error);
+                window.alert("No fue posible cargar la informacion del usuario.");
             }
-            setAlmacenes(res.data);
-            setUsuariosDisponibles(
-                (usuarios || []).filter((item) => item?.username && item.username !== user?.username),
-            );
-            if (user?.username) {
-                encontrarModulo(user.username).then(res => {
-                    const detalles = parseDetallesModulo(res);
-                    setTagMenu(detalles.menu || []);
-                    setTagSubMenu(detalles.submenu || []);
-                    setTagBotones(detalles.botones || []);
-                });
-            } else {
-                setTagMenu([]);
-                setTagSubMenu([]);
-                setTagBotones([]);
-            }
-        }
-        try {
-            listarAlmacenes();
-        } catch (e) {
-            alert("Se ha presentado un error");
+        };
+
+        loadData();
+    }, [user]);
+
+    const closeWindow = () => {
+        setOpen(false);
+    };
+
+    const handleWarehouseChange = (position) => {
+        setCheckedState((prev) => prev.map((item, index) => (
+            index === position ? !item : item
+        )));
+    };
+
+    const handleMenuSelection = () => {
+        const formData = new FormData(formRef.current);
+        const selectedMenu = formData.get('selectionTagsMenu');
+        setMenuSelected(configSubMenuKeys[selectedMenu] || []);
+    };
+
+    const handleAddTag = (fieldName, currentValues, setValues) => {
+        const formData = new FormData(formRef.current);
+        const value = String(formData.get(fieldName) || '').trim();
+
+        if (!value || currentValues.includes(value)) {
+            return;
         }
 
-    }, [user]);
+        setValues([...currentValues, value]);
+        const input = formRef.current?.querySelector(`[name="${fieldName}"]`);
+        if (input) {
+            input.value = '';
+        }
+    };
+
+    const handleRemoveTag = (tag, currentValues, setValues) => {
+        setValues(currentValues.filter((item) => item !== tag));
+    };
 
     const handleCopyAccess = async () => {
         if (!usuarioBase) {
-            alert("Selecciona un usuario para copiar sus permisos y accesos");
+            window.alert("Selecciona un usuario para copiar sus permisos y accesos.");
             return;
         }
 
@@ -130,105 +160,22 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
             setTagSubMenu(detalles.submenu || []);
             setTagBotones(detalles.botones || []);
             setMenuSelected([]);
-            setcheckedState(
+            setCheckedState(
                 almacenes.map((almacen) => almacenesHabilitados.has(almacen.consecutivo)),
             );
         } catch (error) {
             console.error("Error al copiar permisos del usuario:", error);
-            alert("No fue posible copiar los permisos y accesos del usuario seleccionado");
+            window.alert("No fue posible copiar los permisos y accesos del usuario seleccionado.");
         } finally {
             setIsCopyingAccess(false);
         }
     };
 
-    const handleChange = (position) => {
-        const updatedCheckedState = checkedState.map((item, index) =>
-            index === position ? !item : item
-        );
-        setcheckedState(updatedCheckedState);
-    };
-
-    let styleBoton = { color: "success", text: "Agregar usuario" };
-    if (user) styleBoton = { color: "warning", text: "Editar usuario" };
-    if (profile) styleBoton = { color: "success", text: "Editar perfil" };
-
-    const closeWindow = () => {
-        setOpen(false);
-    };
-
-    const hadleChangePass = () => {
-        setChangePass(!changePass);
-    };
-
-    const onChangePass = async () => {
+    const handleSubmit = async (event) => {
+        event.preventDefault();
         const formData = new FormData(formRef.current);
-        const oldpassword = formData.get('old-password');
-        try {
-            await axios.post(endPoints.auth.login, { username: user.username, password: oldpassword });
-            const newpassword = formData.get('password');
-            const repassword = formData.get('repassword');
-            if (newpassword != repassword) return alert("Las contraseñas deben coincidir");
-            if (oldpassword == newpassword) return alert("La nueva contraseña debe ser diferente a la actual");
-            actualizarUsuario(user.username, { password: newpassword });
-            setOpen(false);
-            alert("Se ha cambiado la contraseña con exito");
-        } catch {
-            return alert("Contraseña incorrecta");
-        }
-    };
 
-    const handleAddTagMenu = () => {
-        const formData = new FormData(formRef.current);
-        const tag = formData.get("inputTagsMenu");
-        if (tag && !tagMenu.includes(tag)) {
-            setTagMenu([...tagMenu, tag]);
-            const input = formRef.current.querySelector('[name="inputTagsMenu"]');
-            if (input) input.value = "";
-        }
-    };
-
-
-    const handleAddTagSubMenu = () => {
-        const formData = new FormData(formRef.current);
-        const tag = formData.get("inputTagsSubMenu");
-        if (tag && !tagMenu.includes(tag)) {
-            setTagSubMenu([...tagSubMenu, tag]);
-            const input = formRef.current.querySelector('[name="inputTagsSubMenu"]');
-            if (input) input.value = "";
-        }
-    };
-
-    const handleAddTagBoton = () => {
-        const formData = new FormData(formRef.current);
-        const tag = formData.get("inputTagsBotones");
-        if (tag && !tagMenu.includes(tag)) {
-            setTagBotones([...tagBotones, tag]);
-            const input = formRef.current.querySelector('[name="inputTagsSubMenu"]');
-            if (input) input.value = "";
-        }
-    };
-
-    const handleRemoveTagMenu = (tag) => {
-        const newList = tagMenu.filter(item => item !== tag);
-        setTagMenu(newList);
-    };
-
-    const handleRemoveTagSubMenu = (tag) => {
-        const newList = tagSubMenu.filter(item => item !== tag);
-        setTagSubMenu(newList);
-    };
-
-    const handleRemoveBoton = (tag) => {
-        const newList = tagBotones.filter(item => item !== tag);
-        setTagBotones(newList);
-    };
-
-
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const formData = new FormData(formRef.current);
-        let data = {
+        const payload = {
             username: formData.get('username'),
             nombre: formData.get('nombre'),
             apellido: formData.get('apellido'),
@@ -238,95 +185,114 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
             id_rol: formData.get('id_rol'),
             isBlock: false
         };
-        const repassword = formData.get('repassword');
-        if (data.password != repassword) {
-            alert("La contraseña debe coincidir");
+
+        const repeatPassword = formData.get('repassword');
+
+        if (!isEditing && payload.password !== repeatPassword) {
+            window.alert("La contraseña debe coincidir.");
             return;
         }
-        const targetUsername = user?.username || data.username;
-        if (user == null) {
-            try {
-                await agregarUsuario(data);
+
+        try {
+            setLoading(true);
+            const targetUsername = user?.username || payload.username;
+
+            if (!isEditing) {
+                await agregarUsuario(payload);
                 await Promise.all(
                     almacenes.map((item, index) =>
-                        cargarAlmacenesPorUsuario(data.username, item.consecutivo, checkedState[index]),
+                        cargarAlmacenesPorUsuario(payload.username, item.consecutivo, checkedState[index]),
                     ),
                 );
-                setAlert({
-                    active: true,
-                    mensaje: "El usuario ha sido creado con exito",
-                    color: "success",
-                    autoClose: true
-                });
-                setOpen(false);
-            } catch (e) {
-                setAlert({
-                    active: true,
-                    mensaje: "Se ha producido un error al crear el usuario",
-                    color: "warning",
-                    autoClose: true
-                });
+            } else {
+                if (!payload.password) delete payload.password;
+                if (!payload.username) delete payload.username;
+                if (!payload.id_rol) delete payload.id_rol;
+                delete payload.isBlock;
+
+                await actualizarUsuario(user.username, payload);
+                await Promise.all(
+                    almacenes.map((item, index) =>
+                        cargarAlmacenesPorUsuario(user.username, item.consecutivo, checkedState[index]),
+                    ),
+                );
             }
-        } else {
-            if (data.password == null || data.password == "") delete data.password;
-            if (data.username == null) delete data.username;
-            if (data.id_rol == null) delete data.id_rol;
-            delete data.isBlock;
-            await actualizarUsuario(user.username, data);
-            await Promise.all(
-                almacenes.map((item, index) =>
-                    cargarAlmacenesPorUsuario(user.username, item.consecutivo, checkedState[index]),
-                ),
-            );
+
+            let confUser = {};
+            try {
+                const configResponse = await encontrarModulo(targetUsername);
+                confUser = parseDetallesModulo(configResponse);
+            } catch (error) {
+                console.error("Error consultando configuracion del usuario:", error);
+            }
+
+            await actualizarModulo({
+                modulo: targetUsername,
+                detalles: JSON.stringify({
+                    ...confUser,
+                    menu: tagMenu,
+                    submenu: tagSubMenu,
+                    botones: tagBotones
+                })
+            });
+
             setAlert({
                 active: true,
-                mensaje: 'El usuario se ha actualizado',
-                color: "success",
+                mensaje: isEditing ? 'El usuario se ha actualizado' : 'El usuario ha sido creado con exito',
+                color: 'success',
                 autoClose: true
             });
+            setOpen(false);
+        } catch (error) {
+            console.error("Error guardando usuario:", error);
+            setAlert({
+                active: true,
+                mensaje: isEditing
+                    ? 'Se produjo un error al actualizar el usuario'
+                    : 'Se produjo un error al crear el usuario',
+                color: 'warning',
+                autoClose: true
+            });
+        } finally {
+            setLoading(false);
         }
-        let confUser = {};
-        try {
-            const res = await encontrarModulo(targetUsername);
-            confUser = parseDetallesModulo(res);
-        } catch (err) {
-            console.error("Error al parsear JSON:", err);
-            // Puedes decidir cómo manejar el error aquí
-        }
-        confUser = JSON.stringify({ ...confUser, menu: tagMenu, submenu: tagSubMenu, botones: tagBotones });
-        await actualizarModulo({ modulo: targetUsername, detalles: confUser });
-        setOpen(false);
     };
 
     return (
-        <div className={styles.floatingform}>
-            <div className={styles.fondo}>
-                <div className="card" style={{
-                    width: window.innerWidth < 768 ? '100vh' : "auto",
-                    overflowY: 'auto'
-                }}>
-                    <div className="card-header d-flex justify-content-between">
-                        <span className="fw-bold">Usuario</span>
-                        <button
-                            type="button"
-                            onClick={closeWindow}
-                            onKeyDown={closeWindow}
-                            className="btn-close"
-                            aria-label="Close"
-                        />
-                    </div>
+        <>
+            <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true">
+                <div className="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+                    <div
+                        className="modal-content border-0 shadow"
+                        style={{ maxHeight: 'calc(100vh - 3.5rem)' }}
+                    >
+                        <div className="modal-header">
+                            <div>
+                                <h5 className="modal-title mb-1">Usuario</h5>
+                                <div className="small text-muted">
+                                    {isEditing
+                                        ? 'Actualiza los datos, permisos y accesos del usuario.'
+                                        : 'Crea un usuario nuevo y define sus permisos iniciales.'}
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                className="btn-close"
+                                onClick={closeWindow}
+                                aria-label="Cerrar"
+                            />
+                        </div>
 
-
-                    <div>
-                        <form ref={formRef} onSubmit={handleSubmit} className="card-body">
-                            <div className='container' style={{
-                                height: window.innerWidth < 768 ? '80vh' : '70vh',
-                                overflowY: 'auto'
-                            }}>                            {!changePass ? (
-                                <div className="row">
-                                    {/* Datos básicos */}
-                                    <div className="col-md-3">
-                                        <label htmlFor="username">Usuario</label>
+                        <form
+                            ref={formRef}
+                            onSubmit={handleSubmit}
+                            className="d-flex flex-column flex-grow-1"
+                            style={{ minHeight: 0 }}
+                        >
+                            <div className="modal-body overflow-auto">
+                                <div className="row g-3">
+                                    <div className="col-12 col-md-3">
+                                        <label htmlFor="username" className="form-label">Usuario</label>
                                         <input
                                             defaultValue={user?.username}
                                             id="username"
@@ -334,13 +300,13 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                                             type="text"
                                             minLength="6"
                                             className="form-control form-control-sm"
-                                            disabled={profile}
                                             required
+                                            disabled={isEditing}
                                         />
                                     </div>
 
-                                    <div className="col-md-3">
-                                        <label htmlFor="email">Correo</label>
+                                    <div className="col-12 col-md-3">
+                                        <label htmlFor="email" className="form-label">Correo</label>
                                         <input
                                             defaultValue={user?.email}
                                             id="email"
@@ -351,34 +317,34 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                                         />
                                     </div>
 
-                                    <div className="col-md-3">
-                                        <label htmlFor="password">Contraseña</label>
+                                    <div className="col-12 col-md-3">
+                                        <label htmlFor="password" className="form-label">Contraseña</label>
                                         <input
                                             id="password"
                                             name="password"
-                                            type="text"
+                                            type="password"
                                             minLength="4"
                                             className="form-control form-control-sm"
-                                            disabled={profile}
-                                            required={!user}
+                                            required={!isEditing}
+                                            placeholder={isEditing ? 'Deja vacío para conservarla' : ''}
                                         />
                                     </div>
 
-                                    <div className="col-md-3">
-                                        <label htmlFor="repassword">Repite la contraseña</label>
+                                    <div className="col-12 col-md-3">
+                                        <label htmlFor="repassword" className="form-label">Repite la contraseña</label>
                                         <input
                                             id="repassword"
                                             name="repassword"
-                                            type="text"
+                                            type="password"
                                             minLength="4"
                                             className="form-control form-control-sm"
-                                            disabled={profile}
-                                            required={!user}
+                                            required={!isEditing}
+                                            placeholder={isEditing ? 'Solo si cambias la contraseña' : ''}
                                         />
                                     </div>
 
-                                    <div className="col-md-3">
-                                        <label htmlFor="nombre">Nombre</label>
+                                    <div className="col-12 col-md-3">
+                                        <label htmlFor="nombre" className="form-label">Nombre</label>
                                         <input
                                             defaultValue={user?.nombre}
                                             id="nombre"
@@ -389,8 +355,8 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                                         />
                                     </div>
 
-                                    <div className="col-md-3">
-                                        <label htmlFor="apellido">Apellido</label>
+                                    <div className="col-12 col-md-3">
+                                        <label htmlFor="apellido" className="form-label">Apellido</label>
                                         <input
                                             defaultValue={user?.apellido}
                                             id="apellido"
@@ -401,8 +367,8 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                                         />
                                     </div>
 
-                                    <div className="col-md-3">
-                                        <label htmlFor="tel">Teléfono</label>
+                                    <div className="col-12 col-md-3">
+                                        <label htmlFor="tel" className="form-label">Teléfono</label>
                                         <input
                                             defaultValue={user?.tel}
                                             id="tel"
@@ -413,356 +379,271 @@ export default function NuevoUsuario({ setAlert, setOpen, user, profile }) {
                                         />
                                     </div>
 
-                                    {profile ? (
-                                        <div className="col-md-3 d-flex align-items-end">
+                                    <div className="col-12 col-md-3">
+                                        <label htmlFor="id_rol" className="form-label">Rol</label>
+                                        <select
+                                            id="id_rol"
+                                            name="id_rol"
+                                            className="form-select form-select-sm"
+                                            defaultValue={user?.id_rol}
+                                        >
+                                            <option value="Super administrador">Super administrador</option>
+                                            <option value="Administrador">Administrador</option>
+                                            <option value="Oficinista">Oficinista</option>
+                                            <option value="Operador">Operador</option>
+                                            <option value="Super seguridad">Super seguridad</option>
+                                            <option value="Seguridad">Seguridad</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {!isEditing && (
+                                    <div className="mt-4 pt-3 border-top">
+                                        <h6 className="mb-3">Copiar permisos y accesos</h6>
+                                        <div className="row g-3">
+                                            <div className="col-12 col-md-8">
+                                                <select
+                                                    id="usuarioBase"
+                                                    name="usuarioBase"
+                                                    className="form-select form-select-sm"
+                                                    value={usuarioBase}
+                                                    onChange={(event) => setUsuarioBase(event.target.value)}
+                                                >
+                                                    <option value="">Seleccione un usuario</option>
+                                                    {usuariosDisponibles.map((item) => (
+                                                        <option key={item.username} value={item.username}>
+                                                            {item.nombre} {item.apellido} ({item.username})
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="col-12 col-md-4">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-outline-primary btn-sm w-100"
+                                                    onClick={handleCopyAccess}
+                                                    disabled={!usuarioBase || isCopyingAccess}
+                                                >
+                                                    {isCopyingAccess ? 'Copiando...' : 'Copiar accesos'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="mt-4 pt-3 border-top">
+                                    <h6 className="mb-3">Habilitar menú</h6>
+                                    <div className="row g-3">
+                                        <div className="col-12 col-md-8">
+                                            <input
+                                                type="text"
+                                                id="inputTagsMenu"
+                                                list="tagMenu"
+                                                name="inputTagsMenu"
+                                                className="form-control form-control-sm"
+                                                placeholder="Ingrese el item"
+                                            />
+                                            <datalist id="tagMenu">
+                                                {configMenuKeys
+                                                    .filter((item) => !tagMenu.includes(item))
+                                                    .map((item) => (
+                                                        <option key={item} value={item} />
+                                                    ))}
+                                            </datalist>
+                                        </div>
+                                        <div className="col-12 col-md-4">
                                             <button
-                                                onClick={hadleChangePass}
-                                                className="btn btn-warning btn-sm w-100"
+                                                type="button"
+                                                className="btn btn-primary btn-sm w-100"
+                                                onClick={() => handleAddTag('inputTagsMenu', tagMenu, setTagMenu)}
                                             >
-                                                Cambiar contraseña
+                                                Agregar
                                             </button>
                                         </div>
-                                    ) : (
-                                        <div className="col-md-3">
-                                            <label htmlFor="id_rol">Rol</label>
+                                        <div className="col-12">
+                                            <div className="card">
+                                                <div className="card-body d-flex flex-wrap gap-2">
+                                                    {tagMenu.map((tag) => (
+                                                        <span
+                                                            key={tag}
+                                                            className="badge bg-primary d-inline-flex align-items-center"
+                                                        >
+                                                            {tag}
+                                                            <button
+                                                                type="button"
+                                                                className="btn-close btn-close-white ms-2"
+                                                                aria-label="Remove"
+                                                                style={{ fontSize: '0.55rem' }}
+                                                                onClick={() => handleRemoveTag(tag, tagMenu, setTagMenu)}
+                                                            />
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 pt-3 border-top">
+                                    <h6 className="mb-3">Habilitar submenú</h6>
+                                    <div className="row g-3">
+                                        <div className="col-12 col-md-4">
                                             <select
-                                                id="id_rol"
-                                                name="id_rol"
+                                                id="selectionTagsMenu"
+                                                name="selectionTagsMenu"
                                                 className="form-select form-select-sm"
-                                                defaultValue={user?.id_rol}
+                                                defaultValue=""
+                                                onChange={handleMenuSelection}
                                             >
-                                                <option value="Super administrador">Super administrador</option>
-                                                <option value="Administrador">Administrador</option>
-                                                <option value="Oficinista">Oficinista</option>
-                                                <option value="Operador">Operador</option>
-                                                <option value="Super seguridad">Super seguridad</option>
-                                                <option value="Seguridad">Seguridad</option>
+                                                <option value="">Seleccione un item</option>
+                                                {tagMenu.map((item) => (
+                                                    <option key={item} value={item}>{item}</option>
+                                                ))}
                                             </select>
                                         </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="row g-3">
-                                    <div className="col-md-3">
-                                        <label htmlFor="username2">Usuario</label>
-                                        <input
-                                            defaultValue={user?.username}
-                                            id="username2"
-                                            name="username"
-                                            type="text"
-                                            minLength="6"
-                                            className="form-control form-control-sm"
-                                            disabled={profile}
-                                            required
-                                        />
-                                    </div>
-
-                                    <div className="col-md-3">
-                                        <label htmlFor="old-password">Actual contraseña</label>
-                                        <input
-                                            id="old-password"
-                                            name="old-password"
-                                            type="text"
-                                            minLength="4"
-                                            className="form-control form-control-sm"
-                                            disabled={!profile}
-                                            required
-                                        />
-                                    </div>
-
-                                    <div className="col-md-3">
-                                        <label htmlFor="password">Nueva contraseña</label>
-                                        <input
-                                            id="password"
-                                            name="password"
-                                            type="text"
-                                            minLength="4"
-                                            className="form-control form-control-sm"
-                                            disabled={!profile}
-                                            required
-                                        />
-                                    </div>
-
-                                    <div className="col-md-3">
-                                        <label htmlFor="repassword">Repite la contraseña</label>
-                                        <input
-                                            id="repassword"
-                                            name="repassword"
-                                            type="text"
-                                            minLength="4"
-                                            className="form-control form-control-sm"
-                                            disabled={!profile}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-                            )}
-
-                                {/* Configuración de menú y almacenes */}
-                                {!profile && !changePass && (
-                                    <>
-
-                                        {!user && (
-                                            <div className="row g-3 mt-1 mb-1">
-                                                <h6 className='mb-0'>Copiar permisos y accesos</h6>
-                                                <div className="col-md-8">
-                                                    <select
-                                                        id="usuarioBase"
-                                                        name="usuarioBase"
-                                                        className="form-select form-select-sm"
-                                                        value={usuarioBase}
-                                                        onChange={(event) => setUsuarioBase(event.target.value)}
-                                                    >
-                                                        <option value="">Seleccione un usuario</option>
-                                                        {usuariosDisponibles.map((item) => (
-                                                            <option key={item.username} value={item.username}>
-                                                                {item.nombre} {item.apellido} ({item.username})
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                                <div className="col-md-4 d-flex align-items-end">
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-outline-primary w-100"
-                                                        onClick={handleCopyAccess}
-                                                        disabled={!usuarioBase || isCopyingAccess}
-                                                    >
-                                                        {isCopyingAccess ? 'Copiando...' : 'Copiar accesos'}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/**Habilitar Menú*/}
-                                        <div className="row g-3 mt-1 mb-1">
-
-                                            <h6 className='mb-0'>Habilitar Menú</h6>
-                                            <div className="col-md-8">
-                                                <input
-                                                    type="text"
-                                                    id="inputTagsMenu"
-                                                    list="tagMenu"
-                                                    name="inputTagsMenu"
-                                                    className="form-control"
-                                                    placeholder="Ingrese el ítem"
-                                                />
-                                                <datalist id="tagMenu">
-                                                    {configMenuKeys
-                                                        .filter(item => !tagMenu.includes(item))
-                                                        .map(item => (
-                                                            <option key={item} value={item} />
-                                                        ))}
-                                                </datalist>
-                                            </div>
-                                            <div className="col-md-4 d-flex align-items-end">
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-primary w-100"
-                                                    onClick={handleAddTagMenu}
-                                                >
-                                                    Agregar
-                                                </button>
-                                            </div>
-
-                                            <div className="col-md-12">
-                                                <div className="card">
-                                                    <div className="card-body d-flex flex-wrap">
-                                                        {tagMenu.map((tag, index) => (
-                                                            <span
-                                                                key={index}
-                                                                className="badge bg-primary me-2 mb-2 d-flex align-items-center"
-                                                            >
-                                                                {tag}
-                                                                <button
-                                                                    type="button"
-                                                                    className="btn-close btn-sm ms-2"
-                                                                    aria-label="Remove"
-                                                                    onClick={() => handleRemoveTagMenu(tag)}
-                                                                />
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/**Habilitar submenu */}
-                                        <div className="row g-3 mt-1 mb-1">
-
-                                            <h6 className='mb-0'>Habilitar Submenu</h6>
-                                            <div className="col-md-4">
-                                                <select
-                                                    id="selectionTagsMenu"
-                                                    name="selectionTagsMenu"
-                                                    className="form-control"
-                                                    defaultValue=""
-                                                    onChange={() => onChaneselectionTagsMenu()}
-                                                >
-                                                    <option value="">Seleccione un ítem</option>
-                                                    {tagMenu.map((item, key) => {
-                                                        return (
-                                                            <option key={key} value={item}>{item}</option>
-                                                        );
-                                                    })}
-                                                </select>
-                                            </div>
-                                            <div className="col-md-4">
-                                                <select
-                                                    id="inputTagsSubMenu"
-                                                    name="inputTagsSubMenu"
-                                                    className="form-control"
-                                                    defaultValue=""
-                                                >
-                                                    <option value="" >Seleccione un ítem</option>
-                                                    {menuSelected.map(([ruta, label]) => {
-                                                        if (!tagSubMenu.includes(label)) {
-                                                            return (
-                                                                <option key={ruta} value={label}>{label}</option>
-                                                            );
-                                                        }
-                                                    })}
-                                                </select>
-                                            </div>
-                                            <div className="col-md-4 d-flex align-items-end">
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-primary w-100"
-                                                    onClick={handleAddTagSubMenu}
-                                                >
-                                                    Agregar
-                                                </button>
-                                            </div>
-
-                                            <div className="col-md-12">
-                                                <div className="card">
-                                                    <div className="card-body d-flex flex-wrap">
-                                                        {tagSubMenu.map((tag, index) => (
-                                                            <span
-                                                                key={index}
-                                                                className="badge bg-primary me-2 mb-2 d-flex align-items-center"
-                                                            >
-                                                                {tag}
-                                                                <button
-                                                                    type="button"
-                                                                    className="btn-close btn-sm ms-2"
-                                                                    aria-label="Remove"
-                                                                    onClick={() => handleRemoveTagSubMenu(tag)}
-                                                                />
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/**Botones */}
-                                        <div className="row g-3 mt-1 mb-1">
-
-                                            <h6 className='mb-0'>Habilitar Submenu</h6>
-
-                                            <div className="col-md-8">
-                                                <select
-                                                    id="inputTagsBotones"
-                                                    name="inputTagsBotones"
-                                                    className="form-control"
-                                                    defaultValue=""
-                                                >
-                                                    <option value="" >Seleccione un ítem</option>
-                                                    {configBotones.map((label, key) => {
-                                                        if (!tagBotones.includes(label)) {
-                                                            return (
-                                                                <option key={key} value={label}>{label}</option>
-                                                            );
-                                                        }
-                                                    })}
-                                                </select>
-                                            </div>
-                                            <div className="col-md-4 d-flex align-items-end">
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-primary w-100"
-                                                    onClick={handleAddTagBoton}
-                                                >
-                                                    Agregar
-                                                </button>
-                                            </div>
-
-                                            <div className="col-md-12">
-                                                <div className="card">
-                                                    <div className="card-body d-flex flex-wrap">
-                                                        {tagBotones.map((tag, index) => (
-                                                            <span
-                                                                key={index}
-                                                                className="badge bg-primary me-2 mb-2 d-flex align-items-center"
-                                                            >
-                                                                {tag}
-                                                                <button
-                                                                    type="button"
-                                                                    className="btn-close btn-sm ms-2"
-                                                                    aria-label="Remove"
-                                                                    onClick={() => handleRemoveBoton(tag)}
-                                                                />
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Almacenes */}
-                                        <div className="container mt-4">
-                                            <h6 className='mb-3'>Habilitar almacenes</h6>
-                                            <div className="row">
-                                                {almacenes.map((almacen, index) => (
-                                                    <div key={index} className="col-md-3 form-check">
-                                                        <input
-                                                            className="form-check-input"
-                                                            type="checkbox"
-                                                            checked={checkedState[index]}
-                                                            onChange={() => handleChange(index)}
-                                                            name={almacen.consecutivo}
-                                                            id={almacen.consecutivo}
-                                                        />
-                                                        <label
-                                                            className="form-check-label"
-                                                            htmlFor={almacen.consecutivo}
-                                                        >
-                                                            {almacen.consecutivo}
-                                                        </label>
-                                                    </div>
+                                        <div className="col-12 col-md-4">
+                                            <select
+                                                id="inputTagsSubMenu"
+                                                name="inputTagsSubMenu"
+                                                className="form-select form-select-sm"
+                                                defaultValue=""
+                                            >
+                                                <option value="">Seleccione un item</option>
+                                                {menuSelected.map(([ruta, label]) => (
+                                                    !tagSubMenu.includes(label) ? (
+                                                        <option key={ruta} value={label}>{label}</option>
+                                                    ) : null
                                                 ))}
+                                            </select>
+                                        </div>
+                                        <div className="col-12 col-md-4">
+                                            <button
+                                                type="button"
+                                                className="btn btn-primary btn-sm w-100"
+                                                onClick={() => handleAddTag('inputTagsSubMenu', tagSubMenu, setTagSubMenu)}
+                                            >
+                                                Agregar
+                                            </button>
+                                        </div>
+                                        <div className="col-12">
+                                            <div className="card">
+                                                <div className="card-body d-flex flex-wrap gap-2">
+                                                    {tagSubMenu.map((tag) => (
+                                                        <span
+                                                            key={tag}
+                                                            className="badge bg-primary d-inline-flex align-items-center"
+                                                        >
+                                                            {tag}
+                                                            <button
+                                                                type="button"
+                                                                className="btn-close btn-close-white ms-2"
+                                                                aria-label="Remove"
+                                                                style={{ fontSize: '0.55rem' }}
+                                                                onClick={() => handleRemoveTag(tag, tagSubMenu, setTagSubMenu)}
+                                                            />
+                                                        </span>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
-                                    </>
-                                )}
+                                    </div>
+                                </div>
 
+                                <div className="mt-4 pt-3 border-top">
+                                    <h6 className="mb-3">Habilitar botones</h6>
+                                    <div className="row g-3">
+                                        <div className="col-12 col-md-8">
+                                            <select
+                                                id="inputTagsBotones"
+                                                name="inputTagsBotones"
+                                                className="form-select form-select-sm"
+                                                defaultValue=""
+                                            >
+                                                <option value="">Seleccione un item</option>
+                                                {configBotones.map((label) => (
+                                                    !tagBotones.includes(label) ? (
+                                                        <option key={label} value={label}>{label}</option>
+                                                    ) : null
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="col-12 col-md-4">
+                                            <button
+                                                type="button"
+                                                className="btn btn-primary btn-sm w-100"
+                                                onClick={() => handleAddTag('inputTagsBotones', tagBotones, setTagBotones)}
+                                            >
+                                                Agregar
+                                            </button>
+                                        </div>
+                                        <div className="col-12">
+                                            <div className="card">
+                                                <div className="card-body d-flex flex-wrap gap-2">
+                                                    {tagBotones.map((tag) => (
+                                                        <span
+                                                            key={tag}
+                                                            className="badge bg-primary d-inline-flex align-items-center"
+                                                        >
+                                                            {tag}
+                                                            <button
+                                                                type="button"
+                                                                className="btn-close btn-close-white ms-2"
+                                                                aria-label="Remove"
+                                                                style={{ fontSize: '0.55rem' }}
+                                                                onClick={() => handleRemoveTag(tag, tagBotones, setTagBotones)}
+                                                            />
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 pt-3 border-top">
+                                    <h6 className="mb-3">Habilitar almacenes</h6>
+                                    <div className="row g-3">
+                                        {almacenes.map((almacen, index) => (
+                                            <div key={almacen.consecutivo} className="col-12 col-md-4 col-xl-3">
+                                                <div className="form-check">
+                                                    <input
+                                                        className="form-check-input"
+                                                        type="checkbox"
+                                                        checked={checkedState[index] || false}
+                                                        onChange={() => handleWarehouseChange(index)}
+                                                        name={almacen.consecutivo}
+                                                        id={almacen.consecutivo}
+                                                    />
+                                                    <label
+                                                        className="form-check-label"
+                                                        htmlFor={almacen.consecutivo}
+                                                    >
+                                                        {almacen.consecutivo}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* Botones de acción */}
-                            <div className="mt-4">
-                                {changePass ? (
-                                    <button
-                                        type="button"
-                                        onClick={onChangePass}
-                                        className="btn btn-warning btn-sm w-100"
-                                    >
-                                        Crear nueva contraseña
-                                    </button>
-                                ) : (
-                                    <button
-                                        type="submit"
-                                        className={`btn btn-${styleBoton.color} btn-sm w-100`}
-                                    >
-                                        {styleBoton.text}
-                                    </button>
-                                )}
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-outline-secondary btn-sm" onClick={closeWindow}>
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    className={`btn btn-${actionColor} btn-sm px-4`}
+                                    disabled={loading}
+                                >
+                                    {loading ? 'Guardando...' : actionLabel}
+                                </button>
                             </div>
                         </form>
                     </div>
                 </div>
             </div>
-        </div>
-
+            <div className="modal-backdrop fade show" />
+        </>
     );
 }

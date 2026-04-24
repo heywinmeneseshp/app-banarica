@@ -1,326 +1,420 @@
-import React, {  useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { pdf } from '@react-pdf/renderer';
+
+import CartaAntinarcoticosPDF from '@components/documentos/CartaAntinarcoticosPDF';
 import useCartaAntinarcoticos from '@hooks/useCartaAntinarcoticos';
+import { getAppBaseUrl } from '@utils/appUrl';
 
-// --- DATOS INICIALES (Todos mutables ahora) ---
+const EMBARQUE_FIELDS = [
+  ['agenciaAduanas', 'Agencia de aduanas'],
+  ['nitAgenciaAduanas', 'NIT agencia de aduanas'],
+  ['vuce', 'VUCE'],
+  ['ciudadOrigenMercancia', 'Ciudad origen mercancia']
+];
 
+const fileToDataUrl = (blob) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+
+const loadImage = (src) =>
+  new Promise((resolve, reject) => {
+    const image = new window.Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = src;
+  });
+
+const compressImageToDataUrl = async (file) => {
+  const originalDataUrl = await fileToDataUrl(file);
+  const image = await loadImage(originalDataUrl);
+
+  const maxWidth = 320;
+  const scale = image.width > maxWidth ? maxWidth / image.width : 1;
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(image, 0, 0, width, height);
+
+  let quality = 0.82;
+  let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+
+  while (compressedDataUrl.length > 45000 && quality > 0.4) {
+    quality -= 0.08;
+    compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+  }
+
+  if (compressedDataUrl.length > 60000) {
+    throw new Error('La imagen sigue siendo muy pesada incluso despues de comprimirla.');
+  }
+
+  return compressedDataUrl;
+};
+
+const resolveLogoForPdf = async (url) => {
+  const source = String(url || '').trim();
+  if (!source) {
+    return '';
+  }
+
+  if (source.startsWith('data:')) {
+    return source;
+  }
+
+  const absoluteSource = /^https?:\/\//i.test(source)
+    ? source
+    : `${getAppBaseUrl()}${source.startsWith('/') ? source : `/${source}`}`;
+
+  try {
+    const response = await fetch(absoluteSource);
+    if (!response.ok) {
+      throw new Error(`No se pudo cargar el logo: ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    return await fileToDataUrl(blob);
+  } catch (error) {
+    console.warn('No fue posible incrustar el logo para el PDF.', error);
+    return absoluteSource;
+  }
+};
 
 const CartaAntinarcoticosForm = () => {
-
   const {
     empresa,
     destinatario,
     signatory,
     embarque,
     urlLogo,
-    updateDatosEmpresa,
-    updateDatosDestinatario,
-    updateDatosSignatory,
-    updateDatosEmbarque,
-    setLogoUrl
+    logoDataUrl,
+    guardarConfiguracion,
+    loading,
+    isInitialized,
+    error
   } = useCartaAntinarcoticos();
 
+  const [formState, setFormState] = useState({
+    empresa: {},
+    destinatario: {},
+    signatory: {},
+    embarque: {},
+    urlLogo: '',
+    logoDataUrl: ''
+  });
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState('');
+  const [saving, setSaving] = useState(false);
+  const previewUrlRef = useRef('');
 
+  useEffect(() => {
+    if (!isInitialized) {
+      return;
+    }
 
-  const [cartaGenerada, setCartaGenerada] = useState('');
+    setFormState({
+      empresa: empresa || {},
+      destinatario: destinatario || {},
+      signatory: signatory || {},
+      embarque: embarque || {},
+      urlLogo: urlLogo || '',
+      logoDataUrl: logoDataUrl || ''
+    });
+  }, [empresa, destinatario, signatory, embarque, urlLogo, logoDataUrl, isInitialized]);
 
-  // Manejadores de cambios
+  useEffect(() => () => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+    }
+  }, []);
+
+  const updateSection = (section, name, value) => {
+    setFormState((prev) => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [name]: value
+      }
+    }));
+  };
+
   const handleChangeEmpresa = (e) => {
     const { name, value } = e.target;
-    updateDatosEmpresa({ ...empresa, [name]: value });
+    updateSection('empresa', name, value);
   };
 
   const handleChangeDestinatario = (e) => {
     const { name, value } = e.target;
-    updateDatosDestinatario({ ...destinatario, [name]: value });
+    updateSection('destinatario', name, value);
   };
 
   const handleChangeSignatory = (e) => {
     const { name, value } = e.target;
-    updateDatosSignatory({ ...signatory, [name]: value });
+    updateSection('signatory', name, value);
   };
 
   const handleChangeEmbarque = (e) => {
     const { name, value } = e.target;
-    updateDatosEmbarque({ ...embarque, [name]: value });
+    updateSection('embarque', name, value);
   };
 
   const handleChangeLogo = (e) => {
-    const {  value } = e.target;
-    setLogoUrl(value);
+    const { value } = e.target;
+    setFormState((prev) => ({ ...prev, urlLogo: value }));
   };
 
-  // Función para generar la carta con estilo HTML
-  const generarCarta = (e) => {
+  const handleLogoFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    try {
+      const logoAsDataUrl = await compressImageToDataUrl(file);
+      setFormState((prev) => ({
+        ...prev,
+        logoDataUrl: logoAsDataUrl,
+      }));
+    } catch (fileError) {
+      console.error('Error leyendo logo local:', fileError);
+      window.alert(fileError?.message || 'No fue posible cargar el archivo del logo.');
+    }
+  };
+
+  const buildCartaData = async () => {
+    const fechaEmision = new Date().toLocaleDateString('es-ES', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+
+    return {
+      fechaEmision,
+      empresa: formState.empresa,
+      destinatario: formState.destinatario,
+      signatory: formState.signatory,
+      urlLogo: formState.logoDataUrl || await resolveLogoForPdf(formState.urlLogo),
+      logoDataUrl: formState.logoDataUrl,
+      embarque: {
+        ...formState.embarque,
+        destinoFinal: formState.embarque?.puertoDestino,
+        porcentajeVacio: 'cero porcentajes vacios',
+        direccionImportador: formState.embarque?.direccionImportador || '[Direccion del Importador - Pendiente de ingreso]',
+        telefonoImportador: formState.embarque?.telefonoImportador || '[Telefono del Importador - Pendiente de ingreso]',
+        vuce: formState.embarque?.vuce || '[Pendiente]'
+      }
+    };
+  };
+
+  const generarCarta = async () => {
+    const carta = await buildCartaData();
+    const blob = await pdf(<CartaAntinarcoticosPDF carta={carta} />).toBlob();
+    const nextUrl = URL.createObjectURL(blob);
+
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+    }
+
+    previewUrlRef.current = nextUrl;
+    setPdfPreviewUrl(nextUrl);
+  };
+
+  const handleSaveConfig = async () => {
+    try {
+      setSaving(true);
+      await guardarConfiguracion(formState);
+      await generarCarta();
+      window.alert('Configuracion guardada correctamente.');
+    } catch (saveError) {
+      console.error('Error guardando configuracion de carta:', saveError);
+      window.alert(saveError?.message || 'No fue posible guardar la configuracion.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleGenerate = async (e) => {
     e.preventDefault();
 
-    const {
-      exportador, nit, direccionExportador, telefonoExportador, ciudadEmision
-    } = empresa;
-
-    const {
-      destinatarioPrincipal, departamento
-    } = destinatario;
-
-    const {
-      numAnuncio, motonave, viaje, puertoDestino, cantCajas,
-      cantContenedores, bl, pesoNeto, pesoBruto, nombreImportador, mercanciaCantidad,
-      agenciaAduanas, ciudadOrigenMercancia
-    } = embarque;
-
-    const { nombreRepresentante, cedula, cargo, celular } = signatory;
-
-    const fecha = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
-
-    // Contenido HTML estructurado
-    const contenidoHTML = `
-<div style="font-family: Arial, sans-serif; font-size: 10pt; padding: 20px; line-height: 1.4;">
-
-    <table style="width: 100%; margin-bottom: 25px; border-collapse: collapse;">
-        <tr>
-            <td style="width: 70%; vertical-align: top;">
-                <p style="margin: 0;">
-                    <strong>${exportador}</strong><br/>
-              
-                    ${ciudadEmision}, ${fecha}<br/>
-                </p>
-            </td>
-            <td style="width: 30%; text-align: right; vertical-align: top;">
-                <img src="${urlLogo}" alt="Logo de la Empresa" style="max-width: 150px; height: auto;"/>
-            </td>
-        </tr>
-    </table>
-
-    <p style="margin-top: 15px;">
-        Señores:<br/>
-        ${destinatarioPrincipal}<br/>
-        ${departamento}
-    </p>
-
-    <p style="margin-top: 15px;"><strong>REF: CARTA DE RESPONSABILIDAD</strong></p>
-
-    <p style="text-align: justify; margin-bottom: 25px;">
-        Yo <strong>${nombreRepresentante}</strong> identificado con Cédula de Ciudadanía N° 
-        <strong>${cedula}</strong> expedida en ${ciudadEmision}, en condición de representante de la empresa C.I.
-        <strong>${exportador}</strong> con Nit <strong>${nit}</strong> certifico que el contenido de la presente carga se
-        ajusta a lo declarado en nuestro despacho así:
-    </p>
-
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 9pt;">
-        <tr><td style="width: 35%;">NOMBRE DEL EXPORTADOR:</td><td><strong>${exportador}</strong></td></tr>
-        <tr><td>DIRECCION DEL EXPORTADOR:</td><td>${direccionExportador}</td></tr>
-        <tr><td>TELEFONO DEL EXPORTADOR:</td><td>${telefonoExportador}</td></tr>
-        <tr><td>NOMBRE MOTONAVE Y NÚMERO DE VIAJE:</td><td><strong>${motonave} - ${viaje}</strong></td></tr>
-        <tr><td>PUERTO DESTINO:</td><td>${puertoDestino}</td></tr>
-        <tr><td>DESTINO FINAL DE LA MERCANCIA:</td><td>${puertoDestino}</td></tr>
-        <tr><td>PORCENTAJE VACIO:</td><td>cero porcentajes vacíos</td></tr>
-        <tr><td>CIUDAD DE ORIGEN DE LA MERCANCIA:</td><td>${ciudadOrigenMercancia}</td></tr>
-        <tr><td>MERCANCIA Y SU CANTIDAD:</td><td>${mercanciaCantidad}</td></tr>
-        <tr><td>CANTIDAD CAJAS:</td><td>${cantCajas}</td></tr>
-        <tr><td>CONTENEDOR Y SELLOS:</td><td>${cantContenedores} Uds. VER LISTADO ANEXO</td></tr>
-        <tr><td>PESO NETO:</td><td>${pesoNeto}</td></tr>
-        <tr><td>PESO BRUTO:</td><td>${pesoBruto}</td></tr>
-        <tr><td>NOMBRE AGENCIA DE ADUANAS:</td><td>${agenciaAduanas}</td></tr>
-        <tr><td>VUCE:</td><td>[Pendiente]</td></tr>
-        <tr><td>NUMERO ANUNCIO:</td><td>${numAnuncio}</td></tr>
-        <tr><td>NUMERO BOOKING:</td><td>${bl}</td></tr>
-        <tr><td>NOMBRE DEL IMPORTADOR:</td><td>${nombreImportador}</td></tr>
-        <tr><td>DIRECCIÓN DEL IMPORTADOR:</td><td>[Dirección del Importador - Pendiente de ingreso]</td></tr>
-        <tr><td>TELEFONO DEL IMPORTADOR:</td><td>[Teléfono del Importador - Pendiente de ingreso]</td></tr>
-    </table>
-
-    <p style="text-align: justify; margin-bottom: 15px;">
-        Nos hacemos responsables por el contenido de esta carga ante las autoridades
-        colombianas, extranjeras y ante el transportador en caso que se encuentren sustancias o
-        elementos narcóticos, explosivos ilícitos ò prohibidos (estipulados en las normas
-        internacionales a excepción de aquellos que expresamente se han declarado como tal),
-        armas o partes de ellas, municiones, material de guerra o sus partes u otros elementos que
-        no cumplan con las obligaciones legales establecidas para este tipo de carga, siempre que se conserve sus empaques,
-        características y sellos originales con las que sea entregada al transportador.
-    </p>
-     <div style="padding-top: 40px; page-break-inside: avoid;">
-    <p style="text-align: justify; margin-bottom: 25px; page-break-inside: avoid;">
-        El embarque ha sido preparado en lugares con óptimas condiciones de seguridad y
-        protegido de toda intervención ilícita durante su preparación, embalaje, almacenamiento y
-        transporte hacia las instalaciones Portuarias y cumple con todos los requisitos exigidos por la ley.
-    </p>
-
-   
-        <p style="margin: 0; padding-bottom: 15px;">
-            Atentamente,
-        </p>
-
-        <div style="display: inline-block;">
-            <p style="margin: 0;">${nombreRepresentante}</p>
-            <p style="margin: 0;">C.C: ${cedula}</p>
-            <p style="margin: 0;">${cargo}</p>
-            <p style="margin: 0;">CELULAR: ${celular}</p>
-        </div>
-    </div>
-</div>
-`;
-    setCartaGenerada(contenidoHTML);
+    try {
+      await generarCarta();
+    } catch (previewError) {
+      console.error('Error generando vista previa PDF:', previewError);
+      window.alert('No fue posible generar la vista previa en PDF.');
+    }
   };
 
-
-  // Función para imprimir/copiar
   const handlePrint = () => {
-    if (!cartaGenerada) return;
+    if (!pdfPreviewUrl) return;
 
-    const printWindow = window.open('', '_blank');
-
-    // Escribimos el encabezado
-    printWindow.document.write('<html><head><title>Carta de Responsabilidad</title>');
-    printWindow.document.write('<style>body { font-family: Arial, sans-serif; margin: 50px; } div { line-height: 1.4; } img { max-width: 150px; height: auto; }</style>');
-    printWindow.document.write('</head><body>');
-
-    // Escribimos el contenido de la carta
-    printWindow.document.write(cartaGenerada);
-
-    // INYECTAMOS EL SCRIPT DE ESPERA
-    printWindow.document.write(`
-    <script>
-      // window.onload espera a que carguen textos, estilos e IMÁGENES
-      window.onload = function() {
-        setTimeout(function() {
-          window.print();
-          // window.close(); // Opcional: cierra la pestaña después de imprimir
-        }, 500); // Pequeño margen extra de seguridad
-      };
-    </script>
-  `);
-
-    printWindow.document.write('</body></html>');
-    printWindow.document.close();
+    const printWindow = window.open(pdfPreviewUrl, '_blank');
+    if (printWindow) {
+      printWindow.focus();
+    }
   };
-
 
   return (
-    <div className="row">
-      {/* Columna del Formulario */}
-      <div className="col-lg-5">
-        <form onSubmit={generarCarta}>
+    <div className="row g-4">
+      {loading && !isInitialized && (
+        <div className="col-12 text-muted">Cargando configuracion...</div>
+      )}
 
-          {/* 1. SECCIÓN DATOS DE LA EMPRESA Y LOGO */}
-          <div className="card shadow-sm p-4 mb-4 border-primary">
-            <h4 className="card-title text-primary">Datos de la Empresa Exportadora</h4>
-            <p className="text-muted small">Datos que van en el encabezado de la carta.</p>
+      {error && (
+        <div className="col-12">
+          <div className="alert alert-warning mb-0" role="alert">
+            {error}
+          </div>
+        </div>
+      )}
 
-            <div className="mb-3">
-              <label htmlFor="exportador" className="form-label">Nombre de la Empresa (C.I. Banana S.A)</label>
-              <input type="text" className="form-control" id="exportador" name="exportador" value={empresa?.exportador || null} onChange={handleChangeEmpresa} required />
-            </div>
-            <div className="mb-3">
-              <label htmlFor="nit" className="form-label">NIT</label>
-              <input type="text" className="form-control" id="nit" name="nit" value={empresa?.nit || null} onChange={handleChangeEmpresa} required />
-            </div>
-            <div className="mb-3">
-              <label htmlFor="direccionExportador" className="form-label">Dirección</label>
-              <input type="text" className="form-control" id="direccionExportador" name="direccionExportador" value={empresa?.direccionExportador || null} onChange={handleChangeEmpresa} required />
-            </div>
-            <div className="row">
-              <div className="mb-3 col-md-6">
-                <label htmlFor="telefonoExportador" className="form-label">Teléfono</label>
-                <input type="text" className="form-control" id="telefonoExportador" name="telefonoExportador" value={empresa?.telefonoExportador || null} onChange={handleChangeEmpresa} required />
+      <div className="col-12 col-xl-6">
+        <form onSubmit={handleGenerate}>
+          <div className="card shadow-sm mb-4 border-primary">
+            <div className="card-body p-4">
+              <h4 className="card-title text-primary">Datos de la empresa exportadora</h4>
+              <p className="text-muted small mb-4">Esta configuracion se carga automaticamente al abrir la pagina.</p>
+
+              <div className="row g-3">
+                <div className="col-12">
+                  <label htmlFor="exportador" className="form-label">Nombre de la empresa</label>
+                  <input type="text" className="form-control" id="exportador" name="exportador" value={formState.empresa?.exportador || ''} onChange={handleChangeEmpresa} required />
+                </div>
+                <div className="col-md-6">
+                  <label htmlFor="nit" className="form-label">NIT</label>
+                  <input type="text" className="form-control" id="nit" name="nit" value={formState.empresa?.nit || ''} onChange={handleChangeEmpresa} required />
+                </div>
+                <div className="col-md-6">
+                  <label htmlFor="telefonoExportador" className="form-label">Telefono</label>
+                  <input type="text" className="form-control" id="telefonoExportador" name="telefonoExportador" value={formState.empresa?.telefonoExportador || ''} onChange={handleChangeEmpresa} required />
+                </div>
+                <div className="col-md-7">
+                  <label htmlFor="direccionExportador" className="form-label">Direccion</label>
+                  <input type="text" className="form-control" id="direccionExportador" name="direccionExportador" value={formState.empresa?.direccionExportador || ''} onChange={handleChangeEmpresa} required />
+                </div>
+                <div className="col-md-5">
+                  <label htmlFor="ciudadEmision" className="form-label">Ciudad de emision</label>
+                  <input type="text" className="form-control" id="ciudadEmision" name="ciudadEmision" value={formState.empresa?.ciudadEmision || ''} onChange={handleChangeEmpresa} required />
+                </div>
+                <div className="col-12">
+                  <label htmlFor="logoUrl" className="form-label">URL del logo</label>
+                  <input type="url" className="form-control" id="logoUrl" name="logoUrl" value={formState.urlLogo || ''} onChange={handleChangeLogo} placeholder="https://..." required />
+                </div>
+                <div className="col-12">
+                  <label htmlFor="logoFile" className="form-label">O cargar logo desde archivo</label>
+                  <input type="file" className="form-control" id="logoFile" accept="image/*" onChange={handleLogoFileChange} />
+                  {formState.logoDataUrl && (
+                    <div className="form-text text-success">Logo embebido listo para guardarse en la configuracion.</div>
+                  )}
+                </div>
               </div>
-              <div className="mb-3 col-md-6">
-                <label htmlFor="ciudadEmision" className="form-label">Ciudad de Emisión (Fecha)</label>
-                <input type="text" className="form-control" id="ciudadEmision" name="ciudadEmision" value={empresa?.ciudadEmision || null} onChange={handleChangeEmpresa} required />
-              </div>
-            </div>
-            <div className="mb-3">
-              <label htmlFor="logoUrl" className="form-label">URL del Logo de la Empresa</label>
-              <input type="url" className="form-control" id="logoUrl" name="logoUrl" defaultValue={urlLogo} onChange={handleChangeLogo} placeholder="https://..." required />
             </div>
           </div>
 
-          {/* 2. SECCIÓN DESTINATARIO */}
-          <div className="card shadow-sm p-4 mb-4 border-danger">
-            <h4 className="card-title text-danger">Datos del Destinatario</h4>
-
-            <div className="mb-3">
-              <label htmlFor="destinatarioPrincipal" className="form-label">Destinatario Principal (Señores:)</label>
-              <input type="text" className="form-control" id="destinatarioPrincipal" name="destinatarioPrincipal" value={destinatario?.destinatarioPrincipal || null} onChange={handleChangeDestinatario} required />
-            </div>
-            <div className="mb-3">
-              <label htmlFor="departamento" className="form-label">Departamento/Compañía</label>
-              <input type="text" className="form-control" id="departamento" name="departamento" value={destinatario?.departamento || null} onChange={handleChangeDestinatario} required />
+          <div className="card shadow-sm mb-4 border-danger">
+            <div className="card-body p-4">
+              <h4 className="card-title text-danger">Datos del destinatario</h4>
+              <div className="row g-3">
+                <div className="col-md-6">
+                  <label htmlFor="destinatarioPrincipal" className="form-label">Destinatario principal</label>
+                  <input type="text" className="form-control" id="destinatarioPrincipal" name="destinatarioPrincipal" value={formState.destinatario?.destinatarioPrincipal || ''} onChange={handleChangeDestinatario} required />
+                </div>
+                <div className="col-md-6">
+                  <label htmlFor="departamento" className="form-label">Departamento o compania</label>
+                  <input type="text" className="form-control" id="departamento" name="departamento" value={formState.destinatario?.departamento || ''} onChange={handleChangeDestinatario} required />
+                </div>
+              </div>
             </div>
           </div>
 
-
-          {/* 3. SECCIÓN DATOS DEL FIRMANTE */}
-          <div className="card shadow-sm p-4 mb-4">
-            <h4 className="card-title text-success">Datos del Firmante</h4>
-            <div className="mb-3">
-              <label htmlFor="nombreRepresentante" className="form-label">Nombre del Representante</label>
-              <input type="text" className="form-control" id="nombreRepresentante" name="nombreRepresentante" value={signatory?.nombreRepresentante || null} onChange={handleChangeSignatory} required />
-            </div>
-            <div className="row">
-              <div className="mb-3 col-md-6">
-                <label htmlFor="cedula" className="form-label">Cédula</label>
-                <input type="text" className="form-control" id="cedula" name="cedula" value={signatory?.cedula || null} onChange={handleChangeSignatory} required />
+          <div className="card shadow-sm mb-4 border-success">
+            <div className="card-body p-4">
+              <h4 className="card-title text-success">Datos del firmante</h4>
+              <div className="row g-3">
+                <div className="col-md-6">
+                  <label htmlFor="nombreRepresentante" className="form-label">Nombre del representante</label>
+                  <input type="text" className="form-control" id="nombreRepresentante" name="nombreRepresentante" value={formState.signatory?.nombreRepresentante || ''} onChange={handleChangeSignatory} required />
+                </div>
+                <div className="col-md-3">
+                  <label htmlFor="cedula" className="form-label">Cedula</label>
+                  <input type="text" className="form-control" id="cedula" name="cedula" value={formState.signatory?.cedula || ''} onChange={handleChangeSignatory} required />
+                </div>
+                <div className="col-md-3">
+                  <label htmlFor="celular" className="form-label">Celular</label>
+                  <input type="text" className="form-control" id="celular" name="celular" value={formState.signatory?.celular || ''} onChange={handleChangeSignatory} />
+                </div>
+                <div className="col-12">
+                  <label htmlFor="cargo" className="form-label">Cargo</label>
+                  <input type="text" className="form-control" id="cargo" name="cargo" value={formState.signatory?.cargo || ''} onChange={handleChangeSignatory} required />
+                </div>
               </div>
-              <div className="mb-3 col-md-6">
-                <label htmlFor="cargo" className="form-label">Cargo</label>
-                <input type="text" className="form-control" id="cargo" name="cargo" value={signatory?.cargo || null} onChange={handleChangeSignatory} required />
-              </div>
-            </div>
-            <div className="mb-3">
-              <label htmlFor="celular" className="form-label">Celular (Firma)</label>
-              <input type="text" className="form-control" id="celular" name="celular" value={signatory?.celular || null} onChange={handleChangeSignatory} />
             </div>
           </div>
 
-
-          {/* 4. SECCIÓN DATOS DEL EMBARQUE */}
-          <div className="card shadow-sm p-4">
-            <h4 className="card-title text-secondary">Datos del Embarque</h4>
-
-            <div className="mb-3">
-              <label htmlFor="agenciaAduanas" className="form-label">Nombre Agencia de Aduanas</label>
-              <input type="text" className="form-control" id="agenciaAduanas" name="agenciaAduanas" value={embarque?.agenciaAduanas} onChange={handleChangeEmbarque} required />
+          <div className="card shadow-sm mb-4">
+            <div className="card-body p-4">
+              <h4 className="card-title text-secondary">Datos base del embarque</h4>
+              <div className="row g-3">
+                {EMBARQUE_FIELDS.map(([field, label]) => (
+                  <div key={field} className={field === 'mercanciaCantidad' ? 'col-12' : 'col-md-6'}>
+                    <label htmlFor={field} className="form-label">{label}</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id={field}
+                      name={field}
+                      value={formState.embarque?.[field] || ''}
+                      onChange={handleChangeEmbarque}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
+          </div>
 
-            <div className="mb-3">
-              <label htmlFor="ciudadOrigenMercancia" className="form-label">Ciudad de Origen de la Mercancía</label>
-              <input type="text" className="form-control" id="ciudadOrigenMercancia" name="ciudadOrigenMercancia" value={embarque?.ciudadOrigenMercancia} onChange={handleChangeEmbarque} required />
-            </div>
-
-            <div className="d-grid">
-              <button type="submit" className="btn btn-primary mt-3">
-                Generar Carta
-              </button>
+          <div className="card shadow-sm">
+            <div className="card-body p-4">
+              <div className="d-flex flex-column flex-md-row gap-2 justify-content-end">
+                <button type="button" className="btn btn-outline-primary" onClick={handleSaveConfig} disabled={saving}>
+                  {saving ? 'Guardando...' : 'Guardar configuracion'}
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Generar vista previa
+                </button>
+                <button type="button" onClick={handlePrint} className="btn btn-success" disabled={!pdfPreviewUrl}>
+                  Imprimir / PDF
+                </button>
+              </div>
             </div>
           </div>
         </form>
       </div>
 
-      {/* Columna de la Carta Generada (Usando HTML) */}
-      <div className="col-lg-7 mt-4 mt-lg-0">
-        <div className="card shadow-sm p-4 bg-light h-100">
-          <h4 className="card-title">Vista Previa de la Carta Antinarcóticos</h4>
-          <hr />
-          {cartaGenerada ? (
-            <>
-              {/* Usamos dangerouslySetInnerHTML para renderizar el HTML generado */}
-              <div
-                style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '5px', border: '1px solid #ccc' }}
-                dangerouslySetInnerHTML={{ __html: cartaGenerada }}
-              />
-              <div className="mt-3 d-flex justify-content-end">
-                <button
-                  onClick={handlePrint}
-                  className="btn btn-success me-2"
-                >
-                  <i className="bi bi-printer"></i> Imprimir / PDF
-                </button>
+      <div className="col-12 col-xl-6">
+        <div className="card shadow-sm bg-light h-100">
+          <div className="card-body p-4">
+            <h4 className="card-title">Vista previa de la carta antinarcoticos</h4>
+            <hr />
+            {pdfPreviewUrl ? (
+              <div className="border rounded overflow-hidden bg-white" style={{ minHeight: '900px' }}>
+                <iframe
+                  title="Vista previa PDF carta antinarcoticos"
+                  src={pdfPreviewUrl}
+                  className="w-100 border-0"
+                  style={{ minHeight: '900px' }}
+                />
               </div>
-            </>
-          ) : (
-            <div className="text-center text-muted py-5">
-              <p>Complete los datos del firmante y del embarque, luego haga clic en <b>Generar</b> Carta para ver la vista previa.</p>
-            </div>
-          )}
+            ) : (
+              <div className="text-center text-muted py-5">
+                <p>La pagina carga la configuracion guardada. Cuando hagas cambios, puedes guardarlos y luego generar la vista previa.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

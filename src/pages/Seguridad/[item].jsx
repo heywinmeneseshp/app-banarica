@@ -17,6 +17,7 @@ import Rechazos from "@containers/seguridad/Rechazos";
 import Inspeccionados from "@containers/seguridad/Inspeccionados";
 import ContenedoresDevueltos from "@containers/seguridad/ContenedoresDevueltos";
 import Transbordados from "@containers/seguridad/Transbordados";
+import CartasAntinarcoticos from "@containers/seguridad/CartasAntinarcoticos";
 //Components
 
 
@@ -41,6 +42,7 @@ export default function Seguridad() {
                 {(router?.query.item == "Inspeccionados") && <Inspeccionados/>}
                 {(router?.query.item == "Devueltos") && <ContenedoresDevueltos/>}
                 {(router?.query.item == "Transbordados") && <Transbordados/>}
+                {(router?.query.item == "CartasAntinarcoticos") && <CartasAntinarcoticos/>}
             </div>
         </RootLayout>
     );

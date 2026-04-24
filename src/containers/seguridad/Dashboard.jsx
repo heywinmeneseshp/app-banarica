@@ -196,8 +196,10 @@ export default function Dashboard() {
 
     return (
         <>
-            <div className="container">
-                <h2>Resumen diario</h2>
+            <div className="container-fluid px-0">
+                <div className="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-2 mb-3">
+                    <h2 className="mb-0">Resumen diario</h2>
+                </div>
 
                 <form ref={formRef} className="row mt-3 g-2 align-items-center">
                     {/* Columna 1: Fecha de Inicio */}
@@ -236,31 +238,13 @@ export default function Dashboard() {
                     </div>
 
                     {/* Columna 3: Icono de Configuración */}
-                    {(user.id_rol == "Super administrador" || botones.includes("dashboard_configuracion")) && <div className="col-12 col-md-2 d-flex justify-content-center d-none d-md-table-cell">
+                    {(user.id_rol == "Super administrador" || botones.includes("dashboard_configuracion")) && <div className="col-12 col-md-2 d-flex justify-content-md-center justify-content-start">
                         <button
                             onClick={() => handleConfig()}
                             type="button"
-                            className="btn btn-link"
-                            style={{
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                height: '25px',
-                                width: "auto",
-                                margin: "auto",
-                                padding: "0px"
-                            }}
+                            className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center"
                         >
-                            <FaCog style={{
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                height: '25px',
-                                width: "auto",
-                                margin: "auto",
-                                padding: "0px",
-                                color: "rgb(0 0 0 / 30%)"
-                            }} />
+                            <FaCog />
                         </button>
                     </div>}
 
@@ -284,19 +268,21 @@ export default function Dashboard() {
 
                 </form>
 
-
-                <table ref={tableRef} className="mt-3 table table-striped table-bordered table-sm">
-                    <thead>
+                <div className="table-responsive mt-3">
+                <table ref={tableRef} className="table table-striped table-bordered table-sm align-middle mb-0">
+                    <thead className="table-light">
                         <tr>
-                            <th scope="col">Fecha</th>
-                            <th>Contenedor</th>
+                            <th scope="col" className="text-center text-nowrap">Fecha</th>
+                            <th className="text-center text-nowrap">Contenedor</th>
                             {configuracion.map((item, key) => {
                                 let title = item.name.charAt(0).toUpperCase() + item.name.toLowerCase().slice(1);
-                                return (<th className="d-none d-md-table-cell" key={key}>{title}</th>);
+                                return (<th className="d-none d-md-table-cell text-center text-nowrap" key={key}>{title}</th>);
                             })}
-                            {(botones.includes("dashboard_agregar") || isSuperAdmin) && <th></th>}
-                            {(botones.includes('dashboard_seriales') || isSuperAdmin) && <th></th>}
-                            <th></th>
+                            {(botones.includes("dashboard_agregar") || isSuperAdmin) && <th className="text-center text-nowrap">Agregar</th>}
+                            {(botones.includes('dashboard_seriales') || isSuperAdmin) && <th className="text-center text-nowrap">Seriales</th>}
+                            {(botones.includes("dashboard_devolver") || isSuperAdmin) && (
+                                <th className="text-center text-nowrap">Estado</th>
+                            )}
                         </tr>
                     </thead>
                     <tbody>
@@ -309,7 +295,7 @@ export default function Dashboard() {
                             const seriales = item?.serial_de_articulos || [];
                             return (
                                 <tr key={key}>
-                                    <th>{fecha}</th>
+                                    <th className="text-center text-nowrap">{fecha}</th>
                                     <td className="text-center">{item?.Contenedor?.contenedor}</td>
                                     {configuracion.map((itemConfig, key) => {
                                         const serial = seriales.find(item2 => itemConfig.consecutivo === item2.cons_producto);
@@ -362,27 +348,30 @@ export default function Dashboard() {
                                             <FaEye />
                                         </button>
                                     </td>}
-                                    <td className="text-custom-small text-center align-middle" style={{ padding: '2px', width: '70px' }}>
-                                        <button
-                                            onClick={() => setContenedorDevuelto(item?.Contenedor)}
-                                            type="button"
-                                            className="btn btn-danger btn-sm"
-                                        >
-                                            Devolver
-                                        </button>
-                                    </td>
+                                    {(botones.includes("dashboard_devolver") || isSuperAdmin) && (
+                                        <td className="text-custom-small text-center align-middle text-nowrap" style={{ padding: '2px', width: '90px' }}>
+                                            <button
+                                                onClick={() => setContenedorDevuelto(item?.Contenedor)}
+                                                type="button"
+                                                className="btn btn-danger btn-sm"
+                                            >
+                                                Devolver
+                                            </button>
+                                        </td>
+                                    )}
                                 </tr>
                             );
 
                         })}
                     </tbody>
                 </table>
+                </div>
 
                 <Paginacion setPagination={setOffset} pagination={offset} total={total} limit={25} />
                 {openConfig && <InsumoConfig handleConfig={handleConfig} modulo_confi={SECURITY_MODULE_KEYS[0]} />}
                 {vistaCont && (
                     <VistaContenedor
-                        configProducts={bloqueo.tags}
+                        configProducts={configuracion}
                         vistaCont={vistaCont}
                         setVistaCont={setVistaCont}
                         correos={bloqueo?.correos_alerta}

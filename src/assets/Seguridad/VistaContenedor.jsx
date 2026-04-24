@@ -16,61 +16,87 @@ function VistaContenedor({ vistaCont, setVistaCont, correos, configProducts, can
     const [loading, setLoading] = useState(false);
     const [serialesSinRevision, setSerialesSinRevision] = useState([]);
     const user = getUser();
+    const userRole = user?.id_rol;
 
     useEffect(() => {
         const filtrarProductosAsync = async () => {
             try {
-                const usuario = user;
-                let sinRevisar = usuario.id_rol === "Super administrador" ? vistaCont.serial_de_articulos : vistaCont.serial_de_articulos.filter(item => (item.revisado == false) && configProducts.includes(item.cons_producto));
-                sinRevisar = sinRevisar.filter(item => configProducts.includes(item.cons_producto) == true);
+                const configuredProducts = Array.isArray(configProducts) ? configProducts : [];
+                const configuredIds = configuredProducts
+                    .map((item) => (typeof item === "object" ? item?.consecutivo : item))
+                    .filter(Boolean);
+
+                let sinRevisar = userRole === "Super administrador"
+                    ? vistaCont.serial_de_articulos
+                    : vistaCont.serial_de_articulos.filter(
+                        (item) => item.revisado == false && configuredIds.includes(item.cons_producto)
+                    );
+                sinRevisar = sinRevisar.filter((item) => configuredIds.includes(item.cons_producto));
                 setSerialesSinRevision(sinRevisar);
-                const consecutivos = sinRevisar.map(item => item.cons_producto);
-                const productos = await filtrarProductos({ producto: { consecutivo: consecutivos } });
+                const consecutivos = [...new Set(sinRevisar.map((item) => item.cons_producto))];
+
+                let productos = configuredProducts.filter(
+                    (item) => typeof item === "object" && consecutivos.includes(item.consecutivo)
+                );
+
+                if (productos.length === 0 && consecutivos.length > 0) {
+                    productos = await filtrarProductos({ producto: { consecutivo: consecutivos } });
+                }
+
+                if (!Array.isArray(productos)) {
+                    setItems([]);
+                    return;
+                }
+
                 setItems(productos);
 
                 const initialChecks = {};
                 const initialMassApprove = {};
                 productos.forEach(({ consecutivo }) => {
-                    const seriales = vistaCont.serial_de_articulos.filter(articulo => articulo.cons_producto === consecutivo);
-                    seriales.forEach(({ serial }) => initialChecks[serial] = false);
-                    initialMassApprove[consecutivo] = false;
+                    const seriales = sinRevisar.filter((articulo) => articulo.cons_producto === consecutivo);
+                    seriales.forEach(({ serial }) => {
+                        initialChecks[serial] = true;
+                    });
+                    initialMassApprove[consecutivo] = true;
                 });
                 setSerialChecks(initialChecks);
                 setMassApproveActive(initialMassApprove);
             } catch (error) {
                 console.error("Error al filtrar productos:", error);
+                setItems([]);
             }
         };
 
         if (!canViewSerials) {
             setItems([]);
             setSerialesSinRevision([]);
+            setSerialChecks({});
+            setMassApproveActive({});
             return;
         }
 
         if (vistaCont?.serial_de_articulos?.length) {
             filtrarProductosAsync();
         }
-    }, [loading, canViewSerials, vistaCont, user, configProducts]);
+    }, [canViewSerials, vistaCont, userRole, configProducts]);
 
     const handleCheck = serial => {
-     
         setSerialChecks(prev => ({ ...prev, [serial]: !prev[serial] }));
     };
 
-    const handleMassApproveToggle = consecutivo => {
-        setMassApproveActive(prev => {
-            const newState = !prev[consecutivo];
-            const updatedSerialChecks = { ...serialChecks };
-
-            vistaCont.serial_de_articulos
-                .filter(articulo => articulo.cons_producto === consecutivo)
+const handleMassApproveToggle = consecutivos => {
+        const newState = !massApproveActive[consecutivos];
+        
+        setMassApproveActive(prev => ({ ...prev, [consecutivos]: newState }));
+        
+        setSerialChecks(prev => {
+            const updated = { ...prev };
+            serialesSinRevision
+                .filter(articulo => articulo.cons_producto === consecutivos)
                 .forEach(({ serial }) => {
-                    updatedSerialChecks[serial] = newState;
+                    updated[serial] = newState;
                 });
-
-            setSerialChecks(updatedSerialChecks);
-            return { ...prev, [consecutivo]: newState };
+            return updated;
         });
     };
 
@@ -97,10 +123,6 @@ function VistaContenedor({ vistaCont, setVistaCont, correos, configProducts, can
             for (const item of serialesSinRevision) {
                 await actualizarSerial({ ...item, revisado: true });
             }
-            const serials = vistaCont.serial_de_articulos.map(item => {
-                return { ...item, revisado: true };
-            });
-            vistaCont.serial_de_articulos = serials;
             setLoading(false);
             setVistaCont(null);
             return;
@@ -158,10 +180,6 @@ function VistaContenedor({ vistaCont, setVistaCont, correos, configProducts, can
         for (const item of serialesSinRevision) {
             await actualizarSerial({ ...item, revisado: true });
         }
-        const serials = vistaCont.serial_de_articulos.map(item => {
-            return { ...item, revisado: true };
-        });
-        vistaCont.serial_de_articulos = serials;
         setLoading(false);
         setVistaCont(null);
     };
@@ -184,9 +202,9 @@ function VistaContenedor({ vistaCont, setVistaCont, correos, configProducts, can
                                 <div className="alert alert-warning mb-0 text-center">
                                     Los seriales solo se pueden consultar dentro del horario configurado para operadores.
                                 </div>
-                            ) : (
+) : (
                                 <div className="row">
-                                    {items.map(({ consecutivo, name }) => (
+                                    {items?.map(({ consecutivo, name }) => (
                                         <div key={consecutivo} className="col-12 mb-3">
                                             <div className="p-3 border rounded shadow-sm">
                                                 <div className="d-flex justify-content-between align-items-center">
@@ -196,7 +214,7 @@ function VistaContenedor({ vistaCont, setVistaCont, correos, configProducts, can
                                                     </button>
                                                 </div>
                                                 <ul className="list-unstyled m-0">
-                                                    {vistaCont.serial_de_articulos.filter(({ cons_producto }) => cons_producto === consecutivo)
+                                                    {serialesSinRevision.filter(({ cons_producto }) => cons_producto === consecutivo)
                                                         .map(({ serial, fecha_de_uso }) => (
                                                             <li key={serial} className="d-flex justify-content-between align-items-center py-2 mb-1 border-bottom">
                                                                 <div>

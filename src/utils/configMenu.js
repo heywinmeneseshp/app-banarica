@@ -28,7 +28,8 @@ const menuCompleto = {
         ["/Transferencias", "Transferencias"],
         ["/Inspeccionados", "Inspeccionados"],
         ["/Devueltos", "Devueltos"],
-        ["/Transbordados", "Transbordados"]
+        ["/Transbordados", "Transbordados"],
+        ["/CartasAntinarcoticos", "Cartas antinarcoticos"]
     ],
     programaciones: [
         ["contenedores", "Contenedores"],
@@ -47,6 +48,7 @@ const botones = [
     "dashboard_descargar_carrusel",
     "dashboard_descargar_relacion",
     "dashboard_agregar",
+    "dashboard_devolver",
     "disponibles_serial",
     "disponibles_detallado",
     "disponibles_corregir_serial",

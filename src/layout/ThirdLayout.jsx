@@ -7,8 +7,6 @@ import { clearSession, getStoredWarehouses, getToken } from 'utils/session';
 //Component
 import Footer from "@components/Footer";
 import Header from '@components/shared/Header/Header';
-//CSS
-import styles from '@styles/Layout.module.css';
 
 export default function ThirdLayout({ children }) {
     const router = useRouter();
@@ -46,8 +44,12 @@ export default function ThirdLayout({ children }) {
         return (
             <>
                 <Header />
-                <main className={styles.main}>
-                    <div className='container'>{children}</div>
+                <main className="app-shell-main py-3 py-md-4">
+                    <div className="container-fluid px-3 px-md-4 px-xl-5">
+                        <div className="app-content-shell mx-auto">
+                            {children}
+                        </div>
+                    </div>
                 </main>
                 <Footer />
             </>

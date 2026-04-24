@@ -2,8 +2,6 @@ import React from "react";
 
 //Bootstrap
 import { Pagination } from 'react-bootstrap';
-//CSS
-import styles from '@styles/Listar.module.css';
 
 const Paginacion = ({ setPagination, pagination, total, limit }) => {
   
@@ -16,8 +14,8 @@ const Paginacion = ({ setPagination, pagination, total, limit }) => {
     };
     return (
         <>
-            <div className={styles.pagination}>
-                <Pagination>
+            <div className="d-flex justify-content-center align-items-center mt-3 overflow-auto">
+                <Pagination className="mb-0 flex-wrap justify-content-center">
                     <Pagination.First onClick={() => handleBotonPagionation(0, pagination, setPagination)} />
                     {(pagination > 1) && <Pagination.Prev onClick={() => handleBotonPagionation(-1, pagination, setPagination)} />}
                     {(pagination > 3) && <Pagination.Item onClick={() => handleBotonPagionation(-2, pagination, setPagination)}>{pagination - 2}</Pagination.Item>}

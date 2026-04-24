@@ -1,10 +1,25 @@
 // services/api/correo.js
 import axios from 'axios';
 import endPoints from '.';
+import { getToken } from 'utils/session';
+
+const getAuthConfig = () => {
+  const token = getToken();
+
+  if (!token) {
+    return {};
+  }
+
+  return {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+};
 
 export const enviarCorreo = async (datos) => {
   try {
-    const response = await axios.post(endPoints.email.send, datos);
+    const response = await axios.post(endPoints.email.send, datos, getAuthConfig());
     return response.data;
   } catch (error) {
     console.error("Error al enviar correo:", error);

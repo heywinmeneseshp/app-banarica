@@ -1,13 +1,14 @@
 // Importacion de dependencias necesarias
 import React, { useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Navbar, Nav, DropdownButton, Dropdown, Button, ButtonGroup, Container } from 'react-bootstrap';
+import { Navbar, Nav, DropdownButton, Dropdown, Button, Container } from 'react-bootstrap';
+import { FaSignOutAlt, FaUserCircle } from 'react-icons/fa';
 
 import { useAuth } from '@hooks/useAuth';
 import useAlert from '@hooks/useAlert';
 import AppContext from '@context/AppContext';
 
-import NuevoUsuario from "@components/administrador/NuevoUsuario";
+import EditarPerfilModal from "@components/administrador/EditarPerfilModal";
 import Configuracion from '@components/administrador/Configuracion';
 
 import { encontrarEmpresa, encontrarModulo } from '@services/api/configuracion';
@@ -118,16 +119,16 @@ const Header = () => {
   };
 
   return (
-    <div style={{ zIndex: 1050 }}>
-      <Navbar bg="dark" variant="dark" expand="lg" className="justify-content-center">
-        <Container>
+    <div className="sticky-top shadow-sm" style={{ zIndex: 1050 }}>
+      <Navbar bg="dark" variant="dark" expand="lg" className="py-2">
+        <Container fluid="xl">
           <Navbar.Brand onClick={() => openMenu("inicio")}>
             <b>{nombreApp || "LogiCrack App"}</b>
           </Navbar.Brand>
 
           <Navbar.Toggle aria-controls="navbar-nav" />
-          <Navbar.Collapse id="navbar-nav">
-            <Nav className="me-auto">
+          <Navbar.Collapse id="navbar-nav" className="pt-3 pt-lg-0">
+            <Nav className="me-auto align-items-lg-center gap-lg-1 flex-lg-row">
               {(configMenu.includes("maestros") || user?.id_rol === "Super administrador") && (
                 <DropdownButton variant="dark" title="Maestros" onClick={() => openMenu("admin")}>
                   {menuCompleto.maestros.map(([key, label]) => {
@@ -184,17 +185,40 @@ const Header = () => {
               )}
             </Nav>
 
-            <ButtonGroup size="sm">
-              <Button variant="dark" onClick={handleProfile}>
+            <div className="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-lg-end gap-2 w-100 w-lg-auto mt-3 mt-lg-0 ms-lg-auto">
+              <Button
+                variant="link"
+                size="sm"
+                onClick={handleProfile}
+                className="w-auto d-inline-flex align-items-center justify-content-center gap-2 px-2 py-1 text-nowrap text-white text-decoration-none border-0 shadow-none"
+              >
+                <FaUserCircle />
                 {user?.nombre} {user?.apellido}
               </Button>
-              <Button variant="dark" onClick={cerrarSesion}>Cerrar sesion</Button>
-            </ButtonGroup>
+              <Button
+                variant="link"
+                size="sm"
+                onClick={cerrarSesion}
+                className="w-auto d-inline-flex align-items-center justify-content-center px-2 py-1 text-white text-decoration-none border-0 shadow-none"
+                title="Cerrar sesion"
+                aria-label="Cerrar sesion"
+              >
+                <FaSignOutAlt />
+              </Button>
+            </div>
           </Navbar.Collapse>
         </Container>
       </Navbar>
 
-      {openProfile && <NuevoUsuario setOpen={setOpenProfile} setAlert={setAlert} user={user} profile={true} />}
+      {openProfile && (
+        <EditarPerfilModal
+          open={openProfile}
+          onClose={setOpenProfile}
+          setAlert={setAlert}
+          user={user}
+          onUserUpdated={setUser}
+        />
+      )}
       {openConfig && <Configuracion setOpen={setOpenConfig} />}
     </div>
   );
