@@ -236,6 +236,14 @@ const endPoints = {
         update: (id) => `${API}/api/${VERSION}/ubicaciones/${id}`,
         delete: (id) => `${API}/api/${VERSION}/ubicaciones/${id}`,
     },
+    tipoMovimientoVehiculos: {
+        list: `${API}/api/${VERSION}/tipoMovimientoVehiculos`,
+        findOne: (id) => `${API}/api/${VERSION}/tipoMovimientoVehiculos/${id}`,
+        pagination: (page, limit, item) => `${API}/api/${VERSION}/tipoMovimientoVehiculos/paginar?page=${page}&limit=${limit}&item=${item}`,
+        create: `${API}/api/${VERSION}/tipoMovimientoVehiculos`,
+        update: (id) => `${API}/api/${VERSION}/tipoMovimientoVehiculos/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/tipoMovimientoVehiculos/${id}`,
+    },
     clientes: {
         list: `${API}/api/${VERSION}/clientes`,
         findOne: (id) => `${API}/api/${VERSION}/clientes/${id}`,

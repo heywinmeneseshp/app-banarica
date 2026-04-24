@@ -10,6 +10,7 @@ import { listarClientes } from "@services/api/clientes";
 import { actualizarProgramaciones } from "@services/api/programaciones";
 import { agregarRutas, buscarRutaPost } from "@services/api/rutas";
 import { agregarConsumoRutaVehiculo } from "@services/api/consumoRutaVehiculo";
+import { listartipoMovimientoVehiculos } from "@services/api/tipoMovimientoVehiculos";
 
 
 
@@ -27,12 +28,17 @@ export default function FormulariosProgramacionEditar({ element, setOpen, setAle
   const [isCheckedContenedor, setIsCheckedContenedor] = useState(false);
   const [listaUbicaciones, setListaUbicaciones] = useState([]);
   const [listaClientes, setListaClientes] = useState([]);
+  const [listaTiposMovimiento, setListaTiposMovimiento] = useState([]);
 
   useEffect(() => {
     setIsChecked(element.cobrar);
-    setIsCheckedContenedor(element?.movimiento == "Contenedor");
     listar();
-  }, [change]);
+  }, [change, element.cobrar]);
+
+  useEffect(() => {
+    const tipoMovimiento = listaTiposMovimiento.find((item) => String(item?.movimiento) === String(element?.movimiento || ''));
+    setIsCheckedContenedor(Boolean(tipoMovimiento?.requiere_contenedor));
+  }, [element?.movimiento, listaTiposMovimiento]);
 
 
   const handleSubmit = async () => {
@@ -119,8 +125,9 @@ export default function FormulariosProgramacionEditar({ element, setOpen, setAle
 
   const isContainter = () => {
     const formData = new FormData(formRef.current);
-    const res = formData.get("movimiento") == "Contenedor" ? true : false;
-    setIsCheckedContenedor(res);
+    const movimiento = formData.get("movimiento");
+    const tipoMovimiento = listaTiposMovimiento.find((item) => String(item?.movimiento) === String(movimiento || ''));
+    setIsCheckedContenedor(Boolean(tipoMovimiento?.requiere_contenedor));
   };
 
 
@@ -130,10 +137,12 @@ export default function FormulariosProgramacionEditar({ element, setOpen, setAle
     let clientes = await listarClientes();
     let conductores = await listarConductores();
     let vehiculos = await listarVehiculo();
+    let tiposMovimiento = await listartipoMovimientoVehiculos();
     setListaConductores(conductores);
     setListaVehiculos(vehiculos);
     setListaUbicaciones(ubicaciones);
     setListaClientes(clientes);
+    setListaTiposMovimiento(tiposMovimiento || []);
   };
 
 
@@ -308,11 +317,17 @@ export default function FormulariosProgramacionEditar({ element, setOpen, setAle
                           required
                           onChange={() => isContainter()}
                         >
-                          <option selected={element?.movimiento == "Local"} value="Local">Local</option>
-                          <option selected={element?.movimiento == "Puerto"} value="Puerto">Puerto</option>
-                          <option selected={element?.movimiento == "Contenedor"} value="Contenedor">Contenedor</option>
-                          <option selected={element?.movimiento == "Transitorio"} value="Transitorio">Transitorio</option>
-                          <option selected={element?.movimiento == "Otro"} value="Otro">Otro</option>
+                          {listaTiposMovimiento
+                            .filter((item) => item?.activo !== false)
+                            .map((item) => (
+                              <option
+                                key={item?.id || item?.movimiento}
+                                selected={item?.movimiento == element?.movimiento}
+                                value={item?.movimiento}
+                              >
+                                {item?.movimiento}
+                              </option>
+                            ))}
                         </select>
                       </div>
 

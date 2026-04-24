@@ -1,7 +1,8 @@
 import React, { useRef } from "react";
 import styles from "@components/shared/Formularios/Formularios.module.css";
+import { Form } from "react-bootstrap";
 
-function Formularios({ titulo, setAlert, listas, element, setOpen, encabezados, actualizar, crear, onlyRead, valorPredeterminado }) {
+function Formularios({ titulo, setAlert, listas, element, setOpen, encabezados, actualizar, crear, onlyRead, valorPredeterminado, checkboxFields = [] }) {
   const formRef = useRef();
 
   const handleSubmit = async (e) => {
@@ -11,10 +12,18 @@ function Formularios({ titulo, setAlert, listas, element, setOpen, encabezados, 
     let validar = true;
 
     formData.forEach((value, key) => {
+      if (checkboxFields.includes(key)) {
+        return;
+      }
       if (value === "" && key !== "id") {
         validar = false;
       }
       objeto[key] = value;
+    });
+
+    checkboxFields.forEach((field) => {
+      const input = formRef.current?.elements?.namedItem(field);
+      objeto[field] = Boolean(input?.checked);
     });
 
     if (!validar) {
@@ -104,6 +113,21 @@ function Formularios({ titulo, setAlert, listas, element, setOpen, encabezados, 
                               <option key={item2.id} value={item2.id}>{item2.nombre}</option>
                             ))}
                           </select>
+                        </div>
+                      );
+                    }
+
+                    if (checkboxFields.includes(encabezados[item])) {
+                      return (
+                        <div key={key} className="mb-3 col-md-3 d-flex align-items-end">
+                          <Form.Check
+                            id={encabezados[item]}
+                            name={encabezados[item]}
+                            type="checkbox"
+                            label={item}
+                            defaultChecked={Boolean(element ? element[encabezados[item]] : false)}
+                            disabled={read}
+                          />
                         </div>
                       );
                     }

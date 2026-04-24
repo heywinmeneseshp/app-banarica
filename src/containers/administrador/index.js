@@ -18,6 +18,7 @@ import Conductor from './transporte/Conductor';
 import Ubicaciones from "@components/Maestros/Ubicaciones";
 import CategoriaVehiculos from '@components/Maestros/CategoriaVehiculos';
 import Rutas from '@components/Maestros/Rutas';
+import TipoMovimientoVehiculos from '@components/Maestros/TipoMovimientoVehiculos';
 import Vehiculos from '@components/Maestros/Vehiculos';
 //PROGRAMACIONES
 import Programador from '@components/Programacion/Programador';
@@ -55,6 +56,7 @@ export default function Adminsitrador() {
         {initialAdminMenu.adminMenu.categoriaVehiculos && <CategoriaVehiculos />}
         {initialAdminMenu.adminMenu.clientes && <Clientes />}
         {initialAdminMenu.adminMenu.conductores && <Conductor />}
+        {initialAdminMenu.adminMenu.tipoMovimientoVehiculos && <TipoMovimientoVehiculos />}
         {initialAdminMenu.adminMenu.rutas && <Rutas />}
         {initialAdminMenu.adminMenu.ubicaciones && <Ubicaciones />}
         {initialAdminMenu.adminMenu.vehiculos && <Vehiculos />}

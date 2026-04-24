@@ -7,6 +7,7 @@ const menuCompleto = {
         ["combos", "Combos"],
         ["etiquetas", "Etiquetas"],
         ["MotivoDeRechazo", "Motivos de Rechazo"],
+        ["tipoMovimientoVehiculos", "Movimientos vehiculos"],
         ["productos", "Productos"],
         ["proveedores", "Proveedores"],
         ["rutas", "Rutas"],

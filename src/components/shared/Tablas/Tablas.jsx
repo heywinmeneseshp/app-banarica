@@ -20,6 +20,7 @@ export default function Tablas({
   paginar,
   crear,
   titulo,
+  checkboxFields,
   endPointCargueMasivo,
   encabezadosCargueMasivo,
   tituloCargueMasivo
@@ -479,6 +480,7 @@ export default function Tablas({
           crear={crear}
           listas={listas}
           actualizar={actualizar}
+          checkboxFields={checkboxFields}
           setOpen={setOpen}
           setAlert={setAlert}
           element={item}

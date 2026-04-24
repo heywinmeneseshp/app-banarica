@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import Paginacion from '@components/shared/Tablas/Paginacion';
 import FormulariosProgramacion from '@components/shared/Formularios/FormularioProgramacion';
@@ -9,11 +9,10 @@ import { listarConductores } from '@services/api/conductores';
 import { listarVehiculo } from '@services/api/vehiculos';
 import { filtrarSemanaRangoMes } from '@services/api/semanas';
 import { listarEmbarques } from '@services/api/embarques';
+import { listartipoMovimientoVehiculos } from '@services/api/tipoMovimientoVehiculos';
 import useAlert from '@hooks/useAlert';
 import { buscarRutaPost } from '@services/api/rutas';
 import { Button, Form } from 'react-bootstrap';
-
-const MOVIMIENTOS = ['Local', 'Puerto', 'Contenedor', 'Transitorio', 'Otro'];
 const COLUMN_STORAGE_KEY = 'programadorColumnConfig';
 const COLUMN_OPTIONS = [
   { id: 'fecha', label: 'Fecha' },
@@ -112,6 +111,7 @@ export default function Programador() {
   const [vehiculos, setVehiculos] = useState([]);
   const [semanas, setSemanas] = useState([]);
   const [embarques, setEmbarques] = useState([]);
+  const [tiposMovimiento, setTiposMovimiento] = useState([]);
   const [open, setOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -141,11 +141,7 @@ export default function Programador() {
     }
   }, []);
 
-  useEffect(() => {
-    listar();
-  }, [pagination, reloadKey, alert]);
-
-  const listar = async () => {
+  const listar = useCallback(async () => {
     try {
       setLoading(true);
       const formData = new FormData(formRef.current);
@@ -165,12 +161,13 @@ export default function Programador() {
         body.fechaFin = fechaFin;
       }
 
-      const [newUbicaciones, newConductores, newVehiculos, newSemanas, newEmbarques, res] = await Promise.all([
+      const [newUbicaciones, newConductores, newVehiculos, newSemanas, newEmbarques, newTiposMovimiento, res] = await Promise.all([
         listarUbicaciones(),
         listarConductores(),
         listarVehiculo(),
         filtrarSemanaRangoMes(1, 1),
         listarEmbarques(),
+        listartipoMovimientoVehiculos(),
         paginarProgramaciones(pagination, limit, body),
       ]);
 
@@ -179,6 +176,7 @@ export default function Programador() {
       setVehiculos(newVehiculos || []);
       setSemanas(newSemanas || []);
       setEmbarques(newEmbarques || []);
+      setTiposMovimiento(newTiposMovimiento || []);
       setItemsList(res?.data || []);
       setTotal(res?.total || 0);
     } catch (error) {
@@ -191,7 +189,11 @@ export default function Programador() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [limit, pagination, setAlert]);
+
+  useEffect(() => {
+    listar();
+  }, [pagination, reloadKey, alert, listar]);
 
   const rows = useMemo(() => {
     return itemList.map((item) => ({
@@ -207,6 +209,15 @@ export default function Programador() {
       blLabel: item?.bl || '',
     }));
   }, [itemList]);
+
+  const movimientoOptions = useMemo(
+    () => (tiposMovimiento || []).filter((item) => item?.activo !== false),
+    [tiposMovimiento]
+  );
+
+  const findTipoMovimiento = useCallback((text) => (
+    movimientoOptions.find((item) => normalizeValue(item?.movimiento) === normalizeValue(text))
+  ), [movimientoOptions]);
 
   const descargarExcel = async () => {
     try {
@@ -312,7 +323,6 @@ export default function Programador() {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(COLUMN_STORAGE_KEY, JSON.stringify(nextConfig));
     }
-    setShowColumnConfig(false);
   };
 
   const toggleColumn = (columnId) => {
@@ -456,11 +466,11 @@ export default function Programador() {
       }
 
       if (field === 'movimiento') {
-        const movimiento = MOVIMIENTOS.find((item) => normalizeValue(item) === normalizeValue(text));
+        const movimiento = findTipoMovimiento(text);
         if (!movimiento) {
           throw new Error(`El movimiento "${text}" no existe.`);
         }
-        await handleLookupEdit(row, 'movimiento', movimiento);
+        await handleLookupEdit(row, 'movimiento', movimiento.movimiento);
         return;
       }
 
@@ -508,6 +518,7 @@ export default function Programador() {
       const conductoresList = conductores.length ? conductores : await listarConductores();
       const vehiculosList = vehiculos.length ? vehiculos : await listarVehiculo();
       const semanasList = semanas.length ? semanas : await filtrarSemanaRangoMes(1, 1);
+      const tiposMovimientoList = tiposMovimiento.length ? tiposMovimiento : await listartipoMovimientoVehiculos();
 
       const errors = [];
       let created = 0;
@@ -566,9 +577,17 @@ export default function Programador() {
           continue;
         }
 
-        const movimiento = MOVIMIENTOS.find((item) => normalizeValue(item) === normalizeValue(movimientoText)) || 'Local';
-        if (movimiento === 'Contenedor' && !contenedorText) {
-          errors.push(`Fila ${index + 2}: el movimiento Contenedor requiere numero de contenedor.`);
+        const movimiento =
+          tiposMovimientoList.find((item) => normalizeValue(item?.movimiento) === normalizeValue(movimientoText))
+          || tiposMovimientoList.find((item) => normalizeValue(item?.movimiento) === normalizeValue('Local'));
+
+        if (!movimiento) {
+          errors.push(`Fila ${index + 2}: el movimiento "${movimientoText || 'Local'}" no existe.`);
+          continue;
+        }
+
+        if (movimiento?.requiere_contenedor && !contenedorText) {
+          errors.push(`Fila ${index + 2}: el movimiento ${movimiento.movimiento} requiere numero de contenedor.`);
           continue;
         }
 
@@ -579,7 +598,7 @@ export default function Programador() {
             cobrar: false,
             id_pagador_flete: '',
             activo: true,
-            movimiento,
+            movimiento: movimiento.movimiento,
             conductor_id: conductor.id,
             vehiculo_id: vehiculo.id,
             contenedor: contenedorText || null,
@@ -676,8 +695,8 @@ export default function Programador() {
                   <input id="movimiento" name="movimiento" type="text" list="movimientoList" onChange={listar} className="form-control form-control-sm" />
                   <datalist id="movimientoList">
                     <option value="" />
-                    {MOVIMIENTOS.map((item) => (
-                      <option key={item} value={item} />
+                    {movimientoOptions.map((item) => (
+                      <option key={item.id || item.movimiento} value={item.movimiento} />
                     ))}
                   </datalist>
                 </div>
@@ -980,8 +999,8 @@ export default function Programador() {
                               onBlur={(e) => handleLookupTextEdit(item, 'movimiento', e.target.value)}
                             />
                             <datalist id={`movimiento-${item.id}`}>
-                              {MOVIMIENTOS.map((movimiento) => (
-                                <option key={movimiento} value={movimiento} />
+                              {movimientoOptions.map((movimiento) => (
+                                <option key={movimiento.id || movimiento.movimiento} value={movimiento.movimiento} />
                               ))}
                             </datalist>
                           </>
