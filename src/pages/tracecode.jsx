@@ -25,6 +25,9 @@ const EMPTY_DATA = {
   tokenData: null
 };
 
+const isEmptyInspectionZone = (zone) =>
+  String(zone || "").toLowerCase().includes("vacio");
+
 const formatDate = (value) => {
   if (!value) return "No registrado";
 
@@ -364,7 +367,9 @@ export default function TracecodePage() {
       );
 
       const antinarcoticsRows = (inspeccionesResponse?.data || []).filter(
-        (item) => item?.contenedor?.id === decoded.id
+        (item) =>
+          item?.contenedor?.id === decoded.id
+          && !isEmptyInspectionZone(item?.Inspeccion?.zona || item?.zona)
       );
 
       const rechazos = (rechazosResponse?.data || []).filter(
@@ -378,10 +383,12 @@ export default function TracecodePage() {
 
       const emptyInspection =
         inspeccionesContenedor.find((item) =>
-          String(item?.zona || "").toLowerCase().includes("vacio")
+          isEmptyInspectionZone(item?.zona)
         ) || null;
 
-      const otherInspections = inspeccionesContenedor.filter((item) => item?.id !== emptyInspection?.id);
+      const otherInspections = inspeccionesContenedor.filter(
+        (item) => !isEmptyInspectionZone(item?.zona)
+      );
 
       setDetail({
         contenedor,

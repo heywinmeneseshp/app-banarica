@@ -11,6 +11,9 @@ import { aprobarInspeccionLleno, corregirInspeccionContenedor, rechazarInspeccio
 import InsumoConfig from "@assets/InsumoConfig";
 import { useAuth } from "@hooks/useAuth";
 
+const isEmptyInspectionZone = (zone) =>
+    String(zone || "").toLowerCase().includes("vacio");
+
 export default function Inspeccionados() {
     const formRef = useRef();
     const tableRef = useRef(null);
@@ -54,7 +57,10 @@ export default function Inspeccionados() {
 
             const rows = (res.data || []).filter((item) => {
                 const respuestaMovimiento = String(item?.movimiento?.respuesta || "").toLowerCase();
-                return !respuestaMovimiento.includes("rechazada");
+                return (
+                    !respuestaMovimiento.includes("rechazada")
+                    && !isEmptyInspectionZone(item?.Inspeccion?.zona || item?.zona)
+                );
             });
 
             setData(rows);

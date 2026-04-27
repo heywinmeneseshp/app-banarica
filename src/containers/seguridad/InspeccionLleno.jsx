@@ -12,6 +12,8 @@ import { filterActiveContainerRows } from "@utils/contenedorEstado";
 
 const CONTAINER_LENGTH = 11;
 const INSPECCION_LLENO_ALERT_MODULE = "Inspeccion_lleno_alertas";
+const isEmptyInspectionZone = (zone) =>
+  String(zone || "").toLowerCase().includes("vacio");
 
 const getSearchWindow = () => {
   const today = new Date();
@@ -432,6 +434,7 @@ export default function InspeccionLLeno() {
     const rows = Array.isArray(response?.data) ? response.data : [];
     const inspectionIds = new Set(
       rows
+        .filter((item) => !isEmptyInspectionZone(item?.Inspeccion?.zona || item?.zona))
         .map((item) => item?.Inspeccion?.id)
         .filter(Boolean)
     );
