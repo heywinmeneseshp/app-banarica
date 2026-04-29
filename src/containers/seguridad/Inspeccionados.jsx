@@ -24,6 +24,7 @@ export default function Inspeccionados() {
     const [total, setTotal] = useState(0);
     const [openConfig, setOpenConfig] = useState(false);
     const [pagination, setPagination] = useState(1);
+    const [filtersVersion, setFiltersVersion] = useState(0);
     const [canCorrectContainer, setCanCorrectContainer] = useState(false);
     const [inspeccionSeleccionada, setInspeccionSeleccionada] = useState(null);
     const [corrigiendoContenedor, setCorrigiendoContenedor] = useState(false);
@@ -64,7 +65,7 @@ export default function Inspeccionados() {
             });
 
             setData(rows);
-            setTotal(rows.length || 0);
+            setTotal(Number(res?.total || 0));
         } catch (error) {
             console.error("Error al obtener seriales:", error);
             setData([]);
@@ -74,7 +75,7 @@ export default function Inspeccionados() {
 
     useEffect(() => {
         fetchSeriales();
-    }, [fetchSeriales, openConfig]);
+    }, [fetchSeriales, openConfig, filtersVersion]);
 
     useEffect(() => {
         const loadPermissions = async () => {
@@ -104,7 +105,8 @@ export default function Inspeccionados() {
     }, [user?.id_rol, user?.username]);
 
     const handleFilter = () => {
-        fetchSeriales();
+        setPagination(1);
+        setFiltersVersion((prev) => prev + 1);
     };
 
     const handleConfig = () => {
@@ -299,11 +301,9 @@ export default function Inspeccionados() {
                                 timestamp: Date.now(),
                                 contenedor: item?.contenedor?.contenedor
                             };
-
                             const token = btoa(JSON.stringify(datos));
                             const baseUrl = window.location.origin;
                             const traceUrl = `${baseUrl}/tracecode?token=${token}`;
-
                             return (
                                 <tr key={key}>
                                     <td className="text-center">{formatDateToDDMMYYYY(item?.Inspeccion?.fecha_inspeccion)}</td>
