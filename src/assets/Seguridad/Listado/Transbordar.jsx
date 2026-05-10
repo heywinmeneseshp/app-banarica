@@ -4,7 +4,7 @@ import { Col, Form, Row } from 'react-bootstrap';
 import { paginarListado } from '@services/api/listado';
 import { agregarTransbordo } from '@services/api/transbordo';
 import { listarSeriales } from '@services/api/seguridad';
-import { filterActiveContainerRows } from '@utils/contenedorEstado';
+import { filterActiveContainerRows, getLatestContainerRowByCode } from '@utils/contenedorEstado';
 
 const Transbordar = ({ setOpen }) => {
 
@@ -30,6 +30,7 @@ const Transbordar = ({ setOpen }) => {
             const res = await paginarListado(1, 20, object);
             const rows = filterActiveContainerRows(res?.data || []);
             const contenedoresConDuplicados = rows
+                .sort((left, right) => (right?.id_contenedor || right?.Contenedor?.id || 0) - (left?.id_contenedor || left?.Contenedor?.id || 0))
                 .map(item => item?.Contenedor?.contenedor)
                 .filter(Boolean);
             const contSinDuplicados = contenedoresConDuplicados.filter((item, index) => {
@@ -64,11 +65,18 @@ const Transbordar = ({ setOpen }) => {
         const observaciones = formData.get('observaciones');
         const fecha = formData.get('fecha');
         const kit = formData.get('kit');
-        const existeCont = listado.filter(item => item?.Contenedor?.contenedor === oldContainer);
-        if (existeCont.length === 0) return window.alert("El contenedor no existe");
+        const contenedorSeleccionado = getLatestContainerRowByCode(listado, oldContainer);
+        if (!contenedorSeleccionado) return window.alert("El contenedor no existe");
 
-        const contenedorOrigen = existeCont[0]?.Contenedor;
+        const contenedorOrigen = contenedorSeleccionado?.Contenedor;
         if (!contenedorOrigen?.id) return window.alert("No fue posible identificar el contenedor de origen.");
+
+        const lineasContenedor = listado.filter(
+            item => (item?.id_contenedor || item?.Contenedor?.id) === contenedorOrigen.id
+        );
+        if (lineasContenedor.length === 0) {
+            return window.alert("No fue posible cargar las lineas del contenedor seleccionado.");
+        }
 
         const kitContent = await listarSeriales(null, null, {
             bag_pack: kit,
@@ -88,7 +96,7 @@ const Transbordar = ({ setOpen }) => {
             fecha_transbordo: fecha,
             habilitado: true,
             seriales: serialesDisponibles,
-            lineas_listado: existeCont,
+            lineas_listado: lineasContenedor,
             usuario: usuario,
             observaciones: observaciones,
             cons_semana: semana

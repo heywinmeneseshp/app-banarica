@@ -33,6 +33,12 @@ export default function Inspeccionados() {
 
     const limit = 30;
 
+    const getWeekConsecutive = (item) =>
+        item?.Embarque?.semana?.consecutivo
+        || item?.listado?.Embarque?.semana?.consecutivo
+        || item?.semana?.consecutivo
+        || "";
+
     const ultimoDiaDelAnio = () => {
         const hoy = new Date();
         return `${hoy.getFullYear() + 1}-01-01`;
@@ -47,6 +53,7 @@ export default function Inspeccionados() {
             config = config.tags;
 
             const dataBusqueda = {
+                semana: formData.get("semana"),
                 cons_producto: config,
                 cons_almacen: alamcenes,
                 contenedor: formData.get("contenedor"),
@@ -216,7 +223,7 @@ export default function Inspeccionados() {
                 </div>
 
                 <form ref={formRef} className="row mt-3 g-2 align-items-center">
-                    <div className="col-12 col-md-3">
+                    <div className={`col-12 ${user?.id_rol === "Super administrador" ? "col-md-2" : "col-md-3"}`}>
                         <div className="input-group flex-nowrap">
                             <span className="input-group-text" id="start-date-addon">Fecha Inicio:</span>
                             <input
@@ -231,7 +238,7 @@ export default function Inspeccionados() {
                         </div>
                     </div>
 
-                    <div className="col-12 col-md-3">
+                    <div className={`col-12 ${user?.id_rol === "Super administrador" ? "col-md-2" : "col-md-3"}`}>
                         <div className="input-group flex-nowrap">
                             <span className="input-group-text" id="end-date-addon">Fecha Fin:</span>
                             <input
@@ -247,7 +254,23 @@ export default function Inspeccionados() {
                         </div>
                     </div>
 
-                    <div className="col-12 col-md-3">
+                    <div className={`col-12 ${user?.id_rol === "Super administrador" ? "col-md-3" : "col-md-3"}`}>
+                        <div className="input-group flex-nowrap">
+                            <span className="input-group-text" id="week-addon">Semana:</span>
+                            <input
+                                onChange={handleFilter}
+                                type="text"
+                                id="semana"
+                                name="semana"
+                                className="form-control"
+                                aria-label="Semana"
+                                aria-describedby="week-addon"
+                                placeholder="S18-2026"
+                            />
+                        </div>
+                    </div>
+
+                    <div className={`col-12 ${user?.id_rol === "Super administrador" ? "col-md-3" : "col-md-3"}`}>
                         <div className="input-group flex-nowrap">
                             <span className="input-group-text" id="end-contendor-addon">Contenedor:</span>
                             <input
@@ -263,11 +286,12 @@ export default function Inspeccionados() {
                     </div>
 
                     {user?.id_rol === "Super administrador" && (
-                        <div className="col-12 col-md-2 d-flex justify-content-md-center justify-content-start">
+                        <div className="col-12 col-md-2 d-flex align-items-center justify-content-md-center justify-content-start">
                             <button
                                 onClick={handleConfig}
                                 type="button"
-                                className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center"
+                                className="btn btn-sm d-inline-flex align-items-center justify-content-center border-0 shadow-none text-secondary"
+                                style={{ fontSize: "1.2rem", color: "#6c757d" }}
                             >
                                 <FaCog />
                             </button>
@@ -279,6 +303,7 @@ export default function Inspeccionados() {
                 <table ref={tableRef} className="table table-striped table-bordered table-sm align-middle mb-0">
                     <thead className="table-light">
                         <tr>
+                            <th scope="col" className="text-center text-nowrap">Semana</th>
                             <th scope="col" className="text-center text-nowrap">Fecha Inspccion</th>
                             <th className="text-center text-nowrap">Contenedor</th>
                             <th className="text-center text-nowrap">Serial</th>
@@ -306,6 +331,7 @@ export default function Inspeccionados() {
                             const traceUrl = `${baseUrl}/tracecode?token=${token}`;
                             return (
                                 <tr key={key}>
+                                    <td className="text-center">{getWeekConsecutive(item) || "-"}</td>
                                     <td className="text-center">{formatDateToDDMMYYYY(item?.Inspeccion?.fecha_inspeccion)}</td>
                                     <td className="text-center">{item?.contenedor?.contenedor}</td>
                                     <td className="text-center">{item?.serial}</td>

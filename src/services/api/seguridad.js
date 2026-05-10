@@ -2,13 +2,28 @@ import axios from 'axios';
 import { agregarHistorial } from './historialMovimientos';
 import endPoints from './index';
 import { restar } from './stock';
+import { getToken } from 'utils/session';
 
-const config = {
-    headers: {
+const buildConfig = () => {
+    const token = getToken();
+    const headers = {
         accept: 'application/json',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+    };
+
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
     }
+
+    return { headers };
 };
+
+const getErrorMessage = (error, fallback) => (
+    error?.response?.data?.message
+    || error?.response?.data?.error
+    || error?.response?.statusText
+    || fallback
+);
 
 const encontrarUnSerial = async (data) => {
     const res = await axios.post(endPoints.seguridad.encontrarSerial, data);
@@ -19,7 +34,7 @@ const listarSeriales = async (offset, limit, body) => {
     try {
         let data = { data: body };
         if (limit) data = { ...data, pagination: { offset: offset, limit: limit } };
-        const response = await axios.post(endPoints.seguridad.listarSeriales, data, config);
+        const response = await axios.post(endPoints.seguridad.listarSeriales, data, buildConfig());
         return response.data;
     } catch (err) {
         alert("Error al listar seriales");
@@ -28,7 +43,7 @@ const listarSeriales = async (offset, limit, body) => {
 
 const listarUsuariosSeguridad = async (offset, limit, username) => {
     try {
-        const response = await axios.post(endPoints.seguridad.listarUsuarios, { offset, limit, username }, config);
+        const response = await axios.post(endPoints.seguridad.listarUsuarios, { offset, limit, username }, buildConfig());
         return response.data;
     } catch (err) {
         alert("Error al listar usuario seguridad");
@@ -169,10 +184,10 @@ const usarSeriales = async (semana, fecha, seriales, contenedorID, id_usuario, m
 
 const corregirAsignacionSerial = async (body) => {
     try {
-        const response = await axios.post(endPoints.seguridad.corregirSerial, body, config);
+        const response = await axios.post(endPoints.seguridad.corregirSerial, body, buildConfig());
         return response.data;
     } catch (error) {
-        const message = error?.response?.data?.message || "No fue posible corregir el serial.";
+        const message = getErrorMessage(error, "No fue posible corregir el serial.");
         window.alert(message);
         throw error;
     }
@@ -180,10 +195,10 @@ const corregirAsignacionSerial = async (body) => {
 
 const corregirInspeccionContenedor = async (body) => {
     try {
-        const response = await axios.post(endPoints.seguridad.corregirInspeccionContenedor, body, config);
+        const response = await axios.post(endPoints.seguridad.corregirInspeccionContenedor, body, buildConfig());
         return response.data;
     } catch (error) {
-        const message = error?.response?.data?.message || "No fue posible corregir el contenedor de la inspeccion.";
+        const message = getErrorMessage(error, "No fue posible corregir el contenedor de la inspeccion.");
         window.alert(message);
         throw error;
     }
@@ -191,10 +206,10 @@ const corregirInspeccionContenedor = async (body) => {
 
 const aprobarInspeccionLleno = async (body) => {
     try {
-        const response = await axios.post(endPoints.seguridad.aprobarInspeccionLleno, body, config);
+        const response = await axios.post(endPoints.seguridad.aprobarInspeccionLleno, body, buildConfig());
         return response.data;
     } catch (error) {
-        const message = error?.response?.data?.message || "No fue posible aprobar la inspeccion.";
+        const message = getErrorMessage(error, "No fue posible aprobar la inspeccion.");
         window.alert(message);
         throw error;
     }
@@ -202,10 +217,10 @@ const aprobarInspeccionLleno = async (body) => {
 
 const rechazarInspeccionLleno = async (body) => {
     try {
-        const response = await axios.post(endPoints.seguridad.rechazarInspeccionLleno, body, config);
+        const response = await axios.post(endPoints.seguridad.rechazarInspeccionLleno, body, buildConfig());
         return response.data;
     } catch (error) {
-        const message = error?.response?.data?.message || "No fue posible rechazar la inspeccion.";
+        const message = getErrorMessage(error, "No fue posible rechazar la inspeccion.");
         window.alert(message);
         throw error;
     }
@@ -213,10 +228,10 @@ const rechazarInspeccionLleno = async (body) => {
 
 const crearInspeccionVacio = async (body) => {
     try {
-        const response = await axios.post(endPoints.seguridad.inspeccionVacio, body, config);
+        const response = await axios.post(endPoints.seguridad.inspeccionVacio, body, buildConfig());
         return response.data;
     } catch (error) {
-        const message = error?.response?.data?.message || "No fue posible guardar la inspeccion vacio.";
+        const message = getErrorMessage(error, "No fue posible guardar la inspeccion vacio.");
         window.alert(message);
         throw error;
     }

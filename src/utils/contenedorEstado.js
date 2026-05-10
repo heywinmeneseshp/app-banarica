@@ -36,6 +36,51 @@ const getContainerReturnInfo = (contenedor) => {
 const filterActiveContainerRows = (rows = []) =>
   rows.filter((row) => !isContainerReturned(row?.Contenedor || row?.contenedor || row));
 
+const getContainerIdFromRow = (row) => {
+  const candidates = [
+    row?.id_contenedor,
+    row?.Contenedor?.id,
+    row?.contenedor?.id,
+    row?.id
+  ];
+
+  for (const candidate of candidates) {
+    const parsed = Number(candidate);
+    if (!Number.isNaN(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+
+  return 0;
+};
+
+const getLatestContainerRowByCode = (rows = [], code = "") => {
+  const normalizedCode = normalizeText(code);
+  if (!normalizedCode) return null;
+
+  return rows
+    .filter((row) => normalizeText(row?.Contenedor?.contenedor || row?.contenedor?.contenedor) === normalizedCode)
+    .sort((left, right) => getContainerIdFromRow(right) - getContainerIdFromRow(left))[0] || null;
+};
+
+const getUniqueLatestContainerRowsByCode = (rows = []) => {
+  const latestByCode = new Map();
+
+  rows.forEach((row) => {
+    const code = normalizeText(row?.Contenedor?.contenedor || row?.contenedor?.contenedor);
+    if (!code) return;
+
+    const previous = latestByCode.get(code);
+    if (!previous || getContainerIdFromRow(row) >= getContainerIdFromRow(previous)) {
+      latestByCode.set(code, row);
+    }
+  });
+
+  return Array.from(latestByCode.values()).sort(
+    (left, right) => getContainerIdFromRow(right) - getContainerIdFromRow(left)
+  );
+};
+
 const getUniqueReturnedContainers = (rows = []) => {
   const unique = new Map();
 
@@ -82,6 +127,9 @@ export {
   isContainerReturned,
   getContainerReturnInfo,
   filterActiveContainerRows,
+  getContainerIdFromRow,
+  getLatestContainerRowByCode,
+  getUniqueLatestContainerRowsByCode,
   getUniqueReturnedContainers,
   formatDateValue
 };

@@ -12,7 +12,7 @@ import { encontrarUnSerial, usarSeriales } from '@services/api/seguridad';
 import { listarMotivoDeUso } from '@services/api/motivoDeUso';
 import { listarMotivoDeRechazo } from '@services/api/motivoDeRechazo';
 import { agregarRechazo } from '@services/api/rechazos';
-import { filterActiveContainerRows } from '@utils/contenedorEstado';
+import { filterActiveContainerRows, getLatestContainerRowByCode, getUniqueLatestContainerRowsByCode } from '@utils/contenedorEstado';
 
 const MOTIVO_LLENADO_CONTENEDOR = "Lleneado de contenedor";
 const SERIALES_A_VERIFICAR = ["kit", "termografo"];
@@ -123,20 +123,10 @@ const FormularioDinamico = () => {
           (item) => normalizeCode(item.Contenedor?.contenedor).includes(normalizeCode(filtros.contenedor))
         );
 
-        const uniqueContenedores = Array.from(
-          new Map(
-            listadoFiltrado
-              .filter((item) => item?.Contenedor?.contenedor)
-              .map((item) => [normalizeCode(item.Contenedor?.contenedor), item])
-          ).values()
-        );
+        const uniqueContenedores = getUniqueLatestContainerRowsByCode(listadoFiltrado);
 
         setContenedores(uniqueContenedores);
-
-        const exactMatch = uniqueContenedores.find(
-          (item) => normalizeCode(item.Contenedor?.contenedor) === normalizeCode(filtros.contenedor)
-        );
-        setSelectedContenedor(exactMatch || null);
+        setSelectedContenedor(getLatestContainerRowByCode(uniqueContenedores, filtros.contenedor));
       })
       .catch((error) => {
         console.error("Error al cargar contenedores:", error);
@@ -251,9 +241,7 @@ const FormularioDinamico = () => {
         });
 
         const rows = filterActiveContainerRows(exactMatch?.data || []);
-        itemContenedor = rows.find(
-          (item) => normalizeCode(item.Contenedor?.contenedor) === contenedorIngresado
-        );
+        itemContenedor = getLatestContainerRowByCode(rows, contenedorIngresado);
       }
 
       if (!id_embarque || !itemContenedor) {

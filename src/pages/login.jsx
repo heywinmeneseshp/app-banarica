@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import axios from 'axios';
+import { Button, Modal } from 'react-bootstrap';
 import endPoints from '@services/api';
 import { loginWithCredentials, syncSessionFromProfile } from '@services/api/auth';
 import { encontrarEmpresa } from '@services/api/configuracion';
 import { useAuth } from '@hooks/useAuth';
+import { clearSessionNotice, getSessionNotice } from 'utils/session';
 import styles from '@styles/Login.module.css';
 import background from '@public/images/background.jpg';
 
@@ -15,6 +17,7 @@ export default function Login() {
     const passwordRef = useRef(null);
     const [errorMessage, setErrorMessage] = useState('');
     const [companyName, setCompanyName] = useState('');
+    const [sessionNotice, setSessionNoticeState] = useState('');
     const isLoggingIn = auth?.isLoggingIn ?? false;
 
     useEffect(() => {
@@ -28,6 +31,14 @@ export default function Login() {
         };
 
         loadCompany();
+    }, []);
+
+    useEffect(() => {
+        const message = getSessionNotice();
+        if (message) {
+            setSessionNoticeState(message);
+            clearSessionNotice();
+        }
     }, []);
 
     const submitHanlder = async (event) => {
@@ -133,6 +144,25 @@ export default function Login() {
                     </form>
                 </div>
             </div>
+
+            <Modal
+                show={Boolean(sessionNotice)}
+                onHide={() => setSessionNoticeState('')}
+                centered
+                backdrop="static"
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title>Sesion finalizada</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <p className="mb-0">{sessionNotice}</p>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="primary" onClick={() => setSessionNoticeState('')}>
+                        Entendido
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </>
     );
 }

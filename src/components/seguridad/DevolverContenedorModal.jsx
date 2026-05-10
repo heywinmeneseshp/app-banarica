@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import styles from "@components/shared/Formularios/Formularios.module.css";
 import Loader from "@components/shared/Loader";
-import { actualizarContenedor } from "@services/api/contenedores";
+import { crearContenedor } from "@services/api/contenedores";
 import { crearInspeccion } from "@services/api/inpecciones";
 import { RETURNED_STATUS } from "@utils/contenedorEstado";
 
@@ -23,31 +23,38 @@ export default function DevolverContenedorModal({
     [contenedor]
   );
 
-  const containerId = contenedor?.id || contenedor?.Contenedor?.id;
-
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!containerId) {
-      window.alert("No fue posible identificar el contenedor a devolver.");
+    if (!label.trim()) {
+      window.alert("No fue posible identificar el codigo del contenedor a devolver.");
       return;
     }
 
     if (!motivo.trim()) {
-      window.alert("Debes registrar el motivo de la devolución.");
+      window.alert("Debes registrar el motivo de la devolucion.");
       return;
     }
 
     setLoading(true);
 
     try {
-      await actualizarContenedor(containerId, {
+      const nuevoContenedor = await crearContenedor({
+        contenedor: label.trim().toUpperCase(),
         habilitado: false
       });
 
+      const containerId = nuevoContenedor?.id || nuevoContenedor?.data?.id;
+      if (!containerId) {
+        throw new Error("No fue posible crear el contenedor devuelto.");
+      }
+
       const now = new Date();
       const currentTime = now.toTimeString().split(" ")[0];
-      const agente = [usuario?.nombre, usuario?.apellido].filter(Boolean).join(" ") || usuario?.username || "Sistema";
+      const agente =
+        [usuario?.nombre, usuario?.apellido].filter(Boolean).join(" ").trim()
+        || usuario?.username
+        || "Sistema";
 
       await crearInspeccion({
         id_contenedor: containerId,
@@ -60,12 +67,12 @@ export default function DevolverContenedorModal({
         habilitado: true
       });
 
-      window.alert(`El contenedor ${label} fue marcado como devuelto por mal estado.`);
+      window.alert(`Se registro el contenedor ${label} como devuelto por mal estado.`);
       onSuccess?.();
       onClose?.();
     } catch (error) {
       console.error("Error al devolver contenedor:", error);
-      window.alert("No fue posible registrar la devolución del contenedor.");
+      window.alert("No fue posible registrar la devolucion del contenedor.");
     } finally {
       setLoading(false);
     }
@@ -76,7 +83,7 @@ export default function DevolverContenedorModal({
       <div className={styles.floatingform} style={{ maxWidth: "720px" }}>
         <div className="card">
           <div className="card-header d-flex justify-content-between align-items-center">
-            <span className="fw-bold">Devolución por mal estado</span>
+            <span className="fw-bold">Devolucion por mal estado</span>
             <button type="button" onClick={onClose} className="btn-close" aria-label="Cerrar" />
           </div>
 
@@ -85,13 +92,14 @@ export default function DevolverContenedorModal({
               <Loader loading={loading} />
 
               <div className="alert alert-warning mb-3">
-                El contenedor <strong>{label || "sin identificar"}</strong> dejará de aparecer en
-                los listados operativos y quedará disponible solo en el informe de devueltos.
+                Se creara un nuevo registro deshabilitado para el contenedor{" "}
+                <strong>{label || "sin identificar"}</strong> y quedara disponible en el informe
+                de devueltos.
               </div>
 
               <div className="mb-3">
                 <label htmlFor="motivo-devolucion" className="form-label fw-semibold">
-                  Motivo de devolución
+                  Motivo de devolucion
                 </label>
                 <textarea
                   id="motivo-devolucion"
@@ -99,7 +107,7 @@ export default function DevolverContenedorModal({
                   rows="5"
                   value={motivo}
                   onChange={(event) => setMotivo(event.target.value)}
-                  placeholder="Describe el daño o la condición encontrada"
+                  placeholder="Describe el dano o la condicion encontrada"
                   required
                 />
               </div>
@@ -110,7 +118,7 @@ export default function DevolverContenedorModal({
                 Cancelar
               </button>
               <button type="submit" className="btn btn-danger" disabled={loading}>
-                Confirmar devolución
+                Confirmar devolucion
               </button>
             </div>
           </form>

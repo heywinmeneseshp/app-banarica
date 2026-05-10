@@ -3,6 +3,7 @@ import Cookie from 'js-cookie';
 const TOKEN_KEY = 'token';
 const USER_KEY = 'usuario';
 const WAREHOUSES_KEY = 'almacenByUser';
+const SESSION_NOTICE_KEY = 'sessionNotice';
 const TOKEN_EXPIRATION_DAYS = 1 / 48;
 
 const parseJSON = (value, fallback = null) => {
@@ -32,6 +33,31 @@ const clearSessionStorage = () => {
 
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(WAREHOUSES_KEY);
+};
+
+const getSessionNotice = () => (
+    isBrowser ? sessionStorage.getItem(SESSION_NOTICE_KEY) || '' : ''
+);
+
+const setSessionNotice = (message) => {
+    if (!isBrowser) {
+        return;
+    }
+
+    if (!message) {
+        sessionStorage.removeItem(SESSION_NOTICE_KEY);
+        return;
+    }
+
+    sessionStorage.setItem(SESSION_NOTICE_KEY, message);
+};
+
+const clearSessionNotice = () => {
+    if (!isBrowser) {
+        return;
+    }
+
+    sessionStorage.removeItem(SESSION_NOTICE_KEY);
 };
 
 const clearSession = () => {
@@ -69,12 +95,15 @@ const sortWarehousesByName = (warehouses = []) => (
 
 export {
     TOKEN_EXPIRATION_DAYS,
+    clearSessionNotice,
     clearSession,
     clearSessionStorage,
+    getSessionNotice,
     getStoredUser,
     getStoredWarehouses,
     getToken,
     persistToken,
+    setSessionNotice,
     setStoredUser,
     setStoredWarehouses,
     sortWarehousesByName,

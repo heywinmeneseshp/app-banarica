@@ -988,6 +988,7 @@ const ListadoContenedores = () => {
           setOpenMasivo={(open) => updateState({ openActualizarMasivo: open })}
           titulo={"Actualizar contenedores"}
           endPointCargueMasivo={endPoints.listado.updateMasivo}
+          supportPartialResolution
           encabezados={{
             fecha: null, bl: null, contenedor: null,
             id_lugar_de_llenado: null, id_producto: null, cajas_unidades: null,

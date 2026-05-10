@@ -341,11 +341,13 @@ export default function TracecodePage() {
 
     try {
       const decoded = decodeTraceToken(token);
-      if (!decoded?.id) {
+      const containerId = Number(decoded?.id);
+
+      if (!containerId) {
         throw new Error("El token del contenedor no es valido.");
       }
 
-      const contenedor = await encontrarContenedor(decoded.id);
+      const contenedor = await encontrarContenedor(containerId);
       const contenedorCodigo = contenedor?.contenedor || decoded?.contenedor || "";
 
       const [
@@ -358,27 +360,29 @@ export default function TracecodePage() {
         paginarListado(1, 200, { contenedor: contenedorCodigo }),
         paginarInspecciones(1, 200, { contenedor: contenedorCodigo }),
         paginarRechazos(1, 200, { contenedor: contenedorCodigo }),
-        listarSeriales(null, null, { id_contenedor: decoded.id }),
+        listarSeriales(null, null, { id_contenedor: containerId }),
         listarInspecciones()
       ]);
 
       const listados = (listadoResponse?.data || []).filter(
-        (item) => item?.Contenedor?.id === decoded.id
+        (item) =>
+          Number(item?.Contenedor?.id) === containerId
+          && item?.habilitado !== false
       );
 
       const antinarcoticsRows = (inspeccionesResponse?.data || []).filter(
         (item) =>
-          item?.contenedor?.id === decoded.id
+          Number(item?.contenedor?.id) === containerId
           && !isEmptyInspectionZone(item?.Inspeccion?.zona || item?.zona)
       );
 
       const rechazos = (rechazosResponse?.data || []).filter(
-        (item) => item?.Contenedor?.id === decoded.id
+        (item) => Number(item?.Contenedor?.id) === containerId
       );
 
       const usersMap = buildUsersMap(serialesContenedor || [], antinarcoticsRows || [], rechazos || []);
       const inspeccionesContenedor = (inspeccionesGlobales || []).filter(
-        (item) => item?.id_contenedor === decoded.id
+        (item) => Number(item?.id_contenedor) === containerId
       );
 
       const emptyInspection =
@@ -399,7 +403,7 @@ export default function TracecodePage() {
         serialesContenedor: Array.isArray(serialesContenedor) ? serialesContenedor : [],
         rechazos,
         usersMap,
-        tokenData: decoded
+        tokenData: { ...decoded, id: containerId }
       });
     } catch (err) {
       console.error("Error cargando tracecode:", err);

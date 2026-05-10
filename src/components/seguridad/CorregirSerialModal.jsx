@@ -8,13 +8,13 @@ export default function CorregirSerialModal({
     onClose,
     onConfirm
 }) {
-    const [modoCorreccion, setModoCorreccion] = useState("revertir");
+    const [modoCorreccion, setModoCorreccion] = useState("");
     const [serialCorrecto, setSerialCorrecto] = useState("");
     const [observaciones, setObservaciones] = useState("");
 
     useEffect(() => {
         if (!open) {
-            setModoCorreccion("revertir");
+            setModoCorreccion("");
             setSerialCorrecto("");
             setObservaciones("");
         }
@@ -25,6 +25,11 @@ export default function CorregirSerialModal({
     }
 
     const confirmar = () => {
+        if (!modoCorreccion) {
+            window.alert("Debes seleccionar una accion antes de confirmar.");
+            return;
+        }
+
         onConfirm?.({
             modoCorreccion,
             serialCorrecto: serialCorrecto.trim().toUpperCase(),
@@ -61,20 +66,36 @@ export default function CorregirSerialModal({
                         <div className="d-flex gap-2 flex-wrap">
                             <button
                                 type="button"
-                                className={`btn btn-sm ${modoCorreccion === "revertir" ? "btn-warning" : "btn-outline-warning"}`}
-                                onClick={() => setModoCorreccion("revertir")}
+                                className={`btn btn-sm d-inline-flex align-items-center ${modoCorreccion === "revertir" ? "btn-warning shadow-sm" : "btn-outline-warning"}`}
+                                onClick={() => {
+                                    setModoCorreccion("revertir");
+                                    setSerialCorrecto("");
+                                }}
                             >
                                 <FaUndoAlt className="me-2" />
                                 Solo revertir
+                                {modoCorreccion === "revertir" && (
+                                    <span className="ms-2 badge text-bg-dark">Activo</span>
+                                )}
                             </button>
                             <button
                                 type="button"
-                                className={`btn btn-sm ${modoCorreccion === "reemplazar" ? "btn-primary" : "btn-outline-primary"}`}
+                                className={`btn btn-sm d-inline-flex align-items-center ${modoCorreccion === "reemplazar" ? "btn-primary shadow-sm" : "btn-outline-primary"}`}
                                 onClick={() => setModoCorreccion("reemplazar")}
                             >
                                 <FaExchangeAlt className="me-2" />
                                 Revertir y reemplazar
+                                {modoCorreccion === "reemplazar" && (
+                                    <span className="ms-2 badge text-bg-light">Activo</span>
+                                )}
                             </button>
+                        </div>
+                        <div className={`small mt-2 ${modoCorreccion === "revertir" ? "text-warning-emphasis" : modoCorreccion === "reemplazar" ? "text-primary" : "text-muted"}`}>
+                            {modoCorreccion === "revertir"
+                                ? "Se retirara el serial errado del contenedor y no se asignara un reemplazo."
+                                : modoCorreccion === "reemplazar"
+                                ? "Se retirara el serial errado y se asignara un serial correcto disponible."
+                                : "Selecciona una accion para continuar con la correccion."}
                         </div>
                     </div>
 
@@ -92,7 +113,7 @@ export default function CorregirSerialModal({
                                 placeholder="Ingresa el serial disponible correcto"
                             />
                             <div className="form-text">
-                                El serial correcto debe estar disponible y pertenecer al mismo articulo.
+                                Ingresa el serial interno. Debe estar disponible y pertenecer al mismo articulo.
                             </div>
                         </div>
                     )}
@@ -120,7 +141,7 @@ export default function CorregirSerialModal({
                         type="button"
                         className="btn btn-success"
                         onClick={confirmar}
-                        disabled={loading}
+                        disabled={loading || !modoCorreccion}
                     >
                         {loading ? "Corrigiendo..." : "Confirmar correccion"}
                     </button>

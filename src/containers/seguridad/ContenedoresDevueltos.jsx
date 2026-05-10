@@ -1,7 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { filtrarContenedor } from "@services/api/contenedores";
 import { listarInspecciones } from "@services/api/inpecciones";
-import { formatDateValue, RETURNED_STATUS } from "@utils/contenedorEstado";
+import { RETURNED_STATUS } from "@utils/contenedorEstado";
+
+const formatDateTimeValue = (value) => {
+  if (!value) return "Sin fecha registrada";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  return date.toLocaleString("es-CO", {
+    timeZone: "America/Bogota"
+  });
+};
 
 const getReturnInspectionMap = (inspecciones = []) => {
   const map = new Map();
@@ -9,10 +20,14 @@ const getReturnInspectionMap = (inspecciones = []) => {
   inspecciones
     .filter(
       (item) =>
-        String(item?.zona || "").toUpperCase() === RETURNED_STATUS ||
-        String(item?.observaciones || "").toLowerCase().includes("devuelto")
+        String(item?.zona || "").toUpperCase() === RETURNED_STATUS
+        || String(item?.observaciones || "").toLowerCase().includes("devuelto")
     )
-    .sort((a, b) => new Date(b.fecha_inspeccion || b.createdAt || 0) - new Date(a.fecha_inspeccion || a.createdAt || 0))
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt || b.fecha_inspeccion || 0)
+        - new Date(a.createdAt || a.fecha_inspeccion || 0)
+    )
     .forEach((item) => {
       if (!map.has(item.id_contenedor)) {
         map.set(item.id_contenedor, item);
@@ -58,12 +73,17 @@ export default function ContenedoresDevueltos() {
         return {
           ...item,
           motivo: inspeccion?.observaciones || "Sin motivo registrado",
-          fecha: inspeccion?.fecha_inspeccion || item.updatedAt || item.createdAt || "",
+          fecha_registro:
+            inspeccion?.createdAt
+            || inspeccion?.fecha_inspeccion
+            || item.createdAt
+            || item.updatedAt
+            || "",
           agente: inspeccion?.agente || "Sin agente registrado",
           origen: inspeccion?.observaciones?.match(/^\[(.*?)\]/)?.[1] || "Sin origen"
         };
       })
-      .sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0));
+      .sort((a, b) => new Date(b.fecha_registro || 0) - new Date(a.fecha_registro || 0));
   }, [contenedores, filtro, inspeccionesMap]);
 
   return (
@@ -72,7 +92,7 @@ export default function ContenedoresDevueltos() {
         <div>
           <h2 className="mb-1">Informe de contenedores devueltos</h2>
           <p className="text-muted mb-0">
-            Contenedores retirados de la operación por encontrarse en mal estado.
+            Contenedores retirados de la operacion por encontrarse en mal estado.
           </p>
         </div>
 
@@ -95,7 +115,7 @@ export default function ContenedoresDevueltos() {
             <thead>
               <tr>
                 <th>Contenedor</th>
-                <th>Fecha devolución</th>
+                <th>Fecha registro</th>
                 <th>Agente</th>
                 <th>Origen</th>
                 <th>Motivo</th>
@@ -112,7 +132,7 @@ export default function ContenedoresDevueltos() {
                 rows.map((item) => (
                   <tr key={item.id}>
                     <td className="text-center fw-semibold">{item.contenedor}</td>
-                    <td className="text-center">{formatDateValue(item.fecha)}</td>
+                    <td className="text-center text-nowrap">{formatDateTimeValue(item.fecha_registro)}</td>
                     <td className="text-center">{item.agente}</td>
                     <td className="text-center text-capitalize">{item.origen.replaceAll("_", " ")}</td>
                     <td>{item.motivo}</td>

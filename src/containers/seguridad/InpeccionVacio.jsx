@@ -6,7 +6,6 @@ import { useAuth } from "@hooks/useAuth";
 import { crearInspeccionVacio, encontrarUnSerial } from "@services/api/seguridad";
 import { filtrarSemanaRangoMes } from "@services/api/semanas";
 import { encontrarModulo } from "@services/api/configuracion";
-import { filtrarContenedor } from "@services/api/contenedores";
 import endPoints from "@services/api";
 import Loader from "@components/shared/Loader";
 import InsumoInspeccVacio from "@components/seguridad/InsumoInspeccVacio";
@@ -77,6 +76,32 @@ const createFoodValidation = () => ({
 
 const getCurrentDate = () => new Date().toISOString().split("T")[0];
 const getCurrentTime = () => new Date().toTimeString().split(" ")[0];
+const normalizeValue = (value) => String(value || "").trim();
+const normalizeUppercase = (value) => normalizeValue(value).toUpperCase();
+
+const buildInitialFormValues = ({ baseFields, insumos, savedValues, defaultWeek }) => {
+  const nextValues = {};
+
+  baseFields.forEach((field) => {
+    if (field.id === "semana") {
+      nextValues[field.id] = defaultWeek || "";
+      return;
+    }
+
+    if (field.id === "fecha") {
+      nextValues[field.id] = getCurrentDate();
+      return;
+    }
+
+    nextValues[field.id] = savedValues?.[field.id] || "";
+  });
+
+  insumos.forEach((insumo) => {
+    nextValues[insumo.id] = "";
+  });
+
+  return nextValues;
+};
 
 const buildInspectionSummary = ({
   baseObservaciones,
@@ -108,6 +133,7 @@ export default function InspeccionVacio() {
   const { getUser } = useAuth();
   const router = useRouter();
   const formRef = useRef();
+  const inputRefs = useRef({});
   const user = getUser();
 
   const [state, setState] = useState({
@@ -147,9 +173,40 @@ export default function InspeccionVacio() {
   } = state;
 
   const setStateValue = (key, value) => setState((prev) => ({ ...prev, [key]: value }));
+  const setInputRef = useCallback((id, element) => {
+    if (!element) {
+      delete inputRefs.current[id];
+      return;
+    }
+
+    inputRefs.current[id] = element;
+  }, []);
   const capitalizarPrimeraLetra = useCallback(
     (text) => (text ? text.charAt(0).toUpperCase() + text.slice(1).toLowerCase() : ""),
     []
+  );
+  const focusField = useCallback((id) => {
+    const field = inputRefs.current[id];
+    if (!field) return;
+
+    field.focus();
+    if (typeof field.select === "function" && field.value) {
+      field.select();
+    }
+  }, []);
+
+  const focusNextField = useCallback(
+    (currentId) => {
+      const orderedIds = inputFields.map((field) => field.id);
+      const currentIndex = orderedIds.indexOf(currentId);
+      if (currentIndex === -1) return;
+
+      const nextId = orderedIds[currentIndex + 1];
+      if (nextId) {
+        focusField(nextId);
+      }
+    },
+    [focusField, inputFields]
   );
 
   const canManageMassUpload = useCallback(
@@ -242,25 +299,18 @@ export default function InspeccionVacio() {
         defaultValue: id === "fecha" ? getCurrentDate() : inputsGuardados?.[id] || ""
       }));
 
-      const initialFormValues = {};
-      camposBase.forEach((field) => {
-        if (field.id === "semana") {
-          initialFormValues[field.id] = semanaSeleccionada?.consecutivo || "";
-        } else if (field.id === "fecha") {
-          initialFormValues[field.id] = getCurrentDate();
-        } else {
-          initialFormValues[field.id] = inputsGuardados?.[field.id] || "";
-        }
-      });
-
-      insumos.forEach((insumo) => {
-        initialFormValues[insumo.id] = "";
+      const defaultWeek = semanaSeleccionada?.consecutivo || "";
+      const initialFormValues = buildInitialFormValues({
+        baseFields: camposBase,
+        insumos,
+        savedValues: inputsGuardados,
+        defaultWeek
       });
 
       setState((prev) => ({
         ...prev,
         semanas: semanasData,
-        semana: semanaSeleccionada?.consecutivo || "",
+        semana: defaultWeek,
         inputFields: [...camposBase, ...insumos],
         formValues: initialFormValues,
         inspectionChecks: digitalForm.inspectionChecks || createInspectionChecks(),
@@ -293,12 +343,30 @@ export default function InspeccionVacio() {
     loadData();
   }, [resetInsumos]);
 
+  useEffect(() => {
+    if (inputFields.length > 0) {
+      focusField("contenedor");
+    }
+  }, [focusField, inputFields.length]);
+
   const handleRemove = useCallback((id) => {
     setState((prev) => ({
       ...prev,
       inputFields: prev.inputFields.filter((item) => item.id !== id)
     }));
   }, []);
+
+  const handleFieldKeyDown = useCallback(
+    (event) => {
+      if (event.key !== "Enter" || event.target.tagName === "TEXTAREA") {
+        return;
+      }
+
+      event.preventDefault();
+      focusNextField(event.target.id);
+    },
+    [focusNextField]
+  );
 
   const handleInvalid = useCallback((event) => {
     event.preventDefault();
@@ -337,65 +405,76 @@ export default function InspeccionVacio() {
   const handleChange = useCallback(
     (event) => {
       const { id, value } = event.target;
+      const nextValue = id === "contenedor" ? normalizeUppercase(value) : value;
 
-      setState((prev) => ({
-        ...prev,
-        formValues: {
-          ...prev.formValues,
-          [id]: value
-        }
-      }));
-
-      if (fieldErrors[id]) {
-        setState((prev) => ({
+      setState((prev) => {
+        const nextState = {
           ...prev,
-          fieldErrors: { ...prev.fieldErrors, [id]: false }
-        }));
+          formValues: {
+            ...prev.formValues,
+            [id]: nextValue
+          }
+        };
+
+        if (prev.fieldErrors[id]) {
+          nextState.fieldErrors = { ...prev.fieldErrors, [id]: false };
+        }
+
+        return nextState;
+      });
+
+      if (event.target.value !== nextValue) {
+        event.target.value = nextValue;
       }
 
       event.target.setCustomValidity("");
 
       if (id === "contenedor" || id === "fecha") {
-        const formData = new FormData(formRef.current);
         localStorage.setItem(
           STORAGE_KEYS.INSPECCION_VACIO,
           JSON.stringify({
-            contenedor: formData.get("contenedor"),
-            fecha: formData.get("fecha")
+            contenedor: id === "contenedor" ? nextValue : formValues.contenedor || "",
+            fecha: id === "fecha" ? nextValue : formValues.fecha || ""
           })
         );
       }
 
       if (id === "observaciones") {
-        localStorage.setItem(STORAGE_KEYS.OBSERVACIONES, value);
+        localStorage.setItem(STORAGE_KEYS.OBSERVACIONES, nextValue);
+      }
+
+      const currentField = inputRefs.current[id];
+      const canAdvanceByLength =
+        currentField?.type !== "date"
+        && id !== "semana"
+        && currentField?.maxLength
+        && normalizeValue(nextValue).length >= Number(currentField.maxLength);
+
+      if (canAdvanceByLength) {
+        focusNextField(id);
       }
     },
-    [fieldErrors]
+    [focusNextField, formValues.contenedor, formValues.fecha]
   );
 
   const verificarSeriales = useCallback(async (serialesList) => {
-    const existingSerials = new Map();
+    const serialMap = new Map();
     const duplicates = new Map();
-    let isVerified = true;
 
-    for (const { serial, label } of serialesList) {
-      try {
-        const [res] = await encontrarUnSerial({ serial, available: [true] });
+    serialesList.forEach(({ serial, label }) => {
+      const normalizedSerial = normalizeUppercase(serial);
+      if (!normalizedSerial) return;
 
-        if (!res) {
-          isVerified = false;
-          const proceed = window.confirm(`El campo "${label}" no existe.`);
-          if (!proceed) return { success: false };
-        } else if (existingSerials.has(serial)) {
-          duplicates.set(serial, [...(duplicates.get(serial) || []), label]);
-        } else {
-          existingSerials.set(serial, label);
-        }
-      } catch (error) {
-        window.alert(`Error al verificar el serial ${serial} (${label}): ${error.message}`);
-        return { success: false, error };
+      if (serialMap.has(normalizedSerial)) {
+        duplicates.set(normalizedSerial, [
+          ...(duplicates.get(normalizedSerial) || [serialMap.get(normalizedSerial)]),
+          label
+        ]);
+        return;
       }
-    }
+
+      serialMap.set(normalizedSerial, label);
+    });
 
     if (duplicates.size > 0) {
       const duplicatesMsg = Array.from(duplicates.entries())
@@ -405,10 +484,36 @@ export default function InspeccionVacio() {
       return { success: false };
     }
 
-    return {
-      success: isVerified,
-      seriales: Array.from(existingSerials.keys())
-    };
+    try {
+      const verificationResults = await Promise.all(
+        Array.from(serialMap.keys()).map(async (serial) => {
+          const response = await encontrarUnSerial({ serial, available: [true] });
+          return {
+            serial,
+            exists: Boolean(response?.[0]),
+            label: serialMap.get(serial)
+          };
+        })
+      );
+
+      const missingItems = verificationResults.filter((item) => !item.exists);
+      if (missingItems.length > 0) {
+        const proceed = window.confirm(
+          `No existen ${missingItems.length} serial(es):\n${missingItems
+            .map((item) => `- ${item.label}: ${item.serial}`)
+            .join("\n")}\n\n¿Deseas continuar?`
+        );
+        if (!proceed) return { success: false };
+      }
+
+      return {
+        success: true,
+        seriales: verificationResults.map((item) => item.serial)
+      };
+    } catch (error) {
+      window.alert(`Error al verificar seriales: ${error.message}`);
+      return { success: false, error };
+    }
   }, []);
 
   const updateInspectionCheck = (id, field, value) => {
@@ -448,27 +553,13 @@ export default function InspeccionVacio() {
   };
 
   const buscarContenedorParaDevolucion = async () => {
-    const code = String(formValues.contenedor || "").trim().toUpperCase();
+    const code = normalizeUppercase(formValues.contenedor);
     if (!code) {
       window.alert("Ingresa el contenedor antes de registrar la devolución.");
       return;
     }
 
-    try {
-      const response = await filtrarContenedor({ contenedor: code, habilitado: true });
-      const containers = response?.data || response || [];
-      const exactMatch = containers.find((item) => item.contenedor === code);
-
-      if (!exactMatch) {
-        window.alert("No se encontró un contenedor activo con ese código.");
-        return;
-      }
-
-      setStateValue("contenedorDevuelto", exactMatch);
-    } catch (error) {
-      console.error("Error al buscar contenedor:", error);
-      window.alert("No fue posible consultar el contenedor para la devolución.");
-    }
+    setStateValue("contenedorDevuelto", { contenedor: code });
   };
 
   const canSubmit = useMemo(
@@ -525,7 +616,7 @@ export default function InspeccionVacio() {
 
         const response = await crearInspeccionVacio({
           fecha: formValues.fecha || getCurrentDate(),
-          contenedor: String(formValues.contenedor || "").toUpperCase(),
+          contenedor: normalizeUppercase(formValues.contenedor),
           observaciones: fullObservations,
           seriales,
           semana: semanaValue,
@@ -541,11 +632,13 @@ export default function InspeccionVacio() {
         setState((prev) => ({
           ...prev,
           observaciones: "",
-          formValues: Object.keys(prev.formValues).reduce((acc, key) => {
-            acc[key] = key === "fecha" ? getCurrentDate() : "";
-            return acc;
-          }, {}),
-          semana: "",
+          formValues: buildInitialFormValues({
+            baseFields: prev.inputFields.filter((field) => Object.prototype.hasOwnProperty.call(FIELD_CONFIG, field.id)),
+            insumos: prev.inputFields.filter((field) => field.eliminar),
+            savedValues: {},
+            defaultWeek: prev.semana || semanaValue
+          }),
+          semana: prev.semana || semanaValue,
           inspectionChecks: createInspectionChecks(),
           foodValidation: createFoodValidation(),
           foodValidationResult: null
@@ -554,6 +647,7 @@ export default function InspeccionVacio() {
         localStorage.removeItem(STORAGE_KEYS.INSPECCION_VACIO);
         localStorage.removeItem(STORAGE_KEYS.OBSERVACIONES);
         localStorage.removeItem(STORAGE_KEYS.FORMULARIO_DIGITAL);
+        focusField("contenedor");
 
         if (!window.confirm("¿Deseas cargar otro contenedor?")) {
           router.push("/Seguridad/Dashboard");
@@ -575,7 +669,8 @@ export default function InspeccionVacio() {
       router,
       semana,
       user,
-      verificarSeriales
+      verificarSeriales,
+      focusField
     ]
   );
 
@@ -620,6 +715,7 @@ export default function InspeccionVacio() {
                 {field.id === "semana" ? (
                   <>
                     <input
+                      ref={(element) => setInputRef(field.id, element)}
                       id={field.id}
                       name={field.id}
                       type={field.type}
@@ -632,6 +728,7 @@ export default function InspeccionVacio() {
                       list={`${field.id}-list`}
                       autoComplete="off"
                       placeholder={field.placeholder}
+                      onKeyDown={handleFieldKeyDown}
                     />
                     <datalist id={`${field.id}-list`}>
                       {semanas.map((s) => (
@@ -641,6 +738,7 @@ export default function InspeccionVacio() {
                   </>
                 ) : (
                   <input
+                    ref={(element) => setInputRef(field.id, element)}
                     id={field.id}
                     name={field.id}
                     type={field.type}
@@ -652,6 +750,7 @@ export default function InspeccionVacio() {
                     value={formValues[field.id] || ""}
                     placeholder={field.placeholder}
                     autoComplete="off"
+                    onKeyDown={handleFieldKeyDown}
                   />
                 )}
 
@@ -785,8 +884,9 @@ export default function InspeccionVacio() {
                 className="form-control"
                 value={observaciones || ""}
                 onChange={(event) => {
-                  setStateValue("observaciones", event.target.value);
-                  localStorage.setItem(STORAGE_KEYS.OBSERVACIONES, event.target.value);
+                  const nextValue = event.target.value;
+                  setStateValue("observaciones", nextValue);
+                  localStorage.setItem(STORAGE_KEYS.OBSERVACIONES, nextValue);
                 }}
                 style={{ height: "100px" }}
                 placeholder=" "

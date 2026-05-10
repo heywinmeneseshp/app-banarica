@@ -13,12 +13,14 @@ const CargueMasivo = ({
     encabezados,
     titulo,
     authRequired = false,
-    onSuccess
+    onSuccess,
+    supportPartialResolution = false
 }) => {
     const [archivo, setArchivo] = useState(null);
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [progress, setProgress] = useState(0);
+    const [pendingResolution, setPendingResolution] = useState(null);
 
     const handleArchivoChange = (event) => {
         const file = event.target.files[0];
@@ -54,7 +56,28 @@ const CargueMasivo = ({
         }
     };
 
-    const handleCargar = async () => {
+    const descargarNoEncontrados = () => {
+        if (!pendingResolution?.missingRows?.length) {
+            return;
+        }
+
+        const rows = pendingResolution.missingRows.map((item) => ({
+            fecha: item.fecha || "",
+            bl: item.bl || "",
+            contenedor: item.contenedor || "",
+            id_lugar_de_llenado: item.id_lugar_de_llenado ?? "",
+            id_producto: item.id_producto ?? "",
+            cajas_unidades: item.cajas_unidades ?? "",
+            motivo: item.reason || "Sin coincidencia",
+        }));
+
+        const workbook = XLSX.utils.book_new();
+        const worksheet = XLSX.utils.json_to_sheet(rows);
+        XLSX.utils.book_append_sheet(workbook, worksheet, "No encontrados");
+        XLSX.writeFile(workbook, `no-encontrados-${titulo?.replace(/\s+/g, "-").toLowerCase() || "cargue"}.xlsx`);
+    };
+
+    const handleCargar = async (allowPartial = false) => {
         if (!archivo) {
             alert("Por favor selecciona un archivo antes de cargar.");
             return;
@@ -84,13 +107,21 @@ const CargueMasivo = ({
                 requestConfig.headers.Authorization = `Bearer ${token}`;
             }
 
-            const response = await axios.post(endPointCargueMasivo, data, requestConfig);
-            const result = response?.data || {};
+            const payload = supportPartialResolution
+                ? { rows: data, allowPartial }
+                : data;
+            const response = await axios.post(endPointCargueMasivo, payload, requestConfig);
+            const result = response?.data?.data || response?.data || {};
 
             setProgress(80);
 
             if (result?.error) {
                 throw new Error(result.message || "Error en el procesamiento de los datos");
+            }
+
+            if (result?.requiresConfirmation) {
+                setPendingResolution(result);
+                return;
             }
 
             if (result?.results?.some((item) => item.error)) {
@@ -109,8 +140,13 @@ const CargueMasivo = ({
 
                 alert(`Carga parcialmente exitosa. Errores encontrados:\n${mensajeErrores}`);
             } else {
-                alert(result?.message || "Carga exitosa");
+                if (result?.partial && result?.missingCount > 0) {
+                    alert(`${result?.message || "Carga parcial exitosa"}. Coincidencias cargadas: ${result.total}. No encontrados: ${result.missingCount}.`);
+                } else {
+                    alert(result?.message || "Carga exitosa");
+                }
                 setOpenMasivo(false);
+                setPendingResolution(null);
                 if (typeof onSuccess === "function") {
                     onSuccess(result);
                 }
@@ -195,6 +231,52 @@ const CargueMasivo = ({
                                         </Button>
                                     </div>
                                 </div>
+
+                                {pendingResolution && (
+                                    <div className="mt-4 border rounded p-3 bg-light">
+                                        <div className="fw-bold text-dark mb-2">Coincidencias incompletas</div>
+                                        <div className="small text-muted mb-3">
+                                            Se encontraron {pendingResolution.processableCount} registros listos para actualizar y {pendingResolution.missingCount} sin coincidencia.
+                                            Puedes descargar los no encontrados o continuar solo con los que si existen.
+                                        </div>
+
+                                        <div className="table-responsive mb-3" style={{ maxHeight: "240px" }}>
+                                            <table className="table table-sm table-bordered mb-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Fecha</th>
+                                                        <th>BL</th>
+                                                        <th>Contenedor</th>
+                                                        <th>Motivo</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {pendingResolution.missingRows.map((item, index) => (
+                                                        <tr key={`${item.contenedor || "sin-contenedor"}-${item.fecha || "sin-fecha"}-${index}`}>
+                                                            <td>{item.fecha || "-"}</td>
+                                                            <td>{item.bl || "-"}</td>
+                                                            <td>{item.contenedor || "-"}</td>
+                                                            <td>{item.reason || "Sin coincidencia"}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <div className="d-flex flex-column flex-md-row gap-2">
+                                            <Button variant="outline-secondary" onClick={descargarNoEncontrados} disabled={loading}>
+                                                Descargar no encontrados
+                                            </Button>
+                                            <Button
+                                                variant="success"
+                                                onClick={() => handleCargar(true)}
+                                                disabled={loading || pendingResolution.processableCount === 0}
+                                            >
+                                                Cargar coincidencias
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {loading && (
                                     <div className="mt-3 text-center">

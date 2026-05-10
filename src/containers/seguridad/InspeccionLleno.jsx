@@ -325,14 +325,18 @@ export default function InspeccionLLeno() {
         const listado = await paginarListado(1, 25, filters);
         const rows = filterActiveContainerRows(listado.data || []);
 
-        const uniqueContainers = Array.from(
-          new Map(
-            rows
-              .map((item) => item?.Contenedor)
-              .filter(Boolean)
-              .map((item) => [item.id, item])
-          ).values()
-        );
+        const uniqueContainersMap = new Map();
+        rows
+          .map((item) => item?.Contenedor)
+          .filter(Boolean)
+          .forEach((item) => {
+            const code = String(item?.contenedor || "").trim().toUpperCase();
+            if (code && !uniqueContainersMap.has(code)) {
+              uniqueContainersMap.set(code, item);
+            }
+          });
+
+        const uniqueContainers = Array.from(uniqueContainersMap.values());
 
         setContenedores(uniqueContainers);
         setValidation((prev) => ({ ...prev, contenedor: uniqueContainers.length > 0 }));
