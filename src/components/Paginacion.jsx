@@ -10,9 +10,16 @@ const Paginacion = ({ setPagination, pagination, total, limit }) => {
     let totales = Math.ceil(total/limit);
 
     const handleBotonPagionation = (number, pagination, setPagination) => {
-        if (pagination > 0) setPagination(pagination + number);
-        if (number == 0) setPagination(1);
-        if (number.tamanho) setPagination(number.tamanho);
+        if (typeof number === 'object' && number.tamanho) {
+            setPagination(number.tamanho);
+            return;
+        }
+        if (number === 0) {
+            setPagination(1);
+            return;
+        }
+        const next = pagination + number;
+        if (next > 0) setPagination(next);
     };
     return (
         <>

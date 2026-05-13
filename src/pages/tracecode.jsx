@@ -9,6 +9,7 @@ import { listarInspecciones, paginarInspecciones } from "@services/api/inpeccion
 import { paginarListado } from "@services/api/listado";
 import { paginarRechazos } from "@services/api/rechazos";
 import { corregirAsignacionSerial, listarSeriales } from "@services/api/seguridad";
+import { obtenerPorContenedor } from "@services/api/carrusel";
 import { getToken } from "utils/session";
 import { decodeTraceToken } from "@utils/tracecode";
 import { getContainerReturnInfo, isContainerReturned } from "@utils/contenedorEstado";
@@ -22,7 +23,8 @@ const EMPTY_DATA = {
   serialesContenedor: [],
   rechazos: [],
   usersMap: new Map(),
-  tokenData: null
+  tokenData: null,
+  transportadora: null
 };
 
 const isEmptyInspectionZone = (zone) =>
@@ -394,6 +396,9 @@ export default function TracecodePage() {
         (item) => !isEmptyInspectionZone(item?.zona)
       );
 
+      const carruselItem = await obtenerPorContenedor(containerId);
+      const transportadora = carruselItem?.transportadora || null;
+
       setDetail({
         contenedor,
         listados,
@@ -403,7 +408,8 @@ export default function TracecodePage() {
         serialesContenedor: Array.isArray(serialesContenedor) ? serialesContenedor : [],
         rechazos,
         usersMap,
-        tokenData: { ...decoded, id: containerId }
+        tokenData: { ...decoded, id: containerId },
+        transportadora
       });
     } catch (err) {
       console.error("Error cargando tracecode:", err);
@@ -671,6 +677,10 @@ export default function TracecodePage() {
                   <div className="col-12 col-md-6">
                     <div className="text-muted small">Naviera</div>
                     <div className="fw-semibold">{embarque?.Naviera?.navieras || embarque?.Naviera?.cod || "No registrada"}</div>
+                  </div>
+                  <div className="col-12 col-md-6">
+                    <div className="text-muted small">Transportadora</div>
+                    <div className="fw-semibold">{detail.transportadora?.razon_social || "No registrada"}</div>
                   </div>
                   <div className="col-12 col-md-6">
                     <div className="text-muted small">Buque</div>

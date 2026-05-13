@@ -4,6 +4,8 @@ import styles from "@components/shared/Formularios/Formularios.module.css";
 import { Form, Col, Row, Button } from 'react-bootstrap';
 import { actualizarModulo, encontrarModulo } from '@services/api/configuracion';
 import { listarProductosSeguridad } from '@services/api/seguridad';
+import { obtenerPorTransportadora } from '@services/api/carrusel';
+import { listarTransportadoras } from '@services/api/transportadoras';
 
 // 🎨 Estilos y configuración base (inmutables) - SIN CAMBIOS
 const STYLES = Object.freeze({
@@ -33,15 +35,30 @@ const BASE_DATA = Object.freeze({
 });
 
 // 🔧 Utilidades - SIN CAMBIOS
-const getUniqueBuques = (data) =>
-  [...new Set(data?.map(item => item?.Embarque?.Buque?.buque).filter(Boolean))];
+const getUniqueBuques = (data, transportadoraContenedorIds) => {
+  if (!transportadoraContenedorIds || transportadoraContenedorIds.size === 0) {
+    return [...new Set(data?.map(item => item?.Embarque?.Buque?.buque).filter(Boolean))];
+  }
+  return [...new Set(
+    data
+      ?.filter(item => transportadoraContenedorIds.has(item.Contenedor?.id))
+      .map(item => item?.Embarque?.Buque?.buque)
+      .filter(Boolean)
+  )];
+};
 
 // 🧩 Construcción de la lista del carrusel (filtra por buque) - SIN CAMBIOS
-const buildCarruselList = (data, formData) => {
+const buildCarruselList = (data, formData, transportadoraContenedorIds) => {
   if (!Array.isArray(data)) return [];
 
-  // 1️⃣ Filtrar por buque seleccionado (ignorando mayúsculas/minúsculas)
-  const filteredData = data.filter(item => {
+  // 1️⃣ Filtrar por transportadora si está seleccionada
+  let filtered = data;
+  if (transportadoraContenedorIds && transportadoraContenedorIds.size > 0) {
+    filtered = filtered.filter(item => transportadoraContenedorIds.has(item.Contenedor?.id));
+  }
+
+  // 2️⃣ Filtrar por buque seleccionado (ignorando mayúsculas/minúsculas)
+  const filteredData = filtered.filter(item => {
     const buqueName = item.Embarque?.Buque?.buque?.toLowerCase?.() || '';
     const selected = formData.buque?.toLowerCase?.() || '';
     return buqueName === selected;
@@ -91,10 +108,12 @@ const buildCarruselList = (data, formData) => {
 const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
   const [buques, setBuques] = useState([]);
   const [formData, setFormData] = useState({
-    isoCode: '', estado: '', sello: "", origen: '', empaque: '', observacion: '', buque: ''
+    isoCode: '', estado: '', sello: "", origen: '', empaque: '', observacion: '', buque: '', transportadora: ''
   });
   const [insumoSeg, setInsumoSeg] = useState([]);
   const [enviando, setEnviando] = useState(false);
+  const [transportadoras, setTransportadoras] = useState([]);
+  const [transportadoraContenedorIds, setTransportadoraContenedorIds] = useState(null);
 
   // Cargar configuración y buques únicos
   useEffect(() => {
@@ -106,11 +125,38 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
         setBuques(getUniqueBuques(data));
         const producto = await listarProductosSeguridad();
         setInsumoSeg(producto);
+        const transportadorasData = await listarTransportadoras();
+        setTransportadoras(Array.isArray(transportadorasData) ? transportadorasData : []);
       } catch (error) {
         console.error('Error al cargar configuración:', error);
       }
     })();
   }, [data]);
+
+  // Cuando cambia transportadora, obtener contenedores del carrusel
+  useEffect(() => {
+    (async () => {
+      if (!formData.transportadora) {
+        setTransportadoraContenedorIds(null);
+        setBuques(getUniqueBuques(data));
+        return;
+      }
+      try {
+        const carruselItems = await obtenerPorTransportadora(formData.transportadora);
+        const ids = new Set((carruselItems || []).map(item => item.id_contenedor));
+        setTransportadoraContenedorIds(ids);
+        setBuques(getUniqueBuques(data, ids));
+        if (formData.buque) {
+          const buquesFiltrados = getUniqueBuques(data, ids);
+          if (!buquesFiltrados.includes(formData.buque)) {
+            setFormData(prev => ({ ...prev, buque: '' }));
+          }
+        }
+      } catch (error) {
+        console.error('Error al cargar carrusel por transportadora:', error);
+      }
+    })();
+  }, [formData.transportadora, data]);
 
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
@@ -126,7 +172,7 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
     }
   }, [formData]);
 
-  const listaCarrusel = useMemo(() => buildCarruselList(data, formData), [data, formData]);
+  const listaCarrusel = useMemo(() => buildCarruselList(data, formData, transportadoraContenedorIds), [data, formData, transportadoraContenedorIds]);
 
   const shipInfo = useMemo(() => ({
     nombre: formData.buque || 'Buque',
@@ -293,26 +339,29 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
     }
   };
 
-  // 📧 Enviar Excel por correo (NUEVA FUNCIONALIDAD)
+  // 📧 Enviar Excel por correo
   const enviarExcelPorCorreo = async () => {
-    if (!formData.correo) {
-      alert('Por favor ingresa un correo destino');
+    const transportadoraSel = transportadoras.find(t => String(t.id) === String(formData.transportadora));
+    const correosTransportadora = transportadoraSel?.email?.trim() || '';
+
+    if (!correosTransportadora) {
+      alert('La transportadora seleccionada no tiene correos registrados. Agrega correos en el modulo de transportadoras.');
       return;
     }
 
-    // ACEPTA UNO O VARIOS EMAILS SEPARADOS POR COMA
-    const multipleEmailRegex = /^([^\s@]+@[^\s@]+\.[^\s@]+)(\s*,\s*[^\s@]+@[^\s@]+\.[^\s@]+)*$/;
-
-    if (!multipleEmailRegex.test(formData.correo)) {
-      alert('Por favor ingresa uno o varios correos electrónicos válidos, separados por comas.');
-      return;
+    const ccValue = formData.correo?.trim();
+    if (ccValue) {
+      const multipleEmailRegex = /^([^\s@]+@[^\s@]+\.[^\s@]+)(\s*,\s*[^\s@]+@[^\s@]+\.[^\s@]+)*$/;
+      if (!multipleEmailRegex.test(ccValue)) {
+        alert('Uno o mas correos en CC no son validos. Verifica el formato.');
+        return;
+      }
     }
 
     try {
       setEnviando(true);
       const buffer = await generarExcel();
 
-      // Convertir buffer a base64
       const base64String = btoa(
         new Uint8Array(buffer).reduce(
           (data, byte) => data + String.fromCharCode(byte),
@@ -328,10 +377,9 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
         hour12: false
       });
 
-      // Preparar datos para enviar al backend
       const datosCorreo = {
-        destinatario: formData.correo,
-        asunto: `Carrusel - ${shipInfo.nombre} - ${fechaFormateada} ${horaFormateada}`,
+        destinatario: correosTransportadora,
+        asunto: `Carrusel - ${shipInfo.nombre} - ${transportadoraSel?.razon_social || ''} - ${fechaFormateada}`,
         cuerpo: `
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px;">
         <p>Estimado/a,</p>
@@ -342,22 +390,22 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
             <p style="margin-top: 0; font-weight: bold; color: #2c5282;">Detalles del documento:</p>
             <ul style="margin: 10px 0; padding-left: 20px;">
                 <li><strong>Buque:</strong> ${shipInfo.nombre}</li>
-                <li><strong>Fecha de generación:</strong> ${fechaFormateada} ${horaFormateada}</li>
+                <li><strong>Fecha de generaci&oacute;n:</strong> ${fechaFormateada} ${horaFormateada}</li>
                 <li><strong>Tipo:</strong> Carrusel</li>
             </ul>
         </div>
         
-        <p>El archivo adjunto contiene el listado requerido según lo programado.</p>
+        <p>El archivo adjunto contiene el listado requerido segun lo programado.</p>
         
-        <p>Por favor, verifique la información y proceda según corresponda.</p>
+        <p>Por favor, verifique la informacion y proceda segun corresponda.</p>
         
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
             <p>Atentamente,<br>
-            <strong>Departamento de Logística</strong></p>
+            <strong>Departamento de Logistica</strong></p>
             
             <p style="font-size: 12px; color: #666; margin-top: 20px;">
             ---<br>
-            Este es un mensaje generado automáticamente.
+            Este es un mensaje generado automaticamente.
             </p>
         </div>
     </div>
@@ -369,7 +417,10 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
         }
       };
 
-      // Importar el servicio dinámicamente (ajusta la ruta según tu proyecto)
+      if (ccValue) {
+        datosCorreo.cc = ccValue;
+      }
+
       const { enviarCorreo } = await import('@services/api/correo');
       const respuesta = await enviarCorreo(datosCorreo);
       if (respuesta?.success) {
@@ -520,6 +571,25 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
                 <Col xs={12} md={6} lg={3}>
                   <Form.Group>
                     <Form.Label className="form-label-sm text-secondary mb-2">
+                      <i className="bi bi-truck me-1"></i> Transportadora
+                    </Form.Label>
+                    <Form.Select
+                      name="transportadora"
+                      value={formData.transportadora}
+                      onChange={handleChange}
+                      className="form-select-sm"
+                    >
+                      <option value="">Seleccione transportadora</option>
+                      {transportadoras.map((t) => (
+                        <option key={t.id} value={t.id}>{t.razon_social}</option>
+                      ))}
+                    </Form.Select>
+                  </Form.Group>
+                </Col>
+
+                <Col xs={12} md={6} lg={3}>
+                  <Form.Group>
+                    <Form.Label className="form-label-sm text-secondary mb-2">
                       <i className="bi bi-ship me-1"></i> Buque
                     </Form.Label>
                     <Form.Select
@@ -539,19 +609,20 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
                 <Col xs={12} md={6} lg={3}>
                   <Form.Group>
                     <Form.Label className="form-label-sm text-secondary mb-2">
-                      Correo Destino
+                      <i className="bi bi-email me-1"></i> CC (Opcional)
                     </Form.Label>
                     <div className="input-group input-group-sm">
 
                       <Form.Control
-                        type="email"
+                        type="text"
                         name="correo"
                         value={formData.correo}
                         onChange={handleChange}
                         className="form-control-sm border-secondary-subtle"
-                        placeholder="ejemplo@empresa.com"
+                        placeholder="correo1@ejemplo.com, correo2@ejemplo.com"
                       />
                     </div>
+                    <small className="text-muted">Los destinatarios principales se toman de la transportadora seleccionada</small>
                   </Form.Group>
                 </Col>
               </Row>

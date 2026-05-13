@@ -80,7 +80,7 @@ export default function NuevoTransporte({ setAlert, setOpen, item }) {
                         <div className={styles.grupo}>
                             <label htmlFor="email">Correo</label>
                             <div>
-                                <input defaultValue={item?.email} type="email" className="form-control form-control-sm" name="email" id="email"></input>
+                                <input defaultValue={item?.email} type="text" className="form-control form-control-sm" name="email" id="email" placeholder="correo1@ejemplo.com, correo2@ejemplo.com"></input>
                             </div>
                         </div>
 

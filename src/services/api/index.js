@@ -436,6 +436,10 @@ const endPoints = {
         update: (id) => `${API}/api/${VERSION}/motivoDeRechazo/${id}`,
         delete: (id) => `${API}/api/${VERSION}/motivoDeRechazo/${id}`
     },
+    carrusel: {
+        porTransportadora: (id) => `${API}/api/${VERSION}/carrusel/por-transportadora/${id}`,
+        porContenedor: (contenedorId) => `${API}/api/${VERSION}/carrusel/por-contenedor/${contenedorId}`,
+    },
     inspecciones: {
         list: `${API}/api/${VERSION}/inspeccion`, //Listo
         findOne: (consecutivo) => `${API}/api/${VERSION}/inspeccion/${consecutivo}`,

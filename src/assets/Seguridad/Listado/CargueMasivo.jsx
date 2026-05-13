@@ -226,7 +226,7 @@ const CargueMasivo = ({
                                         >
                                             Cancelar
                                         </Button>
-                                        <Button className="w-50" variant="primary" onClick={handleCargar} disabled={loading}>
+                                        <Button className="w-50" variant="primary" onClick={() => handleCargar()} disabled={loading}>
                                             {loading ? "Cargando..." : "Cargar"}
                                         </Button>
                                     </div>

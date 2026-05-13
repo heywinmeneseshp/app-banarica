@@ -444,11 +444,12 @@ export default function InspeccionVacio() {
       }
 
       const currentField = inputRefs.current[id];
+      const maxLen = Number(currentField?.maxLength);
       const canAdvanceByLength =
         currentField?.type !== "date"
         && id !== "semana"
-        && currentField?.maxLength
-        && normalizeValue(nextValue).length >= Number(currentField.maxLength);
+        && maxLen > 0
+        && normalizeValue(nextValue).length >= maxLen;
 
       if (canAdvanceByLength) {
         focusNextField(id);
@@ -690,7 +691,7 @@ export default function InspeccionVacio() {
             </button>
           )}
 
-          {user.id_rol === "Super administrador" && (
+          {user?.id_rol === "Super administrador" && (
             <button
               onClick={() => setStateValue("openConfig", true)}
               type="button"

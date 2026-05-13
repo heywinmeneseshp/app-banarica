@@ -979,6 +979,7 @@ const ListadoContenedores = () => {
           encabezados={{
             fecha: null, bl: null, contenedor: null,
             id_lugar_de_llenado: null, id_producto: null, cajas_unidades: null,
+            id_transportadora: null,
           }}
         />
       )}
@@ -992,6 +993,7 @@ const ListadoContenedores = () => {
           encabezados={{
             fecha: null, bl: null, contenedor: null,
             id_lugar_de_llenado: null, id_producto: null, cajas_unidades: null,
+            id_transportadora: null,
           }}
         />
       )}
