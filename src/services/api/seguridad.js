@@ -153,7 +153,11 @@ const exportarArticulosConSerial = async (updatedSeriales, cons_almacen, cons_mo
 
 const inspeccionAntinarcoticos = async (Formulario, rechazos) => {
     try {
-        const response = await axios.post(endPoints.seguridad.inspeccionAntinarcoticos, { formulario: Formulario, rechazos: rechazos });
+        const response = await axios.post(
+            endPoints.seguridad.inspeccionAntinarcoticos,
+            { formulario: Formulario, rechazos: rechazos },
+            buildConfig()
+        );
         return response.data;
     } catch (error) {
         const message = error?.response?.data?.message || "No fue posible guardar la inspeccion.";
@@ -175,10 +179,12 @@ const usarSeriales = async (semana, fecha, seriales, contenedorID, id_usuario, m
     };
 
     try {
-        const response = await axios.post(endPoints.seguridad.usarSeriales, body);
+        const response = await axios.post(endPoints.seguridad.usarSeriales, body, buildConfig());
         return response.data;
-    } catch (e) {
-        alert("Error al actualizar data list");
+    } catch (error) {
+        const message = getErrorMessage(error, "No fue posible registrar el uso de seriales.");
+        window.alert(message);
+        throw error;
     }
 };
 

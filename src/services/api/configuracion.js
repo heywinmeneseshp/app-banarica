@@ -21,6 +21,12 @@ const encontrarModulo = async (modulo) => {
     return res.data;
 };
 
+const listarModulos = async (prefix = '') => {
+    const query = prefix ? `?prefix=${encodeURIComponent(prefix)}` : '';
+    const res = await axios.get(`${endPoints.confi.actualizarModulo.replace('/actualizar', '/listar')}${query}`, getAuthConfig());
+    return res.data;
+};
+
 const actualizarModulo = async (dataModulo) => {
     const res = await axios.patch(endPoints.confi.actualizarModulo, dataModulo, getAuthConfig());
     return res.data;
@@ -64,6 +70,7 @@ const actualizarEmailConfig = async (body) => {
 
 export {
 encontrarModulo,
+listarModulos,
 actualizarModulo,
 encontrarEmpresa,
 actualizarEmpresa,

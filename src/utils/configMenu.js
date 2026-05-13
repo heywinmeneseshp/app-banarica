@@ -24,6 +24,7 @@ const menuCompleto = {
         ["/InspLleno", "Insp Lleno"],
         ["/Lector", "Insp Vacio"],
         ["/LlenadoContenedor", "Llenado"],
+        ["/Transbordar", "Transbordar"],
         ["/Recepcion", "Recepcion"],
         ["/Rechazos", "Rechazos"],
         ["/Transferencias", "Transferencias"],

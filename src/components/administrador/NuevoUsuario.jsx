@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 
 import endPoints from '@services/api';
@@ -9,8 +9,11 @@ import {
     listarAlmacenesPorUsuario,
     listarUsuarios,
 } from '@services/api/usuarios';
-import { actualizarModulo, encontrarModulo } from '@services/api/configuracion';
+import { actualizarModulo, encontrarModulo, listarModulos } from '@services/api/configuracion';
 import { botones, menuCompleto, menuPrincipal } from 'utils/configMenu';
+
+const PROFILE_PREFIX = 'perfil:';
+const ROLE_OPTIONS = ['Super administrador', 'Operador'];
 
 const parseDetallesModulo = (response) => {
     if (!response?.length) {
@@ -25,6 +28,19 @@ const parseDetallesModulo = (response) => {
     }
 };
 
+const slugifyProfileName = (value) => String(value || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+const buildProfileLabel = (profile) => {
+    const details = parseDetallesModulo([profile]);
+    return details?.nombre_perfil || profile?.modulo?.replace(PROFILE_PREFIX, '') || '';
+};
+
 export default function NuevoUsuario({ setAlert, setOpen, user }) {
     const formRef = useRef(null);
     const [almacenes, setAlmacenes] = useState([]);
@@ -33,9 +49,16 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
     const [tagSubMenu, setTagSubMenu] = useState([]);
     const [tagBotones, setTagBotones] = useState([]);
     const [menuSelected, setMenuSelected] = useState([]);
+    const [selectedMenuKey, setSelectedMenuKey] = useState('');
+    const [almacenSearch, setAlmacenSearch] = useState('');
     const [usuariosDisponibles, setUsuariosDisponibles] = useState([]);
     const [usuarioBase, setUsuarioBase] = useState('');
+    const [perfilesDisponibles, setPerfilesDisponibles] = useState([]);
+    const [perfilBase, setPerfilBase] = useState('');
+    const [nombrePerfil, setNombrePerfil] = useState('');
     const [isCopyingAccess, setIsCopyingAccess] = useState(false);
+    const [isApplyingProfile, setIsApplyingProfile] = useState(false);
+    const [isSavingProfile, setIsSavingProfile] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const isEditing = Boolean(user);
@@ -45,18 +68,75 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
     const configMenuKeys = useMemo(() => menuPrincipal(), []);
     const configSubMenuKeys = useMemo(() => menuCompleto, []);
     const configBotones = useMemo(() => botones, []);
+    const filteredWarehouses = useMemo(() => {
+        const rawQuery = almacenSearch.trim().toLowerCase();
+        const queryParts = rawQuery
+            .split(/[\s,]+/)
+            .map((item) => item.trim())
+            .filter(Boolean);
+
+        return almacenes
+            .map((almacen, index) => ({ almacen, index }))
+            .filter(({ almacen }) => (
+                !queryParts.length || queryParts.some((query) => (
+                    String(almacen?.consecutivo || '').toLowerCase().includes(query)
+                ))
+            ));
+    }, [almacenSearch, almacenes]);
+
+    const resolveMenuOptions = useCallback((menuKey) => {
+        if (!menuKey) {
+            return [];
+        }
+
+        if (configSubMenuKeys[menuKey]) {
+            return configSubMenuKeys[menuKey];
+        }
+
+        const resolvedEntry = Object.entries(configSubMenuKeys).find(([key, items]) => (
+            key === menuKey || items.some(([, label]) => label === menuKey)
+        ));
+
+        return [...(resolvedEntry?.[1] || [])]
+            .sort(([, leftLabel], [, rightLabel]) => (
+                String(leftLabel || '').localeCompare(String(rightLabel || ''), 'es', { sensitivity: 'base' })
+            ));
+    }, [configSubMenuKeys]);
+
+    const closeWindow = () => {
+        setOpen(false);
+    };
+
+    const applyAccessConfiguration = useCallback((details = {}, enabledWarehouses = [], roleOverride = '', warehousesSource = []) => {
+        const almacenesHabilitados = new Set(enabledWarehouses);
+
+        if (formRef.current?.elements?.id_rol && roleOverride) {
+            formRef.current.elements.id_rol.value = roleOverride;
+        }
+
+        setTagMenu(details.menu || []);
+        setTagSubMenu(details.submenu || []);
+        setTagBotones(details.botones || []);
+        setSelectedMenuKey('');
+        setMenuSelected([]);
+        setCheckedState(
+            warehousesSource.map((almacen) => almacenesHabilitados.has(almacen.consecutivo)),
+        );
+    }, []);
 
     useEffect(() => {
         const loadData = async () => {
             try {
-                const [almacenesResponse, usuariosResponse] = await Promise.all([
+                const [almacenesResponse, usuariosResponse, perfilesResponse] = await Promise.all([
                     axios.get(endPoints.almacenes.list),
                     listarUsuarios(),
+                    listarModulos(PROFILE_PREFIX),
                 ]);
 
                 const almacenesData = almacenesResponse.data || [];
                 setAlmacenes(almacenesData);
                 setCheckedState(new Array(almacenesData.length).fill(false));
+                setPerfilesDisponibles(perfilesResponse || []);
                 setUsuariosDisponibles(
                     (usuariosResponse || []).filter((item) => item?.username && item.username !== user?.username),
                 );
@@ -79,14 +159,8 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                         .map((item) => item.id_almacen),
                 );
 
-                setCheckedState(
-                    almacenesData.map((almacen) => almacenesHabilitados.has(almacen.consecutivo)),
-                );
-
                 const detalles = parseDetallesModulo(configUsuario);
-                setTagMenu(detalles.menu || []);
-                setTagSubMenu(detalles.submenu || []);
-                setTagBotones(detalles.botones || []);
+                applyAccessConfiguration(detalles, Array.from(almacenesHabilitados), user?.id_rol, almacenesData);
             } catch (error) {
                 console.error("Error cargando datos del usuario:", error);
                 window.alert("No fue posible cargar la informacion del usuario.");
@@ -94,11 +168,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
         };
 
         loadData();
-    }, [user]);
-
-    const closeWindow = () => {
-        setOpen(false);
-    };
+    }, [applyAccessConfiguration, user]);
 
     const handleWarehouseChange = (position) => {
         setCheckedState((prev) => prev.map((item, index) => (
@@ -106,10 +176,21 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
         )));
     };
 
-    const handleMenuSelection = () => {
-        const formData = new FormData(formRef.current);
-        const selectedMenu = formData.get('selectionTagsMenu');
-        setMenuSelected(configSubMenuKeys[selectedMenu] || []);
+    const updateAllWarehouses = (nextValue) => {
+        setCheckedState((prev) => prev.map(() => nextValue));
+    };
+
+    const updateVisibleWarehouses = (nextValue) => {
+        const visibleIndexes = new Set(filteredWarehouses.map(({ index }) => index));
+        setCheckedState((prev) => prev.map((item, index) => (
+            visibleIndexes.has(index) ? nextValue : item
+        )));
+    };
+
+    const handleMenuSelection = (event) => {
+        const selectedMenu = event.target.value;
+        setSelectedMenuKey(selectedMenu);
+        setMenuSelected(resolveMenuOptions(selectedMenu));
     };
 
     const handleAddTag = (fieldName, currentValues, setValues) => {
@@ -152,22 +233,82 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                     .map((item) => item.id_almacen),
             );
 
-            if (formRef.current?.elements?.id_rol && sourceUser?.data?.id_rol) {
-                formRef.current.elements.id_rol.value = sourceUser.data.id_rol;
-            }
-
-            setTagMenu(detalles.menu || []);
-            setTagSubMenu(detalles.submenu || []);
-            setTagBotones(detalles.botones || []);
-            setMenuSelected([]);
-            setCheckedState(
-                almacenes.map((almacen) => almacenesHabilitados.has(almacen.consecutivo)),
+            applyAccessConfiguration(
+                detalles,
+                Array.from(almacenesHabilitados),
+                sourceUser?.data?.id_rol || '',
+                almacenes,
             );
         } catch (error) {
             console.error("Error al copiar permisos del usuario:", error);
             window.alert("No fue posible copiar los permisos y accesos del usuario seleccionado.");
         } finally {
             setIsCopyingAccess(false);
+        }
+    };
+
+    const handleApplyProfile = async () => {
+        if (!perfilBase) {
+            window.alert("Selecciona un perfil para aplicar sus permisos.");
+            return;
+        }
+
+        try {
+            setIsApplyingProfile(true);
+            const perfilConfig = await encontrarModulo(perfilBase);
+            const detalles = parseDetallesModulo(perfilConfig);
+            applyAccessConfiguration(
+                detalles,
+                Array.isArray(detalles?.almacenes) ? detalles.almacenes : [],
+                detalles?.rol || '',
+                almacenes,
+            );
+        } catch (error) {
+            console.error("Error al aplicar perfil:", error);
+            window.alert("No fue posible aplicar el perfil seleccionado.");
+        } finally {
+            setIsApplyingProfile(false);
+        }
+    };
+
+    const handleSaveProfile = async () => {
+        const slug = slugifyProfileName(nombrePerfil);
+        if (!slug) {
+            window.alert("Debes indicar un nombre valido para el perfil.");
+            return;
+        }
+
+        const roleValue = formRef.current?.elements?.id_rol?.value || 'Operador';
+        const almacenesSeleccionados = almacenes
+            .filter((_, index) => checkedState[index])
+            .map((item) => item.consecutivo);
+        const moduloPerfil = `${PROFILE_PREFIX}${slug}`;
+
+        try {
+            setIsSavingProfile(true);
+            await encontrarModulo(moduloPerfil);
+            await actualizarModulo({
+                modulo: moduloPerfil,
+                detalles: JSON.stringify({
+                    nombre_perfil: nombrePerfil.trim(),
+                    rol: roleValue,
+                    menu: tagMenu,
+                    submenu: tagSubMenu,
+                    botones: tagBotones,
+                    almacenes: almacenesSeleccionados,
+                }),
+            });
+
+            const perfilesActualizados = await listarModulos(PROFILE_PREFIX);
+            setPerfilesDisponibles(perfilesActualizados || []);
+            setPerfilBase(moduloPerfil);
+            setNombrePerfil('');
+            window.alert("Perfil de permisos guardado correctamente.");
+        } catch (error) {
+            console.error("Error al guardar perfil:", error);
+            window.alert("No fue posible guardar el perfil de permisos.");
+        } finally {
+            setIsSavingProfile(false);
         }
     };
 
@@ -385,14 +526,11 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                                             id="id_rol"
                                             name="id_rol"
                                             className="form-select form-select-sm"
-                                            defaultValue={user?.id_rol}
+                                            defaultValue={user?.id_rol === 'Super administrador' ? 'Super administrador' : 'Operador'}
                                         >
-                                            <option value="Super administrador">Super administrador</option>
-                                            <option value="Administrador">Administrador</option>
-                                            <option value="Oficinista">Oficinista</option>
-                                            <option value="Operador">Operador</option>
-                                            <option value="Super seguridad">Super seguridad</option>
-                                            <option value="Seguridad">Seguridad</option>
+                                            {ROLE_OPTIONS.map((role) => (
+                                                <option key={role} value={role}>{role}</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
@@ -430,6 +568,57 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                                         </div>
                                     </div>
                                 )}
+
+                                <div className="mt-4 pt-3 border-top">
+                                    <h6 className="mb-3">Perfiles de permisos</h6>
+                                    <div className="row g-3">
+                                        <div className="col-12 col-md-8">
+                                            <select
+                                                id="perfilBase"
+                                                name="perfilBase"
+                                                className="form-select form-select-sm"
+                                                value={perfilBase}
+                                                onChange={(event) => setPerfilBase(event.target.value)}
+                                            >
+                                                <option value="">Seleccione un perfil</option>
+                                                {perfilesDisponibles.map((item) => (
+                                                    <option key={item.modulo} value={item.modulo}>
+                                                        {buildProfileLabel(item)}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="col-12 col-md-4">
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline-primary btn-sm w-100"
+                                                onClick={handleApplyProfile}
+                                                disabled={!perfilBase || isApplyingProfile}
+                                            >
+                                                {isApplyingProfile ? 'Aplicando...' : 'Aplicar perfil'}
+                                            </button>
+                                        </div>
+                                        <div className="col-12 col-md-8">
+                                            <input
+                                                type="text"
+                                                className="form-control form-control-sm"
+                                                value={nombrePerfil}
+                                                onChange={(event) => setNombrePerfil(event.target.value)}
+                                                placeholder="Nombre para guardar el perfil actual"
+                                            />
+                                        </div>
+                                        <div className="col-12 col-md-4">
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline-success btn-sm w-100"
+                                                onClick={handleSaveProfile}
+                                                disabled={!nombrePerfil.trim() || isSavingProfile}
+                                            >
+                                                {isSavingProfile ? 'Guardando...' : 'Guardar como perfil'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
 
                                 <div className="mt-4 pt-3 border-top">
                                     <h6 className="mb-3">Habilitar menú</h6>
@@ -492,7 +681,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                                                 id="selectionTagsMenu"
                                                 name="selectionTagsMenu"
                                                 className="form-select form-select-sm"
-                                                defaultValue=""
+                                                value={selectedMenuKey}
                                                 onChange={handleMenuSelection}
                                             >
                                                 <option value="">Seleccione un item</option>
@@ -528,7 +717,11 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                                         <div className="col-12">
                                             <div className="card">
                                                 <div className="card-body d-flex flex-wrap gap-2">
-                                                    {tagSubMenu.map((tag) => (
+                                                    {[...tagSubMenu]
+                                                        .sort((leftTag, rightTag) => (
+                                                            String(leftTag || '').localeCompare(String(rightTag || ''), 'es', { sensitivity: 'base' })
+                                                        ))
+                                                        .map((tag) => (
                                                         <span
                                                             key={tag}
                                                             className="badge bg-primary d-inline-flex align-items-center"
@@ -601,9 +794,71 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                                 </div>
 
                                 <div className="mt-4 pt-3 border-top">
-                                    <h6 className="mb-3">Habilitar almacenes</h6>
+                                    <div className="d-flex flex-column flex-lg-row align-items-lg-end justify-content-between gap-3 mb-3">
+                                        <div>
+                                            <h6 className="mb-1">Habilitar almacenes</h6>
+                                            <div className="small text-muted">
+                                                Busca por c&oacute;digo y marca varios almacenes de una sola vez.
+                                            </div>
+                                        </div>
+                                        <div className="d-flex flex-wrap gap-2">
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline-primary btn-sm"
+                                                onClick={() => updateAllWarehouses(true)}
+                                            >
+                                                Seleccionar todos
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline-secondary btn-sm"
+                                                onClick={() => updateAllWarehouses(false)}
+                                            >
+                                                Limpiar todos
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="row g-2 align-items-end mb-3">
+                                        <div className="col-12 col-lg-4">
+                                            <label htmlFor="almacenSearch" className="form-label">Buscar almac&eacute;n</label>
+                                            <input
+                                                id="almacenSearch"
+                                                type="text"
+                                                className="form-control form-control-sm"
+                                                placeholder="Ej: 513, 502, BAN"
+                                                value={almacenSearch}
+                                                onChange={(event) => setAlmacenSearch(event.target.value)}
+                                            />
+                                            <div className="form-text">
+                                                Acepta comas, espacios o saltos de l&iacute;nea.
+                                            </div>
+                                        </div>
+                                        <div className="col-12 col-lg">
+                                            <div className="d-flex flex-wrap gap-2">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-outline-primary btn-sm"
+                                                    onClick={() => updateVisibleWarehouses(true)}
+                                                    disabled={!filteredWarehouses.length}
+                                                >
+                                                    Seleccionar visibles
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-outline-secondary btn-sm"
+                                                    onClick={() => updateVisibleWarehouses(false)}
+                                                    disabled={!filteredWarehouses.length}
+                                                >
+                                                    Limpiar visibles
+                                                </button>
+                                                <span className="small text-muted align-self-center">
+                                                    {filteredWarehouses.length} de {almacenes.length} almacenes visibles
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div className="row g-3">
-                                        {almacenes.map((almacen, index) => (
+                                        {filteredWarehouses.map(({ almacen, index }) => (
                                             <div key={almacen.consecutivo} className="col-12 col-md-4 col-xl-3">
                                                 <div className="form-check">
                                                     <input
@@ -623,6 +878,13 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                                                 </div>
                                             </div>
                                         ))}
+                                        {!filteredWarehouses.length && (
+                                            <div className="col-12">
+                                                <div className="alert alert-light border mb-0 py-2">
+                                                    No hay almacenes que coincidan con la b&uacute;squeda.
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

@@ -21,6 +21,7 @@ function getDefaultFilters(almacenByUser = []) {
         s_pack: "",
         m_pack: "",
         l_pack: "",
+        contenedor: "",
         cons_almacen: almacenByUser.map((item) => item.consecutivo),
         available: [true, false],
     };
@@ -55,7 +56,11 @@ export default function Disponibles() {
 
         const formData = new FormData(formRef.current);
         let estado = formData.get("estado");
+        const contenedor = String(formData.get("contenedor") || "").trim().toUpperCase();
         estado = estado === "All" ? [true, false] : [estado === "1"];
+        if (contenedor) {
+            estado = [false];
+        }
 
         setPagination(1);
         setData({
@@ -65,6 +70,7 @@ export default function Disponibles() {
             s_pack: formData.get("s_pack"),
             m_pack: formData.get("m_pack"),
             l_pack: formData.get("l_pack"),
+            contenedor,
             cons_almacen:
                 formData.get("almacen") == 0
                     ? almacenByUser.map((item) => item.consecutivo)
@@ -273,6 +279,21 @@ export default function Disponibles() {
                                 </div>
                             );
                         })}
+
+                        {user?.id_rol === "Super administrador" && (
+                            <div className="col-md-3">
+                                <div className="input-group input-group-sm">
+                                    <span className="input-group-text">Contenedor usado</span>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        name="contenedor"
+                                        placeholder="TEMU9251810"
+                                        onChange={buscarArticulos}
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </>
                 )}
 
