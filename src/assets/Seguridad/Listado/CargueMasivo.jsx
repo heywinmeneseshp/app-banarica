@@ -191,7 +191,7 @@ const CargueMasivo = ({
                             />
                         </div>
                         <div className="card-body">
-                            <div className="container">
+                            <div className="container-fluid">
                                 <div className="row mb-1">
                                     <div className="col-12">
                                         <p className="text-muted">

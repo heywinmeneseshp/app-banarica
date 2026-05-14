@@ -13,19 +13,19 @@
 
 .floatingform {
     position: relative;
-    z-index: 1055; /* Asegura que el contenido flotante esté por encima del fondo */
+    z-index: 1055;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    align-items: stretch; /* Alinea los elementos a la izquierda */
-    height: auto; /* Altura automática para ajustarse al contenido */
-    max-height: 80vh; /* Limita la altura máxima */
-    width: 90%; /* Ocupa el 90% del ancho */
-    max-width: 500px; /* Ancho máximo para pantallas grandes */
-    background-color: #fff; /* Fondo blanco para el formulario */
+    align-items: stretch;
+    height: auto;
+    max-height: 85vh;
+    width: 90%;
+    max-width: 800px;
+    background-color: #fff;
     border-radius: 10px;
-    box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.2); /* Sombra sutil */
-    overflow-y: auto; /* Añade un scroll vertical si se supera el alto */
+    box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.2);
+    overflow-y: auto;
 }
 
 .card {
