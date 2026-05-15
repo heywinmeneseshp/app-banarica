@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import styles2 from "@components/shared/Formularios/Formularios.module.css";
 import { Button, Col, Container, Form, Row } from 'react-bootstrap';
-import { FaMinus, FaPlus } from 'react-icons/fa';
+import { FaCamera, FaMinus, FaPlus } from 'react-icons/fa';
 import { listarAlmacenes } from '@services/api/almacenes';
 import { listarCombos } from '@services/api/combos';
 import { paginarListado } from '@services/api/listado';
@@ -16,6 +16,19 @@ const createEmptySection = () => ({
     producto: "",
     totalCajas: ""
 });
+
+const ScanActionButton = ({ label, onClick }) => (
+    <button
+        type="button"
+        className="input-group-text bg-white text-secondary"
+        onClick={onClick}
+        aria-label={`Escanear ${label}`}
+        title={`Escanear ${label}`}
+        style={{ minWidth: "44px", cursor: "pointer" }}
+    >
+        <FaCamera />
+    </button>
+);
 
 const SelectField = ({ label, value, onChange, required = false, children }) => (
     <div>
@@ -104,16 +117,61 @@ const DynamicSection = ({ section, onUpdate, onRemove, products, almacenes }) =>
 
 const Transbordar = ({ setOpen = () => {}, pageMode = false }) => {
     const formRef = useRef();
+    const scannerVideoRef = useRef(null);
+    const scannerStreamRef = useRef(null);
+    const scannerFrameRef = useRef(null);
+    const barcodeDetectorRef = useRef(null);
     const [contenedores, setContenedores] = useState([]);
     const [semana, setSemana] = useState([]);
     const [listado, setListado] = useState([]);
     const [products, setProducts] = useState([]);
     const [almacenes, setAlmacenes] = useState([]);
     const [sections, setSections] = useState([]);
+    const [scannerOpen, setScannerOpen] = useState(false);
+    const [scannerError, setScannerError] = useState("");
+    const [scannerSupported, setScannerSupported] = useState(true);
 
     const handleClose = () => {
         setOpen(false);
     };
+
+    const closeScanner = useCallback(() => {
+        if (scannerFrameRef.current) {
+            cancelAnimationFrame(scannerFrameRef.current);
+            scannerFrameRef.current = null;
+        }
+
+        if (scannerStreamRef.current) {
+            scannerStreamRef.current.getTracks().forEach((track) => track.stop());
+            scannerStreamRef.current = null;
+        }
+
+        if (scannerVideoRef.current) {
+            scannerVideoRef.current.pause();
+            scannerVideoRef.current.srcObject = null;
+        }
+
+        setScannerOpen(false);
+        setScannerError("");
+    }, []);
+
+    const openScanner = useCallback(() => {
+        setScannerSupported(true);
+        setScannerError("");
+        setScannerOpen(true);
+    }, []);
+
+    const applyScannedKit = useCallback((rawValue) => {
+        const nextValue = String(rawValue || '').trim().toUpperCase();
+        if (!nextValue || !formRef.current) return;
+
+        const kitInput = formRef.current.elements.namedItem('kit');
+        if (kitInput) {
+            kitInput.value = nextValue;
+        }
+
+        closeScanner();
+    }, [closeScanner]);
 
     const filtrarContenedores = async () => {
         if (!formRef.current) return;
@@ -232,6 +290,130 @@ const Transbordar = ({ setOpen = () => {}, pageMode = false }) => {
         loadBaseData();
     }, []);
 
+    useEffect(() => {
+        if (!scannerOpen) {
+            return undefined;
+        }
+
+        let cancelled = false;
+        const videoElement = scannerVideoRef.current;
+
+        const startScanner = async () => {
+            try {
+                if (typeof window === "undefined" || typeof navigator === "undefined") {
+                    throw new Error("La camara no esta disponible en este entorno.");
+                }
+
+                if (typeof window.BarcodeDetector === "undefined") {
+                    setScannerSupported(false);
+                    setScannerError("Este navegador no soporta lectura por camara. Usa Chrome o Brave actualizados.");
+                    return;
+                }
+
+                const preferredFormats = [
+                    "qr_code",
+                    "code_128",
+                    "code_39",
+                    "ean_13",
+                    "ean_8",
+                    "upc_a",
+                    "upc_e",
+                    "codabar",
+                    "itf",
+                    "data_matrix",
+                    "pdf417",
+                    "aztec"
+                ];
+
+                let formats = preferredFormats;
+                if (typeof window.BarcodeDetector.getSupportedFormats === "function") {
+                    const supportedFormats = await window.BarcodeDetector.getSupportedFormats();
+                    formats = preferredFormats.filter((item) => supportedFormats.includes(item));
+                }
+
+                if (formats.length === 0) {
+                    setScannerSupported(false);
+                    setScannerError("El navegador no reporta formatos compatibles para QR o codigo de barras.");
+                    return;
+                }
+
+                barcodeDetectorRef.current = new window.BarcodeDetector({ formats });
+
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: "environment" } },
+                    audio: false
+                });
+
+                if (cancelled) {
+                    stream.getTracks().forEach((track) => track.stop());
+                    return;
+                }
+
+                scannerStreamRef.current = stream;
+
+                if (!videoElement) {
+                    return;
+                }
+
+                videoElement.srcObject = stream;
+                videoElement.setAttribute("playsInline", "true");
+                await videoElement.play();
+
+                const scanFrame = async () => {
+                    if (cancelled) return;
+
+                    if (!videoElement || !barcodeDetectorRef.current || videoElement.readyState < 2) {
+                        scannerFrameRef.current = requestAnimationFrame(scanFrame);
+                        return;
+                    }
+
+                    try {
+                        const barcodes = await barcodeDetectorRef.current.detect(videoElement);
+                        const rawValue = barcodes?.[0]?.rawValue;
+                        if (rawValue) {
+                            applyScannedKit(rawValue);
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Error leyendo desde la camara en transbordo:', error);
+                    }
+
+                    scannerFrameRef.current = requestAnimationFrame(scanFrame);
+                };
+
+                scannerFrameRef.current = requestAnimationFrame(scanFrame);
+            } catch (error) {
+                console.error('No fue posible iniciar la camara en transbordo:', error);
+                setScannerError(
+                    error?.name === "NotAllowedError"
+                        ? "Debes permitir el acceso a la camara para escanear."
+                        : "No fue posible iniciar la camara en este dispositivo."
+                );
+            }
+        };
+
+        startScanner();
+
+        return () => {
+            cancelled = true;
+
+            if (scannerFrameRef.current) {
+                cancelAnimationFrame(scannerFrameRef.current);
+                scannerFrameRef.current = null;
+            }
+
+            if (scannerStreamRef.current) {
+                scannerStreamRef.current.getTracks().forEach((track) => track.stop());
+                scannerStreamRef.current = null;
+            }
+
+            if (videoElement) {
+                videoElement.pause();
+                videoElement.srcObject = null;
+            }
+        };
+    }, [applyScannedKit, scannerOpen]);
+
     const handleSectionUpdate = (sectionId, field, value) => {
         setSections((prev) =>
             prev.map((section) =>
@@ -321,13 +503,16 @@ const Transbordar = ({ setOpen = () => {}, pageMode = false }) => {
                 <Col md={3}>
                     <Form.Group className="mb-0" controlId="kit">
                         <Form.Label className='mt-1 mb-1'>Kit</Form.Label>
-                        <Form.Control
-                            className='form-control-sm'
-                            type="text"
-                            required
-                            name="kit"
-                            placeholder="AA2L00001"
-                        />
+                        <div className="input-group input-group-sm">
+                            <Form.Control
+                                className='form-control-sm'
+                                type="text"
+                                required
+                                name="kit"
+                                placeholder="AA2L00001"
+                            />
+                            <ScanActionButton label="Kit" onClick={openScanner} />
+                        </div>
                     </Form.Group>
                 </Col>
 
@@ -410,6 +595,47 @@ const Transbordar = ({ setOpen = () => {}, pageMode = false }) => {
                         {formContent}
                     </div>
                 </div>
+                {scannerOpen && (
+                    <div
+                        className="modal d-block"
+                        tabIndex="-1"
+                        role="dialog"
+                        style={{ backgroundColor: "rgba(0, 0, 0, 0.6)" }}
+                    >
+                        <div className="modal-dialog modal-dialog-centered modal-lg" role="document">
+                            <div className="modal-content">
+                                <div className="modal-header">
+                                    <h5 className="modal-title">Escanear Kit</h5>
+                                    <button type="button" className="btn-close" onClick={closeScanner} aria-label="Cerrar" />
+                                </div>
+                                <div className="modal-body">
+                                    <p className="text-muted small mb-3">
+                                        Acerca el QR o codigo de barras a la camara. Cuando se detecte, el valor se cargara automaticamente.
+                                    </p>
+                                    <div className="ratio ratio-4x3 bg-dark rounded overflow-hidden">
+                                        <video
+                                            ref={scannerVideoRef}
+                                            autoPlay
+                                            muted
+                                            playsInline
+                                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                        />
+                                    </div>
+                                    {scannerError && (
+                                        <div className={`alert ${scannerSupported ? "alert-warning" : "alert-danger"} mt-3 mb-0`}>
+                                            {scannerError}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="modal-footer">
+                                    <button type="button" className="btn btn-secondary" onClick={closeScanner}>
+                                        Cerrar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </Container>
         );
     }
@@ -439,6 +665,47 @@ const Transbordar = ({ setOpen = () => {}, pageMode = false }) => {
                     </div>
                 </div>
             </div>
+            {scannerOpen && (
+                <div
+                    className="modal d-block"
+                    tabIndex="-1"
+                    role="dialog"
+                    style={{ backgroundColor: "rgba(0, 0, 0, 0.6)" }}
+                >
+                    <div className="modal-dialog modal-dialog-centered modal-lg" role="document">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">Escanear Kit</h5>
+                                <button type="button" className="btn-close" onClick={closeScanner} aria-label="Cerrar" />
+                            </div>
+                            <div className="modal-body">
+                                <p className="text-muted small mb-3">
+                                    Acerca el QR o codigo de barras a la camara. Cuando se detecte, el valor se cargara automaticamente.
+                                </p>
+                                <div className="ratio ratio-4x3 bg-dark rounded overflow-hidden">
+                                    <video
+                                        ref={scannerVideoRef}
+                                        autoPlay
+                                        muted
+                                        playsInline
+                                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                    />
+                                </div>
+                                {scannerError && (
+                                    <div className={`alert ${scannerSupported ? "alert-warning" : "alert-danger"} mt-3 mb-0`}>
+                                        {scannerError}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={closeScanner}>
+                                    Cerrar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

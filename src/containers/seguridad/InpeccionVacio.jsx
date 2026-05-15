@@ -978,11 +978,11 @@ export default function InspeccionVacio() {
                 {isScannableField(field.id) && (
                   <button
                     type="button"
-                    className="btn btn-outline-secondary"
+                    className="input-group-text bg-white text-secondary"
                     onClick={() => openScanner(field.id)}
                     aria-label={`Escanear ${field.label}`}
                     title={`Escanear ${field.label}`}
-                    style={{ minWidth: "44px" }}
+                    style={{ minWidth: "44px", cursor: "pointer" }}
                   >
                     <FaCamera />
                   </button>
@@ -991,10 +991,10 @@ export default function InspeccionVacio() {
                 {field.eliminar && (
                   <button
                     type="button"
-                    className="btn"
+                    className="input-group-text bg-white"
                     onClick={() => handleRemove(field.id)}
                     aria-label={`Eliminar ${field.label}`}
-                    style={{ minWidth: "40px" }}
+                    style={{ minWidth: "40px", cursor: "pointer" }}
                   >
                     <FaMinusCircle size={20} color="#dc3545" title={`Eliminar ${field.label}`} />
                   </button>
