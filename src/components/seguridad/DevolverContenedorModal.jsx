@@ -58,6 +58,7 @@ export default function DevolverContenedorModal({
 
       await crearInspeccion({
         id_contenedor: containerId,
+        id_usuario: usuario?.id || null,
         fecha_inspeccion: now.toISOString(),
         hora_inicio: currentTime,
         hora_fin: currentTime,

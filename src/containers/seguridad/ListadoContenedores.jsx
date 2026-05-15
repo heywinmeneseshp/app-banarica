@@ -15,6 +15,7 @@ import { filtrarProductos } from '@services/api/productos';
 import { paginarEmbarques } from '@services/api/embarques';
 import { actualizarContenedor } from '@services/api/contenedores';
 import { paginarCombos } from '@services/api/combos';
+import { listarTransportadoras } from '@services/api/transportadoras';
 import { useAuth } from '@hooks/useAuth';
 import * as XLSX from 'xlsx';
 import Transbordar from '@assets/Seguridad/Listado/Transbordar';
@@ -37,6 +38,11 @@ const VALIDACIONES = {
 };
 
 const CONFIG_TABLA_DEFAULT = ["Fecha", "Sem", "BoL", "Naviera", "Destino", "Llenado", "Contenedor", "Insumos de segurdad", "Producto", "Cajas", "Peso Neto", "QR"];
+
+const getTransportadoraLabel = (row) =>
+  row?.Contenedor?.carrusel?.transportadora?.razon_social
+  || row?.Contenedor?.carrusel?.transportadora?.consecutivo
+  || '';
 
 const safeStorageGet = (key, fallback) => {
   if (typeof window === "undefined") {
@@ -92,6 +98,7 @@ const useListadoState = () => {
     almacenes: safeStorageGetJson('almacenByUser', []),
     embarques: [],
     productos: [],
+    transportadoras: [],
     check: [],
     checkAll: false,
     bol: {},
@@ -117,6 +124,8 @@ const ListadoContenedores = () => {
   const { getUser } = useAuth();
   const formRef = useRef();
   const tablaRef = useRef();
+  const messageTimeoutRef = useRef(null);
+  const wasEditableRef = useRef(false);
   const user = getUser();
 
   // Estados
@@ -125,6 +134,7 @@ const ListadoContenedores = () => {
     destino: '', buque: '', llenado: '', contenedor: '', producto: '',
     fecha_inicial: '', fecha_final: ''
   });
+  const [inlineMessage, setInlineMessage] = useState(null);
 
   const { state, updateState } = useListadoState();
   const debouncedFilters = useDebounce(filters, 500);
@@ -140,9 +150,27 @@ const ListadoContenedores = () => {
     setFilters(prev => ({ ...prev, ...newFilters }));
   }, []);
 
+  const showInlineMessage = useCallback((message, variant = 'warning') => {
+    if (messageTimeoutRef.current) {
+      clearTimeout(messageTimeoutRef.current);
+    }
+
+    setInlineMessage({ message, variant });
+    messageTimeoutRef.current = setTimeout(() => {
+      setInlineMessage(null);
+      messageTimeoutRef.current = null;
+    }, 3500);
+  }, []);
+
   useEffect(() => {
     setDraftLimit(String(state.limit));
   }, [state.limit]);
+
+  useEffect(() => () => {
+    if (messageTimeoutRef.current) {
+      clearTimeout(messageTimeoutRef.current);
+    }
+  }, []);
 
   // Funciones de utilidad
   const aplicarColor = useCallback((data = []) => {
@@ -167,13 +195,13 @@ const ListadoContenedores = () => {
 
     if (field === "contenedor" && !VALIDACIONES.contenedor.test(value)) {
       e.target.style.color = "#C70039";
-      alert('El contenedor debe tener 4 letras seguidas de 7 números.');
+      showInlineMessage('El contenedor debe tener 4 letras seguidas de 7 numeros.');
       return;
     }
 
     if (field === "cajas_unidades" && (!VALIDACIONES.cajas.test(value) || value === '')) {
       e.target.style.color = "#C70039";
-      alert('El campo cajas debe ser un número.');
+      showInlineMessage('El campo cajas debe ser un numero entero.');
       return;
     }
 
@@ -189,9 +217,9 @@ const ListadoContenedores = () => {
       e.target.style.color = "";
     } catch (error) {
       console.error('Error al actualizar:', error);
-      alert('Error al actualizar el registro');
+      showInlineMessage('Error al actualizar el registro');
     }
-  }, []);
+  }, [showInlineMessage]);
 
   const handleDatalist = useCallback(async (id, itemActualiza, linea) => {
     const inputElement = document.getElementById(id);
@@ -201,17 +229,28 @@ const ListadoContenedores = () => {
     const lookupData = {
       almacen: { data: state.almacenes, field: "id_lugar_de_llenado", key: "nombre" },
       embarque: { data: state.embarques, field: "id_embarque", key: "bl" },
-      producto: { data: state.productos, field: "id_producto", key: "nombre" }
+      producto: { data: state.productos, field: "id_producto", key: "nombre" },
+      transportadora: { data: state.transportadoras, field: "id_transportadora", key: "razon_social" }
     };
 
     const config = lookupData[itemActualiza];
     if (!config) return;
 
-    const res = config.data.find(item => item[config.key] === value);
+    const normalizedValue = String(value || '').trim().toLowerCase();
+    const res = config.data.find((item) => {
+      if (itemActualiza === 'transportadora') {
+        return (
+          String(item?.razon_social || '').trim().toLowerCase() === normalizedValue
+          || String(item?.consecutivo || '').trim().toLowerCase() === normalizedValue
+        );
+      }
+
+      return item[config.key] === value;
+    });
 
     if (!res) {
       inputElement.style.color = "#C70039";
-      alert(`En la fila ${linea} el item ${itemActualiza} no existe`);
+      showInlineMessage(`En la fila ${linea} el item ${itemActualiza} no existe`);
       return;
     }
 
@@ -220,9 +259,9 @@ const ListadoContenedores = () => {
       inputElement.style.color = "";
     } catch (error) {
       console.error('Error al actualizar:', error);
-      alert('Error al actualizar el registro');
+      showInlineMessage('Error al actualizar el registro');
     }
-  }, [state.almacenes, state.embarques, state.productos]);
+  }, [showInlineMessage, state.almacenes, state.embarques, state.productos, state.transportadoras]);
 
   const onChangeCasilla = useCallback(async (id, field) => {
     const inputElement = document.getElementById(id);
@@ -333,6 +372,7 @@ const ListadoContenedores = () => {
         const pallets = Math.ceil(cajas / combo?.cajas_por_palet || 1);
         const pesoBruto = (combo?.peso_bruto * cajas).toFixed(1);
         const pesoNeto = (combo?.peso_neto * cajas).toFixed(1);
+        const transportadora = getTransportadoraLabel(row);
 
         const filaExcel = {};
 
@@ -343,6 +383,7 @@ const ListadoContenedores = () => {
           "Bookin": () => filaExcel.Booking = Embarque?.booking || '',
           "BoL": () => filaExcel.BoL = Embarque?.bl || '',
           "Naviera": () => filaExcel.Naviera = Embarque?.Naviera?.cod || '',
+          "Transportadora": () => filaExcel.Transportadora = transportadora,
           "Buque": () => filaExcel.Buque = Embarque?.Buque?.buque || '',
           "Destino": () => filaExcel.Destino = Embarque?.Destino?.cod || '',
           "Llenado": () => filaExcel.Llenado = almacen?.nombre || '',
@@ -423,10 +464,11 @@ const ListadoContenedores = () => {
     updateState({ loading: true });
 
     try {
-      const [modulo, embarquesRes, productoRes, listadoList] = await Promise.all([
+      const [modulo, embarquesRes, productoRes, transportadorasRes, listadoList] = await Promise.all([
         encontrarModulo(`Relación_listado_${user.username}`).catch(() => []),
         paginarEmbarques(1, 20, {}),
         paginarCombos(1, 20, "", {isBlock: false}),
+        listarTransportadoras(),
         paginarListado(state.pagination, state.limit, Object.entries({
           contenedor: debouncedFilters.contenedor,
           booking: debouncedFilters.booking,
@@ -481,6 +523,7 @@ const ListadoContenedores = () => {
         configuracionInsumos: insumosConfig,
         embarques: embarquesRes.data,
         productos: productoRes.data,
+        transportadoras: Array.isArray(transportadorasRes) ? transportadorasRes : [],
         check: new Array(visibleRows.length).fill(false),
         checkAll: false,
         loading: false
@@ -519,6 +562,14 @@ const ListadoContenedores = () => {
     listar();
   }, [state.pagination, state.limit, debouncedFilters, state.openTransbordar, state.openMasivo, state.openActualizarMasivo, listar]);
 
+  useEffect(() => {
+    if (wasEditableRef.current && !state.isEditable) {
+      listar();
+    }
+
+    wasEditableRef.current = state.isEditable;
+  }, [state.isEditable, listar]);
+
   // Operaciones en lote optimizadas
   async function ejecutarOperacionLote(operacion, mensajeError) {
     if (selectedItems.length === 0) {
@@ -543,6 +594,7 @@ const ListadoContenedores = () => {
     const pallets = Math.ceil(cajas / combo?.cajas_por_palet || 1);
     const pesoBruto = (combo?.peso_bruto * cajas).toFixed(1);
     const pesoNeto = (combo?.peso_neto * cajas).toFixed(1);
+    const transportadora = getTransportadoraLabel(row);
     const cajasPorContenedor = (combo?.cajas_por_palet * (combo?.palets_por_contenedor - 1)) + (combo?.cajas_por_mini_palet || 0);
     const sumaToriaCajas = state.tableData
       .filter(item => item.Contenedor?.contenedor === Contenedor?.contenedor)
@@ -611,6 +663,32 @@ const ListadoContenedores = () => {
 
         {state.configuracionTabla.includes("Naviera") && (
           <td className="text-custom-small text-center">{Embarque?.Naviera?.cod}</td>
+        )}
+
+        {state.configuracionTabla.includes("Transportadora") && (
+          <td className="text-custom-small text-center">
+            {state.isEditable ? (
+              <>
+                <input
+                  list={`${row.id}-transportadoras`}
+                  id={`${row.id}-transportadora`}
+                  defaultValue={transportadora}
+                  style={{ width: "140px", padding: 0 }}
+                  onBlur={() => handleDatalist(`${row.id}-transportadora`, 'transportadora', row.id)}
+                  className="form-control custom-input text-center"
+                />
+                <datalist id={`${row.id}-transportadoras`}>
+                  {state.transportadoras.map((item, i) => (
+                    item?.razon_social ? (
+                      <option key={i} value={item.razon_social} />
+                    ) : null
+                  ))}
+                </datalist>
+              </>
+            ) : (
+              transportadora || "N/A"
+            )}
+          </td>
         )}
 
         {state.configuracionTabla.includes("Buque") && (
@@ -685,13 +763,20 @@ const ListadoContenedores = () => {
         )}
 
         {state.configuracionTabla.includes("Cajas") && (
-          <td
-            className={`text-custom-small text-center ${existeRechazo}`}
-            style={{ width: "60px" }}
-            contentEditable={state.isEditable}
-            onBlur={(e) => handleCellEdit(row, "cajas_unidades", e)}
-          >
-            {cajas}
+          <td className={`text-custom-small text-center ${existeRechazo}`} style={{ width: "60px" }}>
+            {state.isEditable ? (
+              <input
+                type="number"
+                min="0"
+                step="1"
+                defaultValue={cajas}
+                onBlur={(e) => handleCellEdit(row, "cajas_unidades", e)}
+                className="form-control custom-input text-center"
+                style={{ width: "70px", padding: 0 }}
+              />
+            ) : (
+              cajas
+            )}
           </td>
         )}
 
@@ -730,12 +815,17 @@ const ListadoContenedores = () => {
         </td>
       </tr>
     );
-  }, [state.configuracionTabla, state.isEditable, state.check, state.tableData, state.bol, state.configuracionInsumos, state.embarques, state.almacenes, state.productos, handleCellEdit, handleDatalist, onChangeCasilla, handleChecks, openTracecode, updateState]);
+  }, [state.configuracionTabla, state.isEditable, state.check, state.tableData, state.bol, state.configuracionInsumos, state.embarques, state.almacenes, state.productos, state.transportadoras, handleCellEdit, handleDatalist, onChangeCasilla, handleChecks, openTracecode, updateState]);
 
   return (
     <>
       <h2 className="mb-2">{"Listado de Contenedores"}</h2>
       <div className="line"></div>
+      {inlineMessage && (
+        <div className={`alert alert-${inlineMessage.variant} py-2 mt-3 mb-3`} role="alert">
+          {inlineMessage.message}
+        </div>
+      )}
 
       {/* Filtros */}
       <Form ref={formRef}>
@@ -877,6 +967,7 @@ const ListadoContenedores = () => {
               {renderHeader("Bookin", true, "Booking")}
               {renderHeader("BoL")}
               {renderHeader("Naviera", true)}
+              {renderHeader("Transportadora")}
               {renderHeader("Buque", true)}
               {renderHeader("Destino", true)}
               {renderHeader("Llenado")}

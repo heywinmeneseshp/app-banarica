@@ -156,7 +156,7 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
         console.error('Error al cargar carrusel por transportadora:', error);
       }
     })();
-  }, [formData.transportadora, data]);
+  }, [formData.transportadora, formData.buque, data]);
 
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
@@ -370,16 +370,19 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
       );
 
       const fechaActual = new Date();
-      const fechaFormateada = fechaActual.toLocaleDateString('es-ES');
+      const fechaFormateada = fechaActual.toLocaleDateString('es-ES', {
+        timeZone: 'America/Bogota'
+      });
       const horaFormateada = fechaActual.toLocaleTimeString('es-ES', {
         hour: '2-digit',
         minute: '2-digit',
-        hour12: false
+        hour12: false,
+        timeZone: 'America/Bogota'
       });
 
       const datosCorreo = {
         destinatario: correosTransportadora,
-        asunto: `Carrusel - ${shipInfo.nombre} - ${transportadoraSel?.razon_social || ''} - ${fechaFormateada}`,
+        asunto: `Carrusel - ${shipInfo.nombre} - ${transportadoraSel?.razon_social || ''} - ${fechaFormateada} ${horaFormateada}`,
         cuerpo: `
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px;">
         <p>Estimado/a,</p>

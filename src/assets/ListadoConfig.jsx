@@ -1,27 +1,30 @@
 import React, { useEffect, useRef, useState } from "react";
 import styles from "@components/shared/Formularios/Formularios.module.css";
 
+const AVAILABLE_FIELDS = [
+  "Fecha",
+  "Sem",
+  "Booking",
+  "BoL",
+  "Naviera",
+  "Transportadora",
+  "Buque",
+  "Destino",
+  "Llenado",
+  "Contenedor",
+  "Insumos de segurdad",
+  "Producto",
+  "Cajas",
+  "Pallets",
+  "Peso Bruto",
+  "Peso Neto",
+  "QR"
+];
+
 function ListadoConfig({ handleConfig }) {
   const formRef = useRef();
 
-  const [dataList, setDataList] = useState([
-    "Fecha",
-    "Sem",
-    "Booking",
-    "BoL",
-    "Naviera",
-    "Buque",
-    "Destino",
-    "Llenado",
-    "Contenedor",
-    "Insumos de segurdad",
-    "Producto",
-    "Cajas",
-    "Pallets",
-    "Peso Bruto",
-    "Peso Neto",
-    "QR"
-  ]);
+  const [dataList, setDataList] = useState(AVAILABLE_FIELDS);
 
   const [tags, setTags] = useState([]);
   const inputRef = useRef(null);
@@ -32,7 +35,7 @@ function ListadoConfig({ handleConfig }) {
       "Naviera", "Destino", "Llenado", "Contenedor", "Insumos de segurdad", "Producto",
       "Cajas", "Peso Neto"]`;
     tagsList = JSON.parse(tagsList);
-    const newDataList = dataList.filter(item => !tagsList.includes(item));
+    const newDataList = AVAILABLE_FIELDS.filter(item => !tagsList.includes(item));
     setTags(tagsList.sort());
     setDataList(newDataList.sort());
 
