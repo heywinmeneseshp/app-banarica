@@ -114,6 +114,11 @@ const useListadoState = () => {
   }));
 
   const updateState = useCallback((updates) => {
+    if (typeof updates === 'function') {
+      setState(prev => updates(prev));
+      return;
+    }
+
     setState(prev => ({ ...prev, ...updates }));
   }, []);
 
@@ -149,6 +154,15 @@ const ListadoContenedores = () => {
   const updateFilters = useCallback((newFilters) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
   }, []);
+
+  const patchTableRow = useCallback((rowId, updater) => {
+    updateState((prev) => ({
+      ...prev,
+      tableData: prev.tableData.map((row) => (
+        row.id === rowId ? updater(row) : row
+      ))
+    }));
+  }, [updateState]);
 
   const showInlineMessage = useCallback((message, variant = 'warning') => {
     if (messageTimeoutRef.current) {
@@ -210,8 +224,19 @@ const ListadoContenedores = () => {
 
       if (field === "contenedor") {
         await actualizarContenedor(row.Contenedor.id, { [field]: updateData });
+        patchTableRow(row.id, (currentRow) => ({
+          ...currentRow,
+          Contenedor: {
+            ...currentRow.Contenedor,
+            contenedor: updateData
+          }
+        }));
       } else {
         await actualizarListado(row.id, { [field]: updateData });
+        patchTableRow(row.id, (currentRow) => ({
+          ...currentRow,
+          [field]: updateData
+        }));
       }
 
       e.target.style.color = "";
@@ -219,7 +244,7 @@ const ListadoContenedores = () => {
       console.error('Error al actualizar:', error);
       showInlineMessage('Error al actualizar el registro');
     }
-  }, [showInlineMessage]);
+  }, [patchTableRow, showInlineMessage]);
 
   const handleDatalist = useCallback(async (id, itemActualiza, linea) => {
     const inputElement = document.getElementById(id);
@@ -256,12 +281,73 @@ const ListadoContenedores = () => {
 
     try {
       await actualizarListado(linea, { [config.field]: res.id });
+      patchTableRow(linea, (currentRow) => {
+        if (itemActualiza === 'transportadora') {
+          return {
+            ...currentRow,
+            Contenedor: {
+              ...currentRow.Contenedor,
+              carrusel: {
+                ...(currentRow.Contenedor?.carrusel || {}),
+                id_transportadora: res.id,
+                transportadora: {
+                  ...(currentRow.Contenedor?.carrusel?.transportadora || {}),
+                  id: res.id,
+                  razon_social: res.razon_social,
+                  consecutivo: res.consecutivo
+                }
+              }
+            }
+          };
+        }
+
+        if (itemActualiza === 'almacen') {
+          return {
+            ...currentRow,
+            almacen: {
+              ...(currentRow.almacen || {}),
+              id: res.id,
+              nombre: res.nombre
+            },
+            [config.field]: res.id
+          };
+        }
+
+        if (itemActualiza === 'embarque') {
+          return {
+            ...currentRow,
+            Embarque: {
+              ...(currentRow.Embarque || {}),
+              id: res.id,
+              bl: res.bl
+            },
+            [config.field]: res.id
+          };
+        }
+
+        if (itemActualiza === 'producto') {
+          return {
+            ...currentRow,
+            combo: {
+              ...(currentRow.combo || {}),
+              id: res.id,
+              nombre: res.nombre
+            },
+            [config.field]: res.id
+          };
+        }
+
+        return currentRow;
+      });
+      if (itemActualiza === 'transportadora') {
+        inputElement.value = res.razon_social || '';
+      }
       inputElement.style.color = "";
     } catch (error) {
       console.error('Error al actualizar:', error);
       showInlineMessage('Error al actualizar el registro');
     }
-  }, [showInlineMessage, state.almacenes, state.embarques, state.productos, state.transportadoras]);
+  }, [patchTableRow, showInlineMessage, state.almacenes, state.embarques, state.productos, state.transportadoras]);
 
   const onChangeCasilla = useCallback(async (id, field) => {
     const inputElement = document.getElementById(id);

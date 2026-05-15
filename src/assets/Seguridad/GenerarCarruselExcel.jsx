@@ -173,6 +173,19 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
   }, [formData]);
 
   const listaCarrusel = useMemo(() => buildCarruselList(data, formData, transportadoraContenedorIds), [data, formData, transportadoraContenedorIds]);
+  const resumenProcesamiento = useMemo(() => {
+    if (formData.transportadora && transportadoraContenedorIds) {
+      return {
+        title: 'Contenedores a procesar',
+        detail: 'Filtrados por buque y transportadora'
+      };
+    }
+
+    return {
+      title: 'Contenedores a procesar',
+      detail: 'Filtrados solo por buque'
+    };
+  }, [formData.transportadora, transportadoraContenedorIds]);
 
   const shipInfo = useMemo(() => ({
     nombre: formData.buque || 'Buque',
@@ -731,12 +744,13 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
                           <i className="bi bi-box-seam fs-4 text-success"></i>
                         </div>
                         <div>
-                          <div className="text-muted small">Contenedores a Procesar</div>
+                          <div className="text-muted small">{resumenProcesamiento.title}</div>
                           <div className="fw-bold fs-5 text-dark">
                             <span className="badge bg-success bg-opacity-25 text-success fs-6 px-3 py-2">
                               {listaCarrusel.length} contenedores
                             </span>
                           </div>
+                          <div className="text-muted small mt-1">{resumenProcesamiento.detail}</div>
                         </div>
                       </div>
                     </Col>

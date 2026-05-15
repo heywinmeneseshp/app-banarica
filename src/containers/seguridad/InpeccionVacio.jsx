@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import { FaCheckCircle, FaCog, FaFileExcel, FaMinusCircle, FaRedo } from "react-icons/fa";
+import { FaCamera, FaCheckCircle, FaCog, FaFileExcel, FaMinusCircle, FaRedo } from "react-icons/fa";
 import { LiaUndoAltSolid } from "react-icons/lia";
 import { useAuth } from "@hooks/useAuth";
 import { crearInspeccionVacio, encontrarUnSerial } from "@services/api/seguridad";
@@ -134,6 +134,10 @@ export default function InspeccionVacio() {
   const router = useRouter();
   const formRef = useRef();
   const inputRefs = useRef({});
+  const scannerVideoRef = useRef(null);
+  const scannerStreamRef = useRef(null);
+  const scannerFrameRef = useRef(null);
+  const barcodeDetectorRef = useRef(null);
   const user = getUser();
 
   const [state, setState] = useState({
@@ -151,7 +155,11 @@ export default function InspeccionVacio() {
     foodValidationResult: null,
     contenedorDevuelto: null,
     canBulkUpload: false,
-    massUploadHeaders: {}
+    massUploadHeaders: {},
+    scannerOpen: false,
+    scannerFieldId: null,
+    scannerError: "",
+    scannerSupported: true
   });
 
   const {
@@ -169,7 +177,11 @@ export default function InspeccionVacio() {
     foodValidationResult,
     contenedorDevuelto,
     canBulkUpload,
-    massUploadHeaders
+    massUploadHeaders,
+    scannerOpen,
+    scannerFieldId,
+    scannerError,
+    scannerSupported
   } = state;
 
   const setStateValue = (key, value) => setState((prev) => ({ ...prev, [key]: value }));
@@ -208,6 +220,78 @@ export default function InspeccionVacio() {
     },
     [focusField, inputFields]
   );
+
+  const isScannableField = useCallback(
+    (fieldId) => !["semana", "fecha", "contenedor"].includes(fieldId),
+    []
+  );
+
+  const closeScanner = useCallback(() => {
+    if (scannerFrameRef.current) {
+      cancelAnimationFrame(scannerFrameRef.current);
+      scannerFrameRef.current = null;
+    }
+
+    if (scannerStreamRef.current) {
+      scannerStreamRef.current.getTracks().forEach((track) => track.stop());
+      scannerStreamRef.current = null;
+    }
+
+    if (scannerVideoRef.current) {
+      scannerVideoRef.current.pause();
+      scannerVideoRef.current.srcObject = null;
+    }
+
+    setState((prev) => ({
+      ...prev,
+      scannerOpen: false,
+      scannerFieldId: null,
+      scannerError: ""
+    }));
+  }, []);
+
+  const applyScannedValue = useCallback(
+    (fieldId, rawValue) => {
+      const nextValue = normalizeUppercase(rawValue);
+      if (!nextValue) return;
+
+      setState((prev) => ({
+        ...prev,
+        formValues: {
+          ...prev.formValues,
+          [fieldId]: nextValue
+        },
+        fieldErrors: {
+          ...prev.fieldErrors,
+          [fieldId]: false
+        }
+      }));
+
+      if (fieldId === "contenedor" || fieldId === "fecha") {
+        localStorage.setItem(
+          STORAGE_KEYS.INSPECCION_VACIO,
+          JSON.stringify({
+            contenedor: fieldId === "contenedor" ? nextValue : formValues.contenedor || "",
+            fecha: fieldId === "fecha" ? nextValue : formValues.fecha || ""
+          })
+        );
+      }
+
+      closeScanner();
+      focusNextField(fieldId);
+    },
+    [closeScanner, focusNextField, formValues.contenedor, formValues.fecha]
+  );
+
+  const openScanner = useCallback((fieldId) => {
+    setState((prev) => ({
+      ...prev,
+      scannerOpen: true,
+      scannerFieldId: fieldId,
+      scannerError: "",
+      scannerSupported: true
+    }));
+  }, []);
 
   const canManageMassUpload = useCallback(
     async (moduleConfig) => {
@@ -348,6 +432,142 @@ export default function InspeccionVacio() {
       focusField("contenedor");
     }
   }, [focusField, inputFields.length]);
+
+  useEffect(() => {
+    if (!scannerOpen || !scannerFieldId) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    const videoElement = scannerVideoRef.current;
+
+    const startScanner = async () => {
+      try {
+        if (typeof window === "undefined" || typeof navigator === "undefined") {
+          throw new Error("La camara no esta disponible en este entorno.");
+        }
+
+        if (typeof window.BarcodeDetector === "undefined") {
+          setState((prev) => ({
+            ...prev,
+            scannerSupported: false,
+            scannerError: "Este navegador no soporta lectura por camara. Usa Chrome o Brave actualizados."
+          }));
+          return;
+        }
+
+        const preferredFormats = [
+          "qr_code",
+          "code_128",
+          "code_39",
+          "ean_13",
+          "ean_8",
+          "upc_a",
+          "upc_e",
+          "codabar",
+          "itf",
+          "data_matrix",
+          "pdf417",
+          "aztec"
+        ];
+
+        let formats = preferredFormats;
+        if (typeof window.BarcodeDetector.getSupportedFormats === "function") {
+          const supportedFormats = await window.BarcodeDetector.getSupportedFormats();
+          formats = preferredFormats.filter((item) => supportedFormats.includes(item));
+        }
+
+        if (formats.length === 0) {
+          setState((prev) => ({
+            ...prev,
+            scannerSupported: false,
+            scannerError: "El navegador no reporta formatos compatibles para QR o codigo de barras."
+          }));
+          return;
+        }
+
+        barcodeDetectorRef.current = new window.BarcodeDetector({ formats });
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false
+        });
+
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        scannerStreamRef.current = stream;
+
+        if (!videoElement) {
+          return;
+        }
+
+        videoElement.srcObject = stream;
+        videoElement.setAttribute("playsInline", "true");
+        await videoElement.play();
+
+        const scanFrame = async () => {
+          if (cancelled) return;
+
+          if (
+            !videoElement
+            || !barcodeDetectorRef.current
+            || videoElement.readyState < 2
+          ) {
+            scannerFrameRef.current = requestAnimationFrame(scanFrame);
+            return;
+          }
+
+          try {
+            const barcodes = await barcodeDetectorRef.current.detect(videoElement);
+            const rawValue = barcodes?.[0]?.rawValue;
+            if (rawValue) {
+              applyScannedValue(scannerFieldId, rawValue);
+              return;
+            }
+          } catch (error) {
+            console.error("Error leyendo desde la camara:", error);
+          }
+
+          scannerFrameRef.current = requestAnimationFrame(scanFrame);
+        };
+
+        scannerFrameRef.current = requestAnimationFrame(scanFrame);
+      } catch (error) {
+        console.error("No fue posible iniciar la camara:", error);
+        setState((prev) => ({
+          ...prev,
+          scannerError:
+            error?.name === "NotAllowedError"
+              ? "Debes permitir el acceso a la camara para escanear."
+              : "No fue posible iniciar la camara en este dispositivo."
+        }));
+      }
+    };
+
+    startScanner();
+
+    return () => {
+      cancelled = true;
+
+      if (scannerFrameRef.current) {
+        cancelAnimationFrame(scannerFrameRef.current);
+        scannerFrameRef.current = null;
+      }
+
+      if (scannerStreamRef.current) {
+        scannerStreamRef.current.getTracks().forEach((track) => track.stop());
+        scannerStreamRef.current = null;
+      }
+
+      if (videoElement) {
+        videoElement.pause();
+        videoElement.srcObject = null;
+      }
+    };
+  }, [applyScannedValue, scannerFieldId, scannerOpen]);
 
   const handleRemove = useCallback((id) => {
     setState((prev) => ({
@@ -755,6 +975,19 @@ export default function InspeccionVacio() {
                   />
                 )}
 
+                {isScannableField(field.id) && (
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={() => openScanner(field.id)}
+                    aria-label={`Escanear ${field.label}`}
+                    title={`Escanear ${field.label}`}
+                    style={{ minWidth: "44px" }}
+                  >
+                    <FaCamera />
+                  </button>
+                )}
+
                 {field.eliminar && (
                   <button
                     type="button"
@@ -923,6 +1156,52 @@ export default function InspeccionVacio() {
           origen="inspeccion_vacio"
           onClose={() => setStateValue("contenedorDevuelto", null)}
         />
+      )}
+
+      {scannerOpen && (
+        <div
+          className="modal d-block"
+          tabIndex="-1"
+          role="dialog"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.6)" }}
+        >
+          <div className="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  Escanear {inputFields.find((item) => item.id === scannerFieldId)?.label || "serial"}
+                </h5>
+                <button type="button" className="btn-close" onClick={closeScanner} aria-label="Cerrar" />
+              </div>
+              <div className="modal-body">
+                <p className="text-muted small mb-3">
+                  Acerca el QR o codigo de barras a la camara. Cuando se detecte, el valor se cargara automaticamente.
+                </p>
+
+                <div className="ratio ratio-4x3 bg-dark rounded overflow-hidden">
+                  <video
+                    ref={scannerVideoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </div>
+
+                {scannerError && (
+                  <div className={`alert ${scannerSupported ? "alert-warning" : "alert-danger"} mt-3 mb-0`}>
+                    {scannerError}
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={closeScanner}>
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

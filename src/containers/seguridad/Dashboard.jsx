@@ -67,6 +67,20 @@ const canOperatorViewSerialsBySchedule = (bloqueo, isSuperAdmin) => {
     return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
 };
 
+const dedupeDashboardRows = (rows = []) => {
+    const seen = new Set();
+
+    return rows.filter((row) => {
+        const key = row?.id_contenedor || row?.Contenedor?.id;
+        if (!key || seen.has(key)) {
+            return false;
+        }
+
+        seen.add(key);
+        return true;
+    });
+};
+
 export default function Dashboard() {
     const formRef = useRef();
     const tableRef = useRef(null);
@@ -96,12 +110,16 @@ export default function Dashboard() {
     const [bloqueo, setBloqueo] = useState({});
     const user = getUser();
     const [openCarrusel, setOpenCarrusel] = useState(false);
+    const [carruselData, setCarruselData] = useState([]);
     const [contenedorDevuelto, setContenedorDevuelto] = useState(null);
     const [refreshTick, setRefreshTick] = useState(0);
     const username = user?.username;
     const isSuperAdmin = user.id_rol == "Super administrador";
 
-    const dataVisible = useMemo(() => filterActiveContainerRows(data), [data]);
+    const dataVisible = useMemo(
+        () => dedupeDashboardRows(filterActiveContainerRows(data)),
+        [data]
+    );
     const canViewSerialsBySchedule = useMemo(
         () => canOperatorViewSerialsBySchedule(bloqueo, isSuperAdmin),
         [bloqueo, isSuperAdmin]
@@ -171,6 +189,30 @@ export default function Dashboard() {
         fetchConfiguracion();
         fetchData();
     }, [offset, startDate, endDate, openConfig, contenedor, refreshTick, username]);
+
+    useEffect(() => {
+        if (!openCarrusel) {
+            return;
+        }
+
+        const fetchCarruselData = async () => {
+            try {
+                const filtros = {
+                    fecha_inicial: startDate,
+                    fecha_final: endDate,
+                    habilitado: true,
+                };
+                const limit = total > 0 ? total : 1000;
+                const { data: carruselRows } = await paginarListado(1, limit, filtros);
+                setCarruselData(Array.isArray(carruselRows) ? carruselRows : []);
+            } catch (error) {
+                console.error("Error al obtener datos completos para carrusel:", error);
+                setCarruselData([]);
+            }
+        };
+
+        fetchCarruselData();
+    }, [openCarrusel, startDate, endDate, total]);
 
     const handleStartDateChange = (e) => {
         const value = e.target.value;
@@ -379,7 +421,7 @@ export default function Dashboard() {
                     />
                 )}
             </div>
-            {openCarrusel && <GenerarCarruselExcel data={data} setOpen={setOpenCarrusel} />}
+            {openCarrusel && <GenerarCarruselExcel data={carruselData} setOpen={setOpenCarrusel} />}
             {contenedor && <AsignarSeriales contenedor={contenedor} setContenedor={setContenedor} />}
             {contenedorDevuelto && (
                 <DevolverContenedorModal
