@@ -90,6 +90,8 @@ const parseRecipients = (value) =>
     .map((item) => item.trim())
     .filter(Boolean);
 
+const normalizeWeekKey = (value) => String(value || '').trim().toUpperCase();
+
 const buildGroupKey = (embarque) =>
   String(
     embarque?.id
@@ -221,8 +223,9 @@ export default function CartasAntinarcoticos() {
           paginarListado(1, 5000, { semana: selectedWeek, habilitado: true }),
         ]);
 
+        const normalizedSelectedWeek = normalizeWeekKey(selectedWeek);
         const activeRows = filterActiveContainerRows(listadoRes?.data || []).filter(
-          (item) => item?.Embarque?.semana?.consecutivo === selectedWeek
+          (item) => normalizeWeekKey(item?.Embarque?.semana?.consecutivo) === normalizedSelectedWeek
         );
         const grouped = buildShipmentGroups(embarquesRes?.data || [], activeRows);
 
@@ -256,16 +259,17 @@ export default function CartasAntinarcoticos() {
       return;
     }
 
-    const existsWeek = weeks.some(
-      (week) => String(week?.consecutivo || '').trim().toUpperCase() === normalizedWeek.toUpperCase()
+    const matchedWeek = weeks.find(
+      (week) => normalizeWeekKey(week?.consecutivo) === normalizeWeekKey(normalizedWeek)
     );
 
-    if (!existsWeek) {
+    if (!matchedWeek) {
       window.alert('Selecciona una semana valida de la lista.');
       return;
     }
 
-    setSelectedWeek(normalizedWeek);
+    setWeekInput(matchedWeek.consecutivo || normalizedWeek.toUpperCase());
+    setSelectedWeek(matchedWeek.consecutivo || normalizedWeek.toUpperCase());
   };
 
   const handleToggleAll = (checked) => {
