@@ -102,6 +102,38 @@ const buildGroupKey = (embarque) =>
       || Math.random()
   );
 
+const buildFallbackEmbarquesFromRows = (listados = []) => {
+  const groupedRows = new Map();
+
+  (Array.isArray(listados) ? listados : []).forEach((row) => {
+    const embarque = row?.Embarque;
+    const groupKey = buildGroupKey({
+      id: row?.id_embarque || embarque?.id,
+      anuncio: embarque?.anuncio,
+      sae: embarque?.sae,
+      booking: embarque?.booking,
+      bl: embarque?.bl,
+    });
+
+    if (!groupedRows.has(groupKey)) {
+      groupedRows.set(groupKey, embarque ? {
+        ...embarque,
+        id: embarque?.id || row?.id_embarque || null,
+      } : {
+        id: row?.id_embarque || null,
+        anuncio: null,
+        sae: null,
+        booking: null,
+        bl: null,
+        Buque: null,
+        Destino: null,
+      });
+    }
+  });
+
+  return Array.from(groupedRows.values());
+};
+
 const buildShipmentGroups = (embarques = [], listados = []) => {
   const rows = Array.isArray(listados) ? listados : [];
 
@@ -218,16 +250,21 @@ export default function CartasAntinarcoticos() {
     const loadWeekData = async () => {
       try {
         setLoading(true);
-        const [embarquesRes, listadoRes] = await Promise.all([
-          paginarEmbarques(1, 1000, { semana: selectedWeek }),
-          paginarListado(1, 5000, { semana: selectedWeek, habilitado: true }),
-        ]);
+        const listadoRes = await paginarListado(1, 5000, { semana: selectedWeek, habilitado: true });
 
         const normalizedSelectedWeek = normalizeWeekKey(selectedWeek);
         const activeRows = filterActiveContainerRows(listadoRes?.data || []).filter(
           (item) => normalizeWeekKey(item?.Embarque?.semana?.consecutivo) === normalizedSelectedWeek
         );
-        const grouped = buildShipmentGroups(embarquesRes?.data || [], activeRows);
+        const embarquesResponse = await paginarEmbarques(1, 1000, { semana: selectedWeek }).catch((error) => {
+          console.warn('No fue posible paginar embarques; se usara la informacion disponible en listado.', error);
+          return null;
+        });
+
+        const embarquesSource = Array.isArray(embarquesResponse?.data) && embarquesResponse.data.length > 0
+          ? embarquesResponse.data
+          : buildFallbackEmbarquesFromRows(activeRows);
+        const grouped = buildShipmentGroups(embarquesSource, activeRows);
 
         setGroups(grouped);
         setSelectedGroups(
@@ -240,7 +277,11 @@ export default function CartasAntinarcoticos() {
         console.error('Error cargando embarques de la semana:', error);
         setGroups([]);
         setSelectedGroups({});
-        window.alert('No fue posible cargar los embarques de la semana seleccionada.');
+        window.alert(
+          error?.response?.data?.message
+          || error?.message
+          || 'No fue posible cargar los embarques de la semana seleccionada.'
+        );
       } finally {
         setLoading(false);
       }
