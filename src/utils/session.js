@@ -4,6 +4,7 @@ const TOKEN_KEY = 'token';
 const USER_KEY = 'usuario';
 const WAREHOUSES_KEY = 'almacenByUser';
 const SESSION_NOTICE_KEY = 'sessionNotice';
+const LAST_ACTIVITY_KEY = 'lastActivityAt';
 const TOKEN_EXPIRATION_DAYS = 1 / 48;
 
 const parseJSON = (value, fallback = null) => {
@@ -60,8 +61,40 @@ const clearSessionNotice = () => {
     sessionStorage.removeItem(SESSION_NOTICE_KEY);
 };
 
+const getLastActivityAt = () => {
+    if (!isBrowser) {
+        return null;
+    }
+
+    const rawValue = sessionStorage.getItem(LAST_ACTIVITY_KEY);
+    const parsedValue = Number(rawValue);
+    return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : null;
+};
+
+const setLastActivityAt = (timestamp) => {
+    if (!isBrowser) {
+        return;
+    }
+
+    if (!timestamp) {
+        sessionStorage.removeItem(LAST_ACTIVITY_KEY);
+        return;
+    }
+
+    sessionStorage.setItem(LAST_ACTIVITY_KEY, String(timestamp));
+};
+
+const clearLastActivityAt = () => {
+    if (!isBrowser) {
+        return;
+    }
+
+    sessionStorage.removeItem(LAST_ACTIVITY_KEY);
+};
+
 const clearSession = () => {
     Cookie.remove(TOKEN_KEY);
+    clearLastActivityAt();
     clearSessionStorage();
 };
 
@@ -95,14 +128,17 @@ const sortWarehousesByName = (warehouses = []) => (
 
 export {
     TOKEN_EXPIRATION_DAYS,
+    clearLastActivityAt,
     clearSessionNotice,
     clearSession,
     clearSessionStorage,
+    getLastActivityAt,
     getSessionNotice,
     getStoredUser,
     getStoredWarehouses,
     getToken,
     persistToken,
+    setLastActivityAt,
     setSessionNotice,
     setStoredUser,
     setStoredWarehouses,
