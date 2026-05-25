@@ -250,7 +250,11 @@ export default function CartasAntinarcoticos() {
     const loadWeekData = async () => {
       try {
         setLoading(true);
-        const listadoRes = await paginarListado(1, 5000, { semana: selectedWeek, habilitado: true });
+        const listadoRes = await paginarListado(1, 5000, {
+          semana: selectedWeek,
+          habilitado: true,
+          includeSeriales: false,
+        });
 
         const normalizedSelectedWeek = normalizeWeekKey(selectedWeek);
         const activeRows = filterActiveContainerRows(listadoRes?.data || []).filter(
