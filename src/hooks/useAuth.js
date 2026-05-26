@@ -44,7 +44,7 @@ function useProviderAuth() {
 
             const res = await axios.get(endPoints.auth.profile);
             if (res.data.usuario.isBlock) {
-                return window.alert("El usuario esta deshabilitado, por favor comuniquese con el administrador");
+                throw new Error("El usuario esta deshabilitado. Comunicate con el administrador.");
             }
 
             setUser(res.data.usuario);
@@ -56,7 +56,7 @@ function useProviderAuth() {
 
             router.push('/');
         } catch (e) {
-            alert(e?.response?.data?.message || 'Contrasena o usuario incorrecto');
+            throw new Error(e?.response?.data?.message || e?.message || 'Contrasena o usuario incorrecto');
         } finally {
             setIsLoggingIn(false);
         }

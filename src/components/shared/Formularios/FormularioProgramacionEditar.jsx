@@ -11,7 +11,20 @@ import { actualizarProgramaciones } from "@services/api/programaciones";
 import { agregarRutas, buscarRutaPost } from "@services/api/rutas";
 import { agregarConsumoRutaVehiculo } from "@services/api/consumoRutaVehiculo";
 import { listartipoMovimientoVehiculos } from "@services/api/tipoMovimientoVehiculos";
+import { encontrarModulo } from "@services/api/configuracion";
 
+const parseVehiculosSinCombustible = (configRows) => {
+  try {
+    const [config = {}] = configRows || [];
+    const parsed = JSON.parse(config?.detalles || "{}");
+    return Array.isArray(parsed?.vehiculosSinCombustible)
+      ? parsed.vehiculosSinCombustible.map((item) => String(item))
+      : [];
+  } catch (error) {
+    console.warn("No se pudo leer la configuracion de Programador_combustible:", error);
+    return [];
+  }
+};
 
 
 
@@ -29,6 +42,7 @@ export default function FormulariosProgramacionEditar({ element, setOpen, setAle
   const [listaUbicaciones, setListaUbicaciones] = useState([]);
   const [listaClientes, setListaClientes] = useState([]);
   const [listaTiposMovimiento, setListaTiposMovimiento] = useState([]);
+  const [vehiculosSinCombustible, setVehiculosSinCombustible] = useState([]);
 
   useEffect(() => {
     setIsChecked(element.cobrar);
@@ -43,7 +57,10 @@ export default function FormulariosProgramacionEditar({ element, setOpen, setAle
 
   const handleSubmit = async () => {
     const formData = new FormData(formRef.current);
-    if (formData.get("origen") == formData.get("destino")) return alert("El origen y el destino no puede ser el mismo.");
+    const vehiculoSinCombustible = vehiculosSinCombustible.includes(String(formData.get("vehiculo") || ""));
+    if (formData.get("origen") == formData.get("destino") && !vehiculoSinCombustible) {
+      return alert("El origen y el destino no puede ser el mismo.");
+    }
     const buscarRuta = { ubicacion1: formData.get("origen"), ubicacion2: formData.get("destino") };
     var existeRuta;
     try {
@@ -51,28 +68,33 @@ export default function FormulariosProgramacionEditar({ element, setOpen, setAle
     } catch (e) {
       const origenSeleccionado = listaUbicaciones.find((item) => String(item?.id) === String(buscarRuta.ubicacion1));
       const destinoSeleccionado = listaUbicaciones.find((item) => String(item?.id) === String(buscarRuta.ubicacion2));
-      const confirmarCrearRuta = window.confirm(
-        `No existe una ruta entre "${origenSeleccionado?.ubicacion || 'origen'}" y "${destinoSeleccionado?.ubicacion || 'destino'}". Desea crearla ahora y asignar el consumo del vehiculo?`
-      );
 
-      if (!confirmarCrearRuta) {
-        return;
+      if (!vehiculoSinCombustible) {
+        const confirmarCrearRuta = window.confirm(
+          `No existe una ruta entre "${origenSeleccionado?.ubicacion || 'origen'}" y "${destinoSeleccionado?.ubicacion || 'destino'}". Desea crearla ahora y asignar el consumo del vehiculo?`
+        );
+
+        if (!confirmarCrearRuta) {
+          return;
+        }
+
+        const consumoIngresado = window.prompt("Ingrese el consumo del vehiculo para esta nueva ruta:");
+        const consumoPorKm = Number(consumoIngresado);
+
+        if (!consumoIngresado || Number.isNaN(consumoPorKm) || consumoPorKm <= 0) {
+          return alert("Debe ingresar un consumo por km valido para crear la nueva ruta.");
+        }
+
+        existeRuta = await agregarRutas(buscarRuta);
+        await agregarConsumoRutaVehiculo({
+          vehiculo_id: formData.get("vehiculo"),
+          ruta_id: existeRuta.data.id,
+          consumo_por_km: consumoPorKm,
+          activo: true,
+        });
+      } else {
+        existeRuta = await agregarRutas(buscarRuta);
       }
-
-      const consumoIngresado = window.prompt("Ingrese el consumo del vehículo para esta nueva ruta:");
-      const consumoPorKm = Number(consumoIngresado);
-
-      if (!consumoIngresado || Number.isNaN(consumoPorKm) || consumoPorKm <= 0) {
-        return alert("Debe ingresar un consumo por km valido para crear la nueva ruta.");
-      }
-
-      existeRuta = await agregarRutas(buscarRuta);
-      await agregarConsumoRutaVehiculo({
-        vehiculo_id: formData.get("vehiculo"),
-        ruta_id: existeRuta.data.id,
-        consumo_por_km: consumoPorKm,
-        activo: true,
-      });
     }
     let contenedor = null;
     if (isCheckedContenedor) {
@@ -138,11 +160,13 @@ export default function FormulariosProgramacionEditar({ element, setOpen, setAle
     let conductores = await listarConductores();
     let vehiculos = await listarVehiculo();
     let tiposMovimiento = await listartipoMovimientoVehiculos();
+    let configProgramador = await encontrarModulo("Programador_combustible");
     setListaConductores(conductores);
     setListaVehiculos(vehiculos);
     setListaUbicaciones(ubicaciones);
     setListaClientes(clientes);
     setListaTiposMovimiento(tiposMovimiento || []);
+    setVehiculosSinCombustible(parseVehiculosSinCombustible(configProgramador));
   };
 
 
@@ -164,6 +188,13 @@ export default function FormulariosProgramacionEditar({ element, setOpen, setAle
 
                   <form ref={formRef} className="container">
                     <span className="col-md-12 row">
+                      {vehiculosSinCombustible.includes(String(element?.vehiculo_id || "")) && (
+                        <div className="col-md-12 mb-2">
+                          <div className="alert alert-info py-2 mb-0">
+                            Programador sin combustible obligatorio para este vehiculo.
+                          </div>
+                        </div>
+                      )}
                       <div className="mb-2 col-md-2">
                         <label htmlFor={"fecha"} className="form-label mb-1">Fecha</label>
                         <input

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { FaCamera, FaCog, FaMinus, FaPlus } from "react-icons/fa";
 import Loader from "@components/shared/Loader";
@@ -9,6 +9,7 @@ import { paginarInspecciones } from "@services/api/inpecciones";
 import { paginarListado } from "@services/api/listado";
 import { encontrarUnSerial, inspeccionAntinarcoticos } from "@services/api/seguridad";
 import { filterActiveContainerRows } from "@utils/contenedorEstado";
+import useFeedback from '@hooks/useFeedback';
 
 const CONTAINER_LENGTH = 11;
 const INSPECCION_LLENO_ALERT_MODULE = "Inspeccion_lleno_alertas";
@@ -50,6 +51,7 @@ const createEmptySection = () => ({
 });
 
 const InspeccionLlenoAlertConfigModal = ({ show, onClose }) => {
+  const { notify } = useFeedback();
   const [correos, setCorreos] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -83,10 +85,10 @@ const InspeccionLlenoAlertConfigModal = ({ show, onClose }) => {
           correos_alerta: correos
         })
       });
-      window.alert("Correos de alerta guardados exitosamente.");
+      notify("Correos de alerta guardados exitosamente.", { variant: 'success' });
       onClose();
     } catch (error) {
-      window.alert(error?.message || "No fue posible guardar la configuracion de correos.");
+      notify(error?.message || "No fue posible guardar la configuracion de correos.", { variant: 'danger' });
     } finally {
       setSaving(false);
     }
@@ -290,6 +292,7 @@ const DynamicSection = ({ section, onUpdate, onRemove, products, almacenes }) =>
 };
 
 export default function InspeccionLLeno() {
+  const { notify, confirm } = useFeedback();
   const scannerVideoRef = useRef(null);
   const scannerStreamRef = useRef(null);
   const scannerFrameRef = useRef(null);
@@ -495,7 +498,7 @@ export default function InspeccionLLeno() {
 
     if (!selectedContainer) {
       setValidation((prev) => ({ ...prev, contenedor: false }));
-      throw new Error("Selecciona un contenedor válido del listado.");
+      throw new Error("Selecciona un contenedor vÃ¡lido del listado.");
     }
 
     const kit = await encontrarUnSerial({ bag_pack: bagCode, available: [true] });
@@ -537,9 +540,13 @@ export default function InspeccionLLeno() {
       const inspectionCount = await countFullInspections(selectedContainer.contenedor);
 
       if (inspectionCount >= 1) {
-        const shouldContinue = window.confirm(
-          "Este contenedor ya fue inspeccionado anteriormente. ¿Estas seguro de enviarlo nuevamente?"
-        );
+        const shouldContinue = await confirm({
+          title: 'Contenedor ya inspeccionado',
+          message: 'Este contenedor ya fue inspeccionado anteriormente. ¿Estas seguro de enviarlo nuevamente?',
+          confirmLabel: 'Si, enviar',
+          cancelLabel: 'Cancelar',
+          variant: 'warning'
+        });
 
         if (!shouldContinue) {
           return;
@@ -558,17 +565,17 @@ export default function InspeccionLLeno() {
       );
 
       if (!isSuperAdmin && response?.pending_approval) {
-        window.alert("La inspeccion fue enviada, pero no sera aprobada hasta que un Super administrador la autorice.");
+        notify("La inspeccion fue enviada, pero no sera aprobada hasta que un Super administrador la autorice.", { variant: 'warning', autoClose: false });
       } else {
-        window.alert(response?.message || "Datos cargados con exito");
+        notify(response?.message || "Datos cargados con exito", { variant: 'success' });
       }
       resetForm();
     } catch (error) {
-      window.alert(error.message || "No fue posible guardar la inspección.");
+      notify(error.message || "No fue posible guardar la inspeccion.", { variant: 'danger', autoClose: false });
     } finally {
       setLoading(false);
     }
-  }, [countFullInspections, formData, resetForm, sections, validateForm]);
+  }, [confirm, countFullInspections, formData, notify, resetForm, sections, validateForm]);
 
   useEffect(() => {
     const initializeData = async () => {
@@ -581,7 +588,7 @@ export default function InspeccionLLeno() {
         setProducts(productsData || []);
         setAlmacenes(almacenesData || []);
       } catch (error) {
-        console.error("Error inicializando inspección lleno:", error);
+        console.error("Error inicializando inspecciÃ³n lleno:", error);
       }
     };
 
@@ -720,9 +727,9 @@ export default function InspeccionLLeno() {
         <div className="container py-3">
           <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
             <div className="text-center text-md-start">
-              <h2 className="mb-2">Inspección Lleno</h2>
+              <h2 className="mb-2">InspecciÃ³n Lleno</h2>
               <p className="text-muted mb-0">
-                Registra la inspección antinarcóticos del contenedor lleno.
+                Registra la inspecciÃ³n antinarcÃ³ticos del contenedor lleno.
               </p>
             </div>
 
@@ -835,7 +842,7 @@ export default function InspeccionLLeno() {
                     id="agente"
                     value={formData.agente}
                     onChange={handleInputChange}
-                    placeholder="Nombre del agente de policía"
+                    placeholder="Nombre del agente de policÃ­a"
                     required
                   />
                 </div>
@@ -846,7 +853,7 @@ export default function InspeccionLLeno() {
                     id="zona"
                     value={formData.zona}
                     onChange={handleInputChange}
-                    placeholder="Zona de inspección"
+                    placeholder="Zona de inspecciÃ³n"
                     required
                   />
                 </div>
@@ -960,3 +967,4 @@ export default function InspeccionLLeno() {
     </>
   );
 }
+

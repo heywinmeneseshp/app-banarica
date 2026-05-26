@@ -301,6 +301,8 @@ const endPoints = {
         findOne: (id) => `${API}/api/${VERSION}/vehiculos/${id}`,
         pagination: (page, limit, item) => `${API}/api/${VERSION}/vehiculos/paginar?page=${page}&limit=${limit}&item=${item}`,
         create: `${API}/api/${VERSION}/vehiculos`,
+        bulkCreate: `${API}/api/${VERSION}/vehiculos/masivo`,
+        bulkUpdate: `${API}/api/${VERSION}/vehiculos/actualizar-masivo`,
         update: (id) => `${API}/api/${VERSION}/vehiculos/${id}`,
         delete: (id) => `${API}/api/${VERSION}/vehiculos/${id}`,
     },

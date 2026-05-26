@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 const useAlert = (options) => {
     const defaultOptions = {
@@ -13,9 +13,12 @@ const useAlert = (options) => {
         ...options,
     });
 
-    const toogleAlert = () => {
-        setAlert(!alert.active);
-    };
+    const toogleAlert = useCallback(() => {
+        setAlert((prev) => ({
+            ...prev,
+            active: !prev.active,
+        }));
+    }, []);
 
     return {
        alert,

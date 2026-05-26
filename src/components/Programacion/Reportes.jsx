@@ -6,6 +6,7 @@ import { listarConsumoRutaVehiculo } from '@services/api/consumoRutaVehiculo';
 import { paginarProgramaciones } from '@services/api/programaciones';
 import { listarRecord_consumo } from '@services/api/record_consumo';
 import { consultarTanqueos } from '@services/api/tanqueo';
+import { encontrarModulo } from '@services/api/configuracion';
 import Bars from './Bars';
 import BarHorizontar from './BarsHorizonal';
 
@@ -33,6 +34,19 @@ const getRouteLabel = (ruta) => {
     const origen = ruta?.ubicacion_1?.ubicacion || ruta?.origen || ruta?.ubicacion1 || 'Origen';
     const destino = ruta?.ubicacion_2?.ubicacion || ruta?.destino || ruta?.ubicacion2 || 'Destino';
     return `${origen} - ${destino}`;
+};
+
+const parseVehiculosSinCombustible = (configRows) => {
+    try {
+        const [config = {}] = configRows || [];
+        const parsed = JSON.parse(config?.detalles || '{}');
+        return Array.isArray(parsed?.vehiculosSinCombustible)
+            ? parsed.vehiculosSinCombustible.map((item) => String(item))
+            : [];
+    } catch (error) {
+        console.warn('No se pudo leer la configuracion de Programador_combustible:', error);
+        return [];
+    }
 };
 
 export default function Reportes() {
@@ -73,7 +87,7 @@ export default function Reportes() {
             setIsLoading(true);
             setStatusMessage('');
 
-            const [programaciones, configuracionesRuta, tanqueos, recordConsumos] = await Promise.all([
+            const [programaciones, configuracionesRuta, tanqueos, recordConsumos, configProgramador] = await Promise.all([
                 paginarProgramaciones(1, 1000, {
                     semana,
                     vehiculo,
@@ -89,12 +103,14 @@ export default function Reportes() {
                     vehiculo,
                 }),
                 listarRecord_consumo(),
+                encontrarModulo('Programador_combustible'),
             ]);
 
             const rutas = Array.isArray(programaciones?.data) ? programaciones.data : [];
             const consumosRuta = Array.isArray(configuracionesRuta) ? configuracionesRuta : [];
             const cargues = Array.isArray(tanqueos) ? tanqueos : [];
             const records = Array.isArray(recordConsumos) ? recordConsumos : [];
+            const vehiculosExcluidos = new Set(parseVehiculosSinCombustible(configProgramador));
 
             const resumenVehiculo = {};
             const resumenDiario = {};
@@ -115,7 +131,9 @@ export default function Reportes() {
             const vehicleIds = [...new Set([
                 ...rutas.map((item) => String(item?.vehiculo_id || item?.vehiculo?.id || '')),
                 ...cargues.map((item) => String(item?.vehiculo_id || item?.vehiculo?.id || '')),
-            ])].filter(Boolean).sort((a, b) => a.localeCompare(b));
+            ])]
+                .filter((vehiculoId) => Boolean(vehiculoId) && !vehiculosExcluidos.has(String(vehiculoId)))
+                .sort((a, b) => a.localeCompare(b));
 
             const rows = [];
 

@@ -17,6 +17,7 @@ import { actualizarContenedor } from '@services/api/contenedores';
 import { paginarCombos } from '@services/api/combos';
 import { listarTransportadoras } from '@services/api/transportadoras';
 import { useAuth } from '@hooks/useAuth';
+import useFeedback from '@hooks/useFeedback';
 import * as XLSX from 'xlsx';
 import Transbordar from '@assets/Seguridad/Listado/Transbordar';
 import CargarExcel from '@assets/Seguridad/Listado/CargueMasivo';
@@ -127,6 +128,7 @@ const useListadoState = () => {
 
 const ListadoContenedores = () => {
   const { getUser } = useAuth();
+  const { notify } = useFeedback();
   const formRef = useRef();
   const tablaRef = useRef();
   const messageTimeoutRef = useRef(null);
@@ -519,13 +521,13 @@ const ListadoContenedores = () => {
 
     } catch (error) {
       console.error('Error al exportar:', error);
-      alert('Error al exportar el archivo Excel');
+      notify('Error al exportar el archivo Excel', { variant: 'danger' });
     }
-  }, [state.tableData, state.configuracionTabla, state.configuracionInsumos]);
+  }, [notify, state.tableData, state.configuracionTabla, state.configuracionInsumos]);
 
   const openTracecode = useCallback((contenedor) => {
     if (!contenedor?.id) {
-      window.alert("No fue posible identificar el contenedor.");
+      notify("No fue posible identificar el contenedor.", { variant: 'warning' });
       return;
     }
 
@@ -535,7 +537,7 @@ const ListadoContenedores = () => {
     });
 
     window.open(traceUrl, "_blank", "noopener,noreferrer");
-  }, []);
+  }, [notify]);
 
   const renderHeader = useCallback((name, highlight = false, label = null) => {
     return state.configuracionTabla.includes(name) && (
@@ -623,7 +625,7 @@ const ListadoContenedores = () => {
         url: error?.config?.url,
         data: error?.response?.data,
       });
-      alert('Error al cargar los datos del listado');
+      notify('Error al cargar los datos del listado', { variant: 'danger' });
       updateState({ loading: false });
     }
   }, [
@@ -632,7 +634,8 @@ const ListadoContenedores = () => {
     user.username,
     aplicarColor,
     updateState,
-    debouncedFilters
+    debouncedFilters,
+    notify
   ]);
 
   // Handler optimizado para cambios en filtros
@@ -659,7 +662,7 @@ const ListadoContenedores = () => {
   // Operaciones en lote optimizadas
   async function ejecutarOperacionLote(operacion, mensajeError) {
     if (selectedItems.length === 0) {
-      alert('Por favor selecciona al menos un item');
+      notify('Por favor selecciona al menos un item', { variant: 'warning' });
       return;
     }
 
@@ -668,7 +671,7 @@ const ListadoContenedores = () => {
       await listar();
     } catch (error) {
       console.error(mensajeError, error);
-      alert(mensajeError);
+      notify(mensajeError, { variant: 'danger' });
     }
   }
 
@@ -811,10 +814,18 @@ const ListadoContenedores = () => {
           <td
             className="text-custom-small text-center"
             style={{ backgroundColor: state.bol[Contenedor?.contenedor] }}
-            contentEditable={state.isEditable}
-            onBlur={(e) => handleCellEdit(row, "contenedor", e)}
           >
-            {Contenedor?.contenedor}
+            {state.isEditable ? (
+              <input
+                type="text"
+                defaultValue={Contenedor?.contenedor}
+                onBlur={(e) => handleCellEdit(row, "contenedor", e)}
+                className="form-control custom-input text-center"
+                style={{ width: "120px", padding: 0, margin: '0 auto' }}
+              />
+            ) : (
+              Contenedor?.contenedor
+            )}
           </td>
         )}
 

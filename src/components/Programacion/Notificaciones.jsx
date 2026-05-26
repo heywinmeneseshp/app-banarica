@@ -1,15 +1,28 @@
 // components/TablaViajes.tsx
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import style from "@components/Programacion/camiones.module.css";
 import Paginacion from '@components/shared/Tablas/Paginacion';
 import FormulariosProgramacion from '@components/shared/Formularios/FormularioProgramacion';
 import Alertas from '@assets/Alertas';
 import { paginarNotificaciones } from '@services/api/notificaciones';
+import { encontrarModulo } from '@services/api/configuracion';
 
 
 import useAlert from '@hooks/useAlert';
 
+const parseVehiculosSinCombustible = (configRows) => {
+    try {
+        const [config = {}] = configRows || [];
+        const parsed = JSON.parse(config?.detalles || '{}');
+        return Array.isArray(parsed?.vehiculosSinCombustible)
+            ? parsed.vehiculosSinCombustible.map((item) => String(item))
+            : [];
+    } catch (error) {
+        console.warn('No se pudo leer la configuracion de Programador_combustible:', error);
+        return [];
+    }
+};
 
 export default function Notificaciones() {
 
@@ -21,16 +34,24 @@ export default function Notificaciones() {
     const { alert, setAlert, toogleAlert } = useAlert();
     const formRef = useRef();
 
+    const listar = useCallback(async () => {
+        const [res, configProgramador] = await Promise.all([
+            paginarNotificaciones(pagination, 50, {}),
+            encontrarModulo('Programador_combustible'),
+        ]);
+        const vehiculosExcluidos = parseVehiculosSinCombustible(configProgramador);
+        const filtradas = (res?.data || []).filter((item) => {
+            const vehiculoId = String(item?.record_consumo?.vehiculo_id || item?.record_consumo?.vehiculo?.id || '');
+            return !vehiculoId || !vehiculosExcluidos.includes(vehiculoId);
+        });
+        setItemsList(filtradas);
+        setTotal(filtradas.length);
+        setLimit(50);
+    }, [pagination]);
+
     useEffect(() => {
         listar();
-    }, [pagination, alert],);
-
-    const listar = async () => {
-        const res = await paginarNotificaciones(pagination, 50, {});
-        setItemsList(res.data);
-        setTotal(res.total);
-        setLimit(50);
-    };
+    }, [listar, alert]);
 
     return (
 

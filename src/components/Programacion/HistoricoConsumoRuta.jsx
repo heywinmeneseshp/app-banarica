@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import Paginacion from '@components/shared/Tablas/Paginacion';
 import Alertas from '@assets/Alertas';
@@ -7,8 +7,22 @@ import { paginarProgramaciones } from '@services/api/programaciones';
 import { listarConsumoRutaVehiculo } from '@services/api/consumoRutaVehiculo';
 import { consultarTanqueos } from '@services/api/tanqueo';
 import { liquidarRutaDia, previewLiquidacionRuta, listarRecord_consumo } from '@services/api/record_consumo';
+import { encontrarModulo } from '@services/api/configuracion';
 import useAlert from '@hooks/useAlert';
 import { Button } from 'react-bootstrap';
+
+const parseVehiculosSinCombustible = (configRows) => {
+  try {
+    const [config = {}] = configRows || [];
+    const parsed = JSON.parse(config?.detalles || '{}');
+    return Array.isArray(parsed?.vehiculosSinCombustible)
+      ? parsed.vehiculosSinCombustible.map((item) => String(item))
+      : [];
+  } catch (error) {
+    console.warn('No se pudo leer la configuracion de Programador_combustible:', error);
+    return [];
+  }
+};
 
 export default function HistoricoConsumoRuta() {
   const [pagination, setPagination] = useState(1);
@@ -24,6 +38,7 @@ export default function HistoricoConsumoRuta() {
   const [liquidating, setLiquidating] = useState(false);
   const [expandedVehicle, setExpandedVehicle] = useState(0);
   const [recordConsumos, setRecordConsumos] = useState([]);
+  const [vehiculosSinCombustible, setVehiculosSinCombustible] = useState([]);
   const formRef = useRef();
   const { alert, setAlert, toogleAlert } = useAlert();
 
@@ -33,10 +48,6 @@ export default function HistoricoConsumoRuta() {
       fin: '',
     });
   }, []);
-
-  useEffect(() => {
-    listar();
-  }, [pagination]);
 
   const getRouteLabel = (ruta) => {
     const origen = ruta?.ubicacion_1?.ubicacion || ruta?.origen || ruta?.ubicacion1 || 'Origen';
@@ -75,7 +86,7 @@ export default function HistoricoConsumoRuta() {
     return !vehiclePreview?.alreadyLiquidated;
   };
 
-  const listar = async () => {
+  const listar = useCallback(async () => {
     try {
       setPreview(null);
       const formData = new FormData(formRef.current);
@@ -92,7 +103,7 @@ export default function HistoricoConsumoRuta() {
         body.fechaFin = fechaFin;
       }
 
-      const [programaciones, conductoresData, consumosData, tanqueosData, recordConsumosData] = await Promise.all([
+      const [programaciones, conductoresData, consumosData, tanqueosData, recordConsumosData, configProgramador] = await Promise.all([
         paginarProgramaciones(pagination, limit, body),
         listarConductores(),
         listarConsumoRutaVehiculo(),
@@ -102,6 +113,7 @@ export default function HistoricoConsumoRuta() {
           vehiculo: body.vehiculo,
         }),
         listarRecord_consumo(),
+        encontrarModulo('Programador_combustible'),
       ]);
 
       setItemsList(programaciones?.data || []);
@@ -110,6 +122,7 @@ export default function HistoricoConsumoRuta() {
       setConsumosRuta(consumosData || []);
       setTanqueos(tanqueosData || []);
       setRecordConsumos(recordConsumosData || []);
+      setVehiculosSinCombustible(parseVehiculosSinCombustible(configProgramador));
     } catch (error) {
       setAlert({
         active: true,
@@ -118,9 +131,14 @@ export default function HistoricoConsumoRuta() {
         autoClose: true,
       });
     }
-  };
+  }, [pagination, limit, setAlert]);
+
+  useEffect(() => {
+    listar();
+  }, [listar]);
 
   const rows = useMemo(() => {
+    const vehiculosExcluidos = new Set(vehiculosSinCombustible.map((item) => String(item)));
     const runningBalances = {};
     const getEntryVariation = (entry) => {
       const galones = Number(entry?.galones || 0);
@@ -135,7 +153,9 @@ export default function HistoricoConsumoRuta() {
     const vehicleIds = [...new Set([
       ...itemList.map((item) => String(item?.vehiculo_id || item?.vehiculo?.id || '')),
       ...tanqueos.map((item) => String(item?.vehiculo_id || item?.vehiculo?.id || '')),
-    ])].filter(Boolean).sort((a, b) => a.localeCompare(b));
+    ])]
+      .filter((vehiculoId) => Boolean(vehiculoId) && !vehiculosExcluidos.has(String(vehiculoId)))
+      .sort((a, b) => a.localeCompare(b));
 
     const tracedRows = [];
 
@@ -339,7 +359,7 @@ export default function HistoricoConsumoRuta() {
     });
 
     return tracedRows.reverse();
-  }, [itemList, consumosRuta, tanqueos, recordConsumos]);
+  }, [itemList, consumosRuta, tanqueos, recordConsumos, vehiculosSinCombustible]);
 
   const totalGalones = useMemo(() => {
     return rows

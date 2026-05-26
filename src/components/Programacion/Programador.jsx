@@ -3,7 +3,8 @@ import * as XLSX from 'xlsx';
 import Paginacion from '@components/shared/Tablas/Paginacion';
 import FormulariosProgramacion from '@components/shared/Formularios/FormularioProgramacion';
 import Alertas from '@assets/Alertas';
-import { paginarProgramaciones, eliminarProgramaciones, agregarProgramaciones, actualizarProgramaciones } from '@services/api/programaciones';
+import CargueMasivo from '@assets/Seguridad/Listado/CargueMasivo';
+import { paginarProgramaciones, eliminarProgramaciones, agregarProgramaciones, actualizarProgramaciones, listarProgramaciones } from '@services/api/programaciones';
 import { listarUbicaciones } from '@services/api/ubicaciones';
 import { listarConductores } from '@services/api/conductores';
 import { listarVehiculo } from '@services/api/vehiculos';
@@ -11,8 +12,9 @@ import { filtrarSemanaRangoMes } from '@services/api/semanas';
 import { listarEmbarques } from '@services/api/embarques';
 import { listartipoMovimientoVehiculos } from '@services/api/tipoMovimientoVehiculos';
 import useAlert from '@hooks/useAlert';
-import { buscarRutaPost } from '@services/api/rutas';
-import { Button, Form } from 'react-bootstrap';
+import { agregarRutas, buscarRutaPost } from '@services/api/rutas';
+import { encontrarModulo } from '@services/api/configuracion';
+import { Button, Form, Modal } from 'react-bootstrap';
 const COLUMN_STORAGE_KEY = 'programadorColumnConfig';
 const COLUMN_OPTIONS = [
   { id: 'fecha', label: 'Fecha' },
@@ -34,6 +36,19 @@ const DEFAULT_VISIBLE_COLUMNS = COLUMN_OPTIONS.reduce((acc, column) => {
   acc[column.id] = true;
   return acc;
 }, {});
+
+const parseVehiculosSinCombustible = (configRows) => {
+  try {
+    const [config = {}] = configRows || [];
+    const parsed = JSON.parse(config?.detalles || '{}');
+    return Array.isArray(parsed?.vehiculosSinCombustible)
+      ? parsed.vehiculosSinCombustible.map((item) => String(item))
+      : [];
+  } catch (error) {
+    console.warn('No se pudo leer la configuracion de Programador_combustible:', error);
+    return [];
+  }
+};
 
 const normalizeValue = (value) => String(value || '').trim().toLowerCase();
 
@@ -116,12 +131,15 @@ export default function Programador() {
   const [reloadKey, setReloadKey] = useState(0);
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [updatingMass, setUpdatingMass] = useState(false);
   const [isEditable, setIsEditable] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState(DEFAULT_VISIBLE_COLUMNS);
   const [showColumnConfig, setShowColumnConfig] = useState(false);
+  const [openMasivo, setOpenMasivo] = useState(false);
+  const [openActualizarMasivo, setOpenActualizarMasivo] = useState(false);
+  const [vehiculosSinCombustible, setVehiculosSinCombustible] = useState([]);
   const { alert, setAlert, toogleAlert } = useAlert();
   const formRef = useRef(null);
-  const importRef = useRef(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -130,14 +148,13 @@ export default function Programador() {
 
     const savedConfig = window.localStorage.getItem(COLUMN_STORAGE_KEY);
     if (!savedConfig) {
-      setShowColumnConfig(true);
       return;
     }
 
     try {
       setVisibleColumns({ ...DEFAULT_VISIBLE_COLUMNS, ...JSON.parse(savedConfig) });
     } catch {
-      setShowColumnConfig(true);
+      setVisibleColumns(DEFAULT_VISIBLE_COLUMNS);
     }
   }, []);
 
@@ -161,13 +178,14 @@ export default function Programador() {
         body.fechaFin = fechaFin;
       }
 
-      const [newUbicaciones, newConductores, newVehiculos, newSemanas, newEmbarques, newTiposMovimiento, res] = await Promise.all([
+      const [newUbicaciones, newConductores, newVehiculos, newSemanas, newEmbarques, newTiposMovimiento, configProgramador, res] = await Promise.all([
         listarUbicaciones(),
         listarConductores(),
         listarVehiculo(),
         filtrarSemanaRangoMes(1, 1),
         listarEmbarques(),
         listartipoMovimientoVehiculos(),
+        encontrarModulo('Programador_combustible'),
         paginarProgramaciones(pagination, limit, body),
       ]);
 
@@ -177,6 +195,7 @@ export default function Programador() {
       setSemanas(newSemanas || []);
       setEmbarques(newEmbarques || []);
       setTiposMovimiento(newTiposMovimiento || []);
+      setVehiculosSinCombustible(parseVehiculosSinCombustible(configProgramador));
       setItemsList(res?.data || []);
       setTotal(res?.total || 0);
     } catch (error) {
@@ -313,9 +332,18 @@ export default function Programador() {
     }
   };
 
-  const ensureRoute = async (origenId, destinoId) => {
-    const route = await buscarRutaPost({ ubicacion1: origenId, ubicacion2: destinoId });
-    return route?.data?.id;
+  const ensureRoute = async (origenId, destinoId, options = {}) => {
+    const { vehiculoId = '', allowCreateIfExempt = false } = options;
+    try {
+      const route = await buscarRutaPost({ ubicacion1: origenId, ubicacion2: destinoId });
+      return route?.data?.id;
+    } catch (error) {
+      if (allowCreateIfExempt && vehiculosSinCombustible.includes(String(vehiculoId || ''))) {
+        const nuevaRuta = await agregarRutas({ ubicacion1: origenId, ubicacion2: destinoId });
+        return nuevaRuta?.data?.id;
+      }
+      throw error;
+    }
   };
 
   const saveColumnConfig = (nextConfig) => {
@@ -495,23 +523,122 @@ export default function Programador() {
     }
   };
 
-  const handleImportExcel = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
+  const resolveImportPayload = async (row, catalogs) => {
+    const { ubicacionesList, conductoresList, vehiculosList, semanasList, tiposMovimientoList } = catalogs;
+
+    const fecha = formatDateCell(getRowValue(row, ['Fecha']));
+    const semana = String(getRowValue(row, ['Semana'])).trim();
+    const vehiculoText = String(getRowValue(row, ['Vehiculo', 'Vehículo', 'Placa'])).trim();
+    const conductorText = String(getRowValue(row, ['Conductor'])).trim();
+    const blText = String(getRowValue(row, ['BL', 'Bl', 'Bill of Loading'])).trim();
+    const origenText = String(getRowValue(row, ['Origen', 'Ubicacion 1', 'Ubicación 1'])).trim();
+    const destinoText = String(getRowValue(row, ['Destino', 'Ubicacion 2', 'Ubicación 2'])).trim();
+    const movimientoText = String(getRowValue(row, ['Movimiento'])).trim() || 'Local';
+    const contenedorText = String(getRowValue(row, ['Contenedor', 'Numero contenedor', 'Número contenedor'])).trim();
+    const detallesText = String(getRowValue(row, ['Observaciones', 'Detalle', 'Detalles'])).trim();
+    const llegadaOrigen = formatTimeCell(getRowValue(row, ['Llegada origen']));
+    const salidaOrigen = formatTimeCell(getRowValue(row, ['Salida origen']));
+    const llegadaDestino = formatTimeCell(getRowValue(row, ['Llegada destino']));
+    const salidaDestino = formatTimeCell(getRowValue(row, ['Salida destino']));
+    const idText = String(getRowValue(row, ['Id', 'ID', 'Programacion ID', 'Programación ID'])).trim();
+
+    if (!fecha || !semana || !vehiculoText || !conductorText || !origenText) {
+      throw new Error('faltan columnas obligatorias.');
     }
 
+    const semanaExiste = semanasList.find((item) => String(item?.consecutivo) === semana);
+    if (!semanaExiste) {
+      throw new Error(`semana "${semana}" no existe en la tabla de semanas.`);
+    }
+
+    const vehiculo = vehiculosList.find((item) => normalizeValue(item?.placa) === normalizeValue(vehiculoText));
+    const conductor = conductoresList.find((item) => normalizeValue(item?.conductor) === normalizeValue(conductorText));
+    const origen = ubicacionesList.find((item) => normalizeValue(item?.ubicacion) === normalizeValue(origenText));
+    const destino = destinoText
+      ? ubicacionesList.find((item) => normalizeValue(item?.ubicacion) === normalizeValue(destinoText))
+      : origen;
+
+    if (!vehiculo) throw new Error(`vehiculo "${vehiculoText}" no encontrado.`);
+    if (!conductor) throw new Error(`conductor "${conductorText}" no encontrado.`);
+    if (!origen) throw new Error(`origen "${origenText}" no encontrado.`);
+    if (!destino) throw new Error(`destino "${destinoText}" no encontrado.`);
+
+    const movimiento =
+      tiposMovimientoList.find((item) => normalizeValue(item?.movimiento) === normalizeValue(movimientoText))
+      || tiposMovimientoList.find((item) => normalizeValue(item?.movimiento) === normalizeValue('Local'));
+
+    if (!movimiento) {
+      throw new Error(`el movimiento "${movimientoText || 'Local'}" no existe.`);
+    }
+
+    if (movimiento?.requiere_contenedor && !contenedorText) {
+      throw new Error(`el movimiento ${movimiento.movimiento} requiere numero de contenedor.`);
+    }
+
+    const vehiculoExento = vehiculosSinCombustible.includes(String(vehiculo.id));
+    if (!vehiculoExento && String(origen.id) === String(destino.id)) {
+      throw new Error('origen y destino no pueden ser iguales.');
+    }
+
+    const rutaId = await ensureRoute(origen.id, destino.id, {
+      vehiculoId: vehiculo.id,
+      allowCreateIfExempt: true,
+    });
+
+    return {
+      idText,
+      match: {
+        fecha,
+        semana,
+        vehiculoId: String(vehiculo.id),
+        rutaId: String(rutaId),
+        bl: blText,
+        movimiento: movimiento.movimiento,
+      },
+      payload: {
+        ruta_id: rutaId,
+        cobrar: false,
+        id_pagador_flete: '',
+        activo: true,
+        movimiento: movimiento.movimiento,
+        conductor_id: conductor.id,
+        vehiculo_id: vehiculo.id,
+        contenedor: contenedorText || null,
+        bl: blText || null,
+        semana,
+        fecha,
+        detalles: detallesText,
+        llegada_origen: llegadaOrigen,
+        salida_origen: salidaOrigen,
+        llegada_destino: llegadaDestino,
+        salida_destino: salidaDestino,
+      },
+    };
+  };
+
+  const findExistingProgramacion = (existingRows, resolved) => {
+    if (resolved.idText) {
+      return existingRows.find((item) => String(item?.id || '') === String(resolved.idText));
+    }
+
+    return existingRows.find((item) => (
+      String(item?.fecha || '') === String(resolved.match.fecha)
+      && String(item?.semana || '') === String(resolved.match.semana)
+      && String(item?.vehiculo_id || '') === String(resolved.match.vehiculoId)
+      && String(item?.ruta_id || '') === String(resolved.match.rutaId)
+      && normalizeValue(item?.movimiento) === normalizeValue(resolved.match.movimiento)
+      && normalizeValue(item?.bl) === normalizeValue(resolved.match.bl)
+    ));
+  };
+
+  const processProgramacionRows = async (parsedRows = [], mode = 'create') => {
+    const isUpdate = mode === 'update';
+    const setBusy = isUpdate ? setUpdatingMass : setImporting;
+
     try {
-      setImporting(true);
-
-      const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: 'array' });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const parsedRows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
-
+      setBusy(true);
       if (!parsedRows.length) {
-        throw new Error('El archivo no tiene filas para importar.');
+        throw new Error('El archivo no tiene filas para procesar.');
       }
 
       const ubicacionesList = ubicaciones.length ? ubicaciones : await listarUbicaciones();
@@ -519,101 +646,34 @@ export default function Programador() {
       const vehiculosList = vehiculos.length ? vehiculos : await listarVehiculo();
       const semanasList = semanas.length ? semanas : await filtrarSemanaRangoMes(1, 1);
       const tiposMovimientoList = tiposMovimiento.length ? tiposMovimiento : await listartipoMovimientoVehiculos();
+      const existingRows = isUpdate ? await listarProgramaciones() : [];
 
+      let processed = 0;
       const errors = [];
-      let created = 0;
 
       for (let index = 0; index < parsedRows.length; index += 1) {
-        const row = parsedRows[index];
-        const fecha = formatDateCell(getRowValue(row, ['Fecha']));
-        const semana = String(getRowValue(row, ['Semana'])).trim();
-        const vehiculoText = String(getRowValue(row, ['Vehiculo', 'Vehículo', 'Placa'])).trim();
-        const conductorText = String(getRowValue(row, ['Conductor'])).trim();
-        const blText = String(getRowValue(row, ['BL', 'Bl', 'Bill of Loading'])).trim();
-        const origenText = String(getRowValue(row, ['Origen'])).trim();
-        const destinoText = String(getRowValue(row, ['Destino'])).trim();
-        const movimientoText = String(getRowValue(row, ['Movimiento'])).trim() || 'Local';
-        const contenedorText = String(getRowValue(row, ['Contenedor', 'Numero contenedor', 'Número contenedor'])).trim();
-        const detallesText = String(getRowValue(row, ['Observaciones', 'Detalle', 'Detalles'])).trim();
-        const llegadaOrigen = formatTimeCell(getRowValue(row, ['Llegada origen']));
-        const salidaOrigen = formatTimeCell(getRowValue(row, ['Salida origen']));
-        const llegadaDestino = formatTimeCell(getRowValue(row, ['Llegada destino']));
-        const salidaDestino = formatTimeCell(getRowValue(row, ['Salida destino']));
-
-        if (!fecha || !semana || !vehiculoText || !conductorText || !origenText || !destinoText) {
-          errors.push(`Fila ${index + 2}: faltan columnas obligatorias.`);
-          continue;
-        }
-
-        const semanaExiste = semanasList.find((item) => String(item?.consecutivo) === semana);
-        if (!semanaExiste) {
-          errors.push(`Fila ${index + 2}: semana "${semana}" no existe en la tabla de semanas.`);
-          continue;
-        }
-
-        const vehiculo = vehiculosList.find((item) => normalizeValue(item?.placa) === normalizeValue(vehiculoText));
-        const conductor = conductoresList.find((item) => normalizeValue(item?.conductor) === normalizeValue(conductorText));
-        const origen = ubicacionesList.find((item) => normalizeValue(item?.ubicacion) === normalizeValue(origenText));
-        const destino = ubicacionesList.find((item) => normalizeValue(item?.ubicacion) === normalizeValue(destinoText));
-
-        if (!vehiculo) {
-          errors.push(`Fila ${index + 2}: vehiculo "${vehiculoText}" no encontrado.`);
-          continue;
-        }
-        if (!conductor) {
-          errors.push(`Fila ${index + 2}: conductor "${conductorText}" no encontrado.`);
-          continue;
-        }
-        if (!origen) {
-          errors.push(`Fila ${index + 2}: origen "${origenText}" no encontrado.`);
-          continue;
-        }
-        if (!destino) {
-          errors.push(`Fila ${index + 2}: destino "${destinoText}" no encontrado.`);
-          continue;
-        }
-        if (origen.id === destino.id) {
-          errors.push(`Fila ${index + 2}: origen y destino no pueden ser iguales.`);
-          continue;
-        }
-
-        const movimiento =
-          tiposMovimientoList.find((item) => normalizeValue(item?.movimiento) === normalizeValue(movimientoText))
-          || tiposMovimientoList.find((item) => normalizeValue(item?.movimiento) === normalizeValue('Local'));
-
-        if (!movimiento) {
-          errors.push(`Fila ${index + 2}: el movimiento "${movimientoText || 'Local'}" no existe.`);
-          continue;
-        }
-
-        if (movimiento?.requiere_contenedor && !contenedorText) {
-          errors.push(`Fila ${index + 2}: el movimiento ${movimiento.movimiento} requiere numero de contenedor.`);
-          continue;
-        }
-
         try {
-          const rutaId = await ensureRoute(origen.id, destino.id);
-          await agregarProgramaciones({
-            ruta_id: rutaId,
-            cobrar: false,
-            id_pagador_flete: '',
-            activo: true,
-            movimiento: movimiento.movimiento,
-            conductor_id: conductor.id,
-            vehiculo_id: vehiculo.id,
-            contenedor: contenedorText || null,
-            bl: blText || null,
-            semana,
-            fecha,
-            detalles: detallesText,
-            llegada_origen: llegadaOrigen,
-            salida_origen: salidaOrigen,
-            llegada_destino: llegadaDestino,
-            salida_destino: salidaDestino,
+          const resolved = await resolveImportPayload(parsedRows[index], {
+            ubicacionesList,
+            conductoresList,
+            vehiculosList,
+            semanasList,
+            tiposMovimientoList,
           });
-          created += 1;
+
+          if (isUpdate) {
+            const existing = findExistingProgramacion(existingRows, resolved);
+            if (!existing?.id) {
+              throw new Error('no se encontro una programacion existente para actualizar.');
+            }
+            await actualizarProgramaciones(existing.id, resolved.payload);
+          } else {
+            await agregarProgramaciones(resolved.payload);
+          }
+
+          processed += 1;
         } catch (error) {
-          errors.push(`Fila ${index + 2}: ${error.message || 'no se pudo crear la programacion.'}`);
+          errors.push(`Fila ${index + 2}: ${error.message || 'no se pudo procesar.'}`);
         }
       }
 
@@ -621,23 +681,26 @@ export default function Programador() {
       setAlert({
         active: true,
         mensaje: errors.length
-          ? `Se importaron ${created} filas. ${errors.length} filas quedaron con error.`
-          : `Se importaron ${created} filas correctamente.`,
+          ? `Se ${isUpdate ? 'actualizaron' : 'importaron'} ${processed} filas. ${errors.length} filas quedaron con error.`
+          : `Se ${isUpdate ? 'actualizaron' : 'importaron'} ${processed} filas correctamente.`,
         color: errors.length ? 'warning' : 'success',
         autoClose: true,
       });
+      return {
+        message: errors.length
+          ? `Se ${isUpdate ? 'actualizaron' : 'importaron'} ${processed} filas. ${errors.length} filas quedaron con error.`
+          : `Se ${isUpdate ? 'actualizaron' : 'importaron'} ${processed} filas correctamente.`,
+      };
     } catch (error) {
       setAlert({
         active: true,
-        mensaje: error.message || 'No fue posible importar el Excel.',
+        mensaje: error.message || `No fue posible ${isUpdate ? 'actualizar' : 'importar'} el Excel.`,
         color: 'danger',
         autoClose: true,
       });
+      throw error;
     } finally {
-      if (event.target) {
-        event.target.value = '';
-      }
-      setImporting(false);
+      setBusy(false);
     }
   };
 
@@ -746,16 +809,15 @@ export default function Programador() {
                 </div>
 
                 <div className="col-12 col-md-6 col-lg-2">
-                  <Button type="button" onClick={() => importRef.current?.click()} className="w-100 mt-0 mt-md-4" variant="outline-primary" size="sm" disabled={importing}>
-                    {importing ? 'Importando...' : 'Importar Excel'}
+                  <Button type="button" onClick={() => setOpenMasivo(true)} className="w-100 mt-0 mt-md-4" variant="outline-primary" size="sm" disabled={importing || updatingMass}>
+                    {importing ? 'Cargando...' : 'Cargue masivo'}
                   </Button>
-                  <Form.Control
-                    ref={importRef}
-                    type="file"
-                    accept=".xlsx,.xls"
-                    onChange={handleImportExcel}
-                    className="d-none"
-                  />
+                </div>
+
+                <div className="col-12 col-md-6 col-lg-2">
+                  <Button type="button" onClick={() => setOpenActualizarMasivo(true)} className="w-100 mt-0 mt-md-4" variant="outline-secondary" size="sm" disabled={importing || updatingMass}>
+                    {updatingMass ? 'Actualizando...' : 'Actualizacion masiva'}
+                  </Button>
                 </div>
 
                 <div className="col-12 col-md-6 col-lg-2">
@@ -765,32 +827,6 @@ export default function Programador() {
                 </div>
               </div>
             </form>
-
-            {showColumnConfig && (
-              <div className="card border-secondary mt-4">
-                <div className="card-header bg-light d-flex justify-content-between align-items-center">
-                  <strong>Columnas visibles</strong>
-                  <Button type="button" variant="outline-secondary" size="sm" onClick={() => saveColumnConfig(visibleColumns)}>
-                    Guardar
-                  </Button>
-                </div>
-                <div className="card-body">
-                  <div className="row g-2">
-                    {COLUMN_OPTIONS.map((column) => (
-                      <div className="col-12 col-md-4 col-lg-3" key={column.id}>
-                        <Form.Check
-                          type="checkbox"
-                          id={`column-${column.id}`}
-                          label={column.label}
-                          checked={Boolean(visibleColumns[column.id])}
-                          onChange={() => toggleColumn(column.id)}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
 
             <div className="table-responsive mt-4">
               <table className="table table-striped table-bordered table-sm align-middle text-center mb-0">
@@ -1046,7 +1082,102 @@ export default function Programador() {
         </div>
       </div>
 
-      {open && <FormulariosProgramacion setOpen={setOpen} setAlert={setAlert} />}
+      <Modal show={showColumnConfig} onHide={() => setShowColumnConfig(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Columnas visibles</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="row g-2">
+            {COLUMN_OPTIONS.map((column) => (
+              <div className="col-12 col-md-6" key={column.id}>
+                <Form.Check
+                  type="checkbox"
+                  id={`column-${column.id}`}
+                  label={column.label}
+                  checked={Boolean(visibleColumns[column.id])}
+                  onChange={() => toggleColumn(column.id)}
+                />
+              </div>
+            ))}
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button type="button" variant="outline-secondary" onClick={() => setShowColumnConfig(false)}>
+            Cerrar
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() => {
+              saveColumnConfig(visibleColumns);
+              setShowColumnConfig(false);
+            }}
+          >
+            Guardar
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {open && (
+        <FormulariosProgramacion
+          setOpen={setOpen}
+          setAlert={setAlert}
+          onSaved={() => setReloadKey((prev) => prev + 1)}
+          onOpenMassCreate={() => setOpenMasivo(true)}
+          onOpenMassUpdate={() => setOpenActualizarMasivo(true)}
+          massActionLoading={importing || updatingMass}
+        />
+      )}
+
+      {openMasivo && (
+        <CargueMasivo
+          setOpenMasivo={setOpenMasivo}
+          titulo="Cargar programaciones"
+          encabezados={{
+            fecha: null,
+            semana: null,
+            vehiculo: null,
+            conductor: null,
+            bl: null,
+            origen: null,
+            destino: null,
+            movimiento: null,
+            contenedor: null,
+            "llegada origen": null,
+            "salida origen": null,
+            "llegada destino": null,
+            "salida destino": null,
+            observaciones: null,
+          }}
+          onProcessRows={(rows) => processProgramacionRows(rows, 'create')}
+        />
+      )}
+
+      {openActualizarMasivo && (
+        <CargueMasivo
+          setOpenMasivo={setOpenActualizarMasivo}
+          titulo="Actualizar programaciones"
+          encabezados={{
+            id: null,
+            fecha: null,
+            semana: null,
+            vehiculo: null,
+            conductor: null,
+            bl: null,
+            origen: null,
+            destino: null,
+            movimiento: null,
+            contenedor: null,
+            "llegada origen": null,
+            "salida origen": null,
+            "llegada destino": null,
+            "salida destino": null,
+            observaciones: null,
+          }}
+          onProcessRows={(rows) => processProgramacionRows(rows, 'update')}
+        />
+      )}
     </>
   );
 }
+

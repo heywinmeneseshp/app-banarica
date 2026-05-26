@@ -55,7 +55,11 @@ export default function Login() {
         setErrorMessage('');
 
         if (typeof auth?.login === 'function') {
-            await auth.login(username, password);
+            try {
+                await auth.login(username, password);
+            } catch (error) {
+                setErrorMessage(error?.message || 'No fue posible iniciar sesion. Verifica el usuario y la contrasena.');
+            }
             return;
         }
 

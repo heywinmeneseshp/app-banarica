@@ -14,7 +14,8 @@ const CargueMasivo = ({
     titulo,
     authRequired = false,
     onSuccess,
-    supportPartialResolution = false
+    supportPartialResolution = false,
+    onProcessRows
 }) => {
     const [archivo, setArchivo] = useState(null);
     const [data, setData] = useState([]);
@@ -92,6 +93,23 @@ const CargueMasivo = ({
         setProgress(10);
 
         try {
+            if (typeof onProcessRows === "function") {
+                const result = await onProcessRows(data, { allowPartial });
+                setProgress(80);
+                if (result?.requiresConfirmation) {
+                    setPendingResolution(result);
+                    return;
+                }
+
+                alert(result?.message || "Carga exitosa");
+                setOpenMasivo(false);
+                setPendingResolution(null);
+                if (typeof onSuccess === "function") {
+                    onSuccess(result, data);
+                }
+                return;
+            }
+
             const requestConfig = {
                 headers: {
                     "Content-Type": "application/json"
@@ -148,7 +166,7 @@ const CargueMasivo = ({
                 setOpenMasivo(false);
                 setPendingResolution(null);
                 if (typeof onSuccess === "function") {
-                    onSuccess(result);
+                    onSuccess(result, data);
                 }
             }
         } catch (error) {

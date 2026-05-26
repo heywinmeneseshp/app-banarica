@@ -1,14 +1,23 @@
 // RootLayout.tsx
 import React from 'react';
+import { useRouter } from 'next/router';
 import Header from '@components/shared/Header/Header';
 import Footer from '@components/shared/Footer/Footer';
 
 
 export default function RootLayout({ children }) {
+  const router = useRouter();
+  const isOperationalRoute = ['/Seguridad', '/Movimiento', '/tracecode', '/cartas'].some((prefix) => (
+    router.pathname.startsWith(prefix) || router.asPath.startsWith(prefix)
+  ));
+
   return (
     <div className="d-flex flex-column" style={{ minHeight: '100vh' }}>
       <Header  className="header-with-high-zindex" />
-      <div className="mx-auto d-block container" style={{ flex: 1, marginTop: "20px", marginBottom: "20px" }}>
+      <div
+        className={isOperationalRoute ? 'container-fluid px-3 px-md-4 px-xl-5' : 'mx-auto d-block container'}
+        style={{ flex: 1, marginTop: "20px", marginBottom: "20px" }}
+      >
         {children}
       </div>
       <Footer />

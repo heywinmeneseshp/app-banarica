@@ -23,6 +23,7 @@ import Vehiculos from '@components/Maestros/Vehiculos';
 //PROGRAMACIONES
 import Programador from '@components/Programacion/Programador';
 import Contenedores from '@components/Programacion/Contenedores';
+import ContenedoresCopia from '@components/Programacion/ContenedoresCopia';
 import Notificaciones from '@components/Programacion/Notificaciones';
 import Clientes from '@components/Maestros/Clientes';
 import HistorialConsumo from "@components/Programacion/HistorialConsumos";
@@ -63,6 +64,7 @@ export default function Adminsitrador() {
         {/*Programacion*/}
         {initialAdminMenu.adminMenu.programador && <Programador />}
         {initialAdminMenu.adminMenu.contenedores && <Contenedores />}
+        {initialAdminMenu.adminMenu.contenedores && <ContenedoresCopia />}
         {initialAdminMenu.adminMenu.notificaciones && <Notificaciones />}
         {initialAdminMenu.adminMenu.historico && <HistorialConsumo />}
         {initialAdminMenu.adminMenu.historicoRutaVehiculo && <HistoricoConsumoRuta />}

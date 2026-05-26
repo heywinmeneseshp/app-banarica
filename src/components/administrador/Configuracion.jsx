@@ -74,7 +74,6 @@ export default function Configuracion({ setOpen }) {
     const [totalSemanasAnho, setTotalSemanasAnho] = useState("");
     const [isRunningPasswordPolicy, setIsRunningPasswordPolicy] = useState(false);
     const [passwordPolicyResult, setPasswordPolicyResult] = useState(null);
-
     // Email config states
     const [emailConfigRaw, setEmailConfigRaw] = useState({});
     const [emailFormData, setEmailFormData] = useState(DEFAULT_EMAIL_FORM);

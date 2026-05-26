@@ -16,6 +16,24 @@ const agregarVehiculo = async (Vehiculo) => {
    }
 };
 
+const cargueMasivoVehiculos = async (rows) => {
+    try {
+        const response = await axios.post(endPoints.vehiculos.bulkCreate, rows, config);
+        return response.data;
+    } catch (e) {
+        throw new Error(e?.response?.data?.message || "Error en cargue masivo de vehiculos");
+    }
+};
+
+const actualizarMasivoVehiculos = async (rows) => {
+    try {
+        const response = await axios.post(endPoints.vehiculos.bulkUpdate, rows, config);
+        return response.data;
+    } catch (e) {
+        throw new Error(e?.response?.data?.message || "Error en actualizacion masiva de vehiculos");
+    }
+};
+
 const eliminarVehiculo = async(consecutivo) => {
     const res = await axios.delete(endPoints.vehiculos.delete(consecutivo));
     return res.data;
@@ -53,5 +71,5 @@ const paginarVehiculo = async (page, limit, nombre) => {
     }
 };
 
-export { agregarVehiculo, eliminarVehiculo, actualizarVehiculo,
+export { agregarVehiculo, cargueMasivoVehiculos, actualizarMasivoVehiculos, eliminarVehiculo, actualizarVehiculo,
      buscarVehiculo, listarVehiculo, paginarVehiculo };

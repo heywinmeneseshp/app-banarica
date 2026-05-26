@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { FaCamera, FaCheckCircle, FaCog, FaFileExcel, FaMinusCircle, FaRedo } from "react-icons/fa";
 import { LiaUndoAltSolid } from "react-icons/lia";
 import { useAuth } from "@hooks/useAuth";
+import useFeedback from '@hooks/useFeedback';
 import { crearInspeccionVacio, encontrarUnSerial } from "@services/api/seguridad";
 import { filtrarSemanaRangoMes } from "@services/api/semanas";
 import { encontrarModulo } from "@services/api/configuracion";
@@ -31,7 +32,7 @@ const FIELD_CONFIG = {
     placeholder: "DUMMY000001",
     pattern: "[A-Za-z]{4}[0-9]{7}",
     required: true,
-    errorMsg: "Debe ser 4 letras seguidas de 7 números (ej: ABCD1234567)"
+    errorMsg: "Debe ser 4 letras seguidas de 7 nÃºmeros (ej: ABCD1234567)"
   }
 };
 
@@ -43,21 +44,21 @@ const STORAGE_KEYS = {
 
 const INSPECTION_PARTS = [
   "Tapa frontal",
-  "Lámina reflectora",
+  "LÃ¡mina reflectora",
   "Tabique izquierdo",
   "Tabique derecho",
   "Puertas",
   "Piso",
   "Techo",
   "Damper",
-  "Unidad de refrigeración",
+  "Unidad de refrigeraciÃ³n",
   "Tapas externas"
 ];
 
 const FOOD_CONDITIONS = [
   { id: "lavado", label: "Contenedor lavado" },
   { id: "sin_olores", label: "Sin malos olores" },
-  { id: "sin_residuos", label: "Sin residuos sólidos de otras cargas" }
+  { id: "sin_residuos", label: "Sin residuos sÃ³lidos de otras cargas" }
 ];
 
 const createInspectionChecks = () =>
@@ -117,13 +118,13 @@ const buildInspectionSummary = ({
     .join(" | ");
 
   const foodSummary = FOOD_CONDITIONS.map(
-    ({ id, label }) => `${label}: ${foodValidation[id] ? "Sí" : "No"}`
+    ({ id, label }) => `${label}: ${foodValidation[id] ? "SÃ­" : "No"}`
   ).join(" | ");
 
   return [
     baseObservaciones?.trim(),
-    `Formulario digital inspección vacío -> Partes: ${partsSummary}`,
-    `Validación alimentos -> ${foodSummary}. Resultado: ${foodValidationResult ? "Apto" : "No apto"}`
+    `Formulario digital inspecciÃ³n vacÃ­o -> Partes: ${partsSummary}`,
+    `ValidaciÃ³n alimentos -> ${foodSummary}. Resultado: ${foodValidationResult ? "Apto" : "No apto"}`
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -131,6 +132,7 @@ const buildInspectionSummary = ({
 
 export default function InspeccionVacio() {
   const { getUser } = useAuth();
+  const { notify, confirm } = useFeedback();
   const router = useRouter();
   const formRef = useRef();
   const inputRefs = useRef({});
@@ -596,8 +598,8 @@ export default function InspeccionVacio() {
 
     const errorMessages = {
       required: "Este campo es obligatorio",
-      pattern: fieldConfig?.errorMsg || "Formato inválido",
-      default: "Valor inválido"
+      pattern: fieldConfig?.errorMsg || "Formato invÃ¡lido",
+      default: "Valor invÃ¡lido"
     };
 
     let errorType = "default";
@@ -701,7 +703,7 @@ export default function InspeccionVacio() {
       const duplicatesMsg = Array.from(duplicates.entries())
         .map(([serial, labels]) => `Serial: ${serial} se repite en: ${labels.join(", ")}`)
         .join("\n");
-      window.alert(`Seriales duplicados:\n${duplicatesMsg}`);
+      notify(`Seriales duplicados:\n${duplicatesMsg}`, { variant: 'warning', autoClose: false });
       return { success: false };
     }
 
@@ -719,11 +721,15 @@ export default function InspeccionVacio() {
 
       const missingItems = verificationResults.filter((item) => !item.exists);
       if (missingItems.length > 0) {
-        const proceed = window.confirm(
-          `No existen ${missingItems.length} serial(es):\n${missingItems
+        const proceed = await confirm({
+          title: 'Seriales no encontrados',
+          message: `No existen ${missingItems.length} serial(es):\n${missingItems
             .map((item) => `- ${item.label}: ${item.serial}`)
-            .join("\n")}\n\n¿Deseas continuar?`
-        );
+            .join("\n")}\n\n¿Deseas continuar?`,
+          confirmLabel: 'Continuar',
+          cancelLabel: 'Cancelar',
+          variant: 'warning'
+        });
         if (!proceed) return { success: false };
       }
 
@@ -732,10 +738,10 @@ export default function InspeccionVacio() {
         seriales: verificationResults.map((item) => item.serial)
       };
     } catch (error) {
-      window.alert(`Error al verificar seriales: ${error.message}`);
+      notify(`Error al verificar seriales: ${error.message}`, { variant: 'danger', autoClose: false });
       return { success: false, error };
     }
-  }, []);
+  }, [confirm, notify]);
 
   const updateInspectionCheck = (id, field, value) => {
     const nextChecks = inspectionChecks.map((item) =>
@@ -764,19 +770,20 @@ export default function InspeccionVacio() {
     persistDigitalForm({ foodValidationResult: approved });
 
     if (approved) {
-      window.alert("El contenedor cumple con las condiciones para el transporte de alimentos.");
+      notify("El contenedor cumple con las condiciones para el transporte de alimentos.", { variant: 'success' });
       return;
     }
 
-    window.alert(
-      "El contenedor no cumple con las condiciones para el transporte de alimentos. Puedes devolverlo por mal estado."
+    notify(
+      "El contenedor no cumple con las condiciones para el transporte de alimentos. Puedes devolverlo por mal estado.",
+      { variant: 'warning', autoClose: false }
     );
   };
 
   const buscarContenedorParaDevolucion = async () => {
     const code = normalizeUppercase(formValues.contenedor);
     if (!code) {
-      window.alert("Ingresa el contenedor antes de registrar la devolución.");
+      notify("Ingresa el contenedor antes de registrar la devolucion.", { variant: 'warning' });
       return;
     }
 
@@ -807,7 +814,7 @@ export default function InspeccionVacio() {
       }
 
       if (typeof foodValidationResult !== "boolean") {
-        window.alert("Debes usar el botón de validación para confirmar aptitud del contenedor.");
+        notify("Debes usar el boton de validacion para confirmar aptitud del contenedor.", { variant: 'warning' });
         setStateValue("loading", false);
         return;
       }
@@ -848,7 +855,7 @@ export default function InspeccionVacio() {
           zona: "Inspeccion vacio"
         });
 
-        window.alert(response?.message || "Guardado exitoso.");
+        notify(response?.message || "Guardado exitoso.", { variant: 'success' });
 
         setState((prev) => ({
           ...prev,
@@ -870,12 +877,22 @@ export default function InspeccionVacio() {
         localStorage.removeItem(STORAGE_KEYS.FORMULARIO_DIGITAL);
         focusField("contenedor");
 
-        if (!window.confirm("¿Deseas cargar otro contenedor?")) {
+        const shouldContinue = await confirm({
+          title: 'Inspeccion guardada',
+          message: '¿Deseas cargar otro contenedor?',
+          confirmLabel: 'Si, continuar',
+          cancelLabel: 'Ir al dashboard',
+          variant: 'primary'
+        });
+        if (!shouldContinue) {
           router.push("/Seguridad/Dashboard");
         }
       } catch (error) {
         console.error("Error al guardar inspeccion vacio:", error);
-        window.alert(error?.message || "Ocurrió un error. Por favor intenta nuevamente.");
+        notify(error?.message || "Ocurrio un error. Por favor intenta nuevamente.", {
+          variant: 'danger',
+          autoClose: false
+        });
       } finally {
         setStateValue("loading", false);
       }
@@ -891,7 +908,9 @@ export default function InspeccionVacio() {
       semana,
       user,
       verificarSeriales,
-      focusField
+      focusField,
+      notify,
+      confirm
     ]
   );
 
@@ -1027,7 +1046,7 @@ export default function InspeccionVacio() {
 
           <div className="col-12">
             <div className="card border-0 shadow-sm">
-              <div className="card-header bg-light fw-semibold">Inspección física de la unidad</div>
+              <div className="card-header bg-light fw-semibold">InspecciÃ³n fÃ­sica de la unidad</div>
               <div className="card-body">
                 <div className="row g-3">
                   {inspectionChecks.map((item) => (
@@ -1051,7 +1070,7 @@ export default function InspeccionVacio() {
                         <input
                           type="text"
                           className="form-control form-control-sm"
-                          placeholder="Observación de esta parte"
+                          placeholder="ObservaciÃ³n de esta parte"
                           value={item.observacion}
                           onChange={(event) =>
                             updateInspectionCheck(item.id, "observacion", event.target.value)
@@ -1068,7 +1087,7 @@ export default function InspeccionVacio() {
           <div className="col-12">
             <div className="card border-0 shadow-sm">
               <div className="card-header bg-light fw-semibold">
-                Validación para transporte de alimentos
+                ValidaciÃ³n para transporte de alimentos
               </div>
               <div className="card-body">
                 <div className="row g-3 align-items-end">
@@ -1132,7 +1151,7 @@ export default function InspeccionVacio() {
           <div className="col-12">
             <button type="submit" className="btn btn-primary w-100 py-2" disabled={loading || !canSubmit}>
               {loading && <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />}
-              Guardar inspección vacío
+              Guardar inspecciÃ³n vacÃ­o
             </button>
           </div>
         </div>
@@ -1206,3 +1225,5 @@ export default function InspeccionVacio() {
     </div>
   );
 }
+
+

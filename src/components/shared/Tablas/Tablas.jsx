@@ -1,14 +1,10 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { FaPowerOff, FaRegCircle, FaEdit, FaSearch, FaDownload, FaUpload, FaPlus, FaBan } from 'react-icons/fa';
-
-// Hooks
 import useAlert from '@hooks/useAlert';
-// Components
 import CargueMasivo from '@assets/Seguridad/Listado/CargueMasivo';
 import Paginacion from '@components/shared/Tablas/Paginacion';
 import NuevoItem from '@components/shared/Formularios/Formularios';
 import Alertas from '@assets/Alertas';
-// CSS
 import excel from '@hooks/useExcel';
 import { Button, ButtonGroup, Col, Row, Form, Badge, Tooltip, OverlayTrigger } from 'react-bootstrap';
 
@@ -20,10 +16,16 @@ export default function Tablas({
   paginar,
   crear,
   titulo,
-  checkboxFields,
+  checkboxFields = [],
   endPointCargueMasivo,
   encabezadosCargueMasivo,
-  tituloCargueMasivo
+  tituloCargueMasivo,
+  endPointActualizacionMasiva,
+  encabezadosActualizacionMasiva,
+  tituloActualizacionMasiva,
+  switchFields,
+  onMassUploadSuccess,
+  onMassUpdateSuccess,
 }) {
   const ItemdorRef = useRef();
   const [item, setItem] = useState(null);
@@ -36,17 +38,16 @@ export default function Tablas({
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const limit = 30;
   const [openMasivo, setOpenMasivo] = useState(false);
+  const [openActualizacionMasiva, setOpenActualizacionMasiva] = useState(false);
+  const limit = 30;
 
-  // Componente de Tooltip personalizado
   const renderTooltip = (text) => (
     <Tooltip id={`tooltip-${text}`}>
       {text}
     </Tooltip>
   );
 
-  // Memoizar la configuración de labels
   useEffect(() => {
     const labels = { ...encabezados };
     delete labels.Editar;
@@ -54,14 +55,13 @@ export default function Tablas({
     setLabelForm(labels);
   }, [encabezados]);
 
-  // Memoizar la función de listar items
   const listarItems = useCallback(async () => {
     setLoading(true);
     try {
       const nombre = ItemdorRef.current?.value || '';
       const res = await paginar(pagination, limit, nombre);
-      setItems(res.data);
-      setTotal(res.total);
+      setItems(res?.data || []);
+      setTotal(res?.total || 0);
     } catch (error) {
       console.error('Error al listar items:', error);
       setAlert({
@@ -75,29 +75,26 @@ export default function Tablas({
     }
   }, [pagination, paginar, setAlert]);
 
-  // Efecto PRINCIPAL para cargar items - SOLO cuando cambian estos estados
   useEffect(() => {
     listarItems();
-  }, [pagination, openMasivo]); // ← Removí 'alert' y 'open' de las dependencias
+  }, [listarItems, openMasivo, openActualizacionMasiva]);
 
-  // Debounce para búsqueda - SOLO para cambios en searchTerm
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchTerm !== (ItemdorRef.current?.value || '')) {
-        setPagination(1); // Resetear paginación al buscar
+        setPagination(1);
         listarItems();
       }
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, listarItems]); // ← Solo searchTerm
+  }, [searchTerm, listarItems]);
 
-  // Efecto para recargar cuando se cierra el modal de edición
   useEffect(() => {
-    if (!open) { // Solo ejecutar cuando el modal se CIERRA
+    if (!open) {
       listarItems();
     }
-  }, [open, listarItems]); // ← Solo cuando 'open' cambia a false
+  }, [open, listarItems]);
 
   const handleNuevo = (e) => {
     if (e) e.preventDefault();
@@ -105,10 +102,10 @@ export default function Tablas({
     setItem(null);
   };
 
-  const handleEditar = (item, e) => {
+  const handleEditar = (rowItem, e) => {
     if (e) e.preventDefault();
     setOpen(true);
-    setItem(item);
+    setItem(rowItem);
   };
 
   const handleSearch = (e) => {
@@ -124,7 +121,7 @@ export default function Tablas({
   const onDescargar = async (e) => {
     if (e) e.preventDefault();
     try {
-      const fileName = titulo ? titulo : "Listado";
+      const fileName = titulo || 'Listado';
       const data = await listar();
       excel(data, fileName, fileName);
       setAlert({
@@ -144,19 +141,18 @@ export default function Tablas({
     }
   };
 
-  const handleActivar = async (item, e) => {
+  const handleActivar = async (rowItem, e) => {
     if (e) e.preventDefault();
     try {
-      const bool = item[encabezados['Activar']] === null ? false : item[encabezados['Activar']];
-      const changes = { [encabezados["Activar"]]: !bool };
-      await actualizar(item.id, changes);
+      const bool = rowItem[encabezados.Activar] === null ? false : rowItem[encabezados.Activar];
+      const changes = { [encabezados.Activar]: !bool };
+      await actualizar(rowItem.id, changes);
       setAlert({
         active: true,
-        mensaje: `El item "${item.id}" se ha ${!bool ? 'activado' : 'desactivado'} exitosamente`,
+        mensaje: `El item "${rowItem.id}" se ha ${!bool ? 'activado' : 'desactivado'} exitosamente`,
         color: 'success',
         autoClose: true,
       });
-      // Recargar la lista después de activar/desactivar
       listarItems();
     } catch (error) {
       console.error('Error al actualizar item:', error);
@@ -169,25 +165,22 @@ export default function Tablas({
     }
   };
 
-  // Manejar selección de todos los ítems
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedItems(items.map((item) => item.id));
-    } else {
-      setSelectedItems([]);
+      setSelectedItems(items.map((rowItem) => rowItem.id));
+      return;
     }
+    setSelectedItems([]);
   };
 
-  // Manejar selección individual
   const handleSelectItem = (id) => {
-    setSelectedItems(prev =>
+    setSelectedItems((prev) => (
       prev.includes(id)
-        ? prev.filter(itemId => itemId !== id)
+        ? prev.filter((itemId) => itemId !== id)
         : [...prev, id]
-    );
+    ));
   };
 
-  // Desactivar ítems seleccionados
   const handleDesactivarMasivo = async (e) => {
     if (e) e.preventDefault();
     if (selectedItems.length === 0) {
@@ -202,22 +195,15 @@ export default function Tablas({
 
     try {
       setLoading(true);
-      const updatePromises = selectedItems.map(async (id) => {
-        const changes = { [encabezados["Activar"]]: false };
-        return actualizar(id, changes);
-      });
-
-      await Promise.all(updatePromises);
-
+      await Promise.all(selectedItems.map((id) => actualizar(id, { [encabezados.Activar]: false })));
       setAlert({
         active: true,
         mensaje: `${selectedItems.length} item(s) desactivado(s) exitosamente`,
         color: 'success',
         autoClose: true,
       });
-
-      listarItems();
       setSelectedItems([]);
+      listarItems();
     } catch (error) {
       console.error('Error al desactivar ítems:', error);
       setAlert({
@@ -236,7 +222,6 @@ export default function Tablas({
       <div className="container-fluid">
         <Alertas alert={alert} handleClose={toogleAlert} />
 
-        {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-3">
           <div>
             <h2 className="mb-0">{titulo}</h2>
@@ -249,18 +234,12 @@ export default function Tablas({
           )}
         </div>
 
-        {/* Controles - Envolver en form para prevenir submit */}
         <form onSubmit={(e) => e.preventDefault()}>
           <Row className="mb-3 g-2">
             <Col md={6} lg={4}>
               <ButtonGroup className="w-100">
                 <OverlayTrigger placement="top" overlay={renderTooltip('Nuevo item')}>
-                  <Button 
-                    onClick={handleNuevo} 
-                    variant="success" 
-                    className="btn-sm"
-                    type="button"
-                  >
+                  <Button onClick={handleNuevo} variant="success" className="btn-sm" type="button">
                     <FaPlus className="me-1" /> Nuevo
                   </Button>
                 </OverlayTrigger>
@@ -295,11 +274,7 @@ export default function Tablas({
                     }
                   }}
                 />
-                <button 
-                  className="btn btn-sm border-0 bg-transparent"
-                  onClick={handleSearch}
-                  type="button"
-                >
+                <button className="btn btn-sm border-0 bg-transparent" onClick={handleSearch} type="button">
                   <FaSearch className="text-muted" size={14} />
                 </button>
               </div>
@@ -307,6 +282,19 @@ export default function Tablas({
 
             <Col md={12} lg={4}>
               <ButtonGroup className="w-100">
+                {endPointActualizacionMasiva && (
+                  <OverlayTrigger placement="top" overlay={renderTooltip('Actualizacion masiva')}>
+                    <Button
+                      onClick={() => setOpenActualizacionMasiva(true)}
+                      variant="outline-primary"
+                      className="btn-sm"
+                      type="button"
+                    >
+                      <FaUpload className="me-1" /> Actualizar masivo
+                    </Button>
+                  </OverlayTrigger>
+                )}
+
                 {endPointCargueMasivo && (
                   <OverlayTrigger placement="top" overlay={renderTooltip('Cargue masivo')}>
                     <Button
@@ -315,18 +303,13 @@ export default function Tablas({
                       className="btn-sm"
                       type="button"
                     >
-                      <FaUpload className="me-1" /> Masivo
+                      <FaUpload className="me-1" /> Cargue masivo
                     </Button>
                   </OverlayTrigger>
                 )}
 
                 <OverlayTrigger placement="top" overlay={renderTooltip('Descargar lista')}>
-                  <Button 
-                    onClick={onDescargar} 
-                    variant="secondary" 
-                    className="btn-sm"
-                    type="button"
-                  >
+                  <Button onClick={onDescargar} variant="secondary" className="btn-sm" type="button">
                     <FaDownload className="me-1" /> Exportar
                   </Button>
                 </OverlayTrigger>
@@ -335,17 +318,15 @@ export default function Tablas({
           </Row>
         </form>
 
-        {/* Tabla */}
         <div className="table-responsive">
           <table className="table table-bordered table-sm table-hover mt-3">
-            <thead >
+            <thead>
               <tr>
                 <th className="text-custom-small text-center align-middle" style={{ padding: '2px' }}>
                   <Form.Check
                     type="checkbox"
                     onChange={handleSelectAll}
                     checked={selectedItems.length === items.length && items.length > 0}
-                    indeterminate={selectedItems.length > 0 && selectedItems.length < items.length}
                   />
                 </th>
                 {encabezados && Object.keys(encabezados).map((key) => (
@@ -372,28 +353,47 @@ export default function Tablas({
                   </td>
                 </tr>
               ) : (
-                items.map((item, index) => {
+                items.map((rowItem, index) => {
                   const filteredHeaders = { ...encabezados };
                   delete filteredHeaders.Editar;
 
                   return (
-                    <tr key={item.id || index}>
+                    <tr key={rowItem.id || index}>
                       <td className="text-custom-small text-center align-middle" style={{ padding: '2px' }}>
                         <Form.Check
                           type="checkbox"
-                          checked={selectedItems.includes(item.id)}
-                          onChange={() => handleSelectItem(item.id)}
+                          checked={selectedItems.includes(rowItem.id)}
+                          onChange={() => handleSelectItem(rowItem.id)}
                         />
                       </td>
 
                       {Object.keys(filteredHeaders).map((headerKey) => {
-                        if (headerKey === "Activar") return null;
+                        if (headerKey === 'Activar') {
+                          return null;
+                        }
 
-                        let itemName = item[filteredHeaders[headerKey]];
+                        const fieldName = filteredHeaders[headerKey];
+                        let itemName = rowItem[fieldName];
                         const nuevaLista = listas?.[headerKey];
 
                         if (nuevaLista) {
                           itemName = nuevaLista.find((newI) => String(newI.id) === String(itemName))?.nombre || itemName;
+                        }
+
+                        if (switchFields?.[fieldName]) {
+                          const config = switchFields[fieldName];
+                          return (
+                            <td key={headerKey} className="text-custom-small text-center align-middle" style={{ padding: '2px' }}>
+                              <Form.Check
+                                type="switch"
+                                id={`${fieldName}-${rowItem.id}`}
+                                checked={Boolean(rowItem[fieldName])}
+                                onChange={() => config.onToggle(rowItem)}
+                                label=""
+                                className="d-flex justify-content-center"
+                              />
+                            </td>
+                          );
                         }
 
                         return (
@@ -403,11 +403,10 @@ export default function Tablas({
                         );
                       })}
 
-                      {/* Botón Editar */}
                       <td className="text-custom-small text-center align-middle" style={{ padding: '2px' }}>
                         <OverlayTrigger placement="top" overlay={renderTooltip('Editar item')}>
                           <button
-                            onClick={(e) => handleEditar(item, e)}
+                            onClick={(e) => handleEditar(rowItem, e)}
                             type="button"
                             className="btn btn-warning btn-sm"
                             style={{
@@ -415,8 +414,8 @@ export default function Tablas({
                               justifyContent: 'center',
                               alignItems: 'center',
                               height: '25px',
-                              width: "25px",
-                              margin: "auto"
+                              width: '25px',
+                              margin: 'auto',
                             }}
                           >
                             <FaEdit />
@@ -424,28 +423,25 @@ export default function Tablas({
                         </OverlayTrigger>
                       </td>
 
-                      {/* Botón Activar/Desactivar */}
                       <td className="text-custom-small text-center align-middle" style={{ padding: '2px' }}>
                         <OverlayTrigger
                           placement="top"
-                          overlay={renderTooltip(
-                            item[encabezados['Activar']] ? 'Desactivar item' : 'Activar item'
-                          )}
+                          overlay={renderTooltip(rowItem[encabezados.Activar] ? 'Desactivar item' : 'Activar item')}
                         >
                           <button
-                            onClick={(e) => handleActivar(item, e)}
+                            onClick={(e) => handleActivar(rowItem, e)}
                             type="button"
-                            className={`btn btn-${!item[encabezados['Activar']] ? "danger" : "success"} btn-sm`}
+                            className={`btn btn-${!rowItem[encabezados.Activar] ? 'danger' : 'success'} btn-sm`}
                             style={{
                               display: 'flex',
                               justifyContent: 'center',
                               alignItems: 'center',
                               height: '25px',
-                              width: "25px",
-                              margin: "auto"
+                              width: '25px',
+                              margin: 'auto',
                             }}
                           >
-                            {!item[encabezados['Activar']] ? <FaRegCircle /> : <FaPowerOff />}
+                            {!rowItem[encabezados.Activar] ? <FaRegCircle /> : <FaPowerOff />}
                           </button>
                         </OverlayTrigger>
                       </td>
@@ -458,22 +454,27 @@ export default function Tablas({
         </div>
       </div>
 
-      {/* Modales */}
       {openMasivo && (
         <CargueMasivo
           setOpenMasivo={setOpenMasivo}
           endPointCargueMasivo={endPointCargueMasivo}
           encabezados={encabezadosCargueMasivo}
           titulo={tituloCargueMasivo}
+          onSuccess={onMassUploadSuccess}
         />
       )}
 
-      <Paginacion
-        setPagination={setPagination}
-        pagination={pagination}
-        total={total}
-        limit={limit}
-      />
+      {openActualizacionMasiva && (
+        <CargueMasivo
+          setOpenMasivo={setOpenActualizacionMasiva}
+          endPointCargueMasivo={endPointActualizacionMasiva}
+          encabezados={encabezadosActualizacionMasiva}
+          titulo={tituloActualizacionMasiva}
+          onSuccess={onMassUpdateSuccess}
+        />
+      )}
+
+      <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
 
       {open && (
         <NuevoItem
