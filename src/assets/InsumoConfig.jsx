@@ -293,3 +293,4 @@ function InsumoConfig({ handleConfig, modulo_confi }) {
 }
 
 export default InsumoConfig;
+

@@ -32,7 +32,7 @@ const FIELD_CONFIG = {
     placeholder: "DUMMY000001",
     pattern: "[A-Za-z]{4}[0-9]{7}",
     required: true,
-    errorMsg: "Debe ser 4 letras seguidas de 7 nÃºmeros (ej: ABCD1234567)"
+    errorMsg: "Debe ser 4 letras seguidas de 7 números (ej: ABCD1234567)"
   }
 };
 
@@ -44,21 +44,21 @@ const STORAGE_KEYS = {
 
 const INSPECTION_PARTS = [
   "Tapa frontal",
-  "LÃ¡mina reflectora",
+  "Lámina reflectora",
   "Tabique izquierdo",
   "Tabique derecho",
   "Puertas",
   "Piso",
   "Techo",
   "Damper",
-  "Unidad de refrigeraciÃ³n",
+  "Unidad de refrigeración",
   "Tapas externas"
 ];
 
 const FOOD_CONDITIONS = [
   { id: "lavado", label: "Contenedor lavado" },
   { id: "sin_olores", label: "Sin malos olores" },
-  { id: "sin_residuos", label: "Sin residuos sÃ³lidos de otras cargas" }
+  { id: "sin_residuos", label: "Sin residuos sólidos de otras cargas" }
 ];
 
 const createInspectionChecks = () =>
@@ -118,13 +118,13 @@ const buildInspectionSummary = ({
     .join(" | ");
 
   const foodSummary = FOOD_CONDITIONS.map(
-    ({ id, label }) => `${label}: ${foodValidation[id] ? "SÃ­" : "No"}`
+    ({ id, label }) => `${label}: ${foodValidation[id] ? "Sí" : "No"}`
   ).join(" | ");
 
   return [
     baseObservaciones?.trim(),
-    `Formulario digital inspecciÃ³n vacÃ­o -> Partes: ${partsSummary}`,
-    `ValidaciÃ³n alimentos -> ${foodSummary}. Resultado: ${foodValidationResult ? "Apto" : "No apto"}`
+    `Formulario digital inspección vacío -> Partes: ${partsSummary}`,
+    `Validación alimentos -> ${foodSummary}. Resultado: ${foodValidationResult ? "Apto" : "No apto"}`
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -598,8 +598,8 @@ export default function InspeccionVacio() {
 
     const errorMessages = {
       required: "Este campo es obligatorio",
-      pattern: fieldConfig?.errorMsg || "Formato invÃ¡lido",
-      default: "Valor invÃ¡lido"
+      pattern: fieldConfig?.errorMsg || "Formato inválido",
+      default: "Valor inválido"
     };
 
     let errorType = "default";
@@ -878,7 +878,7 @@ export default function InspeccionVacio() {
         focusField("contenedor");
 
         const shouldContinue = await confirm({
-          title: 'Inspeccion guardada',
+          title: 'Inspección guardada',
           message: '¿Deseas cargar otro contenedor?',
           confirmLabel: 'Si, continuar',
           cancelLabel: 'Ir al dashboard',
@@ -917,7 +917,7 @@ export default function InspeccionVacio() {
   return (
     <div className="container py-4">
       <div className="text-center mb-4">
-        <h2>Inspeccion contenedor vacio</h2>
+        <h2>Inspección contenedor vacío</h2>
         <div className="d-flex justify-content-center align-items-center gap-3 mt-2">
           {canBulkUpload && (
             <button
@@ -1046,7 +1046,7 @@ export default function InspeccionVacio() {
 
           <div className="col-12">
             <div className="card border-0 shadow-sm">
-              <div className="card-header bg-light fw-semibold">InspecciÃ³n fÃ­sica de la unidad</div>
+              <div className="card-header bg-light fw-semibold">Inspección física de la unidad</div>
               <div className="card-body">
                 <div className="row g-3">
                   {inspectionChecks.map((item) => (
@@ -1070,7 +1070,7 @@ export default function InspeccionVacio() {
                         <input
                           type="text"
                           className="form-control form-control-sm"
-                          placeholder="ObservaciÃ³n de esta parte"
+                          placeholder="Observación de esta parte"
                           value={item.observacion}
                           onChange={(event) =>
                             updateInspectionCheck(item.id, "observacion", event.target.value)
@@ -1087,7 +1087,7 @@ export default function InspeccionVacio() {
           <div className="col-12">
             <div className="card border-0 shadow-sm">
               <div className="card-header bg-light fw-semibold">
-                ValidaciÃ³n para transporte de alimentos
+                Validación para transporte de alimentos
               </div>
               <div className="card-body">
                 <div className="row g-3 align-items-end">
@@ -1151,7 +1151,7 @@ export default function InspeccionVacio() {
           <div className="col-12">
             <button type="submit" className="btn btn-primary w-100 py-2" disabled={loading || !canSubmit}>
               {loading && <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />}
-              Guardar inspecciÃ³n vacÃ­o
+              Guardar inspección vacío
             </button>
           </div>
         </div>

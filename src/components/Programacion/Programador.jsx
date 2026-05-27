@@ -5,11 +5,13 @@ import FormulariosProgramacion from '@components/shared/Formularios/FormularioPr
 import Alertas from '@assets/Alertas';
 import CargueMasivo from '@assets/Seguridad/Listado/CargueMasivo';
 import { paginarProgramaciones, eliminarProgramaciones, agregarProgramaciones, actualizarProgramaciones, listarProgramaciones } from '@services/api/programaciones';
+import { agregarProductosViaje, actualizarProductosViaje } from '@services/api/productos_viaje';
 import { listarUbicaciones } from '@services/api/ubicaciones';
 import { listarConductores } from '@services/api/conductores';
 import { listarVehiculo } from '@services/api/vehiculos';
 import { filtrarSemanaRangoMes } from '@services/api/semanas';
-import { listarEmbarques } from '@services/api/embarques';
+import { paginarEmbarques } from '@services/api/embarques';
+import { listarCombos } from '@services/api/combos';
 import { listartipoMovimientoVehiculos } from '@services/api/tipoMovimientoVehiculos';
 import useAlert from '@hooks/useAlert';
 import { agregarRutas, buscarRutaPost } from '@services/api/rutas';
@@ -17,16 +19,22 @@ import { encontrarModulo } from '@services/api/configuracion';
 import { Button, Form, Modal } from 'react-bootstrap';
 const COLUMN_STORAGE_KEY = 'programadorColumnConfig';
 const COLUMN_OPTIONS = [
-  { id: 'fecha', label: 'Fecha' },
   { id: 'semana', label: 'Sem' },
-  { id: 'vehiculo', label: 'Vehiculo' },
-  { id: 'bl', label: 'BL' },
-  { id: 'conductor', label: 'Conductor' },
+  { id: 'fecha', label: 'Fecha' },
   { id: 'origen', label: 'Origen' },
-  { id: 'llegada_origen', label: 'Llegada origen' },
-  { id: 'salida_origen', label: 'Salida origen' },
   { id: 'destino', label: 'Destino' },
-  { id: 'llegada_destino', label: 'Llegada destino' },
+  { id: 'productos', label: 'Producto' },
+  { id: 'cantidad_productos', label: 'Cantidad' },
+  { id: 'linea', label: 'Linea' },
+  { id: 'destino_embarque', label: 'Destino embarque' },
+  { id: 'buque', label: 'Buque' },
+  { id: 'bl', label: 'BL' },
+  { id: 'vehiculo', label: 'Vehiculo' },
+  { id: 'conductor', label: 'Conductor' },
+  { id: 'llegada_origen', label: 'Ingreso origen' },
+  { id: 'salida_origen', label: 'Salida origen' },
+  { id: 'llegada_destino', label: 'Ingreso destino' },
+  { id: 'cierre', label: 'Cierre' },
   { id: 'salida_destino', label: 'Salida destino' },
   { id: 'movimiento', label: 'Movimiento' },
   { id: 'contenedor', label: 'Contenedor' },
@@ -36,6 +44,13 @@ const DEFAULT_VISIBLE_COLUMNS = COLUMN_OPTIONS.reduce((acc, column) => {
   acc[column.id] = true;
   return acc;
 }, {});
+
+const READONLY_PROGRAMADOR_COLUMNS = new Set([
+  'semana',
+  'linea',
+  'destino_embarque',
+  'buque',
+]);
 
 const parseVehiculosSinCombustible = (configRows) => {
   try {
@@ -116,6 +131,26 @@ const formatTimeCell = (value) => {
   return '';
 };
 
+const findEmbarqueByReferencia = (catalog = [], reference) => {
+  const normalizedReference = normalizeValue(reference);
+  if (!normalizedReference) {
+    return null;
+  }
+
+  return catalog.find((item) => (
+    normalizeValue(item?.bl) === normalizedReference
+    || normalizeValue(item?.booking) === normalizedReference
+  )) || null;
+};
+
+const compactCellStyle = {
+  whiteSpace: 'nowrap',
+  width: '1%',
+  padding: '0.3rem 0.4rem',
+  fontSize: '0.8rem',
+  verticalAlign: 'middle',
+};
+
 export default function Programador() {
   const [pagination, setPagination] = useState(1);
   const [total, setTotal] = useState(0);
@@ -126,6 +161,7 @@ export default function Programador() {
   const [vehiculos, setVehiculos] = useState([]);
   const [semanas, setSemanas] = useState([]);
   const [embarques, setEmbarques] = useState([]);
+  const [combos, setCombos] = useState([]);
   const [tiposMovimiento, setTiposMovimiento] = useState([]);
   const [open, setOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -178,12 +214,13 @@ export default function Programador() {
         body.fechaFin = fechaFin;
       }
 
-      const [newUbicaciones, newConductores, newVehiculos, newSemanas, newEmbarques, newTiposMovimiento, configProgramador, res] = await Promise.all([
+      const [newUbicaciones, newConductores, newVehiculos, newSemanas, embarquesRes, newCombos, newTiposMovimiento, configProgramador, res] = await Promise.all([
         listarUbicaciones(),
         listarConductores(),
         listarVehiculo(),
         filtrarSemanaRangoMes(1, 1),
-        listarEmbarques(),
+        paginarEmbarques(1, 5000, {}),
+        listarCombos(),
         listartipoMovimientoVehiculos(),
         encontrarModulo('Programador_combustible'),
         paginarProgramaciones(pagination, limit, body),
@@ -193,7 +230,8 @@ export default function Programador() {
       setConductores(newConductores || []);
       setVehiculos(newVehiculos || []);
       setSemanas(newSemanas || []);
-      setEmbarques(newEmbarques || []);
+      setEmbarques(embarquesRes?.data || []);
+      setCombos(newCombos || []);
       setTiposMovimiento(newTiposMovimiento || []);
       setVehiculosSinCombustible(parseVehiculosSinCombustible(configProgramador));
       setItemsList(res?.data || []);
@@ -214,20 +252,76 @@ export default function Programador() {
     listar();
   }, [pagination, reloadKey, alert, listar]);
 
+  const embarqueCatalog = useMemo(() => (
+    (embarques || []).map((item) => ({
+      raw: item,
+      id: item?.id,
+      bl: item?.bl || '',
+      booking: item?.booking || '',
+      semana: item?.semanas?.consecutivo || item?.semana?.consecutivo || '',
+      clienteId: String(item?.id_cliente || item?.clientes?.id || item?.cliente?.id || ''),
+      clienteLabel: item?.clientes?.cod || item?.cliente?.cod || '',
+      lineaLabel: item?.Naviera?.cod || item?.naviera?.cod || item?.Naviera?.navieras || item?.naviera?.navieras || '',
+      buqueLabel: item?.Buque?.buque || item?.buque?.buque || '',
+      destinoLabel: item?.Destino?.cod || item?.destino?.cod || item?.Destino?.destino || item?.destino?.destino || '',
+    }))
+  ), [embarques]);
+
+  const combosActivos = useMemo(
+    () => (combos || []).filter((item) => item?.isBlock !== true),
+    [combos]
+  );
+
   const rows = useMemo(() => {
-    return itemList.map((item) => ({
-      ...item,
-      origen: item?.ruta?.ubicacion_1?.ubicacion || '',
-      origenId: item?.ruta?.ubicacion_1?.id || '',
-      destino: item?.ruta?.ubicacion_2?.ubicacion || '',
-      destinoId: item?.ruta?.ubicacion_2?.id || '',
-      conductorLabel: item?.conductor?.conductor || '',
-      vehiculoLabel: item?.vehiculo?.placa || '',
-      contenedorLabel: item?.contenedor || '',
-      semanaLabel: item?.semana || '',
-      blLabel: item?.bl || '',
-    }));
-  }, [itemList]);
+    const comboMap = new Map((combos || []).map((item) => [String(item?.id || ''), item]));
+
+    return [...itemList]
+      .sort((a, b) => {
+        const fechaCompare = String(b?.fecha || '').localeCompare(String(a?.fecha || ''));
+        if (fechaCompare !== 0) return fechaCompare;
+
+        const blCompare = String(a?.bl || '').localeCompare(String(b?.bl || ''));
+        if (blCompare !== 0) return blCompare;
+
+        const contenedorCompare = String(a?.contenedor || '').localeCompare(String(b?.contenedor || ''));
+        if (contenedorCompare !== 0) return contenedorCompare;
+
+        return Number(a?.id || 0) - Number(b?.id || 0);
+      })
+      .map((item, index, list) => {
+        const embarque = findEmbarqueByReferencia(embarqueCatalog, item?.bl);
+        const key = `${item?.fecha || ''}__${item?.bl || ''}__${item?.contenedor || ''}`;
+        const prev = list[index - 1];
+        const prevKey = prev ? `${prev?.fecha || ''}__${prev?.bl || ''}__${prev?.contenedor || ''}` : '';
+        const productoPrincipal = (item?.productos_viajes || [])[0] || null;
+        const comboPrincipal = comboMap.get(String(productoPrincipal?.producto_id || ''));
+
+        return {
+          ...item,
+          groupKey: key,
+          groupStart: key !== prevKey,
+          origen: item?.ruta?.ubicacion_1?.ubicacion || '',
+          origenId: item?.ruta?.ubicacion_1?.id || '',
+          destino: item?.ruta?.ubicacion_2?.ubicacion || '',
+          destinoId: item?.ruta?.ubicacion_2?.id || '',
+          conductorLabel: item?.conductor?.conductor || '',
+          vehiculoLabel: item?.vehiculo?.placa || '',
+          contenedorLabel: item?.contenedor || '',
+          semanaLabel: item?.semana || '',
+          blLabel: item?.bl || '',
+          lineaLabel: embarque?.lineaLabel || '',
+          buqueLabel: embarque?.buqueLabel || '',
+          embarqueDestinoLabel: embarque?.destinoLabel || '',
+          embarqueClienteId: embarque?.clienteId || '',
+          embarqueClienteLabel: embarque?.clienteLabel || '',
+          productoLabel: comboPrincipal?.nombre || '',
+          productoComboId: comboPrincipal?.id || '',
+          productoClienteId: String(comboPrincipal?.id_cliente || ''),
+          productoViajeId: productoPrincipal?.id || '',
+          cantidadProductosLabel: productoPrincipal?.cantidad ?? '',
+        };
+      });
+  }, [combos, embarqueCatalog, itemList]);
 
   const movimientoOptions = useMemo(
     () => (tiposMovimiento || []).filter((item) => item?.activo !== false),
@@ -257,22 +351,31 @@ export default function Programador() {
       }
 
       const { data } = await paginarProgramaciones('', '', body);
-      const exportRows = (data || []).map((item) => ({
-        Fecha: item?.fecha || '',
-        Semana: item?.semana || '',
-        Vehiculo: item?.vehiculo?.placa || '',
-        Conductor: item?.conductor?.conductor || '',
-        BL: item?.bl || '',
-        Origen: item?.ruta?.ubicacion_1?.ubicacion || '',
-        Destino: item?.ruta?.ubicacion_2?.ubicacion || '',
-        Movimiento: item?.movimiento || '',
-        Contenedor: item?.contenedor || '',
-        'Llegada origen': item?.llegada_origen || '',
-        'Salida origen': item?.salida_origen || '',
-        'Llegada destino': item?.llegada_destino || '',
-        'Salida destino': item?.salida_destino || '',
-        Observaciones: item?.detalles || '',
-      }));
+      const exportRows = (data || []).map((item) => {
+        const embarque = findEmbarqueByReferencia(embarqueCatalog, item?.bl);
+        return {
+          Semana: item?.semana || '',
+          Fecha: item?.fecha || '',
+          Origen: item?.ruta?.ubicacion_1?.ubicacion || '',
+          Destino: item?.ruta?.ubicacion_2?.ubicacion || '',
+          Producto: combos.find((combo) => String(combo?.id || '') === String(item?.productos_viajes?.[0]?.producto_id || ''))?.nombre || '',
+          Cantidad: item?.productos_viajes?.[0]?.cantidad || '',
+          Linea: embarque?.lineaLabel || '',
+          'Destino embarque': embarque?.destinoLabel || '',
+          Buque: embarque?.buqueLabel || '',
+          BL: item?.bl || '',
+          Vehiculo: item?.vehiculo?.placa || '',
+          Conductor: item?.conductor?.conductor || '',
+          Movimiento: item?.movimiento || '',
+          Contenedor: item?.contenedor || '',
+          'Llegada origen': item?.llegada_origen || '',
+          'Salida origen': item?.salida_origen || '',
+          'Llegada destino': item?.llegada_destino || '',
+          Cierre: item?.cierre || '',
+          'Salida destino': item?.salida_destino || '',
+          Observaciones: item?.detalles || '',
+        };
+      });
 
       const book = XLSX.utils.book_new();
       const sheet = XLSX.utils.json_to_sheet(exportRows);
@@ -286,30 +389,6 @@ export default function Programador() {
         autoClose: true,
       });
     }
-  };
-
-  const descargarPlantilla = () => {
-    const sampleRows = [{
-      Fecha: '2026-04-19',
-      Semana: '16',
-      Vehiculo: 'PRE-000',
-      Conductor: 'Conductor predeterminado',
-      BL: '',
-      Origen: 'Ubicacion 2',
-      Destino: 'Predeterminado',
-      Movimiento: 'Contenedor',
-      Contenedor: 'MSCU1234567',
-      'Llegada origen': '08:00',
-      'Salida origen': '08:30',
-      'Llegada destino': '10:00',
-      'Salida destino': '10:30',
-      Observaciones: '',
-    }];
-
-    const book = XLSX.utils.book_new();
-    const sheet = XLSX.utils.json_to_sheet(sampleRows);
-    XLSX.utils.book_append_sheet(book, sheet, 'Plantilla');
-    XLSX.writeFile(book, 'Plantilla programador.xlsx');
   };
 
   const eliminar = async (id) => {
@@ -360,6 +439,15 @@ export default function Programador() {
     }));
   };
 
+  const getComboByText = useCallback((text) => {
+    const normalized = normalizeValue(text);
+    return (combosActivos || []).find((item) => (
+      normalizeValue(item?.nombre) === normalized
+      || normalizeValue(item?.consecutivo) === normalized
+      || String(item?.id || '') === String(text || '').trim()
+    ));
+  }, [combosActivos]);
+
   const updateLocalRow = (id, updater) => {
     setItemsList((prev) => prev.map((row) => (
       row.id === id ? updater(row) : row
@@ -379,6 +467,58 @@ export default function Programador() {
       });
       setReloadKey((prev) => prev + 1);
     }
+  };
+
+  const applyProgramacionChanges = async (row, changes) => {
+    try {
+      updateLocalRow(row.id, (current) => ({ ...current, ...changes }));
+      await actualizarProgramaciones(row.id, changes);
+    } catch (error) {
+      setAlert({
+        active: true,
+        mensaje: error.message || 'No fue posible actualizar el movimiento.',
+        color: 'danger',
+        autoClose: true,
+      });
+      setReloadKey((prev) => prev + 1);
+      throw error;
+    }
+  };
+
+  const applyEmbarqueSelection = async (row, embarque) => {
+    if (!embarque?.bl) {
+      return;
+    }
+
+    const nextChanges = {
+      bl: embarque.bl,
+      semana: embarque.semana || row.semana || '',
+    };
+
+    if (embarque.clienteId) {
+      nextChanges.id_pagador_flete = embarque.clienteId;
+    }
+
+    await applyProgramacionChanges(row, nextChanges);
+  };
+
+  const upsertProductoViaje = async (row, changes = {}) => {
+    const existing = row?.productos_viajes?.[0];
+
+    if (existing?.id) {
+      await actualizarProductosViaje(existing.id, changes);
+      return existing.id;
+    }
+
+    const created = await agregarProductosViaje({
+      programacion_id: row.id,
+      unidad_de_medida: '',
+      activo: true,
+      cantidad: 0,
+      ...changes,
+    });
+
+    return created?.id || '';
   };
 
   const handleLookupEdit = async (row, field, value) => {
@@ -449,7 +589,7 @@ export default function Programador() {
   const handleLookupTextEdit = async (row, field, value) => {
     const text = String(value || '').trim();
     if (!text && field === 'bl') {
-      await handleCellEdit(row.id, 'bl', '');
+      await applyProgramacionChanges(row, { bl: '', id_pagador_flete: '' });
       return;
     }
     if (!text) {
@@ -457,15 +597,6 @@ export default function Programador() {
     }
 
     try {
-      if (field === 'semana') {
-        const semana = semanas.find((item) => String(item?.consecutivo) === text);
-        if (!semana) {
-          throw new Error(`La semana "${text}" no existe.`);
-        }
-        await handleCellEdit(row.id, 'semana', semana.consecutivo);
-        return;
-      }
-
       if (field === 'vehiculo') {
         const vehiculo = vehiculos.find((item) => normalizeValue(item?.placa) === normalizeValue(text));
         if (!vehiculo) {
@@ -485,11 +616,60 @@ export default function Programador() {
       }
 
       if (field === 'bl') {
-        const bl = embarques.find((item) => normalizeValue(item?.bl) === normalizeValue(text));
-        if (!bl) {
-          throw new Error(`El BL "${text}" no existe en embarques.`);
+        const match = embarqueCatalog.find((item) => (
+          normalizeValue(item?.bl) === normalizeValue(text)
+          || normalizeValue(item?.booking) === normalizeValue(text)
+        ));
+        if (!match) {
+          throw new Error(`El BL o booking "${text}" no existe en embarques.`);
         }
-        await handleCellEdit(row.id, 'bl', bl.bl);
+        await applyEmbarqueSelection(row, match);
+        return;
+      }
+
+      if (field === 'producto') {
+        const combo = getComboByText(text);
+        if (!combo) {
+          throw new Error(`El producto "${text}" no existe.`);
+        }
+
+        const productoViajeId = await upsertProductoViaje(row, { producto_id: combo.id });
+        updateLocalRow(row.id, (current) => ({
+          ...current,
+          productos_viajes: current?.productos_viajes?.length
+            ? current.productos_viajes.map((productoViaje, index) => (
+              index === 0 ? { ...productoViaje, producto_id: combo.id, id: productoViaje.id || productoViajeId } : productoViaje
+            ))
+            : [{ id: productoViajeId, producto_id: combo.id, cantidad: Number(current?.cantidadProductosLabel || 0) || 0 }],
+        }));
+        setReloadKey((prev) => prev + 1);
+        return;
+      }
+
+      if (field === 'cantidad') {
+        const amount = Number(text);
+        if (Number.isNaN(amount) || amount < 0) {
+          throw new Error('La cantidad debe ser un numero valido.');
+        }
+
+        const currentComboId = row?.productos_viajes?.[0]?.producto_id;
+        if (!currentComboId) {
+          throw new Error('Selecciona primero un producto.');
+        }
+
+        const productoViajeId = await upsertProductoViaje(row, {
+          producto_id: currentComboId,
+          cantidad: amount,
+        });
+        updateLocalRow(row.id, (current) => ({
+          ...current,
+          productos_viajes: current?.productos_viajes?.length
+            ? current.productos_viajes.map((productoViaje, index) => (
+              index === 0 ? { ...productoViaje, cantidad: amount, id: productoViaje.id || productoViajeId } : productoViaje
+            ))
+            : [{ id: productoViajeId, producto_id: currentComboId, cantidad: amount }],
+        }));
+        setReloadKey((prev) => prev + 1);
         return;
       }
 
@@ -523,6 +703,15 @@ export default function Programador() {
     }
   };
 
+  const renderProgramadorHeader = (columnId, label) => (
+    <th
+      className={`text-custom-small text-center ${READONLY_PROGRAMADOR_COLUMNS.has(columnId) ? 'text-white bg-secondary' : ''}`}
+      style={compactCellStyle}
+    >
+      {label}
+    </th>
+  );
+
   const resolveImportPayload = async (row, catalogs) => {
     const { ubicacionesList, conductoresList, vehiculosList, semanasList, tiposMovimientoList } = catalogs;
 
@@ -539,6 +728,7 @@ export default function Programador() {
     const llegadaOrigen = formatTimeCell(getRowValue(row, ['Llegada origen']));
     const salidaOrigen = formatTimeCell(getRowValue(row, ['Salida origen']));
     const llegadaDestino = formatTimeCell(getRowValue(row, ['Llegada destino']));
+    const cierre = formatTimeCell(getRowValue(row, ['Cierre']));
     const salidaDestino = formatTimeCell(getRowValue(row, ['Salida destino']));
     const idText = String(getRowValue(row, ['Id', 'ID', 'Programacion ID', 'Programación ID'])).trim();
 
@@ -611,6 +801,7 @@ export default function Programador() {
         llegada_origen: llegadaOrigen,
         salida_origen: salidaOrigen,
         llegada_destino: llegadaDestino,
+        cierre,
         salida_destino: salidaDestino,
       },
     };
@@ -708,7 +899,15 @@ export default function Programador() {
     <>
       <Alertas alert={alert} handleClose={toogleAlert} />
 
-      <div className="container-fluid px-3 px-lg-4">
+      <div
+        className="container-fluid px-0"
+        style={{
+          width: '95vw',
+          maxWidth: '95vw',
+          marginLeft: 'calc(50% - 47.5vw)',
+          marginRight: 'calc(50% - 47.5vw)',
+        }}
+      >
         <div className="card shadow-sm mb-4">
           <div className="card-header bg-dark text-white">
             <h5 className="mb-0">Programador</h5>
@@ -803,12 +1002,6 @@ export default function Programador() {
                 </div>
 
                 <div className="col-12 col-md-6 col-lg-2">
-                  <Button type="button" onClick={descargarPlantilla} className="w-100 mt-0 mt-md-4" variant="outline-secondary" size="sm">
-                    Descargar plantilla
-                  </Button>
-                </div>
-
-                <div className="col-12 col-md-6 col-lg-2">
                   <Button type="button" onClick={() => setOpenMasivo(true)} className="w-100 mt-0 mt-md-4" variant="outline-primary" size="sm" disabled={importing || updatingMass}>
                     {importing ? 'Cargando...' : 'Cargue masivo'}
                   </Button>
@@ -828,30 +1021,45 @@ export default function Programador() {
               </div>
             </form>
 
-            <div className="table-responsive mt-4">
-              <table className="table table-striped table-bordered table-sm align-middle text-center mb-0">
-                <thead>
+            <div className="table-responsive mt-4" style={{ overflowX: 'auto' }}>
+              <table
+                className="table table-striped table-bordered table-sm mt-2 text-center align-middle mb-0 programador-table"
+                style={{ minWidth: '1600px', tableLayout: 'auto', whiteSpace: 'nowrap', fontSize: '0.8rem' }}
+              >
+                <thead className="align-middle" style={{ whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
                   <tr>
-                    {visibleColumns.fecha && <th>Fecha</th>}
-                    {visibleColumns.semana && <th>Sem</th>}
-                    {visibleColumns.vehiculo && <th>Vehiculo</th>}
-                    {visibleColumns.bl && <th>BL</th>}
-                    {visibleColumns.conductor && <th>Conductor</th>}
-                    {visibleColumns.origen && <th>Origen</th>}
-                    {visibleColumns.llegada_origen && <th>Llegada</th>}
-                    {visibleColumns.salida_origen && <th>Salida</th>}
-                    {visibleColumns.destino && <th>Destino</th>}
-                    {visibleColumns.llegada_destino && <th>Llegada</th>}
-                    {visibleColumns.salida_destino && <th>Salida</th>}
-                    {visibleColumns.movimiento && <th>Movimiento</th>}
-                    {visibleColumns.contenedor && <th>Contenedor</th>}
-                    {visibleColumns.eliminar && <th>Eliminar</th>}
+                    {visibleColumns.semana && renderProgramadorHeader('semana', 'Sem')}
+                    {visibleColumns.fecha && renderProgramadorHeader('fecha', 'Fecha')}
+                    {visibleColumns.origen && renderProgramadorHeader('origen', 'Origen')}
+                    {visibleColumns.destino && renderProgramadorHeader('destino', 'Destino L')}
+                    {visibleColumns.productos && renderProgramadorHeader('productos', 'Producto')}
+                    {visibleColumns.cantidad_productos && renderProgramadorHeader('cantidad_productos', 'Cantidad')}
+                    {visibleColumns.linea && renderProgramadorHeader('linea', 'Linea')}
+                    {visibleColumns.destino_embarque && renderProgramadorHeader('destino_embarque', 'Destino')}
+                    {visibleColumns.buque && renderProgramadorHeader('buque', 'Buque')}
+                    {visibleColumns.bl && renderProgramadorHeader('bl', 'BL')}
+                    {visibleColumns.vehiculo && renderProgramadorHeader('vehiculo', 'Vehiculos')}
+                    {visibleColumns.conductor && renderProgramadorHeader('conductor', 'Conductor')}
+                    {visibleColumns.llegada_origen && renderProgramadorHeader('llegada_origen', 'Ingreso origen')}
+                    {visibleColumns.salida_origen && renderProgramadorHeader('salida_origen', 'Salida origen')}
+                    {visibleColumns.llegada_destino && renderProgramadorHeader('llegada_destino', 'Ingreso destino')}
+                    {visibleColumns.cierre && renderProgramadorHeader('cierre', 'Cierre')}
+                    {visibleColumns.salida_destino && renderProgramadorHeader('salida_destino', 'Salida destino')}
+                    {visibleColumns.movimiento && renderProgramadorHeader('movimiento', 'Movimiento')}
+                    {visibleColumns.contenedor && renderProgramadorHeader('contenedor', 'Contenedor')}
+                    {visibleColumns.eliminar && renderProgramadorHeader('eliminar', 'Eliminar')}
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((item) => (
-                    <tr key={item.id}>
-                      {visibleColumns.fecha && <td className="text-center align-middle p-0">
+                    <tr
+                      key={item.id}
+                      style={item.groupStart ? { borderTop: '2px solid #356854' } : undefined}
+                    >
+                      {visibleColumns.semana && <td className="text-center align-middle p-0" style={compactCellStyle}>
+                        <div className="py-2 px-1 text-center">{item.semanaLabel}</div>
+                      </td>}
+                      {visibleColumns.fecha && <td className="text-center align-middle p-0" style={compactCellStyle}>
                         {isEditable ? (
                           <input
                             type="date"
@@ -863,83 +1071,7 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.fecha}</div>
                         )}
                       </td>}
-                      {visibleColumns.semana && <td className="text-center align-middle p-0">
-                        {isEditable ? (
-                          <>
-                            <input
-                              list={`semana-${item.id}`}
-                              defaultValue={item.semana || ''}
-                              className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                              onBlur={(e) => handleLookupTextEdit(item, 'semana', e.target.value)}
-                            />
-                            <datalist id={`semana-${item.id}`}>
-                              {semanas.map((semana) => (
-                                <option key={semana.id || semana.consecutivo} value={semana.consecutivo} />
-                              ))}
-                            </datalist>
-                          </>
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.semanaLabel}</div>
-                        )}
-                      </td>}
-                      {visibleColumns.vehiculo && <td className="text-center align-middle p-0">
-                        {isEditable ? (
-                          <>
-                            <input
-                              list={`vehiculo-${item.id}`}
-                              defaultValue={item.vehiculoLabel || ''}
-                              className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                              onBlur={(e) => handleLookupTextEdit(item, 'vehiculo', e.target.value)}
-                            />
-                            <datalist id={`vehiculo-${item.id}`}>
-                              {vehiculos.map((vehiculo) => (
-                                <option key={vehiculo.id} value={vehiculo.placa} />
-                              ))}
-                            </datalist>
-                          </>
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.vehiculoLabel}</div>
-                        )}
-                      </td>}
-                      {visibleColumns.bl && <td className="text-center align-middle p-0">
-                        {isEditable ? (
-                          <>
-                            <input
-                              list={`bl-${item.id}`}
-                              defaultValue={item.blLabel || ''}
-                              className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                              onBlur={(e) => handleLookupTextEdit(item, 'bl', e.target.value)}
-                            />
-                            <datalist id={`bl-${item.id}`}>
-                              {embarques.map((embarque) => (
-                                <option key={embarque.id} value={embarque.bl} />
-                              ))}
-                            </datalist>
-                          </>
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.blLabel || ''}</div>
-                        )}
-                      </td>}
-                      {visibleColumns.conductor && <td className="text-center align-middle p-0">
-                        {isEditable ? (
-                          <>
-                            <input
-                              list={`conductor-${item.id}`}
-                              defaultValue={item.conductorLabel || ''}
-                              className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                              onBlur={(e) => handleLookupTextEdit(item, 'conductor', e.target.value)}
-                            />
-                            <datalist id={`conductor-${item.id}`}>
-                              {conductores.map((conductor) => (
-                                <option key={conductor.id} value={conductor.conductor} />
-                              ))}
-                            </datalist>
-                          </>
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.conductorLabel}</div>
-                        )}
-                      </td>}
-                      {visibleColumns.origen && <td className="table-success text-center align-middle p-0">
+                      {visibleColumns.origen && <td className="table-success text-center align-middle p-0" style={compactCellStyle}>
                         {isEditable ? (
                           <>
                             <input
@@ -958,31 +1090,7 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.origen}</div>
                         )}
                       </td>}
-                      {visibleColumns.llegada_origen && <td className="table-success text-center align-middle p-0">
-                        {isEditable ? (
-                          <input
-                            type="time"
-                            defaultValue={item.llegada_origen || ''}
-                            className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                            onBlur={(e) => handleCellEdit(item.id, 'llegada_origen', e.target.value)}
-                          />
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.llegada_origen || ''}</div>
-                        )}
-                      </td>}
-                      {visibleColumns.salida_origen && <td className="table-success text-center align-middle p-0">
-                        {isEditable ? (
-                          <input
-                            type="time"
-                            defaultValue={item.salida_origen || ''}
-                            className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                            onBlur={(e) => handleCellEdit(item.id, 'salida_origen', e.target.value)}
-                          />
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.salida_origen || ''}</div>
-                        )}
-                      </td>}
-                      {visibleColumns.destino && <td className="table-primary text-center align-middle p-0">
+                      {visibleColumns.destino && <td className="table-primary text-center align-middle p-0" style={compactCellStyle}>
                         {isEditable ? (
                           <>
                             <input
@@ -1001,7 +1109,141 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.destino}</div>
                         )}
                       </td>}
-                      {visibleColumns.llegada_destino && <td className="table-primary text-center align-middle p-0">
+                      {visibleColumns.productos && <td className="text-center align-middle p-0" style={compactCellStyle}>
+                        {isEditable ? (
+                          <>
+                            <input
+                              list={`producto-${item.id}`}
+                              defaultValue={item.productoLabel || ''}
+                              className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                              onBlur={(e) => handleLookupTextEdit(item, 'producto', e.target.value)}
+                            />
+                            <datalist id={`producto-${item.id}`}>
+                              {combosActivos.map((combo) => (
+                                <option key={combo.id} value={combo.nombre} />
+                              ))}
+                            </datalist>
+                          </>
+                        ) : (
+                          <div className="py-2 px-1 text-center">{item.productoLabel || ''}</div>
+                        )}
+                      </td>}
+                      {visibleColumns.cantidad_productos && <td className="text-center align-middle p-0" style={compactCellStyle}>
+                        {isEditable ? (
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            defaultValue={item.cantidadProductosLabel || ''}
+                            className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                            onBlur={(e) => handleLookupTextEdit(item, 'cantidad', e.target.value)}
+                          />
+                        ) : (
+                          <div className="py-2 px-1 text-center">{item.cantidadProductosLabel || ''}</div>
+                        )}
+                      </td>}
+                      {visibleColumns.linea && <td className="text-center align-middle p-0" style={compactCellStyle}>
+                        <div className="py-2 px-1 text-center">{item.lineaLabel || ''}</div>
+                      </td>}
+                      {visibleColumns.destino_embarque && <td className="text-center align-middle p-0" style={compactCellStyle}>
+                        <div className="py-2 px-1 text-center">{item.embarqueDestinoLabel || ''}</div>
+                      </td>}
+                      {visibleColumns.buque && <td className="text-center align-middle p-0" style={compactCellStyle}>
+                        <div className="py-2 px-1 text-center">{item.buqueLabel || ''}</div>
+                      </td>}
+                      {visibleColumns.bl && <td className="text-center align-middle p-0" style={compactCellStyle}>
+                        {isEditable ? (
+                          <>
+                            <input
+                              list={`bl-${item.id}`}
+                              defaultValue={item.blLabel || ''}
+                              className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                              onBlur={(e) => handleLookupTextEdit(item, 'bl', e.target.value)}
+                            />
+                            <datalist id={`bl-${item.id}`}>
+                              {embarqueCatalog.flatMap((embarque) => {
+                                const options = [];
+                                if (embarque.bl) {
+                                  options.push(
+                                    <option key={`${embarque.id || embarque.bl}-bl`} value={embarque.bl} />
+                                  );
+                                }
+                                if (embarque.booking) {
+                                  options.push(
+                                    <option key={`${embarque.id || embarque.booking}-booking`} value={embarque.booking} />
+                                  );
+                                }
+                                return options;
+                              })}
+                            </datalist>
+                          </>
+                        ) : (
+                          <div className="py-2 px-1 text-center">{item.blLabel || ''}</div>
+                        )}
+                      </td>}
+                      {visibleColumns.vehiculo && <td className="text-center align-middle p-0" style={compactCellStyle}>
+                        {isEditable ? (
+                          <>
+                            <input
+                              list={`vehiculo-${item.id}`}
+                              defaultValue={item.vehiculoLabel || ''}
+                              className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                              onBlur={(e) => handleLookupTextEdit(item, 'vehiculo', e.target.value)}
+                            />
+                            <datalist id={`vehiculo-${item.id}`}>
+                              {vehiculos.map((vehiculo) => (
+                                <option key={vehiculo.id} value={vehiculo.placa} />
+                              ))}
+                            </datalist>
+                          </>
+                        ) : (
+                          <div className="py-2 px-1 text-center">{item.vehiculoLabel}</div>
+                        )}
+                      </td>}
+                      {visibleColumns.conductor && <td className="text-center align-middle p-0" style={compactCellStyle}>
+                        {isEditable ? (
+                          <>
+                            <input
+                              list={`conductor-${item.id}`}
+                              defaultValue={item.conductorLabel || ''}
+                              className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                              onBlur={(e) => handleLookupTextEdit(item, 'conductor', e.target.value)}
+                            />
+                            <datalist id={`conductor-${item.id}`}>
+                              {conductores.map((conductor) => (
+                                <option key={conductor.id} value={conductor.conductor} />
+                              ))}
+                            </datalist>
+                          </>
+                        ) : (
+                          <div className="py-2 px-1 text-center">{item.conductorLabel}</div>
+                        )}
+                      </td>}
+                      {visibleColumns.llegada_origen && <td className="table-success text-center align-middle p-0" style={compactCellStyle}>
+                        {isEditable ? (
+                          <input
+                            type="time"
+                            defaultValue={item.llegada_origen || ''}
+                            className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                            onBlur={(e) => handleCellEdit(item.id, 'llegada_origen', e.target.value)}
+                          />
+                        ) : (
+                          <div className="py-2 px-1 text-center">{item.llegada_origen || ''}</div>
+                        )}
+                      </td>}
+                      {visibleColumns.salida_origen && <td className="table-success text-center align-middle p-0" style={compactCellStyle}>
+                        {isEditable ? (
+                          <input
+                            type="time"
+                            defaultValue={item.salida_origen || ''}
+                            className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                            onBlur={(e) => handleCellEdit(item.id, 'salida_origen', e.target.value)}
+                          />
+                        ) : (
+                          <div className="py-2 px-1 text-center">{item.salida_origen || ''}</div>
+                        )}
+                      </td>}
+                      {visibleColumns.llegada_destino && <td className="table-primary text-center align-middle p-0" style={compactCellStyle}>
                         {isEditable ? (
                           <input
                             type="time"
@@ -1013,7 +1255,19 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.llegada_destino || ''}</div>
                         )}
                       </td>}
-                      {visibleColumns.salida_destino && <td className="table-primary text-center align-middle p-0">
+                      {visibleColumns.cierre && <td className="table-primary text-center align-middle p-0" style={compactCellStyle}>
+                        {isEditable ? (
+                          <input
+                            type="time"
+                            defaultValue={item.cierre || ''}
+                            className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                            onBlur={(e) => handleCellEdit(item.id, 'cierre', e.target.value)}
+                          />
+                        ) : (
+                          <div className="py-2 px-1 text-center">{item.cierre || ''}</div>
+                        )}
+                      </td>}
+                      {visibleColumns.salida_destino && <td className="table-primary text-center align-middle p-0" style={compactCellStyle}>
                         {isEditable ? (
                           <input
                             type="time"
@@ -1025,7 +1279,7 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.salida_destino || ''}</div>
                         )}
                       </td>}
-                      {visibleColumns.movimiento && <td className="text-center align-middle p-0">
+                      {visibleColumns.movimiento && <td className="text-center align-middle p-0" style={compactCellStyle}>
                         {isEditable ? (
                           <>
                             <input
@@ -1044,7 +1298,7 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.movimiento}</div>
                         )}
                       </td>}
-                      {visibleColumns.contenedor && <td className="text-center align-middle p-0">
+                      {visibleColumns.contenedor && <td className="text-center align-middle p-0" style={compactCellStyle}>
                         {isEditable ? (
                           <input
                             type="text"
@@ -1146,6 +1400,7 @@ export default function Programador() {
             "llegada origen": null,
             "salida origen": null,
             "llegada destino": null,
+            cierre: null,
             "salida destino": null,
             observaciones: null,
           }}
@@ -1171,13 +1426,14 @@ export default function Programador() {
             "llegada origen": null,
             "salida origen": null,
             "llegada destino": null,
+            cierre: null,
             "salida destino": null,
             observaciones: null,
           }}
           onProcessRows={(rows) => processProgramacionRows(rows, 'update')}
         />
       )}
+
     </>
   );
 }
-

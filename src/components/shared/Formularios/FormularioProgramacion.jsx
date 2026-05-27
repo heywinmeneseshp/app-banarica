@@ -8,13 +8,15 @@ import { agregarProgramaciones } from "@services/api/programaciones";
 import { agregarRutas, buscarRutaPost } from "@services/api/rutas";
 import { agregarConsumoRutaVehiculo } from "@services/api/consumoRutaVehiculo";
 import { listarSemanas } from "@services/api/semanas";
-import { listarEmbarques } from "@services/api/embarques";
+import { paginarEmbarques } from "@services/api/embarques";
+import { listarCombos } from "@services/api/combos";
 import { listarcategoriaVehiculos } from "@services/api/CategoriaVehiculos";
 import { listarNavieras } from "@services/api/navieras";
 import { listarDestinos } from "@services/api/destinos";
 import { listarBuques } from "@services/api/buques";
 import { agregartipoMovimientoVehiculo, listartipoMovimientoVehiculos } from "@services/api/tipoMovimientoVehiculos";
 import { encontrarModulo } from "@services/api/configuracion";
+import { agregarProductosViaje } from "@services/api/productos_viaje";
 
 const parseVehiculosSinCombustible = (configRows) => {
   try {
@@ -47,10 +49,12 @@ export default function FormulariosProgramacion({
   const [listaTiposMovimiento, setListaTiposMovimiento] = useState([]);
   const [listaSemanas, setListaSemanas] = useState([]);
   const [listaEmbarques, setListaEmbarques] = useState([]);
+  const [listaCombos, setListaCombos] = useState([]);
   const [vehiculosSinCombustible, setVehiculosSinCombustible] = useState([]);
   const [guardando, setGuardando] = useState(false);
   const [semanaInput, setSemanaInput] = useState("");
   const [semanaSeleccionada, setSemanaSeleccionada] = useState("");
+  const [productoSeleccionado, setProductoSeleccionado] = useState("");
   const [navieraSeleccionada, setNavieraSeleccionada] = useState("");
   const [destinoSeleccionado, setDestinoSeleccionado] = useState("");
   const [buqueSeleccionado, setBuqueSeleccionado] = useState("");
@@ -83,7 +87,8 @@ export default function FormulariosProgramacion({
       buques,
       tiposMovimiento,
       semanas,
-      embarques,
+      embarquesRes,
+      combos,
       configProgramador,
     ] = await Promise.all([
       listarUbicaciones(),
@@ -95,7 +100,8 @@ export default function FormulariosProgramacion({
       listarBuques(),
       listartipoMovimientoVehiculos(),
       listarSemanas(),
-      listarEmbarques(),
+      paginarEmbarques(1, 5000, {}),
+      listarCombos(),
       encontrarModulo("Programador_combustible"),
     ]);
 
@@ -108,7 +114,8 @@ export default function FormulariosProgramacion({
     setListaBuques(buques || []);
     setListaTiposMovimiento((tiposMovimiento || []).filter((item) => item?.activo !== false));
     setListaSemanas(semanas || []);
-    setListaEmbarques(embarques || []);
+    setListaEmbarques(embarquesRes?.data || []);
+    setListaCombos(combos || []);
     setVehiculosSinCombustible(parseVehiculosSinCombustible(configProgramador));
   }, []);
 
@@ -119,6 +126,16 @@ export default function FormulariosProgramacion({
   const semanaActual = useMemo(
     () => listaSemanas.find((item) => String(item?.id || "") === String(semanaSeleccionada)),
     [listaSemanas, semanaSeleccionada]
+  );
+
+  const productoActual = useMemo(
+    () => listaCombos.find((item) => String(item?.id || "") === String(productoSeleccionado)),
+    [listaCombos, productoSeleccionado]
+  );
+
+  const combosActivos = useMemo(
+    () => (listaCombos || []).filter((item) => item?.isBlock !== true),
+    [listaCombos]
   );
 
   const embarquesSemana = useMemo(() => {
@@ -137,6 +154,13 @@ export default function FormulariosProgramacion({
   const navierasDisponibles = useMemo(() => {
     const map = new Map();
     embarquesSemana.forEach((item) => {
+      if (
+        productoActual?.id_cliente
+        && String(item?.id_cliente || item?.clientes?.id || item?.cliente?.id || "") !== String(productoActual.id_cliente)
+      ) {
+        return;
+      }
+
       const id = String(item?.id_naviera || item?.Naviera?.id || item?.naviera?.id || "");
       const navieraMaestra = (listaNavieras || []).find(
         (naviera) => String(naviera?.id || naviera?.consecutivo || "") === id
@@ -155,7 +179,7 @@ export default function FormulariosProgramacion({
       }
     });
     return Array.from(map.values());
-  }, [embarquesSemana, listaNavieras]);
+  }, [embarquesSemana, listaNavieras, productoActual]);
 
   const embarquesNaviera = useMemo(() => {
     if (!navieraSeleccionada) {
@@ -301,6 +325,13 @@ export default function FormulariosProgramacion({
       setBookingSeleccionado("");
       return;
     }
+    if (level === "producto") {
+      setNavieraSeleccionada("");
+      setDestinoSeleccionado("");
+      setBuqueSeleccionado("");
+      setBookingSeleccionado("");
+      return;
+    }
     if (level === "naviera") {
       setDestinoSeleccionado("");
       setBuqueSeleccionado("");
@@ -325,6 +356,11 @@ export default function FormulariosProgramacion({
     setSemanaInput(value);
     setSemanaSeleccionada(semana ? String(semana?.id || "") : "");
     resetDependentSelectors("semana");
+  };
+
+  const handleProductoChange = (event) => {
+    setProductoSeleccionado(event.target.value);
+    resetDependentSelectors("producto");
   };
 
   const handleQuickCreateUbicacion = () => {
@@ -538,6 +574,7 @@ export default function FormulariosProgramacion({
   };
 
   const resetMovimientoFields = () => {
+    setProductoSeleccionado("");
     setVehiculoSeleccionado("");
     setConductorSeleccionado("");
     setMovimientoSeleccionado("");
@@ -607,14 +644,22 @@ export default function FormulariosProgramacion({
       const semanaTexto = semanaActual?.consecutivo || semanaInput;
       const bookingActualBl = bookingActual?.bl || null;
       const contenedorFinal = requiereContenedor ? String(contenedor || "").trim().toUpperCase() : null;
+      const productoPayload = productoActual?.id
+        ? {
+            producto_id: productoActual.id,
+            unidad_de_medida: "",
+            cantidad: 0,
+            activo: true,
+          }
+        : null;
 
       if (paradasValidas.length === 1) {
         const ubicacionId = paradasValidas[0];
         const rutaId = await ensureRoute(ubicacionId, ubicacionId);
-        await agregarProgramaciones({
+        const programacionCreada = await agregarProgramaciones({
           ruta_id: rutaId,
           cobrar: false,
-          id_pagador_flete: null,
+          id_pagador_flete: productoActual?.id_cliente || null,
           activo: true,
           movimiento: movimientoSeleccionado,
           conductor_id: conductorActual.id,
@@ -625,16 +670,22 @@ export default function FormulariosProgramacion({
           fecha,
           detalles: "Ubicacion unica",
         });
+        if (productoPayload && programacionCreada?.id) {
+          await agregarProductosViaje({
+            ...productoPayload,
+            programacion_id: programacionCreada.id,
+          });
+        }
       } else {
         for (let index = 0; index < paradasValidas.length - 1; index += 1) {
           const origenId = paradasValidas[index];
           const destinoId = paradasValidas[index + 1];
           const rutaId = await ensureRoute(origenId, destinoId);
 
-          await agregarProgramaciones({
+          const programacionCreada = await agregarProgramaciones({
             ruta_id: rutaId,
             cobrar: false,
-            id_pagador_flete: null,
+            id_pagador_flete: productoActual?.id_cliente || null,
             activo: true,
             movimiento: movimientoSeleccionado,
             conductor_id: conductorActual.id,
@@ -645,6 +696,12 @@ export default function FormulariosProgramacion({
             fecha,
             detalles: `Tramo ${index + 1} de ${paradasValidas.length - 1}`,
           });
+          if (productoPayload && programacionCreada?.id) {
+            await agregarProductosViaje({
+              ...productoPayload,
+              programacion_id: programacionCreada.id,
+            });
+          }
         }
       }
 
@@ -694,7 +751,7 @@ export default function FormulariosProgramacion({
                 </div>
 
                 <div className="row g-2">
-                  <div className="col-md-4">
+                  <div className="col-md-3">
                     <label htmlFor="semana-programador" className="form-label mb-1">Semana</label>
                     <input
                       id="semana-programador"
@@ -715,7 +772,7 @@ export default function FormulariosProgramacion({
                     )}
                   </div>
 
-                  <div className="col-md-4">
+                  <div className="col-md-3">
                     <label htmlFor="fecha-programador" className="form-label mb-1">Fecha</label>
                     <input
                       id="fecha-programador"
@@ -726,7 +783,22 @@ export default function FormulariosProgramacion({
                     />
                   </div>
 
-                  <div className="col-md-4">
+                  <div className="col-md-3">
+                    <label htmlFor="producto-programador" className="form-label mb-1">Producto</label>
+                    <select
+                      id="producto-programador"
+                      className="form-control form-control-sm"
+                      value={productoSeleccionado}
+                      onChange={handleProductoChange}
+                    >
+                      <option value=""></option>
+                      {combosActivos.map((item) => (
+                        <option key={item?.id} value={item?.id}>{item?.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="col-md-3">
                     <label htmlFor="naviera-programador" className="form-label mb-1">Naviera</label>
                     <select
                       id="naviera-programador"

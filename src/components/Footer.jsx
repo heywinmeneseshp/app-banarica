@@ -10,10 +10,11 @@ export default function Footer() {
                         href="https://www.craken.com.co/"
                         className="text-white text-decoration-none"
                     >
-                        Â© 2022 Copyright: www.craken.com.co
+                        � 2022 Copyright: www.craken.com.co
                     </Link>
                 </div>
             </div>
         </footer>
     );
 }
+

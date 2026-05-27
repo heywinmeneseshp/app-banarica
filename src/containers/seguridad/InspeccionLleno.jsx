@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { FaCamera, FaCog, FaMinus, FaPlus } from "react-icons/fa";
 import Loader from "@components/shared/Loader";
@@ -498,7 +498,7 @@ export default function InspeccionLLeno() {
 
     if (!selectedContainer) {
       setValidation((prev) => ({ ...prev, contenedor: false }));
-      throw new Error("Selecciona un contenedor vÃ¡lido del listado.");
+      throw new Error("Selecciona un contenedor válido del listado.");
     }
 
     const kit = await encontrarUnSerial({ bag_pack: bagCode, available: [true] });
@@ -542,7 +542,7 @@ export default function InspeccionLLeno() {
       if (inspectionCount >= 1) {
         const shouldContinue = await confirm({
           title: 'Contenedor ya inspeccionado',
-          message: 'Este contenedor ya fue inspeccionado anteriormente. ¿Estas seguro de enviarlo nuevamente?',
+          message: 'Este contenedor ya fue inspeccionado anteriormente. �Estas seguro de enviarlo nuevamente?',
           confirmLabel: 'Si, enviar',
           cancelLabel: 'Cancelar',
           variant: 'warning'
@@ -588,7 +588,7 @@ export default function InspeccionLLeno() {
         setProducts(productsData || []);
         setAlmacenes(almacenesData || []);
       } catch (error) {
-        console.error("Error inicializando inspecciÃ³n lleno:", error);
+        console.error("Error inicializando inspecci�n lleno:", error);
       }
     };
 
@@ -727,9 +727,9 @@ export default function InspeccionLLeno() {
         <div className="container py-3">
           <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
             <div className="text-center text-md-start">
-              <h2 className="mb-2">InspecciÃ³n Lleno</h2>
+              <h2 className="mb-2">inspecci�n Lleno</h2>
               <p className="text-muted mb-0">
-                Registra la inspecciÃ³n antinarcÃ³ticos del contenedor lleno.
+                Registra la inspecci�n antinarc�ticos del contenedor lleno.
               </p>
             </div>
 
@@ -842,7 +842,7 @@ export default function InspeccionLLeno() {
                     id="agente"
                     value={formData.agente}
                     onChange={handleInputChange}
-                    placeholder="Nombre del agente de policÃ­a"
+                    placeholder="Nombre del agente de polic�a"
                     required
                   />
                 </div>
@@ -853,7 +853,7 @@ export default function InspeccionLLeno() {
                     id="zona"
                     value={formData.zona}
                     onChange={handleInputChange}
-                    placeholder="Zona de inspecciÃ³n"
+                    placeholder="Zona de inspecci�n"
                     required
                   />
                 </div>
@@ -967,4 +967,5 @@ export default function InspeccionLLeno() {
     </>
   );
 }
+
 

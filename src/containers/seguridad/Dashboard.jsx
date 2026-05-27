@@ -17,8 +17,6 @@ import { filterActiveContainerRows } from "@utils/contenedorEstado";
 
 const SECURITY_MODULE_KEYS = [
     "Relación_seguridad",
-    "Relacion_seguridad",
-    "RelaciÃ³n_seguridad"
 ];
 
 const toMinutes = (timeValue) => {
@@ -435,3 +433,4 @@ export default function Dashboard() {
         </>
     );
 }
+
