@@ -2,11 +2,9 @@ import React, { useEffect } from "react";
 import { useRouter } from "next/router";
 
 
-//Layout
 import Disponibles from "@containers/seguridad/Disponibles";
 import Transferencias from "@containers/seguridad/Transferencias";
 import Recepcion from "@containers/seguridad/Recepcion";
-import RootLayout from "@layout/RootLayout";
 import Dashboard from "@containers/seguridad/Dashboard";
 import ListadoContenedores from "@containers/seguridad/ListadoContenedores";
 import Embarques from "@containers/seguridad/Embarques";
@@ -28,24 +26,22 @@ export default function Seguridad() {
     useEffect(() => {
     }, [router?.query]);
     return (
-        <RootLayout>
-            <div>
-                {(router?.query.item == "Listado") && <ListadoContenedores />}
-                {(router?.query.item == "Embarques") && <Embarques />}
-                {(router?.query.item == "Dashboard") && <Dashboard />}
-                {(router?.query.item == "Lector") && <InspeccionVacio/>}
-                {(router?.query.item == "InspLleno") && <InspeccionLLeno />}
-                {(router?.query.item == "Disponibles") && <Disponibles />}
-                {(router?.query.item == "Recepcion") && <Recepcion />}
-                {(router?.query.item == "Rechazos") &&   <Rechazos />}
-                {(router?.query.item == "Transferencias") && <Transferencias />}
-                {(router?.query.item == "LlenadoContenedor") && <LlenadoContenedor/>}
-                {(router?.query.item == "Inspeccionados") && <Inspeccionados/>}
-                {(router?.query.item == "Devueltos") && <ContenedoresDevueltos/>}
-                {(router?.query.item == "Transbordar") && <TransbordarContenedor/>}
-                {(router?.query.item == "Transbordados") && <Transbordados/>}
-                {(router?.query.item == "CartasAntinarcoticos") && <CartasAntinarcoticos/>}
-            </div>
-        </RootLayout>
+        <div>
+            {(router?.query.item == "Listado") && <ListadoContenedores />}
+            {(router?.query.item == "Embarques") && <Embarques />}
+            {(router?.query.item == "Dashboard") && <Dashboard />}
+            {(router?.query.item == "Lector") && <InspeccionVacio/>}
+            {(router?.query.item == "InspLleno") && <InspeccionLLeno />}
+            {(router?.query.item == "Disponibles") && <Disponibles />}
+            {(router?.query.item == "Recepcion") && <Recepcion />}
+            {(router?.query.item == "Rechazos") &&   <Rechazos />}
+            {(router?.query.item == "Transferencias") && <Transferencias />}
+            {(router?.query.item == "LlenadoContenedor") && <LlenadoContenedor/>}
+            {(router?.query.item == "Inspeccionados") && <Inspeccionados/>}
+            {(router?.query.item == "Devueltos") && <ContenedoresDevueltos/>}
+            {(router?.query.item == "Transbordar") && <TransbordarContenedor/>}
+            {(router?.query.item == "Transbordados") && <Transbordados/>}
+            {(router?.query.item == "CartasAntinarcoticos") && <CartasAntinarcoticos/>}
+        </div>
     );
 }

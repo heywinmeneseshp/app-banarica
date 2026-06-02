@@ -16,6 +16,11 @@ const actualizarListado = async (id, body) => {
     return res.data;
 };
 
+const actualizarListadoMasivo = async (body) => {
+    const res = await axios.post(endPoints.listado.updateMasivo, body);
+    return res.data;
+};
+
 
 
 const encontrarListado = async (id) => {
@@ -40,6 +45,7 @@ export {
     crearListado,
     duplicarListado,
     actualizarListado,
+    actualizarListadoMasivo,
     paginarListado,
     encontrarListado,
     eliminarListado

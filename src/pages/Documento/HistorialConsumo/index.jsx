@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 
-import HistorialConsumos from '@components/Programacion/HistorialConsumos';
+import HistorialConsumos from '@components/Programacion/ConsumoKm';
 import { useRouter } from 'next/router';
 
 export default function HistorialConsumoReporte() {

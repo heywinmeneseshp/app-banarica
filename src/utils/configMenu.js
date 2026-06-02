@@ -33,17 +33,26 @@ const menuCompleto = {
         ["/Transbordados", "Transbordados"],
         ["/CartasAntinarcoticos", "Cartas antinarcoticos"]
     ],
-    programaciones: [
-        ["contenedores", "Contenedores"],
-        ["historico", "Historico"],
-        ["historicoRutaVehiculo", "Historico Ruta Vehiculo"],
-        ["saldoCombustibleVehiculos", "Saldo Combustible"],
-        ["programador", "Programador"],
-        ["reportesConsumo", "Reportes"],
-        ["consumoRutaVehiculo", "Consumo Ruta Vehiculo"]
+    transporte: [
+        ["/Programador", "Programador"],
+        ["/CargarCombustible", "Cargar Combustible"],
+        ["/ConsumoRutas", "Consumo Ruta Vehiculo"],
+        ["/ConsumoKm", "Consumo Km"],
+        ["/Reportes", "Reportes"],
+
     ],
-    almacen: [],
-    informes: [],
+    almacen: [
+        ["movimientos", "Movimientos"],
+        ["pedidos", "Pedidos"],
+        ["recepcion", "Recepcion"],
+        ["traslados", "Traslados"]
+    ],
+    informes: [
+        ["movimientos", "Movimientos"],
+        ["pedidos", "Pedidos"],
+        ["stock", "Stock"],
+        ["traslados", "Traslados"]
+    ],
 };
 
 const botones = [
@@ -59,6 +68,9 @@ const botones = [
     "contenedores_edicion",
     "dashboard_configuracion",
     "dashboard_seriales",
+    "programador_creacion_rapida",
+    "programador_edicion",
+    "programador_actualizar_pendientes",
 ];
 
 const menuPrincipal = () => {

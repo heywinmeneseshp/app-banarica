@@ -6,7 +6,7 @@ import { encontrarModulo } from '@services/api/configuracion';
 import { listarSemanas } from '@services/api/semanas';
 import { listarVehiculo } from '@services/api/vehiculos';
 import { ajustarSaldoCombustible, cargarCombustible } from '@services/api/tanqueo';
-import HistoricoCarguesCombustible from '@components/Programacion/HistoricoCarguesCombustible';
+import HistoricoCarguesCombustible from '@components/Programacion/CargueCombustible';
 
 const getToday = () => {
   const today = new Date();

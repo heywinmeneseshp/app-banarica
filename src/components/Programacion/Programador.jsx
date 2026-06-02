@@ -6,10 +6,11 @@ import Alertas from '@assets/Alertas';
 import CargueMasivo from '@assets/Seguridad/Listado/CargueMasivo';
 import { paginarProgramaciones, eliminarProgramaciones, agregarProgramaciones, actualizarProgramaciones, listarProgramaciones } from '@services/api/programaciones';
 import { agregarProductosViaje, actualizarProductosViaje } from '@services/api/productos_viaje';
+import { actualizarListadoMasivo } from '@services/api/listado';
+import { listarAlmacenes } from '@services/api/almacenes';
 import { listarUbicaciones } from '@services/api/ubicaciones';
 import { listarConductores } from '@services/api/conductores';
 import { listarVehiculo } from '@services/api/vehiculos';
-import { filtrarSemanaRangoMes } from '@services/api/semanas';
 import { paginarEmbarques } from '@services/api/embarques';
 import { listarCombos } from '@services/api/combos';
 import { listartipoMovimientoVehiculos } from '@services/api/tipoMovimientoVehiculos';
@@ -36,6 +37,7 @@ const COLUMN_OPTIONS = [
   { id: 'llegada_destino', label: 'Ingreso destino' },
   { id: 'cierre', label: 'Cierre' },
   { id: 'salida_destino', label: 'Salida destino' },
+  { id: 'estado_listado', label: 'Estado listado' },
   { id: 'movimiento', label: 'Movimiento' },
   { id: 'contenedor', label: 'Contenedor' },
   { id: 'eliminar', label: 'Eliminar' },
@@ -151,6 +153,15 @@ const compactCellStyle = {
   verticalAlign: 'middle',
 };
 
+const editableCellStyle = {
+  ...compactCellStyle,
+  width: 'auto',
+  minWidth: '120px',
+};
+
+const ESTADO_LISTADO_PENDIENTE = 'pendiente';
+const ESTADO_LISTADO_ACTUALIZADO = 'actualizado';
+
 export default function Programador() {
   const [pagination, setPagination] = useState(1);
   const [total, setTotal] = useState(0);
@@ -159,7 +170,6 @@ export default function Programador() {
   const [itemList, setItemsList] = useState([]);
   const [conductores, setConductores] = useState([]);
   const [vehiculos, setVehiculos] = useState([]);
-  const [semanas, setSemanas] = useState([]);
   const [embarques, setEmbarques] = useState([]);
   const [combos, setCombos] = useState([]);
   const [tiposMovimiento, setTiposMovimiento] = useState([]);
@@ -168,12 +178,17 @@ export default function Programador() {
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [updatingMass, setUpdatingMass] = useState(false);
+  const [syncingListado, setSyncingListado] = useState(false);
+  const [pendingListadoSync, setPendingListadoSync] = useState(null);
   const [isEditable, setIsEditable] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState(DEFAULT_VISIBLE_COLUMNS);
   const [showColumnConfig, setShowColumnConfig] = useState(false);
   const [openMasivo, setOpenMasivo] = useState(false);
   const [openActualizarMasivo, setOpenActualizarMasivo] = useState(false);
   const [vehiculosSinCombustible, setVehiculosSinCombustible] = useState([]);
+  const [canActualizarPendientes, setCanActualizarPendientes] = useState(false);
+  const [canEditarProgramador, setCanEditarProgramador] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const { alert, setAlert, toogleAlert } = useAlert();
   const formRef = useRef(null);
 
@@ -197,6 +212,7 @@ export default function Programador() {
   const listar = useCallback(async () => {
     try {
       setLoading(true);
+      const usuario = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('usuario') || '{}') : {};
       const formData = new FormData(formRef.current);
       const body = {
         ubicacion1: formData.get('origen') || '',
@@ -214,28 +230,48 @@ export default function Programador() {
         body.fechaFin = fechaFin;
       }
 
-      const [newUbicaciones, newConductores, newVehiculos, newSemanas, embarquesRes, newCombos, newTiposMovimiento, configProgramador, res] = await Promise.all([
+      const requests = [
         listarUbicaciones(),
         listarConductores(),
         listarVehiculo(),
-        filtrarSemanaRangoMes(1, 1),
         paginarEmbarques(1, 5000, {}),
         listarCombos(),
         listartipoMovimientoVehiculos(),
         encontrarModulo('Programador_combustible'),
         paginarProgramaciones(pagination, limit, body),
-      ]);
+      ];
+
+      if (usuario?.id_rol !== 'Super administrador' && usuario?.username) {
+        requests.push(encontrarModulo(usuario.username));
+      }
+
+      const [newUbicaciones, newConductores, newVehiculos, embarquesRes, newCombos, newTiposMovimiento, configProgramador, res, userConfig] = await Promise.all(requests);
 
       setUbicaciones(newUbicaciones || []);
       setConductores(newConductores || []);
       setVehiculos(newVehiculos || []);
-      setSemanas(newSemanas || []);
       setEmbarques(embarquesRes?.data || []);
       setCombos(newCombos || []);
       setTiposMovimiento(newTiposMovimiento || []);
       setVehiculosSinCombustible(parseVehiculosSinCombustible(configProgramador));
       setItemsList(res?.data || []);
       setTotal(res?.total || 0);
+      const superAdmin = usuario?.id_rol === 'Super administrador';
+      setIsSuperAdmin(superAdmin);
+      if (superAdmin) {
+        setCanActualizarPendientes(true);
+        setCanEditarProgramador(true);
+      } else {
+        let botones = [];
+        try {
+          const detalles = JSON.parse(userConfig?.[0]?.detalles || '{}');
+          botones = Array.isArray(detalles?.botones) ? detalles.botones : [];
+        } catch {
+          botones = [];
+        }
+        setCanActualizarPendientes(botones.includes('programador_actualizar_pendientes'));
+        setCanEditarProgramador(botones.includes('programador_edicion'));
+      }
     } catch (error) {
       setAlert({
         active: true,
@@ -319,9 +355,22 @@ export default function Programador() {
           productoClienteId: String(comboPrincipal?.id_cliente || ''),
           productoViajeId: productoPrincipal?.id || '',
           cantidadProductosLabel: productoPrincipal?.cantidad ?? '',
+          estadoListadoLabel: normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO
+            ? 'Actualizado'
+            : 'Pendiente',
         };
       });
   }, [combos, embarqueCatalog, itemList]);
+
+  const canEditRow = useCallback((row) => {
+    if (!isEditable) {
+      return false;
+    }
+    if (normalizeValue(row?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO) {
+      return isSuperAdmin;
+    }
+    return canEditarProgramador || isSuperAdmin;
+  }, [canEditarProgramador, isEditable, isSuperAdmin]);
 
   const movimientoOptions = useMemo(
     () => (tiposMovimiento || []).filter((item) => item?.activo !== false),
@@ -364,6 +413,7 @@ export default function Programador() {
           'Destino embarque': embarque?.destinoLabel || '',
           Buque: embarque?.buqueLabel || '',
           BL: item?.bl || '',
+          'Estado listado': normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO ? 'Actualizado' : 'Pendiente',
           Vehiculo: item?.vehiculo?.placa || '',
           Conductor: item?.conductor?.conductor || '',
           Movimiento: item?.movimiento || '',
@@ -454,9 +504,23 @@ export default function Programador() {
     )));
   };
 
+  const markLocalProgramacionStatus = useCallback((id, estadoListado) => {
+    updateLocalRow(id, (row) => ({ ...row, estado_listado: estadoListado }));
+  }, []);
+
+  const markProgramacionesEstadoListado = useCallback(async (ids = [], estadoListado = ESTADO_LISTADO_ACTUALIZADO) => {
+    const uniqueIds = [...new Set((ids || []).map((item) => String(item)).filter(Boolean))];
+    if (!uniqueIds.length) {
+      return;
+    }
+
+    await Promise.all(uniqueIds.map((id) => actualizarProgramaciones(id, { estado_listado: estadoListado })));
+    uniqueIds.forEach((id) => markLocalProgramacionStatus(Number(id), estadoListado));
+  }, [markLocalProgramacionStatus]);
+
   const handleCellEdit = async (id, field, value) => {
     try {
-      updateLocalRow(id, (row) => ({ ...row, [field]: value }));
+      updateLocalRow(id, (row) => ({ ...row, [field]: value, estado_listado: ESTADO_LISTADO_PENDIENTE }));
       await actualizarProgramaciones(id, { [field]: value });
     } catch (error) {
       setAlert({
@@ -471,7 +535,7 @@ export default function Programador() {
 
   const applyProgramacionChanges = async (row, changes) => {
     try {
-      updateLocalRow(row.id, (current) => ({ ...current, ...changes }));
+      updateLocalRow(row.id, (current) => ({ ...current, ...changes, estado_listado: ESTADO_LISTADO_PENDIENTE }));
       await actualizarProgramaciones(row.id, changes);
     } catch (error) {
       setAlert({
@@ -507,6 +571,8 @@ export default function Programador() {
 
     if (existing?.id) {
       await actualizarProductosViaje(existing.id, changes);
+      await actualizarProgramaciones(row.id, { estado_listado: ESTADO_LISTADO_PENDIENTE });
+      markLocalProgramacionStatus(row.id, ESTADO_LISTADO_PENDIENTE);
       return existing.id;
     }
 
@@ -517,6 +583,9 @@ export default function Programador() {
       cantidad: 0,
       ...changes,
     });
+
+    await actualizarProgramaciones(row.id, { estado_listado: ESTADO_LISTADO_PENDIENTE });
+    markLocalProgramacionStatus(row.id, ESTADO_LISTADO_PENDIENTE);
 
     return created?.id || '';
   };
@@ -706,59 +775,61 @@ export default function Programador() {
   const renderProgramadorHeader = (columnId, label) => (
     <th
       className={`text-custom-small text-center ${READONLY_PROGRAMADOR_COLUMNS.has(columnId) ? 'text-white bg-secondary' : ''}`}
-      style={compactCellStyle}
+      style={isEditable ? editableCellStyle : compactCellStyle}
     >
       {label}
     </th>
   );
 
   const resolveImportPayload = async (row, catalogs) => {
-    const { ubicacionesList, conductoresList, vehiculosList, semanasList, tiposMovimientoList } = catalogs;
+    const { ubicacionesList, conductoresList, vehiculosList, tiposMovimientoList, embarquesList, combosList } = catalogs;
 
     const fecha = formatDateCell(getRowValue(row, ['Fecha']));
-    const semana = String(getRowValue(row, ['Semana'])).trim();
-    const vehiculoText = String(getRowValue(row, ['Vehiculo', 'Vehículo', 'Placa'])).trim();
-    const conductorText = String(getRowValue(row, ['Conductor'])).trim();
+    const vehiculoText = String(getRowValue(row, ['Vehiculo', 'Vehiculos', 'VehÃ­culo', 'Placa'])).trim();
+    const conductorText = String(getRowValue(row, ['Conductor', 'Conductores'])).trim();
     const blText = String(getRowValue(row, ['BL', 'Bl', 'Bill of Loading'])).trim();
-    const origenText = String(getRowValue(row, ['Origen', 'Ubicacion 1', 'Ubicación 1'])).trim();
-    const destinoText = String(getRowValue(row, ['Destino', 'Ubicacion 2', 'Ubicación 2'])).trim();
-    const movimientoText = String(getRowValue(row, ['Movimiento'])).trim() || 'Local';
-    const contenedorText = String(getRowValue(row, ['Contenedor', 'Numero contenedor', 'Número contenedor'])).trim();
+    const origenText = String(getRowValue(row, ['Origen', 'Ubicacion 1', 'UbicaciÃ³n 1'])).trim();
+    const destinoText = String(getRowValue(row, ['Destino L', 'Destino', 'Ubicacion 2', 'UbicaciÃ³n 2'])).trim();
+    const productoText = String(getRowValue(row, ['Producto'])).trim();
+    const cantidadText = String(getRowValue(row, ['Cantidad', 'Cajas'])).trim();
+    const movimientoText = String(getRowValue(row, ['Movimiento'])).trim();
+    const contenedorText = String(getRowValue(row, ['Contenedor', 'Numero contenedor', 'NÃºmero contenedor'])).trim();
     const detallesText = String(getRowValue(row, ['Observaciones', 'Detalle', 'Detalles'])).trim();
-    const llegadaOrigen = formatTimeCell(getRowValue(row, ['Llegada origen']));
+    const llegadaOrigen = formatTimeCell(getRowValue(row, ['Llegada origen', 'Ingreso origen']));
     const salidaOrigen = formatTimeCell(getRowValue(row, ['Salida origen']));
-    const llegadaDestino = formatTimeCell(getRowValue(row, ['Llegada destino']));
+    const llegadaDestino = formatTimeCell(getRowValue(row, ['Llegada destino', 'Ingreso destino']));
     const cierre = formatTimeCell(getRowValue(row, ['Cierre']));
     const salidaDestino = formatTimeCell(getRowValue(row, ['Salida destino']));
-    const idText = String(getRowValue(row, ['Id', 'ID', 'Programacion ID', 'Programación ID'])).trim();
+    const idText = String(getRowValue(row, ['Id', 'ID', 'Programacion ID', 'ProgramaciÃ³n ID'])).trim();
 
-    if (!fecha || !semana || !vehiculoText || !conductorText || !origenText) {
+    if (!fecha || !vehiculoText || !conductorText || !origenText || !destinoText || !blText || !movimientoText || !productoText || !cantidadText) {
       throw new Error('faltan columnas obligatorias.');
-    }
-
-    const semanaExiste = semanasList.find((item) => String(item?.consecutivo) === semana);
-    if (!semanaExiste) {
-      throw new Error(`semana "${semana}" no existe en la tabla de semanas.`);
     }
 
     const vehiculo = vehiculosList.find((item) => normalizeValue(item?.placa) === normalizeValue(vehiculoText));
     const conductor = conductoresList.find((item) => normalizeValue(item?.conductor) === normalizeValue(conductorText));
     const origen = ubicacionesList.find((item) => normalizeValue(item?.ubicacion) === normalizeValue(origenText));
-    const destino = destinoText
-      ? ubicacionesList.find((item) => normalizeValue(item?.ubicacion) === normalizeValue(destinoText))
-      : origen;
+    const destino = ubicacionesList.find((item) => normalizeValue(item?.ubicacion) === normalizeValue(destinoText));
+    const embarque = (embarquesList || []).find((item) => (
+      normalizeValue(item?.bl) === normalizeValue(blText)
+      || normalizeValue(item?.booking) === normalizeValue(blText)
+    ));
+    const combo = (combosList || []).find((item) => normalizeValue(item?.nombre) === normalizeValue(productoText));
+    const cantidad = Number(cantidadText);
 
     if (!vehiculo) throw new Error(`vehiculo "${vehiculoText}" no encontrado.`);
     if (!conductor) throw new Error(`conductor "${conductorText}" no encontrado.`);
     if (!origen) throw new Error(`origen "${origenText}" no encontrado.`);
     if (!destino) throw new Error(`destino "${destinoText}" no encontrado.`);
+    if (!embarque) throw new Error(`BL "${blText}" no encontrado en embarques.`);
+    if (!combo || combo?.isBlock === true) throw new Error(`producto "${productoText}" no existe o esta bloqueado.`);
+    if (!Number.isFinite(cantidad) || cantidad <= 0) throw new Error(`cantidad "${cantidadText}" no es valida.`);
 
     const movimiento =
-      tiposMovimientoList.find((item) => normalizeValue(item?.movimiento) === normalizeValue(movimientoText))
-      || tiposMovimientoList.find((item) => normalizeValue(item?.movimiento) === normalizeValue('Local'));
+      tiposMovimientoList.find((item) => normalizeValue(item?.movimiento) === normalizeValue(movimientoText));
 
     if (!movimiento) {
-      throw new Error(`el movimiento "${movimientoText || 'Local'}" no existe.`);
+      throw new Error(`el movimiento "${movimientoText}" no existe.`);
     }
 
     if (movimiento?.requiere_contenedor && !contenedorText) {
@@ -775,6 +846,11 @@ export default function Programador() {
       allowCreateIfExempt: true,
     });
 
+    const semana = String(embarque?.semanas?.consecutivo || embarque?.semana?.consecutivo || '').trim();
+    if (!semana) {
+      throw new Error(`el BL "${blText}" no tiene semana asociada.`);
+    }
+
     return {
       idText,
       match: {
@@ -782,19 +858,19 @@ export default function Programador() {
         semana,
         vehiculoId: String(vehiculo.id),
         rutaId: String(rutaId),
-        bl: blText,
+        bl: embarque?.bl || blText,
         movimiento: movimiento.movimiento,
       },
       payload: {
         ruta_id: rutaId,
         cobrar: false,
-        id_pagador_flete: '',
+        id_pagador_flete: combo?.id_cliente || embarque?.id_cliente || null,
         activo: true,
         movimiento: movimiento.movimiento,
         conductor_id: conductor.id,
         vehiculo_id: vehiculo.id,
         contenedor: contenedorText || null,
-        bl: blText || null,
+        bl: embarque?.bl || blText,
         semana,
         fecha,
         detalles: detallesText,
@@ -803,6 +879,10 @@ export default function Programador() {
         llegada_destino: llegadaDestino,
         cierre,
         salida_destino: salidaDestino,
+      },
+      productoPayload: {
+        producto_id: combo.id,
+        cantidad,
       },
     };
   };
@@ -835,7 +915,8 @@ export default function Programador() {
       const ubicacionesList = ubicaciones.length ? ubicaciones : await listarUbicaciones();
       const conductoresList = conductores.length ? conductores : await listarConductores();
       const vehiculosList = vehiculos.length ? vehiculos : await listarVehiculo();
-      const semanasList = semanas.length ? semanas : await filtrarSemanaRangoMes(1, 1);
+      const embarquesList = embarques.length ? embarques : (await paginarEmbarques(1, 5000, {}))?.data || [];
+      const combosList = combos.length ? combos : await listarCombos();
       const tiposMovimientoList = tiposMovimiento.length ? tiposMovimiento : await listartipoMovimientoVehiculos();
       const existingRows = isUpdate ? await listarProgramaciones() : [];
 
@@ -848,8 +929,9 @@ export default function Programador() {
             ubicacionesList,
             conductoresList,
             vehiculosList,
-            semanasList,
             tiposMovimientoList,
+            embarquesList,
+            combosList,
           });
 
           if (isUpdate) {
@@ -858,8 +940,25 @@ export default function Programador() {
               throw new Error('no se encontro una programacion existente para actualizar.');
             }
             await actualizarProgramaciones(existing.id, resolved.payload);
+            const productoExistente = Array.isArray(existing?.productos_viajes) ? existing.productos_viajes[0] : null;
+            if (productoExistente?.id) {
+              await actualizarProductosViaje(productoExistente.id, resolved.productoPayload);
+            } else {
+              await agregarProductosViaje({
+                ...resolved.productoPayload,
+                unidad_de_medida: '',
+                activo: true,
+                programacion_id: existing.id,
+              });
+            }
           } else {
-            await agregarProgramaciones(resolved.payload);
+            const created = await agregarProgramaciones(resolved.payload);
+            await agregarProductosViaje({
+              ...resolved.productoPayload,
+              unidad_de_medida: '',
+              activo: true,
+              programacion_id: created?.id,
+            });
           }
 
           processed += 1;
@@ -894,6 +993,292 @@ export default function Programador() {
       setBusy(false);
     }
   };
+
+  const findAlmacenFromUbicacion = useCallback((ubicacionDestino, almacenesList = []) => {
+    const cod = normalizeValue(ubicacionDestino?.cod);
+    const nombre = normalizeValue(ubicacionDestino?.ubicacion);
+
+    return almacenesList.find((almacen) => (
+      (cod && normalizeValue(almacen?.consecutivo) === cod)
+      || (nombre && normalizeValue(almacen?.nombre) === nombre)
+    )) || null;
+  }, []);
+
+  const buildListadoUpdateRowsFromProgramaciones = useCallback((programaciones = [], almacenesList = []) => {
+    const groupedRows = new Map();
+    const skippedRows = [];
+
+    [...programaciones]
+      .sort((a, b) => Number(a?.id || 0) - Number(b?.id || 0))
+      .forEach((item) => {
+        const fecha = String(item?.fecha || '').trim();
+        const contenedor = String(item?.contenedor || '').trim();
+        const bl = String(item?.bl || '').trim();
+
+        if (!fecha || !contenedor) {
+          return;
+        }
+
+        const almacenDestino = findAlmacenFromUbicacion(item?.ruta?.ubicacion_2, almacenesList);
+        if (!almacenDestino?.id) {
+          skippedRows.push({
+            fecha,
+            bl,
+            contenedor,
+            reason: `No se encontro almacen para el destino ${item?.ruta?.ubicacion_2?.ubicacion || 'sin nombre'}`,
+          });
+          return;
+        }
+
+        const productoViaje = Array.isArray(item?.productos_viajes) ? item.productos_viajes[0] : null;
+        const productoId = productoViaje?.producto_id || null;
+        const cantidad = productoViaje?.cantidad;
+        const cantidadNumero = cantidad === null || cantidad === undefined || cantidad === ''
+          ? null
+          : Number(cantidad);
+
+        const key = `${fecha}__${contenedor}__${bl}__${almacenDestino.id}__${productoId || 'sin-producto'}`;
+        const existing = groupedRows.get(key) || {
+          fecha,
+          contenedor,
+          bl,
+          id_lugar_de_llenado: almacenDestino.id,
+          id_producto: productoId || null,
+          cajas_unidades: null,
+          programacionIds: [],
+        };
+
+        groupedRows.set(key, {
+          fecha,
+          contenedor,
+          bl,
+          id_lugar_de_llenado: almacenDestino.id,
+          id_producto: productoId || existing.id_producto,
+          cajas_unidades: Number.isFinite(cantidadNumero)
+            ? (Number(existing.cajas_unidades || 0) + cantidadNumero)
+            : existing.cajas_unidades,
+          programacionIds: [...new Set([...(existing.programacionIds || []), item.id].filter(Boolean))],
+        });
+      });
+
+    return {
+      rows: Array.from(groupedRows.values()).filter((item) => (
+        item.fecha
+        && item.contenedor
+        && item.id_lugar_de_llenado
+      )),
+      skippedRows,
+    };
+  }, [findAlmacenFromUbicacion]);
+
+  const toListadoSyncPayload = useCallback((rows = []) => (
+    (rows || []).map((row) => {
+      const nextRow = { ...row };
+      delete nextRow.programacionIds;
+      return nextRow;
+    })
+  ), []);
+
+  const listadoRowKey = useCallback((row = {}) => [
+    normalizeValue(row.fecha),
+    normalizeValue(row.contenedor),
+    normalizeValue(row.bl || row.booking),
+    String(row.id_lugar_de_llenado || ''),
+    String(row.id_producto || ''),
+  ].join('__'), []);
+
+  const listadoRowMatchesMissing = useCallback((payloadRow = {}, missingRow = {}) => {
+    const sameValue = (payloadValue, missingValue) => (
+      missingValue === null
+      || missingValue === undefined
+      || String(missingValue) === ''
+      || normalizeValue(payloadValue) === normalizeValue(missingValue)
+    );
+
+    return (
+      sameValue(payloadRow.fecha, missingRow.fecha)
+      && sameValue(payloadRow.contenedor, missingRow.contenedor)
+      && sameValue(payloadRow.bl, missingRow.bl || missingRow.booking)
+      && sameValue(payloadRow.id_lugar_de_llenado, missingRow.id_lugar_de_llenado)
+      && sameValue(payloadRow.id_producto, missingRow.id_producto)
+    );
+  }, []);
+
+  const getProcessedProgramacionIdsFromListadoResult = useCallback((payloadRows = [], result = {}) => {
+    const missingRows = Array.isArray(result?.missingRows) ? result.missingRows : [];
+
+    if (!result?.partial && !result?.requiresConfirmation && Number(result?.missingCount || 0) === 0) {
+      return [...new Set(payloadRows.flatMap((item) => item.programacionIds || []))];
+    }
+
+    if (!missingRows.length) {
+      return Number(result?.missingCount || 0) > 0
+        ? []
+        : [...new Set(payloadRows.flatMap((item) => item.programacionIds || []))];
+    }
+
+    const missingKeys = new Set(missingRows.map((item) => listadoRowKey(item)));
+    return [
+      ...new Set(
+        payloadRows
+          .filter((item) => (
+            !missingKeys.has(listadoRowKey(item))
+            && !missingRows.some((missingRow) => listadoRowMatchesMissing(item, missingRow))
+          ))
+          .flatMap((item) => item.programacionIds || [])
+      ),
+    ];
+  }, [listadoRowKey, listadoRowMatchesMissing]);
+
+  const sincronizarListadoPendiente = useCallback(async () => {
+    try {
+      setSyncingListado(true);
+      const filtros = {
+        estado_listado: ESTADO_LISTADO_PENDIENTE,
+      };
+
+      const [{ data }, almacenesList] = await Promise.all([
+        paginarProgramaciones('', '', filtros),
+        listarAlmacenes(),
+      ]);
+      const { rows: payloadRows, skippedRows } = buildListadoUpdateRowsFromProgramaciones(data || [], almacenesList || []);
+
+      if (!payloadRows.length) {
+        if (skippedRows.length) {
+          setPendingListadoSync({
+            payloadRows: [],
+            processableCount: 0,
+            missingCount: skippedRows.length,
+            missingRows: skippedRows,
+            processedProgramacionIds: [],
+          });
+        } else {
+          setAlert({
+            active: true,
+            mensaje: 'No hay programaciones pendientes con contenedor para sincronizar al listado.',
+            color: 'warning',
+            autoClose: true,
+          });
+        }
+        return;
+      }
+
+      if (skippedRows.length) {
+        setPendingListadoSync({
+          payloadRows,
+          processableCount: payloadRows.length,
+          missingCount: skippedRows.length,
+          missingRows: skippedRows,
+          processedProgramacionIds: getProcessedProgramacionIdsFromListadoResult(payloadRows, {
+            partial: true,
+            missingRows: skippedRows,
+          }),
+        });
+        return;
+      }
+
+      let response = await actualizarListadoMasivo({ rows: toListadoSyncPayload(payloadRows) });
+      let result = response?.data || response;
+
+      if (result?.requiresConfirmation) {
+        setPendingListadoSync({
+          payloadRows,
+          processableCount: result.processableCount || 0,
+          missingCount: result.missingCount || 0,
+          missingRows: result.missingRows || [],
+          processedProgramacionIds: getProcessedProgramacionIdsFromListadoResult(payloadRows, result),
+        });
+        return;
+      }
+
+      await markProgramacionesEstadoListado(
+        getProcessedProgramacionIdsFromListadoResult(payloadRows, result),
+        ESTADO_LISTADO_ACTUALIZADO
+      );
+
+      setAlert({
+        active: true,
+        mensaje: result?.partial
+          ? `${result?.message || 'Actualizacion parcial completada'}. Coincidencias: ${result?.total || 0}. Sin coincidencia: ${result?.missingCount || 0}.`
+          : result?.message || 'Listado actualizado desde Programador.',
+        color: result?.partial ? 'warning' : 'success',
+        autoClose: true,
+      });
+    } catch (error) {
+      setAlert({
+        active: true,
+        mensaje: error.message || 'No fue posible actualizar el listado desde Programador.',
+        color: 'danger',
+        autoClose: true,
+      });
+    } finally {
+      setSyncingListado(false);
+    }
+  }, [buildListadoUpdateRowsFromProgramaciones, getProcessedProgramacionIdsFromListadoResult, markProgramacionesEstadoListado, setAlert, toListadoSyncPayload]);
+
+  const descargarNoEncontradosListado = useCallback(() => {
+    if (!pendingListadoSync?.missingRows?.length) {
+      return;
+    }
+
+    const rows = pendingListadoSync.missingRows.map((item) => ({
+      fecha: item.fecha || '',
+      bl: item.bl || item.booking || '',
+      contenedor: item.contenedor || '',
+      id_lugar_de_llenado: item.id_lugar_de_llenado ?? '',
+      id_producto: item.id_producto ?? '',
+      cajas_unidades: item.cajas_unidades ?? '',
+      motivo: item.reason || 'Sin coincidencia',
+    }));
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'No encontrados');
+    XLSX.writeFile(workbook, 'programador-no-encontrados-listado.xlsx');
+  }, [pendingListadoSync]);
+
+  const confirmarListadoCoincidencias = useCallback(async () => {
+    if (!pendingListadoSync?.payloadRows?.length) {
+      return;
+    }
+
+    try {
+      setSyncingListado(true);
+      const response = await actualizarListadoMasivo({
+        rows: toListadoSyncPayload(pendingListadoSync.payloadRows),
+        allowPartial: true,
+      });
+      const result = response?.data || response;
+      const processedProgramacionIds = getProcessedProgramacionIdsFromListadoResult(
+        pendingListadoSync.payloadRows,
+        result
+      );
+
+      await markProgramacionesEstadoListado(
+        processedProgramacionIds,
+        ESTADO_LISTADO_ACTUALIZADO
+      );
+
+      setAlert({
+        active: true,
+        mensaje: result?.partial
+          ? `${result?.message || 'Actualizacion parcial completada'}. Coincidencias: ${result?.total || 0}. Sin coincidencia: ${result?.missingCount || 0}.`
+          : result?.message || 'Listado actualizado desde Programador.',
+        color: result?.partial ? 'warning' : 'success',
+        autoClose: true,
+      });
+      setPendingListadoSync(null);
+    } catch (error) {
+      setAlert({
+        active: true,
+        mensaje: error.message || 'No fue posible actualizar coincidencias del listado.',
+        color: 'danger',
+        autoClose: true,
+      });
+    } finally {
+      setSyncingListado(false);
+    }
+  }, [getProcessedProgramacionIdsFromListadoResult, markProgramacionesEstadoListado, pendingListadoSync, setAlert, toListadoSyncPayload]);
 
   return (
     <>
@@ -989,11 +1374,13 @@ export default function Programador() {
                   </Button>
                 </div>
 
-                <div className="col-12 col-md-6 col-lg-2">
-                  <Button type="button" onClick={() => setIsEditable((prev) => !prev)} className="w-100 mt-0 mt-md-4" variant={isEditable ? 'success' : 'warning'} size="sm">
-                    {isEditable ? 'Edicion activa' : 'Permitir edicion'}
-                  </Button>
-                </div>
+                {(canEditarProgramador || isSuperAdmin) && (
+                  <div className="col-12 col-md-6 col-lg-2">
+                    <Button type="button" onClick={() => setIsEditable((prev) => !prev)} className="w-100 mt-0 mt-md-4" variant={isEditable ? 'success' : 'warning'} size="sm">
+                      {isEditable ? 'Edicion activa' : 'Permitir edicion'}
+                    </Button>
+                  </div>
+                )}
 
                 <div className="col-12 col-md-6 col-lg-2">
                   <Button type="button" onClick={descargarExcel} className="w-100 mt-0 mt-md-4" variant="success" size="sm">
@@ -1001,17 +1388,20 @@ export default function Programador() {
                   </Button>
                 </div>
 
-                <div className="col-12 col-md-6 col-lg-2">
-                  <Button type="button" onClick={() => setOpenMasivo(true)} className="w-100 mt-0 mt-md-4" variant="outline-primary" size="sm" disabled={importing || updatingMass}>
-                    {importing ? 'Cargando...' : 'Cargue masivo'}
-                  </Button>
-                </div>
-
-                <div className="col-12 col-md-6 col-lg-2">
-                  <Button type="button" onClick={() => setOpenActualizarMasivo(true)} className="w-100 mt-0 mt-md-4" variant="outline-secondary" size="sm" disabled={importing || updatingMass}>
-                    {updatingMass ? 'Actualizando...' : 'Actualizacion masiva'}
-                  </Button>
-                </div>
+                {canActualizarPendientes && (
+                  <div className="col-12 col-md-6 col-lg-2">
+                    <Button
+                      type="button"
+                      onClick={sincronizarListadoPendiente}
+                      className="w-100 mt-0 mt-md-4"
+                      variant="outline-success"
+                      size="sm"
+                      disabled={syncingListado || loading}
+                    >
+                      {syncingListado ? 'Actualizando pendientes...' : 'Actualizar pendientes'}
+                    </Button>
+                  </div>
+                )}
 
                 <div className="col-12 col-md-6 col-lg-2">
                   <Button type="button" onClick={() => setShowColumnConfig((prev) => !prev)} className="w-100 mt-0 mt-md-4" variant="outline-dark" size="sm">
@@ -1024,7 +1414,7 @@ export default function Programador() {
             <div className="table-responsive mt-4" style={{ overflowX: 'auto' }}>
               <table
                 className="table table-striped table-bordered table-sm mt-2 text-center align-middle mb-0 programador-table"
-                style={{ minWidth: '1600px', tableLayout: 'auto', whiteSpace: 'nowrap', fontSize: '0.8rem' }}
+                style={{ minWidth: isEditable ? '2400px' : '1600px', tableLayout: 'auto', whiteSpace: 'nowrap', fontSize: '0.8rem' }}
               >
                 <thead className="align-middle" style={{ whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
                   <tr>
@@ -1047,20 +1437,23 @@ export default function Programador() {
                     {visibleColumns.salida_destino && renderProgramadorHeader('salida_destino', 'Salida destino')}
                     {visibleColumns.movimiento && renderProgramadorHeader('movimiento', 'Movimiento')}
                     {visibleColumns.contenedor && renderProgramadorHeader('contenedor', 'Contenedor')}
+                    {visibleColumns.estado_listado && renderProgramadorHeader('estado_listado', 'Estado listado')}
                     {visibleColumns.eliminar && renderProgramadorHeader('eliminar', 'Eliminar')}
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((item) => (
+                  {rows.map((item) => {
+                    const rowEditable = canEditRow(item);
+                    return (
                     <tr
                       key={item.id}
                       style={item.groupStart ? { borderTop: '2px solid #356854' } : undefined}
                     >
-                      {visibleColumns.semana && <td className="text-center align-middle p-0" style={compactCellStyle}>
+                      {visibleColumns.semana && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
                         <div className="py-2 px-1 text-center">{item.semanaLabel}</div>
                       </td>}
-                      {visibleColumns.fecha && <td className="text-center align-middle p-0" style={compactCellStyle}>
-                        {isEditable ? (
+                      {visibleColumns.fecha && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                        {rowEditable ? (
                           <input
                             type="date"
                             defaultValue={item.fecha || ''}
@@ -1071,8 +1464,8 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.fecha}</div>
                         )}
                       </td>}
-                      {visibleColumns.origen && <td className="table-success text-center align-middle p-0" style={compactCellStyle}>
-                        {isEditable ? (
+                      {visibleColumns.origen && <td className="table-success text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                        {rowEditable ? (
                           <>
                             <input
                               list={`origen-${item.id}`}
@@ -1090,8 +1483,8 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.origen}</div>
                         )}
                       </td>}
-                      {visibleColumns.destino && <td className="table-primary text-center align-middle p-0" style={compactCellStyle}>
-                        {isEditable ? (
+                      {visibleColumns.destino && <td className="table-primary text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                        {rowEditable ? (
                           <>
                             <input
                               list={`destino-${item.id}`}
@@ -1109,8 +1502,8 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.destino}</div>
                         )}
                       </td>}
-                      {visibleColumns.productos && <td className="text-center align-middle p-0" style={compactCellStyle}>
-                        {isEditable ? (
+                      {visibleColumns.productos && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                        {rowEditable ? (
                           <>
                             <input
                               list={`producto-${item.id}`}
@@ -1128,8 +1521,8 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.productoLabel || ''}</div>
                         )}
                       </td>}
-                      {visibleColumns.cantidad_productos && <td className="text-center align-middle p-0" style={compactCellStyle}>
-                        {isEditable ? (
+                      {visibleColumns.cantidad_productos && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                        {rowEditable ? (
                           <input
                             type="number"
                             min="0"
@@ -1142,17 +1535,17 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.cantidadProductosLabel || ''}</div>
                         )}
                       </td>}
-                      {visibleColumns.linea && <td className="text-center align-middle p-0" style={compactCellStyle}>
+                      {visibleColumns.linea && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
                         <div className="py-2 px-1 text-center">{item.lineaLabel || ''}</div>
                       </td>}
-                      {visibleColumns.destino_embarque && <td className="text-center align-middle p-0" style={compactCellStyle}>
+                      {visibleColumns.destino_embarque && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
                         <div className="py-2 px-1 text-center">{item.embarqueDestinoLabel || ''}</div>
                       </td>}
-                      {visibleColumns.buque && <td className="text-center align-middle p-0" style={compactCellStyle}>
+                      {visibleColumns.buque && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
                         <div className="py-2 px-1 text-center">{item.buqueLabel || ''}</div>
                       </td>}
-                      {visibleColumns.bl && <td className="text-center align-middle p-0" style={compactCellStyle}>
-                        {isEditable ? (
+                      {visibleColumns.bl && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                        {rowEditable ? (
                           <>
                             <input
                               list={`bl-${item.id}`}
@@ -1181,8 +1574,8 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.blLabel || ''}</div>
                         )}
                       </td>}
-                      {visibleColumns.vehiculo && <td className="text-center align-middle p-0" style={compactCellStyle}>
-                        {isEditable ? (
+                      {visibleColumns.vehiculo && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                        {rowEditable ? (
                           <>
                             <input
                               list={`vehiculo-${item.id}`}
@@ -1200,8 +1593,8 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.vehiculoLabel}</div>
                         )}
                       </td>}
-                      {visibleColumns.conductor && <td className="text-center align-middle p-0" style={compactCellStyle}>
-                        {isEditable ? (
+                      {visibleColumns.conductor && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                        {rowEditable ? (
                           <>
                             <input
                               list={`conductor-${item.id}`}
@@ -1219,8 +1612,8 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.conductorLabel}</div>
                         )}
                       </td>}
-                      {visibleColumns.llegada_origen && <td className="table-success text-center align-middle p-0" style={compactCellStyle}>
-                        {isEditable ? (
+                      {visibleColumns.llegada_origen && <td className="table-success text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                        {rowEditable ? (
                           <input
                             type="time"
                             defaultValue={item.llegada_origen || ''}
@@ -1231,8 +1624,8 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.llegada_origen || ''}</div>
                         )}
                       </td>}
-                      {visibleColumns.salida_origen && <td className="table-success text-center align-middle p-0" style={compactCellStyle}>
-                        {isEditable ? (
+                      {visibleColumns.salida_origen && <td className="table-success text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                        {rowEditable ? (
                           <input
                             type="time"
                             defaultValue={item.salida_origen || ''}
@@ -1243,8 +1636,8 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.salida_origen || ''}</div>
                         )}
                       </td>}
-                      {visibleColumns.llegada_destino && <td className="table-primary text-center align-middle p-0" style={compactCellStyle}>
-                        {isEditable ? (
+                      {visibleColumns.llegada_destino && <td className="table-primary text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                        {rowEditable ? (
                           <input
                             type="time"
                             defaultValue={item.llegada_destino || ''}
@@ -1255,8 +1648,8 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.llegada_destino || ''}</div>
                         )}
                       </td>}
-                      {visibleColumns.cierre && <td className="table-primary text-center align-middle p-0" style={compactCellStyle}>
-                        {isEditable ? (
+                      {visibleColumns.cierre && <td className="table-primary text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                        {rowEditable ? (
                           <input
                             type="time"
                             defaultValue={item.cierre || ''}
@@ -1267,8 +1660,8 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.cierre || ''}</div>
                         )}
                       </td>}
-                      {visibleColumns.salida_destino && <td className="table-primary text-center align-middle p-0" style={compactCellStyle}>
-                        {isEditable ? (
+                      {visibleColumns.salida_destino && <td className="table-primary text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                        {rowEditable ? (
                           <input
                             type="time"
                             defaultValue={item.salida_destino || ''}
@@ -1279,8 +1672,8 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.salida_destino || ''}</div>
                         )}
                       </td>}
-                      {visibleColumns.movimiento && <td className="text-center align-middle p-0" style={compactCellStyle}>
-                        {isEditable ? (
+                      {visibleColumns.movimiento && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                        {rowEditable ? (
                           <>
                             <input
                               list={`movimiento-${item.id}`}
@@ -1298,8 +1691,8 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.movimiento}</div>
                         )}
                       </td>}
-                      {visibleColumns.contenedor && <td className="text-center align-middle p-0" style={compactCellStyle}>
-                        {isEditable ? (
+                      {visibleColumns.contenedor && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                        {rowEditable ? (
                           <input
                             type="text"
                             defaultValue={item.contenedorLabel || ''}
@@ -1310,13 +1703,21 @@ export default function Programador() {
                           <div className="py-2 px-1 text-center">{item.contenedorLabel || ''}</div>
                         )}
                       </td>}
+                      {visibleColumns.estado_listado && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                        <div className="py-2 px-1 text-center">
+                          <span className={`badge ${normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO ? 'bg-success' : 'bg-warning text-dark'}`}>
+                            {item.estadoListadoLabel}
+                          </span>
+                        </div>
+                      </td>}
                       {visibleColumns.eliminar && <td className="text-center align-middle">
                         <button type="button" className="btn btn-sm btn-danger px-2 py-1" onClick={() => eliminar(item.id)}>
                           X
                         </button>
                       </td>}
                     </tr>
-                  ))}
+                  );
+                  })}
 
                   {!rows.length && (
                     <tr>
@@ -1372,6 +1773,56 @@ export default function Programador() {
         </Modal.Footer>
       </Modal>
 
+      <Modal show={Boolean(pendingListadoSync)} onHide={() => setPendingListadoSync(null)} centered size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Coincidencias incompletas</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="small text-muted mb-3">
+            Se encontraron {pendingListadoSync?.processableCount || 0} registros listos para actualizar y {pendingListadoSync?.missingCount || 0} sin coincidencia.
+            Puedes descargar los no encontrados o continuar solo con las coincidencias.
+          </div>
+
+          <div className="table-responsive mb-3" style={{ maxHeight: '260px' }}>
+            <table className="table table-sm table-bordered mb-0">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>BL</th>
+                  <th>Contenedor</th>
+                  <th>Motivo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(pendingListadoSync?.missingRows || []).map((item, index) => (
+                  <tr key={`${item.contenedor || 'sin-contenedor'}-${item.fecha || 'sin-fecha'}-${index}`}>
+                    <td>{item.fecha || '-'}</td>
+                    <td>{item.bl || item.booking || '-'}</td>
+                    <td>{item.contenedor || '-'}</td>
+                    <td>{item.reason || 'Sin coincidencia'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={descargarNoEncontradosListado} disabled={syncingListado}>
+            Descargar no encontrados
+          </Button>
+          <Button variant="secondary" onClick={() => setPendingListadoSync(null)} disabled={syncingListado}>
+            Cancelar
+          </Button>
+          <Button
+            variant="success"
+            onClick={confirmarListadoCoincidencias}
+            disabled={syncingListado || (pendingListadoSync?.processableCount || 0) === 0}
+          >
+            {syncingListado ? 'Actualizando...' : 'Actualizar coincidencias'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
       {open && (
         <FormulariosProgramacion
           setOpen={setOpen}
@@ -1388,21 +1839,25 @@ export default function Programador() {
           setOpenMasivo={setOpenMasivo}
           titulo="Cargar programaciones"
           encabezados={{
-            fecha: null,
-            semana: null,
-            vehiculo: null,
-            conductor: null,
-            bl: null,
-            origen: null,
-            destino: null,
-            movimiento: null,
-            contenedor: null,
-            "llegada origen": null,
-            "salida origen": null,
-            "llegada destino": null,
-            cierre: null,
-            "salida destino": null,
-            observaciones: null,
+            Sem: null,
+            Fecha: null,
+            Origen: null,
+            "Destino L": null,
+            Producto: null,
+            Cantidad: null,
+            Linea: null,
+            Destino: null,
+            Buque: null,
+            BL: null,
+            Vehiculos: null,
+            Conductor: null,
+            "Ingreso origen": null,
+            "Salida origen": null,
+            "Ingreso destino": null,
+            Cierre: null,
+            "Salida destino": null,
+            Movimiento: null,
+            Contenedor: null,
           }}
           onProcessRows={(rows) => processProgramacionRows(rows, 'create')}
         />
@@ -1414,21 +1869,25 @@ export default function Programador() {
           titulo="Actualizar programaciones"
           encabezados={{
             id: null,
-            fecha: null,
-            semana: null,
-            vehiculo: null,
-            conductor: null,
-            bl: null,
-            origen: null,
-            destino: null,
-            movimiento: null,
-            contenedor: null,
-            "llegada origen": null,
-            "salida origen": null,
-            "llegada destino": null,
-            cierre: null,
-            "salida destino": null,
-            observaciones: null,
+            Sem: null,
+            Fecha: null,
+            Origen: null,
+            "Destino L": null,
+            Producto: null,
+            Cantidad: null,
+            Linea: null,
+            Destino: null,
+            Buque: null,
+            BL: null,
+            Vehiculos: null,
+            Conductor: null,
+            "Ingreso origen": null,
+            "Salida origen": null,
+            "Ingreso destino": null,
+            Cierre: null,
+            "Salida destino": null,
+            Movimiento: null,
+            Contenedor: null,
           }}
           onProcessRows={(rows) => processProgramacionRows(rows, 'update')}
         />
@@ -1437,3 +1896,4 @@ export default function Programador() {
     </>
   );
 }
+

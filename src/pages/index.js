@@ -9,7 +9,6 @@ import Inicio from '@containers/inicio/Inicio';
 import Adminsitrador from '@containers/administrador';
 import Almacen from '@containers/almacen';
 import Informes from '@containers/informes';
-import RootLayout from '@layout/RootLayout';
 
 export default function Home() {
     const { user, setUser, setAlmacenByUser } = useAuth();
@@ -63,12 +62,10 @@ export default function Home() {
 
     return (
         <div>
-            <RootLayout>
-                {initialMenu.menu.inicio && <Inicio />}
-                {initialMenu.menu.administrador && <Adminsitrador />}
-                {initialMenu.menu.almacen && <Almacen />}
-                {initialMenu.menu.informes && <Informes />}
-            </RootLayout>
+            {initialMenu.menu.inicio && <Inicio />}
+            {initialMenu.menu.administrador && <Adminsitrador />}
+            {initialMenu.menu.almacen && <Almacen />}
+            {initialMenu.menu.informes && <Informes />}
         </div>
     );
 }

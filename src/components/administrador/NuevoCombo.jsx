@@ -20,6 +20,7 @@ export default function NuevoCombo({ setAlert, setOpen, item, open }) {
     const [clientes, setClientes] = useState([]);
     const [comboItems, setComboItems] = useState([]);
     const [comboData, setComboData] = useState([buildEmptyProductRow()]);
+    const [selectedClientCode, setSelectedClientCode] = useState('');
 
     const isEdit = Boolean(item);
 
@@ -37,6 +38,7 @@ export default function NuevoCombo({ setAlert, setOpen, item, open }) {
                 if (!isEdit) {
                     setComboData([buildEmptyProductRow()]);
                     setComboItems([]);
+                    setSelectedClientCode('');
                     return;
                 }
 
@@ -45,6 +47,9 @@ export default function NuevoCombo({ setAlert, setOpen, item, open }) {
                     (combos || []).map((combo) => buscarProducto(combo.cons_producto))
                 );
                 setComboItems(productosCombo.filter(Boolean));
+                setSelectedClientCode(
+                    clientesData.find((cliente) => cliente.id === item?.id_cliente)?.cod || ''
+                );
             } catch (error) {
                 console.error('Error al cargar datos del combo:', error);
             }
@@ -78,16 +83,11 @@ export default function NuevoCombo({ setAlert, setOpen, item, open }) {
         { id: 'precio_de_venta', label: 'Precio de Venta ($)', type: 'number', required: true }
     ]), []);
 
-    const selectedClientCode = useMemo(
-        () => clientes.find((cliente) => cliente.id === item?.id_cliente)?.cod || '',
-        [clientes, item?.id_cliente]
-    );
-
     const handleSubmit = async (event) => {
         event.preventDefault();
         const formData = new FormData(formRef.current);
 
-        const clientCode = String(formData.get('id_cliente') || '').trim();
+        const clientCode = String(selectedClientCode || formData.get('id_cliente') || '').trim();
         const selectedClient = clientes.find((cliente) => cliente?.cod === clientCode);
 
         if (!selectedClient) {
@@ -196,7 +196,8 @@ export default function NuevoCombo({ setAlert, setOpen, item, open }) {
                                 <Form.Label>Cliente</Form.Label>
                                 <Form.Select
                                     name="id_cliente"
-                                    defaultValue={selectedClientCode}
+                                    value={selectedClientCode}
+                                    onChange={(event) => setSelectedClientCode(event.target.value)}
                                     size="sm"
                                     required
                                 >

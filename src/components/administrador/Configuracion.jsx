@@ -310,7 +310,7 @@ export default function Configuracion({ setOpen }) {
 
     return (
         <div className={styles.tableros}>
-            <div className={styles.padre}>
+            <div className={`${styles.padre} ${styles1.config_modal}`}>
                 <div className={styles.ex}>
                     <span
                         role="button"

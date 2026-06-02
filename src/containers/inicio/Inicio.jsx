@@ -1,7 +1,4 @@
 import React, { useState, useEffect } from 'react';
-
-
-import FuelConsumptionDashboard from '@assets/FuelConsumptionDashboard';
 import Dashboard from '@containers/seguridad/Dashboard';
 import { encontrarModulo } from '@services/api/configuracion';
 import Configuracion from '@components/administrador/Configuracion';
@@ -32,7 +29,7 @@ export default function Inicio() {
                     const existeConfig = confiInicio?.inicio || null;
                     setInicio(existeConfig);
                     if (!existeConfig) setOpen(true);
-                    
+
                 } else {
                     console.warn('No se encontraron detalles para el usuario.');
                 }
@@ -40,19 +37,16 @@ export default function Inicio() {
                 console.error('Ocurrió un error al cargar los datos:', error);
             }
         };
-
         fetchData();
     }, []);
 
 
     return (
         <>
-            {inicio == "Dashboard Combustible" && <FuelConsumptionDashboard />}
             {inicio == "Dashboard Contenedores" && <Dashboard />}
-             {inicio == "Dashboard Inspeccionados" &&   <Inspeccionados/>}
-           
+            {inicio == "Dashboard Inspeccionados" && <Inspeccionados />}
 
-            {open && <Configuracion setOpen={setOpen}/>}
+            {open && <Configuracion setOpen={setOpen} />}
         </>
     );
 }

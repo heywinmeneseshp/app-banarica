@@ -1,5 +1,5 @@
 // Importacion de dependencias necesarias
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { Navbar, Nav, DropdownButton, Dropdown, Button, Container } from 'react-bootstrap';
 import { FaSignOutAlt, FaUserCircle } from 'react-icons/fa';
@@ -15,6 +15,40 @@ import { encontrarEmpresa, encontrarModulo } from '@services/api/configuracion';
 import { menuCompleto } from 'utils/configMenu';
 import { clearSession, getStoredUser, getStoredWarehouses, getToken } from 'utils/session';
 
+// Constantes
+const SUPER_ADMIN_ROLE = "Super administrador";
+const DEFAULT_MENU_KEYS = Object.keys(menuCompleto);
+
+// Componente de menú reutilizable
+const MenuDropdown = ({ title, items, variant = "dark", onItemClick, isVisible, userRole, configSubMenu }) => {
+  if (!isVisible) return null;
+
+  const handleItemClick = (item, key) => {
+    if (typeof item === 'function') {
+      item();
+    } else if (onItemClick) {
+      onItemClick(item, key);
+    }
+  };
+
+  return (
+    <DropdownButton variant={variant} title={title}>
+      {items.map((item, index) => {
+        const [key, label] = Array.isArray(item) ? item : [index, item];
+        const isVisibleItem = configSubMenu.includes(label) || userRole === SUPER_ADMIN_ROLE;
+        
+        if (!isVisibleItem) return null;
+        
+        return (
+          <Dropdown.Item key={key} onClick={() => handleItemClick(item, key)}>
+            {label}
+          </Dropdown.Item>
+        );
+      })}
+    </DropdownButton>
+  );
+};
+
 const Header = () => {
   const router = useRouter();
   const { setAlert } = useAlert();
@@ -26,163 +60,204 @@ const Header = () => {
   const [nombreApp, setNombreApp] = useState(null);
   const [configMenu, setConfigMenu] = useState([]);
   const [configSubMenu, setConfigSubMenu] = useState([]);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
 
+  // Verificar si es super admin
+  const isSuperAdmin = useMemo(() => user?.id_rol === SUPER_ADMIN_ROLE, [user?.id_rol]);
+
+  // Verificar acceso a menús
+  const hasMenuAccess = useCallback((menuName) => {
+    return configMenu.includes(menuName) || isSuperAdmin;
+  }, [configMenu, isSuperAdmin]);
+
+  // Función para cargar configuración del usuario
+  const loadUserConfig = useCallback(async (usuario) => {
+    setIsLoadingConfig(true);
+    try {
+      const res = await encontrarModulo(usuario.username);
+      
+      // Validar respuesta
+      if (!res?.[0]?.detalles) {
+        throw new Error('Configuración no encontrada');
+      }
+      
+      const detalles = JSON.parse(res[0].detalles);
+      setConfigMenu(detalles.menu || []);
+      setConfigSubMenu(detalles.submenu || []);
+    } catch (error) {
+      console.error('Error al cargar configuración:', error);
+      
+      // Fallback para super admin
+      if (isSuperAdmin) {
+        setConfigMenu(DEFAULT_MENU_KEYS);
+        setConfigSubMenu([]);
+      }
+    } finally {
+      setIsLoadingConfig(false);
+    }
+  }, [isSuperAdmin]);
+
+  // Cargar nombre de la empresa
+  const loadCompanyName = useCallback(async () => {
+    try {
+      const res = await encontrarEmpresa();
+      setNombreApp(res?.nombreComercial || null);
+    } catch (error) {
+      console.error('Error al cargar nombre de empresa:', error);
+      setNombreApp(null);
+    }
+  }, []);
+
+  // Efecto principal
   useEffect(() => {
     const token = getToken();
     const usuario = user || getStoredUser();
+
+    if (!usuario || !token) {
+      setIsLoadingConfig(false);
+      return;
+    }
 
     if (usuario && !user) {
       setUser(usuario);
     }
 
-    if (!usuario || !token) {
-      return;
-    }
-
-    encontrarEmpresa().then(res => setNombreApp(res.nombreComercial));
-
-    encontrarModulo(usuario.username).then(res => {
-      try {
-        // Validar que la respuesta existe y tiene datos
-        if (!res || !Array.isArray(res) || res.length === 0) {
-          console.warn('No se encontró configuración de módulos para el usuario');
-          // Proporcionar configuración por defecto según rol
-          if (usuario.id_rol === "Super administrador") {
-            setConfigMenu(["maestros", "programaciones", "seguridad", "almacen", "informes"]);
-            setConfigSubMenu([]);
-          }
-          return;
-        }
-
-        // Validar que detalles no es null/undefined
-        if (!res[0].detalles) {
-          console.warn('Configuración vacía para el usuario, usando valores por defecto');
-          if (usuario.id_rol === "Super administrador") {
-            setConfigMenu(["maestros", "programaciones", "seguridad", "almacen", "informes"]);
-            setConfigSubMenu([]);
-          }
-          return;
-        }
-
-        // Parsear con fallback
-        const detalles = JSON.parse(res[0].detalles || "{}");
-        setConfigMenu(detalles.menu || []);
-        setConfigSubMenu(detalles.submenu || []);
-      } catch (error) {
-        console.error('Error al procesar configuración de módulos:', error);
-        // Fallback: permitir acceso a todos los módulos para Super Admin
-        if (usuario.id_rol === "Super administrador") {
-          setConfigMenu(["maestros", "programaciones", "seguridad", "almacen", "informes"]);
-          setConfigSubMenu([]);
-        }
-      }
-    }).catch(error => {
-      if (error?.response?.status === 401) {
-        return;
-      }
-
-      console.error('Error al obtener módulos:', error);
-      // Fallback en caso de error en la llamada
-      if (usuario.id_rol === "Super administrador") {
-        setConfigMenu(["maestros", "programaciones", "seguridad", "almacen", "informes"]);
-        setConfigSubMenu([]);
-      }
-    });
-
+    loadCompanyName();
+    loadUserConfig(usuario);
     setAlmacenByUser(getStoredWarehouses());
-  }, [user, setUser, setAlmacenByUser]);
+  }, [user, setUser, setAlmacenByUser, loadCompanyName, loadUserConfig]);
 
-  const handleProfile = () => setOpenProfile(prev => !prev);
-
-  const openWindow = (window) => {
-    initialAdminMenu.hadleOpenWindows(window);
-  };
-
-  const openMenu = (itemMenu) => {
-    router.push("/");
-    switch (itemMenu) {
-      case "admin": initialMenu.handleAdministrador(); break;
-      case "almacen": initialMenu.handleAlmacen(); break;
-      case "info": initialMenu.handleInformes(); break;
-      case "inicio": initialMenu.handleInicio(); break;
-      default: break;
+  // Handlers
+  const handleProfile = useCallback(() => setOpenProfile(prev => !prev), []);
+  const handleOpenWindow = useCallback((window) => initialAdminMenu.hadleOpenWindows(window), [initialAdminMenu]);
+  
+  const openMenu = useCallback((itemMenu) => {
+    if (router.pathname !== "/") {
+      router.push("/");
     }
-  };
 
-  const onSeguridad = (ruta) => {
+    const menuActions = {
+      admin: initialMenu.handleAdministrador,
+      almacen: initialMenu.handleAlmacen,
+      info: initialMenu.handleInformes,
+      inicio: initialMenu.handleInicio
+    };
+    menuActions[itemMenu]?.();
+  }, [router, initialMenu]);
+
+  const onSeguridad = useCallback((ruta) => {
     router.push(`/Seguridad${ruta}`);
-  };
+  }, [router]);
 
-  const cerrarSesion = () => {
+  const almacenActions = useMemo(() => ({
+    movimientos: initialAlmacenMenu.handleMovimientos,
+    pedidos: initialAlmacenMenu.handlePedidos,
+    recepcion: initialAlmacenMenu.handleRecepcion,
+    traslados: initialAlmacenMenu.handleTraslados
+  }), [initialAlmacenMenu]);
+
+  const infoActions = useMemo(() => ({
+    movimientos: initialInfoMenu.handleMovimientos,
+    pedidos: initialInfoMenu.handlePedidos,
+    stock: initialInfoMenu.handleStock,
+    traslados: initialInfoMenu.handleTraslados
+  }), [initialInfoMenu]);
+
+  const cerrarSesion = useCallback(() => {
     clearSession();
     router.push('/login');
+  }, [router]);
+
+  // Configuración de menús
+  const menuConfigs = useMemo(() => ({
+    maestros: {
+      title: "Maestros",
+      items: [...menuCompleto.maestros, ['configuracion', 'Configuracion']],
+      onItemClick: (item) => {
+        if (item[1] === 'Configuracion') {
+          setOpenConfig(true);
+        } else {
+          openMenu('admin');
+          handleOpenWindow(item[0]);
+        }
+      }
+    },
+    transporte: {
+      title: "Transporte",
+      items: menuCompleto.transporte,
+      onItemClick: (item) => router.push(`/Transporte${item[0]}`)
+    },
+    seguridad: {
+      title: "Seguridad",
+      items: menuCompleto.seguridad,
+      onItemClick: (item) => onSeguridad(item[0])
+    },
+    almacen: {
+      title: "Almacen",
+      items: menuCompleto.almacen,
+      onItemClick: (item) => {
+        openMenu('almacen');
+        almacenActions[item[0]]?.();
+      }
+    },
+    informes: {
+      title: "Informes",
+      items: menuCompleto.informes,
+      onItemClick: (item) => {
+        openMenu('info');
+        infoActions[item[0]]?.();
+      }
+    }
+  }), [almacenActions, handleOpenWindow, infoActions, onSeguridad, openMenu, router]);
+
+  // Renderizar menús dinámicamente
+  const renderMenu = (menuKey) => {
+    const config = menuConfigs[menuKey];
+    if (!config || !hasMenuAccess(menuKey)) return null;
+
+    return (
+      <MenuDropdown
+        title={config.title}
+        items={config.items}
+        onItemClick={config.onItemClick}
+        isVisible={true}
+        userRole={user?.id_rol}
+        configSubMenu={configSubMenu}
+      />
+    );
   };
+
+  // Si está cargando configuración, mostrar versión simplificada o skeleton
+  if (isLoadingConfig) {
+    return (
+      <div className="sticky-top shadow-sm" style={{ zIndex: 1050 }}>
+        <Navbar bg="dark" variant="dark" expand="lg" className="py-2">
+          <Container fluid="xl">
+            <Navbar.Brand>
+              <b>Cargando...</b>
+            </Navbar.Brand>
+          </Container>
+        </Navbar>
+      </div>
+    );
+  }
 
   return (
     <div className="sticky-top shadow-sm" style={{ zIndex: 1050 }}>
       <Navbar bg="dark" variant="dark" expand="lg" className="py-2">
         <Container fluid="xl">
-          <Navbar.Brand onClick={() => openMenu("inicio")}>
+          <Navbar.Brand onClick={() => openMenu("inicio")} style={{ cursor: 'pointer' }}>
             <b>{nombreApp || "LogiCrack App"}</b>
           </Navbar.Brand>
 
           <Navbar.Toggle aria-controls="navbar-nav" />
           <Navbar.Collapse id="navbar-nav" className="pt-3 pt-lg-0">
             <Nav className="me-auto align-items-lg-center gap-lg-1 flex-lg-row">
-              {(configMenu.includes("maestros") || user?.id_rol === "Super administrador") && (
-                <DropdownButton variant="dark" title="Maestros" onClick={() => openMenu("admin")}>
-                  {menuCompleto.maestros.map(([key, label]) => {
-                    if (configSubMenu.includes(label) || user?.id_rol === "Super administrador") {
-                      return (
-                        <Dropdown.Item key={key} onClick={() => openWindow(key)}>{label}</Dropdown.Item>
-                      );
-                    }
-
-                    return null;
-                  })}
-                  <Dropdown.Item onClick={() => setOpenConfig(true)}>Configuracion</Dropdown.Item>
-                </DropdownButton>
-              )}
-
-              {configMenu.includes("programaciones") && (
-                <DropdownButton variant="dark" title="Programaciones" onClick={() => openMenu("admin")}>
-                  {menuCompleto.programaciones.map(([key, label]) => (
-                    <Dropdown.Item key={key} onClick={() => openWindow(key)}>{label}</Dropdown.Item>
-                  ))}
-                </DropdownButton>
-              )}
-
-              {configMenu.includes("seguridad") && (
-                <DropdownButton variant="dark" title="Seguridad">
-                  {menuCompleto.seguridad.map(([ruta, label]) => {
-                    if (configSubMenu.includes(label) || user?.id_rol === "Super administrador") {
-                      return (
-                        <Dropdown.Item key={ruta} onClick={() => onSeguridad(ruta)}>{label}</Dropdown.Item>
-                      );
-                    }
-
-                    return null;
-                  })}
-                </DropdownButton>
-              )}
-
-              {configMenu.includes("almacen") && (
-                <DropdownButton variant="dark" title="Almacen" onClick={() => openMenu("almacen")}>
-                  <Dropdown.Item onClick={initialAlmacenMenu.handleMovimientos}>Movimientos</Dropdown.Item>
-                  <Dropdown.Item onClick={initialAlmacenMenu.handlePedidos}>Pedidos</Dropdown.Item>
-                  <Dropdown.Item onClick={initialAlmacenMenu.handleRecepcion}>Recepcion</Dropdown.Item>
-                  <Dropdown.Item onClick={initialAlmacenMenu.handleTraslados}>Traslados</Dropdown.Item>
-                </DropdownButton>
-              )}
-
-              {configMenu.includes("informes") && (
-                <DropdownButton variant="dark" title="Informes" onClick={() => openMenu("info")}>
-                  <Dropdown.Item onClick={initialInfoMenu.handleMovimientos}>Movimientos</Dropdown.Item>
-                  <Dropdown.Item onClick={initialInfoMenu.handlePedidos}>Pedidos</Dropdown.Item>
-                  <Dropdown.Item onClick={initialInfoMenu.handleStock}>Stock</Dropdown.Item>
-                  <Dropdown.Item onClick={initialInfoMenu.handleTraslados}>Traslados</Dropdown.Item>
-                </DropdownButton>
-              )}
+              {renderMenu('maestros')}
+              {renderMenu('transporte')}
+              {renderMenu('seguridad')}
+              {renderMenu('almacen')}
+              {renderMenu('informes')}
             </Nav>
 
             <div className="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-lg-end gap-2 w-100 w-lg-auto mt-3 mt-lg-0 ms-lg-auto">

@@ -29,3 +29,16 @@
     background-color: rgba(255, 255, 255, 0.8);
     z-index: 1000;
 }
+
+.config_modal {
+    box-sizing: border-box;
+    width: min(1090px, calc(100vw - 32px));
+    max-height: calc(100vh - 48px);
+    margin: 24px auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.config_modal :global(.container) {
+    max-width: 100%;
+}

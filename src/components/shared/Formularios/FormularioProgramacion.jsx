@@ -31,6 +31,11 @@ const parseVehiculosSinCombustible = (configRows) => {
   }
 };
 
+const getEmbarqueClienteId = (item) => String(item?.id_cliente || item?.clientes?.id || item?.cliente?.id || "");
+const getEmbarqueNavieraId = (item) => String(item?.id_naviera || item?.Naviera?.id || item?.naviera?.id || "");
+const getEmbarqueDestinoId = (item) => String(item?.id_destino || item?.Destino?.id || item?.destino?.id || "");
+const getEmbarqueBuqueId = (item) => String(item?.id_buque || item?.Buque?.id || item?.buque?.id || "");
+
 export default function FormulariosProgramacion({
   setOpen,
   setAlert,
@@ -51,6 +56,7 @@ export default function FormulariosProgramacion({
   const [listaEmbarques, setListaEmbarques] = useState([]);
   const [listaCombos, setListaCombos] = useState([]);
   const [vehiculosSinCombustible, setVehiculosSinCombustible] = useState([]);
+  const [canQuickCreateProgramador, setCanQuickCreateProgramador] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [semanaInput, setSemanaInput] = useState("");
   const [semanaSeleccionada, setSemanaSeleccionada] = useState("");
@@ -77,6 +83,7 @@ export default function FormulariosProgramacion({
   const conductorTouchedRef = useRef(false);
 
   const cargarCatalogos = useCallback(async () => {
+    const usuario = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("usuario") || "{}") : {};
     const [
       ubicaciones,
       conductores,
@@ -90,6 +97,7 @@ export default function FormulariosProgramacion({
       embarquesRes,
       combos,
       configProgramador,
+      userConfig,
     ] = await Promise.all([
       listarUbicaciones(),
       listarConductores(),
@@ -103,6 +111,7 @@ export default function FormulariosProgramacion({
       paginarEmbarques(1, 5000, {}),
       listarCombos(),
       encontrarModulo("Programador_combustible"),
+      usuario?.id_rol === "Super administrador" || !usuario?.username ? Promise.resolve([]) : encontrarModulo(usuario.username),
     ]);
 
     setListaUbicaciones(ubicaciones || []);
@@ -117,6 +126,17 @@ export default function FormulariosProgramacion({
     setListaEmbarques(embarquesRes?.data || []);
     setListaCombos(combos || []);
     setVehiculosSinCombustible(parseVehiculosSinCombustible(configProgramador));
+    if (usuario?.id_rol === "Super administrador") {
+      setCanQuickCreateProgramador(true);
+    } else {
+      try {
+        const detalles = JSON.parse(userConfig?.[0]?.detalles || "{}");
+        const botones = Array.isArray(detalles?.botones) ? detalles.botones : [];
+        setCanQuickCreateProgramador(botones.includes("programador_creacion_rapida"));
+      } catch {
+        setCanQuickCreateProgramador(false);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -128,14 +148,14 @@ export default function FormulariosProgramacion({
     [listaSemanas, semanaSeleccionada]
   );
 
-  const productoActual = useMemo(
-    () => listaCombos.find((item) => String(item?.id || "") === String(productoSeleccionado)),
-    [listaCombos, productoSeleccionado]
-  );
-
   const combosActivos = useMemo(
     () => (listaCombos || []).filter((item) => item?.isBlock !== true),
     [listaCombos]
+  );
+
+  const productoActual = useMemo(
+    () => listaCombos.find((item) => String(item?.id || "") === String(productoSeleccionado)),
+    [listaCombos, productoSeleccionado]
   );
 
   const embarquesSemana = useMemo(() => {
@@ -151,17 +171,20 @@ export default function FormulariosProgramacion({
     ));
   }, [listaEmbarques, semanaActual, semanaSeleccionada]);
 
+  const embarquesProductoSemana = useMemo(() => {
+    if (!productoActual?.id_cliente) {
+      return embarquesSemana;
+    }
+
+    return embarquesSemana.filter((item) => (
+      getEmbarqueClienteId(item) === String(productoActual.id_cliente)
+    ));
+  }, [embarquesSemana, productoActual]);
+
   const navierasDisponibles = useMemo(() => {
     const map = new Map();
-    embarquesSemana.forEach((item) => {
-      if (
-        productoActual?.id_cliente
-        && String(item?.id_cliente || item?.clientes?.id || item?.cliente?.id || "") !== String(productoActual.id_cliente)
-      ) {
-        return;
-      }
-
-      const id = String(item?.id_naviera || item?.Naviera?.id || item?.naviera?.id || "");
+    embarquesProductoSemana.forEach((item) => {
+      const id = getEmbarqueNavieraId(item);
       const navieraMaestra = (listaNavieras || []).find(
         (naviera) => String(naviera?.id || naviera?.consecutivo || "") === id
       );
@@ -179,19 +202,19 @@ export default function FormulariosProgramacion({
       }
     });
     return Array.from(map.values());
-  }, [embarquesSemana, listaNavieras, productoActual]);
+  }, [embarquesProductoSemana, listaNavieras]);
 
   const embarquesNaviera = useMemo(() => {
     if (!navieraSeleccionada) {
       return [];
     }
-    return embarquesSemana.filter((item) => String(item?.id_naviera || "") === String(navieraSeleccionada));
-  }, [embarquesSemana, navieraSeleccionada]);
+    return embarquesProductoSemana.filter((item) => getEmbarqueNavieraId(item) === String(navieraSeleccionada));
+  }, [embarquesProductoSemana, navieraSeleccionada]);
 
   const destinosDisponibles = useMemo(() => {
     const map = new Map();
     embarquesNaviera.forEach((item) => {
-      const id = String(item?.id_destino || item?.Destino?.id || item?.destino?.id || "");
+      const id = getEmbarqueDestinoId(item);
       const destinoMaestro = (listaDestinos || []).find(
         (destino) => String(destino?.id || destino?.consecutivo || "") === id
       );
@@ -215,13 +238,13 @@ export default function FormulariosProgramacion({
     if (!destinoSeleccionado) {
       return [];
     }
-    return embarquesNaviera.filter((item) => String(item?.id_destino || "") === String(destinoSeleccionado));
+    return embarquesNaviera.filter((item) => getEmbarqueDestinoId(item) === String(destinoSeleccionado));
   }, [embarquesNaviera, destinoSeleccionado]);
 
   const buquesDisponibles = useMemo(() => {
     const map = new Map();
     embarquesDestino.forEach((item) => {
-      const id = String(item?.id_buque || item?.Buque?.id || item?.buque?.id || "");
+      const id = getEmbarqueBuqueId(item);
       const buqueMaestro = (listaBuques || []).find(
         (buque) => String(buque?.id || buque?.consecutivo || "") === id
       );
@@ -242,7 +265,7 @@ export default function FormulariosProgramacion({
     if (!buqueSeleccionado) {
       return [];
     }
-    return embarquesDestino.filter((item) => String(item?.id_buque || "") === String(buqueSeleccionado));
+    return embarquesDestino.filter((item) => getEmbarqueBuqueId(item) === String(buqueSeleccionado));
   }, [embarquesDestino, buqueSeleccionado]);
 
   const bookingsDisponibles = useMemo(() => (
@@ -652,6 +675,14 @@ export default function FormulariosProgramacion({
             activo: true,
           }
         : null;
+      const primerClienteProducto = productoActual?.id_cliente || null;
+      const getProgramacionId = (programacion) => (
+        programacion?.id
+        || programacion?.data?.id
+        || programacion?.programacion?.id
+        || programacion?.data?.programacion?.id
+        || ""
+      );
 
       if (paradasValidas.length === 1) {
         const ubicacionId = paradasValidas[0];
@@ -659,7 +690,7 @@ export default function FormulariosProgramacion({
         const programacionCreada = await agregarProgramaciones({
           ruta_id: rutaId,
           cobrar: false,
-          id_pagador_flete: productoActual?.id_cliente || null,
+          id_pagador_flete: primerClienteProducto,
           activo: true,
           movimiento: movimientoSeleccionado,
           conductor_id: conductorActual.id,
@@ -670,10 +701,11 @@ export default function FormulariosProgramacion({
           fecha,
           detalles: "Ubicacion unica",
         });
-        if (productoPayload && programacionCreada?.id) {
+        const programacionCreadaId = getProgramacionId(programacionCreada);
+        if (productoPayload && programacionCreadaId) {
           await agregarProductosViaje({
             ...productoPayload,
-            programacion_id: programacionCreada.id,
+            programacion_id: programacionCreadaId,
           });
         }
       } else {
@@ -685,7 +717,7 @@ export default function FormulariosProgramacion({
           const programacionCreada = await agregarProgramaciones({
             ruta_id: rutaId,
             cobrar: false,
-            id_pagador_flete: productoActual?.id_cliente || null,
+            id_pagador_flete: primerClienteProducto,
             activo: true,
             movimiento: movimientoSeleccionado,
             conductor_id: conductorActual.id,
@@ -696,10 +728,11 @@ export default function FormulariosProgramacion({
             fecha,
             detalles: `Tramo ${index + 1} de ${paradasValidas.length - 1}`,
           });
-          if (productoPayload && programacionCreada?.id) {
+          const programacionCreadaId = getProgramacionId(programacionCreada);
+          if (productoPayload && programacionCreadaId) {
             await agregarProductosViaje({
               ...productoPayload,
-              programacion_id: programacionCreada.id,
+              programacion_id: programacionCreadaId,
             });
           }
         }
@@ -751,7 +784,7 @@ export default function FormulariosProgramacion({
                 </div>
 
                 <div className="row g-2">
-                  <div className="col-md-3">
+                  <div className="col-12 col-md-6 col-lg-2">
                     <label htmlFor="semana-programador" className="form-label mb-1">Semana</label>
                     <input
                       id="semana-programador"
@@ -768,11 +801,11 @@ export default function FormulariosProgramacion({
                       ))}
                     </datalist>
                     {!semanaSeleccionada && (
-                      <div className="invalid-feedback d-block">Debes seleccionar una semana valida.</div>
+                      <small className="text-danger d-block mt-1">Debes seleccionar una semana valida.</small>
                     )}
                   </div>
 
-                  <div className="col-md-3">
+                  <div className="col-12 col-md-6 col-lg-2">
                     <label htmlFor="fecha-programador" className="form-label mb-1">Fecha</label>
                     <input
                       id="fecha-programador"
@@ -783,7 +816,7 @@ export default function FormulariosProgramacion({
                     />
                   </div>
 
-                  <div className="col-md-3">
+                  <div className="col-12 col-lg-8">
                     <label htmlFor="producto-programador" className="form-label mb-1">Producto</label>
                     <select
                       id="producto-programador"
@@ -798,7 +831,7 @@ export default function FormulariosProgramacion({
                     </select>
                   </div>
 
-                  <div className="col-md-3">
+                  <div className="col-12 col-md-6 col-lg-3">
                     <label htmlFor="naviera-programador" className="form-label mb-1">Naviera</label>
                     <select
                       id="naviera-programador"
@@ -817,7 +850,7 @@ export default function FormulariosProgramacion({
                     </select>
                   </div>
 
-                  <div className="col-md-4">
+                  <div className="col-12 col-md-6 col-lg-3">
                     <label htmlFor="destino-programador" className="form-label mb-1">Destino</label>
                     <select
                       id="destino-programador"
@@ -836,7 +869,7 @@ export default function FormulariosProgramacion({
                     </select>
                   </div>
 
-                  <div className="col-md-4">
+                  <div className="col-12 col-md-6 col-lg-3">
                     <label htmlFor="buque-programador" className="form-label mb-1">Buque</label>
                     <select
                       id="buque-programador"
@@ -855,7 +888,7 @@ export default function FormulariosProgramacion({
                     </select>
                   </div>
 
-                  <div className="col-md-4">
+                  <div className="col-12 col-md-6 col-lg-3">
                     <label htmlFor="booking-programador" className="form-label mb-1">BL</label>
                     <select
                       id="booking-programador"
@@ -899,18 +932,20 @@ export default function FormulariosProgramacion({
                             ))}
                           </select>
                         </div>
-                        <div className="col-md-1">
-                          <Button
-                            type="button"
-                            variant="outline-primary"
-                            size="sm"
-                            className="w-100"
-                            onClick={handleQuickCreateUbicacion}
-                            title="Crear ubicacion"
-                          >
-                            +
-                          </Button>
-                        </div>
+                        {canQuickCreateProgramador && (
+                          <div className="col-md-1">
+                            <Button
+                              type="button"
+                              variant="outline-primary"
+                              size="sm"
+                              className="w-100"
+                              onClick={handleQuickCreateUbicacion}
+                              title="Crear ubicacion"
+                            >
+                              +
+                            </Button>
+                          </div>
+                        )}
                         <div className="col-md-2">
                           <Button
                             type="button"
@@ -975,9 +1010,11 @@ export default function FormulariosProgramacion({
                   <div className="col-md-3">
                     <div className="d-flex justify-content-between align-items-center mb-1">
                       <label htmlFor="vehiculo-programador" className="form-label mb-0">Vehiculo</label>
-                      <Button type="button" variant="outline-primary" size="sm" onClick={handleQuickCreateVehiculo}>
-                        +
-                      </Button>
+                      {canQuickCreateProgramador && (
+                        <Button type="button" variant="outline-primary" size="sm" onClick={handleQuickCreateVehiculo}>
+                          +
+                        </Button>
+                      )}
                     </div>
                     <select
                       id="vehiculo-programador"
@@ -999,9 +1036,11 @@ export default function FormulariosProgramacion({
                   <div className="col-md-3">
                     <div className="d-flex justify-content-between align-items-center mb-1">
                       <label htmlFor="conductor-programador" className="form-label mb-0">Conductor</label>
-                      <Button type="button" variant="outline-primary" size="sm" onClick={handleQuickCreateConductor}>
-                        +
-                      </Button>
+                      {canQuickCreateProgramador && (
+                        <Button type="button" variant="outline-primary" size="sm" onClick={handleQuickCreateConductor}>
+                          +
+                        </Button>
+                      )}
                     </div>
                     <select
                       id="conductor-programador"
@@ -1022,9 +1061,11 @@ export default function FormulariosProgramacion({
                   <div className="col-md-3">
                     <div className="d-flex justify-content-between align-items-center mb-1">
                       <label htmlFor="movimiento-programador" className="form-label mb-0">Movimiento</label>
-                      <Button type="button" variant="outline-primary" size="sm" onClick={handleQuickCreateTipoMovimiento}>
-                        +
-                      </Button>
+                      {canQuickCreateProgramador && (
+                        <Button type="button" variant="outline-primary" size="sm" onClick={handleQuickCreateTipoMovimiento}>
+                          +
+                        </Button>
+                      )}
                     </div>
                     <select
                       id="movimiento-programador"

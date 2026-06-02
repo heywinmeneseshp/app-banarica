@@ -23,12 +23,11 @@ import Vehiculos from '@components/Maestros/Vehiculos';
 //PROGRAMACIONES
 import Programador from '@components/Programacion/Programador';
 import Contenedores from '@components/Programacion/Contenedores';
-import ContenedoresCopia from '@components/Programacion/ContenedoresCopia';
 import Notificaciones from '@components/Programacion/Notificaciones';
 import Clientes from '@components/Maestros/Clientes';
-import HistorialConsumo from "@components/Programacion/HistorialConsumos";
-import HistoricoConsumoRuta from '@components/Programacion/HistoricoConsumoRuta';
-import SaldoCombustibleVehiculos from '@components/Programacion/SaldoCombustibleVehiculos';
+import HistorialConsumo from "@components/Programacion/ConsumoKm";
+import HistoricoConsumoRuta from '@components/Programacion/ConsumoRutas';
+import SaldoCombustibleVehiculos from '@components/Programacion/SaldoCombustible';
 import ReportesConsumo from '@components/Programacion/Reportes';
 import ConsumoRutaVehiculo from '@components/Programacion/ConsumoRutaVehiculo';
 import MotivoDeRechazo from '@containers/administrador/MotivoDeRechazo';
@@ -64,7 +63,6 @@ export default function Adminsitrador() {
         {/*Programacion*/}
         {initialAdminMenu.adminMenu.programador && <Programador />}
         {initialAdminMenu.adminMenu.contenedores && <Contenedores />}
-        {initialAdminMenu.adminMenu.contenedores && <ContenedoresCopia />}
         {initialAdminMenu.adminMenu.notificaciones && <Notificaciones />}
         {initialAdminMenu.adminMenu.historico && <HistorialConsumo />}
         {initialAdminMenu.adminMenu.historicoRutaVehiculo && <HistoricoConsumoRuta />}

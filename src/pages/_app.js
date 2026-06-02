@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import AppContext from '@context/AppContext';
 import { ProviderAuth } from '@hooks/useAuth';
 import useAdminMenu from '@hooks/useAdminMenu';
@@ -9,6 +10,7 @@ import useInfoMenu from "@hooks/useInfoMenu";
 import useMenu from '@hooks/useMenu';
 import usePedido from '@hooks/usePedido';
 import MainLayout from '@layout/MainLayout';
+import RootLayout from '@layout/RootLayout';
 import FeedbackProvider from '@components/shared/feedback/FeedbackProvider';
 import '@styles/globals.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -16,6 +18,9 @@ import { encontrarEmpresa } from '@services/api/configuracion';
 
 function MyApp({ Component, pageProps }) {
     const [nombreApp, setNombreApp] = useState("");
+    const router = useRouter();
+    const appShellRoutes = ['/', '/Seguridad/[item]', '/Transporte/[item]'];
+    const useAppShell = appShellRoutes.includes(router.pathname);
 
     const initialMenu = useMenu();
     const initialAdminMenu = useAdminMenu();
@@ -48,7 +53,13 @@ function MyApp({ Component, pageProps }) {
                         </Head>
 
                         <MainLayout>
-                            <Component {...pageProps} />
+                            {useAppShell ? (
+                                <RootLayout showChrome>
+                                    <Component {...pageProps} />
+                                </RootLayout>
+                            ) : (
+                                <Component {...pageProps} />
+                            )}
                         </MainLayout>
                     </AppContext.Provider>
                 </FeedbackProvider>
@@ -58,4 +69,3 @@ function MyApp({ Component, pageProps }) {
 }
 
 export default MyApp;
-
