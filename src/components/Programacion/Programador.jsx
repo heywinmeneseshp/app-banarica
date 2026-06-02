@@ -18,7 +18,14 @@ import useAlert from '@hooks/useAlert';
 import { agregarRutas, buscarRutaPost } from '@services/api/rutas';
 import { encontrarModulo } from '@services/api/configuracion';
 import { Button, Form, Modal } from 'react-bootstrap';
+import { subirEvidencias } from '@services/api/googleDrive';
+
 const COLUMN_STORAGE_KEY = 'programadorColumnConfig';
+const DEFAULT_EVIDENCIAS_DRIVE_FOLDER_ID = process.env.NEXT_PUBLIC_EVIDENCIAS_DRIVE_FOLDER_ID || '1ZnxhLTlN5WROcl-oozkSJXwjI87aG4bM';
+const EVIDENCIAS_DRIVE_MODULE = 'Google_drive_evidencias';
+const EVIDENCIA_MAX_FILES = 20;
+const EVIDENCIA_MAX_FILE_SIZE = 5 * 1024 * 1024;
+const EVIDENCIA_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const COLUMN_OPTIONS = [
   { id: 'semana', label: 'Sem' },
   { id: 'fecha', label: 'Fecha' },
@@ -40,8 +47,10 @@ const COLUMN_OPTIONS = [
   { id: 'estado_listado', label: 'Estado listado' },
   { id: 'movimiento', label: 'Movimiento' },
   { id: 'contenedor', label: 'Contenedor' },
+  { id: 'evidencia', label: 'Evidencia' },
   { id: 'eliminar', label: 'Eliminar' },
 ];
+
 const DEFAULT_VISIBLE_COLUMNS = COLUMN_OPTIONS.reduce((acc, column) => {
   acc[column.id] = true;
   return acc;
@@ -64,6 +73,17 @@ const parseVehiculosSinCombustible = (configRows) => {
   } catch (error) {
     console.warn('No se pudo leer la configuracion de Programador_combustible:', error);
     return [];
+  }
+};
+
+const parseEvidenciasDriveFolderId = (configRows) => {
+  try {
+    const [config = {}] = configRows || [];
+    const parsed = JSON.parse(config?.detalles || '{}');
+    return parsed?.carpetaID || DEFAULT_EVIDENCIAS_DRIVE_FOLDER_ID;
+  } catch (error) {
+    console.warn('No se pudo leer la configuracion de evidencias en Drive:', error);
+    return DEFAULT_EVIDENCIAS_DRIVE_FOLDER_ID;
   }
 };
 
@@ -189,6 +209,15 @@ export default function Programador() {
   const [canActualizarPendientes, setCanActualizarPendientes] = useState(false);
   const [canEditarProgramador, setCanEditarProgramador] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [evidenciasDriveFolderId, setEvidenciasDriveFolderId] = useState(DEFAULT_EVIDENCIAS_DRIVE_FOLDER_ID);
+
+  // Estados para evidencias
+  const [showEvidenciaModal, setShowEvidenciaModal] = useState(false);
+  const [selectedProgramacion, setSelectedProgramacion] = useState(null);
+  const [uploadingEvidencia, setUploadingEvidencia] = useState(false);
+  const [evidenciaFiles, setEvidenciaFiles] = useState([]);
+  const [evidenciaResultados, setEvidenciaResultados] = useState(null);
+
   const { alert, setAlert, toogleAlert } = useAlert();
   const formRef = useRef(null);
 
@@ -238,6 +267,7 @@ export default function Programador() {
         listarCombos(),
         listartipoMovimientoVehiculos(),
         encontrarModulo('Programador_combustible'),
+        encontrarModulo(EVIDENCIAS_DRIVE_MODULE).catch(() => []),
         paginarProgramaciones(pagination, limit, body),
       ];
 
@@ -245,7 +275,7 @@ export default function Programador() {
         requests.push(encontrarModulo(usuario.username));
       }
 
-      const [newUbicaciones, newConductores, newVehiculos, embarquesRes, newCombos, newTiposMovimiento, configProgramador, res, userConfig] = await Promise.all(requests);
+      const [newUbicaciones, newConductores, newVehiculos, embarquesRes, newCombos, newTiposMovimiento, configProgramador, driveConfig, res, userConfig] = await Promise.all(requests);
 
       setUbicaciones(newUbicaciones || []);
       setConductores(newConductores || []);
@@ -254,6 +284,7 @@ export default function Programador() {
       setCombos(newCombos || []);
       setTiposMovimiento(newTiposMovimiento || []);
       setVehiculosSinCombustible(parseVehiculosSinCombustible(configProgramador));
+      setEvidenciasDriveFolderId(parseEvidenciasDriveFolderId(driveConfig));
       setItemsList(res?.data || []);
       setTotal(res?.total || 0);
       const superAdmin = usuario?.id_rol === 'Super administrador';
@@ -1280,6 +1311,120 @@ export default function Programador() {
     }
   }, [getProcessedProgramacionIdsFromListadoResult, markProgramacionesEstadoListado, pendingListadoSync, setAlert, toListadoSyncPayload]);
 
+  // Función: Abrir modal de evidencia
+  const cerrarModalEvidencia = () => {
+    if (uploadingEvidencia) return;
+    setShowEvidenciaModal(false);
+    setSelectedProgramacion(null);
+    setEvidenciaFiles([]);
+    setEvidenciaResultados(null);
+  };
+
+  const abrirModalEvidencia = (programacion) => {
+    setSelectedProgramacion(programacion);
+    setEvidenciaFiles([]);
+    setEvidenciaResultados(null);
+    setShowEvidenciaModal(true);
+  };
+
+  // Función: Manejar selección de archivos
+  const handleEvidenciaFilesChange = (e) => {
+    const files = Array.from(e.target.files || []);
+
+    if (files.length > EVIDENCIA_MAX_FILES) {
+      setAlert({
+        active: true,
+        mensaje: `Solo puedes subir maximo ${EVIDENCIA_MAX_FILES} fotos por envio.`,
+        color: 'warning',
+        autoClose: true,
+      });
+      e.target.value = '';
+      return;
+    }
+
+    const invalidFile = files.find((file) => (
+      !EVIDENCIA_ALLOWED_TYPES.includes(file.type) || file.size > EVIDENCIA_MAX_FILE_SIZE
+    ));
+
+    if (invalidFile) {
+      setAlert({
+        active: true,
+        mensaje: `El archivo ${invalidFile.name} no es valido. Usa JPG, PNG, GIF o WEBP de maximo 5MB.`,
+        color: 'warning',
+        autoClose: true,
+      });
+      e.target.value = '';
+      return;
+    }
+
+    setEvidenciaFiles(files);
+  };
+
+  // Función: Subir evidencias a Google Drive
+  const subirEvidenciasProgramacion = async () => {
+    if (!selectedProgramacion) return;
+    if (!evidenciaFiles.length) {
+      setAlert({
+        active: true,
+        mensaje: 'Selecciona al menos una foto para subir.',
+        color: 'warning',
+        autoClose: true,
+      });
+      return;
+    }
+
+    setUploadingEvidencia(true);
+
+    try {
+      const itemEvidencia = selectedProgramacion.vehiculoLabel
+        || selectedProgramacion.vehiculo?.placa
+        || selectedProgramacion.contenedorLabel
+        || selectedProgramacion.contenedor
+        || `programacion-${selectedProgramacion.id || selectedProgramacion.consecutivo || 'sin-id'}`;
+
+      const formData = new FormData();
+      formData.append('programacion_id', selectedProgramacion.id || selectedProgramacion.consecutivo || '');
+      formData.append('semana', selectedProgramacion.semanaLabel || selectedProgramacion.semana || '');
+      formData.append('fecha', selectedProgramacion.fecha || '');
+      formData.append('item', itemEvidencia);
+      formData.append('vehiculo', selectedProgramacion.vehiculoLabel || selectedProgramacion.vehiculo?.placa || '');
+      formData.append('contenedor', selectedProgramacion.contenedorLabel || selectedProgramacion.contenedor || '');
+      formData.append('bl', selectedProgramacion.blLabel || selectedProgramacion.bl || '');
+      formData.append('producto', selectedProgramacion.productoLabel || '');
+      formData.append('carpetaID', evidenciasDriveFolderId);
+
+      evidenciaFiles.forEach((file) => {
+        formData.append('fotos', file);
+      });
+
+      const resultado = await subirEvidencias(formData);
+      const payload = resultado?.data || resultado || {};
+      const totalFotos = payload.totalFotos || payload.fotos?.length || evidenciaFiles.length;
+
+      setEvidenciaResultados(payload);
+
+      setAlert({
+        active: true,
+        mensaje: `Se subieron ${totalFotos} fotos exitosamente.`,
+        color: 'success',
+        autoClose: true,
+      });
+
+      setEvidenciaFiles([]);
+      setReloadKey((prev) => prev + 1);
+
+    } catch (error) {
+      setAlert({
+        active: true,
+        mensaje: error.message || 'No fue posible subir las evidencias.',
+        color: 'danger',
+        autoClose: true,
+      });
+    } finally {
+      setUploadingEvidencia(false);
+    }
+  };
+
   return (
     <>
       <Alertas alert={alert} handleClose={toogleAlert} />
@@ -1438,6 +1583,7 @@ export default function Programador() {
                     {visibleColumns.movimiento && renderProgramadorHeader('movimiento', 'Movimiento')}
                     {visibleColumns.contenedor && renderProgramadorHeader('contenedor', 'Contenedor')}
                     {visibleColumns.estado_listado && renderProgramadorHeader('estado_listado', 'Estado listado')}
+                    {visibleColumns.evidencia && renderProgramadorHeader('evidencia', '📎 Evidencia')}
                     {visibleColumns.eliminar && renderProgramadorHeader('eliminar', 'Eliminar')}
                   </tr>
                 </thead>
@@ -1445,278 +1591,292 @@ export default function Programador() {
                   {rows.map((item) => {
                     const rowEditable = canEditRow(item);
                     return (
-                    <tr
-                      key={item.id}
-                      style={item.groupStart ? { borderTop: '2px solid #356854' } : undefined}
-                    >
-                      {visibleColumns.semana && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                        <div className="py-2 px-1 text-center">{item.semanaLabel}</div>
-                      </td>}
-                      {visibleColumns.fecha && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                        {rowEditable ? (
-                          <input
-                            type="date"
-                            defaultValue={item.fecha || ''}
-                            className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                            onBlur={(e) => handleCellEdit(item.id, 'fecha', e.target.value)}
-                          />
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.fecha}</div>
-                        )}
-                      </td>}
-                      {visibleColumns.origen && <td className="table-success text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                        {rowEditable ? (
-                          <>
+                      <tr
+                        key={item.id}
+                        style={item.groupStart ? { borderTop: '2px solid #356854' } : undefined}
+                      >
+                        {visibleColumns.semana && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                          <div className="py-2 px-1 text-center">{item.semanaLabel}</div>
+                        </td>}
+                        {visibleColumns.fecha && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                          {rowEditable ? (
                             <input
-                              list={`origen-${item.id}`}
-                              defaultValue={item.origen || ''}
+                              type="date"
+                              defaultValue={item.fecha || ''}
                               className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                              onBlur={(e) => handleLookupTextEdit(item, 'origen', e.target.value)}
+                              onBlur={(e) => handleCellEdit(item.id, 'fecha', e.target.value)}
                             />
-                            <datalist id={`origen-${item.id}`}>
-                              {ubicaciones.map((ubicacion) => (
-                                <option key={ubicacion.id} value={ubicacion.ubicacion} />
-                              ))}
-                            </datalist>
-                          </>
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.origen}</div>
-                        )}
-                      </td>}
-                      {visibleColumns.destino && <td className="table-primary text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                        {rowEditable ? (
-                          <>
+                          ) : (
+                            <div className="py-2 px-1 text-center">{item.fecha}</div>
+                          )}
+                        </td>}
+                        {visibleColumns.origen && <td className="table-success text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                          {rowEditable ? (
+                            <>
+                              <input
+                                list={`origen-${item.id}`}
+                                defaultValue={item.origen || ''}
+                                className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                                onBlur={(e) => handleLookupTextEdit(item, 'origen', e.target.value)}
+                              />
+                              <datalist id={`origen-${item.id}`}>
+                                {ubicaciones.map((ubicacion) => (
+                                  <option key={ubicacion.id} value={ubicacion.ubicacion} />
+                                ))}
+                              </datalist>
+                            </>
+                          ) : (
+                            <div className="py-2 px-1 text-center">{item.origen}</div>
+                          )}
+                        </td>}
+                        {visibleColumns.destino && <td className="table-primary text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                          {rowEditable ? (
+                            <>
+                              <input
+                                list={`destino-${item.id}`}
+                                defaultValue={item.destino || ''}
+                                className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                                onBlur={(e) => handleLookupTextEdit(item, 'destino', e.target.value)}
+                              />
+                              <datalist id={`destino-${item.id}`}>
+                                {ubicaciones.map((ubicacion) => (
+                                  <option key={ubicacion.id} value={ubicacion.ubicacion} />
+                                ))}
+                              </datalist>
+                            </>
+                          ) : (
+                            <div className="py-2 px-1 text-center">{item.destino}</div>
+                          )}
+                        </td>}
+                        {visibleColumns.productos && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                          {rowEditable ? (
+                            <>
+                              <input
+                                list={`producto-${item.id}`}
+                                defaultValue={item.productoLabel || ''}
+                                className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                                onBlur={(e) => handleLookupTextEdit(item, 'producto', e.target.value)}
+                              />
+                              <datalist id={`producto-${item.id}`}>
+                                {combosActivos.map((combo) => (
+                                  <option key={combo.id} value={combo.nombre} />
+                                ))}
+                              </datalist>
+                            </>
+                          ) : (
+                            <div className="py-2 px-1 text-center">{item.productoLabel || ''}</div>
+                          )}
+                        </td>}
+                        {visibleColumns.cantidad_productos && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                          {rowEditable ? (
                             <input
-                              list={`destino-${item.id}`}
-                              defaultValue={item.destino || ''}
+                              type="number"
+                              min="0"
+                              step="1"
+                              defaultValue={item.cantidadProductosLabel || ''}
                               className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                              onBlur={(e) => handleLookupTextEdit(item, 'destino', e.target.value)}
+                              onBlur={(e) => handleLookupTextEdit(item, 'cantidad', e.target.value)}
                             />
-                            <datalist id={`destino-${item.id}`}>
-                              {ubicaciones.map((ubicacion) => (
-                                <option key={ubicacion.id} value={ubicacion.ubicacion} />
-                              ))}
-                            </datalist>
-                          </>
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.destino}</div>
-                        )}
-                      </td>}
-                      {visibleColumns.productos && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                        {rowEditable ? (
-                          <>
+                          ) : (
+                            <div className="py-2 px-1 text-center">{item.cantidadProductosLabel || ''}</div>
+                          )}
+                        </td>}
+                        {visibleColumns.linea && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                          <div className="py-2 px-1 text-center">{item.lineaLabel || ''}</div>
+                        </td>}
+                        {visibleColumns.destino_embarque && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                          <div className="py-2 px-1 text-center">{item.embarqueDestinoLabel || ''}</div>
+                        </td>}
+                        {visibleColumns.buque && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                          <div className="py-2 px-1 text-center">{item.buqueLabel || ''}</div>
+                        </td>}
+                        {visibleColumns.bl && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                          {rowEditable ? (
+                            <>
+                              <input
+                                list={`bl-${item.id}`}
+                                defaultValue={item.blLabel || ''}
+                                className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                                onBlur={(e) => handleLookupTextEdit(item, 'bl', e.target.value)}
+                              />
+                              <datalist id={`bl-${item.id}`}>
+                                {embarqueCatalog.flatMap((embarque) => {
+                                  const options = [];
+                                  if (embarque.bl) {
+                                    options.push(
+                                      <option key={`${embarque.id || embarque.bl}-bl`} value={embarque.bl} />
+                                    );
+                                  }
+                                  if (embarque.booking) {
+                                    options.push(
+                                      <option key={`${embarque.id || embarque.booking}-booking`} value={embarque.booking} />
+                                    );
+                                  }
+                                  return options;
+                                })}
+                              </datalist>
+                            </>
+                          ) : (
+                            <div className="py-2 px-1 text-center">{item.blLabel || ''}</div>
+                          )}
+                        </td>}
+                        {visibleColumns.vehiculo && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                          {rowEditable ? (
+                            <>
+                              <input
+                                list={`vehiculo-${item.id}`}
+                                defaultValue={item.vehiculoLabel || ''}
+                                className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                                onBlur={(e) => handleLookupTextEdit(item, 'vehiculo', e.target.value)}
+                              />
+                              <datalist id={`vehiculo-${item.id}`}>
+                                {vehiculos.map((vehiculo) => (
+                                  <option key={vehiculo.id} value={vehiculo.placa} />
+                                ))}
+                              </datalist>
+                            </>
+                          ) : (
+                            <div className="py-2 px-1 text-center">{item.vehiculoLabel}</div>
+                          )}
+                        </td>}
+                        {visibleColumns.conductor && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                          {rowEditable ? (
+                            <>
+                              <input
+                                list={`conductor-${item.id}`}
+                                defaultValue={item.conductorLabel || ''}
+                                className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                                onBlur={(e) => handleLookupTextEdit(item, 'conductor', e.target.value)}
+                              />
+                              <datalist id={`conductor-${item.id}`}>
+                                {conductores.map((conductor) => (
+                                  <option key={conductor.id} value={conductor.conductor} />
+                                ))}
+                              </datalist>
+                            </>
+                          ) : (
+                            <div className="py-2 px-1 text-center">{item.conductorLabel}</div>
+                          )}
+                        </td>}
+                        {visibleColumns.llegada_origen && <td className="table-success text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                          {rowEditable ? (
                             <input
-                              list={`producto-${item.id}`}
-                              defaultValue={item.productoLabel || ''}
+                              type="time"
+                              defaultValue={item.llegada_origen || ''}
                               className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                              onBlur={(e) => handleLookupTextEdit(item, 'producto', e.target.value)}
+                              onBlur={(e) => handleCellEdit(item.id, 'llegada_origen', e.target.value)}
                             />
-                            <datalist id={`producto-${item.id}`}>
-                              {combosActivos.map((combo) => (
-                                <option key={combo.id} value={combo.nombre} />
-                              ))}
-                            </datalist>
-                          </>
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.productoLabel || ''}</div>
-                        )}
-                      </td>}
-                      {visibleColumns.cantidad_productos && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                        {rowEditable ? (
-                          <input
-                            type="number"
-                            min="0"
-                            step="1"
-                            defaultValue={item.cantidadProductosLabel || ''}
-                            className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                            onBlur={(e) => handleLookupTextEdit(item, 'cantidad', e.target.value)}
-                          />
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.cantidadProductosLabel || ''}</div>
-                        )}
-                      </td>}
-                      {visibleColumns.linea && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                        <div className="py-2 px-1 text-center">{item.lineaLabel || ''}</div>
-                      </td>}
-                      {visibleColumns.destino_embarque && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                        <div className="py-2 px-1 text-center">{item.embarqueDestinoLabel || ''}</div>
-                      </td>}
-                      {visibleColumns.buque && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                        <div className="py-2 px-1 text-center">{item.buqueLabel || ''}</div>
-                      </td>}
-                      {visibleColumns.bl && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                        {rowEditable ? (
-                          <>
+                          ) : (
+                            <div className="py-2 px-1 text-center">{item.llegada_origen || ''}</div>
+                          )}
+                        </td>}
+                        {visibleColumns.salida_origen && <td className="table-success text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                          {rowEditable ? (
                             <input
-                              list={`bl-${item.id}`}
-                              defaultValue={item.blLabel || ''}
+                              type="time"
+                              defaultValue={item.salida_origen || ''}
                               className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                              onBlur={(e) => handleLookupTextEdit(item, 'bl', e.target.value)}
+                              onBlur={(e) => handleCellEdit(item.id, 'salida_origen', e.target.value)}
                             />
-                            <datalist id={`bl-${item.id}`}>
-                              {embarqueCatalog.flatMap((embarque) => {
-                                const options = [];
-                                if (embarque.bl) {
-                                  options.push(
-                                    <option key={`${embarque.id || embarque.bl}-bl`} value={embarque.bl} />
-                                  );
-                                }
-                                if (embarque.booking) {
-                                  options.push(
-                                    <option key={`${embarque.id || embarque.booking}-booking`} value={embarque.booking} />
-                                  );
-                                }
-                                return options;
-                              })}
-                            </datalist>
-                          </>
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.blLabel || ''}</div>
-                        )}
-                      </td>}
-                      {visibleColumns.vehiculo && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                        {rowEditable ? (
-                          <>
+                          ) : (
+                            <div className="py-2 px-1 text-center">{item.salida_origen || ''}</div>
+                          )}
+                        </td>}
+                        {visibleColumns.llegada_destino && <td className="table-primary text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                          {rowEditable ? (
                             <input
-                              list={`vehiculo-${item.id}`}
-                              defaultValue={item.vehiculoLabel || ''}
+                              type="time"
+                              defaultValue={item.llegada_destino || ''}
                               className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                              onBlur={(e) => handleLookupTextEdit(item, 'vehiculo', e.target.value)}
+                              onBlur={(e) => handleCellEdit(item.id, 'llegada_destino', e.target.value)}
                             />
-                            <datalist id={`vehiculo-${item.id}`}>
-                              {vehiculos.map((vehiculo) => (
-                                <option key={vehiculo.id} value={vehiculo.placa} />
-                              ))}
-                            </datalist>
-                          </>
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.vehiculoLabel}</div>
-                        )}
-                      </td>}
-                      {visibleColumns.conductor && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                        {rowEditable ? (
-                          <>
+                          ) : (
+                            <div className="py-2 px-1 text-center">{item.llegada_destino || ''}</div>
+                          )}
+                        </td>}
+                        {visibleColumns.cierre && <td className="table-primary text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                          {rowEditable ? (
                             <input
-                              list={`conductor-${item.id}`}
-                              defaultValue={item.conductorLabel || ''}
+                              type="time"
+                              defaultValue={item.cierre || ''}
                               className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                              onBlur={(e) => handleLookupTextEdit(item, 'conductor', e.target.value)}
+                              onBlur={(e) => handleCellEdit(item.id, 'cierre', e.target.value)}
                             />
-                            <datalist id={`conductor-${item.id}`}>
-                              {conductores.map((conductor) => (
-                                <option key={conductor.id} value={conductor.conductor} />
-                              ))}
-                            </datalist>
-                          </>
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.conductorLabel}</div>
-                        )}
-                      </td>}
-                      {visibleColumns.llegada_origen && <td className="table-success text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                        {rowEditable ? (
-                          <input
-                            type="time"
-                            defaultValue={item.llegada_origen || ''}
-                            className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                            onBlur={(e) => handleCellEdit(item.id, 'llegada_origen', e.target.value)}
-                          />
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.llegada_origen || ''}</div>
-                        )}
-                      </td>}
-                      {visibleColumns.salida_origen && <td className="table-success text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                        {rowEditable ? (
-                          <input
-                            type="time"
-                            defaultValue={item.salida_origen || ''}
-                            className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                            onBlur={(e) => handleCellEdit(item.id, 'salida_origen', e.target.value)}
-                          />
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.salida_origen || ''}</div>
-                        )}
-                      </td>}
-                      {visibleColumns.llegada_destino && <td className="table-primary text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                        {rowEditable ? (
-                          <input
-                            type="time"
-                            defaultValue={item.llegada_destino || ''}
-                            className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                            onBlur={(e) => handleCellEdit(item.id, 'llegada_destino', e.target.value)}
-                          />
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.llegada_destino || ''}</div>
-                        )}
-                      </td>}
-                      {visibleColumns.cierre && <td className="table-primary text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                        {rowEditable ? (
-                          <input
-                            type="time"
-                            defaultValue={item.cierre || ''}
-                            className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                            onBlur={(e) => handleCellEdit(item.id, 'cierre', e.target.value)}
-                          />
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.cierre || ''}</div>
-                        )}
-                      </td>}
-                      {visibleColumns.salida_destino && <td className="table-primary text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                        {rowEditable ? (
-                          <input
-                            type="time"
-                            defaultValue={item.salida_destino || ''}
-                            className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                            onBlur={(e) => handleCellEdit(item.id, 'salida_destino', e.target.value)}
-                          />
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.salida_destino || ''}</div>
-                        )}
-                      </td>}
-                      {visibleColumns.movimiento && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                        {rowEditable ? (
-                          <>
+                          ) : (
+                            <div className="py-2 px-1 text-center">{item.cierre || ''}</div>
+                          )}
+                        </td>}
+                        {visibleColumns.salida_destino && <td className="table-primary text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                          {rowEditable ? (
                             <input
-                              list={`movimiento-${item.id}`}
-                              defaultValue={item.movimiento || 'Local'}
+                              type="time"
+                              defaultValue={item.salida_destino || ''}
                               className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                              onBlur={(e) => handleLookupTextEdit(item, 'movimiento', e.target.value)}
+                              onBlur={(e) => handleCellEdit(item.id, 'salida_destino', e.target.value)}
                             />
-                            <datalist id={`movimiento-${item.id}`}>
-                              {movimientoOptions.map((movimiento) => (
-                                <option key={movimiento.id || movimiento.movimiento} value={movimiento.movimiento} />
-                              ))}
-                            </datalist>
-                          </>
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.movimiento}</div>
+                          ) : (
+                            <div className="py-2 px-1 text-center">{item.salida_destino || ''}</div>
+                          )}
+                        </td>}
+                        {visibleColumns.movimiento && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                          {rowEditable ? (
+                            <>
+                              <input
+                                list={`movimiento-${item.id}`}
+                                defaultValue={item.movimiento || 'Local'}
+                                className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                                onBlur={(e) => handleLookupTextEdit(item, 'movimiento', e.target.value)}
+                              />
+                              <datalist id={`movimiento-${item.id}`}>
+                                {movimientoOptions.map((movimiento) => (
+                                  <option key={movimiento.id || movimiento.movimiento} value={movimiento.movimiento} />
+                                ))}
+                              </datalist>
+                            </>
+                          ) : (
+                            <div className="py-2 px-1 text-center">{item.movimiento}</div>
+                          )}
+                        </td>}
+                        {visibleColumns.contenedor && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                          {rowEditable ? (
+                            <input
+                              type="text"
+                              defaultValue={item.contenedorLabel || ''}
+                              className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                              onBlur={(e) => handleCellEdit(item.id, 'contenedor', e.target.value)}
+                            />
+                          ) : (
+                            <div className="py-2 px-1 text-center">{item.contenedorLabel || ''}</div>
+                          )}
+                        </td>}
+                        {visibleColumns.estado_listado && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                          <div className="py-2 px-1 text-center">
+                            <span className={`badge ${normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO ? 'bg-success' : 'bg-warning text-dark'}`}>
+                              {item.estadoListadoLabel}
+                            </span>
+                          </div>
+                        </td>}
+                        {visibleColumns.evidencia && (
+                          <td className="text-center align-middle">
+                            <Button
+                              variant="outline-primary"
+                              size="sm"
+                              onClick={() => abrirModalEvidencia(item)}
+                              title="Subir evidencia fotográfica"
+                            >
+                              📸
+                            </Button>
+                          </td>
                         )}
-                      </td>}
-                      {visibleColumns.contenedor && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                        {rowEditable ? (
-                          <input
-                            type="text"
-                            defaultValue={item.contenedorLabel || ''}
-                            className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                            onBlur={(e) => handleCellEdit(item.id, 'contenedor', e.target.value)}
-                          />
-                        ) : (
-                          <div className="py-2 px-1 text-center">{item.contenedorLabel || ''}</div>
+                        {visibleColumns.eliminar && (
+                          <td className="text-center align-middle">
+                            <button type="button" className="btn btn-sm btn-danger px-2 py-1" onClick={() => eliminar(item.id)}>
+                              X
+                            </button>
+                          </td>
                         )}
-                      </td>}
-                      {visibleColumns.estado_listado && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                        <div className="py-2 px-1 text-center">
-                          <span className={`badge ${normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO ? 'bg-success' : 'bg-warning text-dark'}`}>
-                            {item.estadoListadoLabel}
-                          </span>
-                        </div>
-                      </td>}
-                      {visibleColumns.eliminar && <td className="text-center align-middle">
-                        <button type="button" className="btn btn-sm btn-danger px-2 py-1" onClick={() => eliminar(item.id)}>
-                          X
-                        </button>
-                      </td>}
-                    </tr>
-                  );
+                      </tr>
+                    );
                   })}
 
                   {!rows.length && (
@@ -1823,6 +1983,126 @@ export default function Programador() {
         </Modal.Footer>
       </Modal>
 
+      {/* MODAL PARA SUBIR EVIDENCIAS */}
+      <Modal show={showEvidenciaModal} onHide={cerrarModalEvidencia} centered size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>
+            📸 Subir evidencia fotográfica
+            {selectedProgramacion && (
+              <small className="text-muted ms-2">
+                {selectedProgramacion.fecha} - {selectedProgramacion.vehiculoLabel || selectedProgramacion.contenedorLabel}
+              </small>
+            )}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {evidenciaResultados ? (
+            <div className="mb-3">
+              <div className="alert alert-success">
+                <strong>✅ Subida completada</strong>
+                <p className="mb-0 mt-2">
+                  Se subieron {evidenciaResultados.totalFotos || evidenciaResultados.fotos?.length || 0} fotos.
+                </p>
+              </div>
+              {evidenciaResultados.fotos && evidenciaResultados.fotos.length > 0 && (
+                <div className="mt-3">
+                  <strong>Enlaces de las fotos subidas:</strong>
+                  <ul className="list-group list-group-flush mt-2">
+                    {evidenciaResultados.fotos.map((foto, idx) => (
+                      <li key={foto.idDrive || idx} className="list-group-item small">
+                        <a href={foto.urlDrive} target="_blank" rel="noopener noreferrer">
+                          📷 Foto {idx + 1}: {foto.nombreDrive || foto.urlDrive}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div className="mt-3 d-flex justify-content-end">
+                <Button variant="secondary" onClick={cerrarModalEvidencia}>
+                  Cerrar
+                </Button>
+                <Button variant="primary" onClick={() => {
+                  setEvidenciaResultados(null);
+                  setEvidenciaFiles([]);
+                }} className="ms-2">
+                  Subir más fotos
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="mb-3">
+                <label className="form-label fw-bold" htmlFor="evidenciaFotos">Seleccionar fotos (máximo 20, 5MB cada una)</label>
+                <input
+                  id="evidenciaFotos"
+                  type="file"
+                  className="form-control"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  onChange={handleEvidenciaFilesChange}
+                  multiple
+                  disabled={uploadingEvidencia}
+                />
+                <small className="text-muted">
+                  Formatos permitidos: JPG, PNG, GIF, WEBP. Tamaño máximo: 5MB por archivo.
+                </small>
+              </div>
+              
+              {evidenciaFiles.length > 0 && (
+                <div className="mt-3">
+                  <strong>Archivos seleccionados ({evidenciaFiles.length}):</strong>
+                  <ul className="list-group list-group-flush mt-2">
+                    {evidenciaFiles.map((file, idx) => (
+                      <li key={idx} className="list-group-item small d-flex justify-content-between align-items-center">
+                        <span>
+                          📷 {file.name}
+                          <span className="text-muted ms-2">
+                            ({(file.size / 1024).toFixed(1)} KB)
+                          </span>
+                        </span>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="text-danger p-0"
+                          onClick={() => {
+                            const newFiles = [...evidenciaFiles];
+                            newFiles.splice(idx, 1);
+                            setEvidenciaFiles(newFiles);
+                          }}
+                        >
+                          ❌
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          )}
+        </Modal.Body>
+        {!evidenciaResultados && (
+          <Modal.Footer>
+            <Button variant="secondary" onClick={cerrarModalEvidencia} disabled={uploadingEvidencia}>
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={subirEvidenciasProgramacion}
+              disabled={uploadingEvidencia || evidenciaFiles.length === 0}
+            >
+              {uploadingEvidencia ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  Subiendo...
+                </>
+              ) : (
+                'Subir evidencias'
+              )}
+            </Button>
+          </Modal.Footer>
+        )}
+      </Modal>
+
       {open && (
         <FormulariosProgramacion
           setOpen={setOpen}
@@ -1892,8 +2172,6 @@ export default function Programador() {
           onProcessRows={(rows) => processProgramacionRows(rows, 'update')}
         />
       )}
-
     </>
   );
 }
-

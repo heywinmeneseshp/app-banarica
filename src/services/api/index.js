@@ -450,8 +450,11 @@ const endPoints = {
         update: (id) => `${API}/api/${VERSION}/inspeccion/${id}`,
         delete: (id) => `${API}/api/${VERSION}/inspeccion/${id}`
     },
-
-
+    googleDrive: {
+        subirEvidencias: `${API}/api/${VERSION}/googleDrive/subir-evidencias`,
+        subirEvidenciaUnica: `${API}/api/${VERSION}/googleDrive/subir-evidencia`,
+        test: `${API}/api/${VERSION}/googleDrive/test-drive`,
+    },
 
 
 };
