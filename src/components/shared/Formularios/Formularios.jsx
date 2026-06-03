@@ -10,6 +10,7 @@ function Formularios({ titulo, setAlert, listas, element, setOpen, encabezados, 
     const formData = new FormData(formRef.current);
     const objeto = {};
     let validar = true;
+    const idElemento = element?.id ?? formData.get('id');
 
     formData.forEach((value, key) => {
       if (checkboxFields.includes(key)) {
@@ -33,7 +34,10 @@ function Formularios({ titulo, setAlert, listas, element, setOpen, encabezados, 
 
     try {
       if (element) {
-        const id = objeto.id;
+        const id = idElemento;
+        if (!id) {
+          throw new Error("No se encontró el id del item a editar");
+        }
         delete objeto.id;
         await actualizar(id, objeto);
         setOpen(false);

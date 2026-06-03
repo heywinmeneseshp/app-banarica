@@ -48,6 +48,10 @@ export default function Tablas({
     </Tooltip>
   );
 
+  const formatBooleanValue = (value) => (
+    value ? 'Sí' : 'No'
+  );
+
   useEffect(() => {
     const labels = { ...encabezados };
     delete labels.Editar;
@@ -392,6 +396,20 @@ export default function Tablas({
                                 label=""
                                 className="d-flex justify-content-center"
                               />
+                            </td>
+                          );
+                        }
+
+                        if (checkboxFields.includes(fieldName)) {
+                          return (
+                            <td key={headerKey} className="text-custom-small text-center align-middle" style={{ padding: '2px' }}>
+                              <Badge
+                                bg={rowItem[fieldName] ? 'success' : 'secondary'}
+                                className="px-2 py-1 fw-normal"
+                                style={{ fontSize: '0.75rem' }}
+                              >
+                                {formatBooleanValue(Boolean(rowItem[fieldName]))}
+                              </Badge>
                             </td>
                           );
                         }
