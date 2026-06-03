@@ -19,6 +19,7 @@ import { agregarRutas, buscarRutaPost } from '@services/api/rutas';
 import { encontrarModulo } from '@services/api/configuracion';
 import { Button, Form, Modal } from 'react-bootstrap';
 import { subirEvidencias } from '@services/api/googleDrive';
+import { FaCamera, FaTrashAlt } from 'react-icons/fa';
 
 const COLUMN_STORAGE_KEY = 'programadorColumnConfig';
 const DEFAULT_EVIDENCIAS_DRIVE_FOLDER_ID = process.env.NEXT_PUBLIC_EVIDENCIAS_DRIVE_FOLDER_ID || '1ZnxhLTlN5WROcl-oozkSJXwjI87aG4bM';
@@ -386,6 +387,12 @@ export default function Programador() {
           productoClienteId: String(comboPrincipal?.id_cliente || ''),
           productoViajeId: productoPrincipal?.id || '',
           cantidadProductosLabel: productoPrincipal?.cantidad ?? '',
+          evidenciaSubida: Boolean(
+            item?.evidencia_cargada
+            || item?.evidencia_carpeta_id
+            || item?.evidencia_carpeta_url
+            || Number(item?.evidencia_total_fotos || 0) > 0
+          ),
           estadoListadoLabel: normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO
             ? 'Actualizado'
             : 'Pendiente',
@@ -1402,6 +1409,14 @@ export default function Programador() {
       const totalFotos = payload.totalFotos || payload.fotos?.length || evidenciaFiles.length;
 
       setEvidenciaResultados(payload);
+      updateLocalRow(selectedProgramacion.id, (row) => ({
+        ...row,
+        evidencia_cargada: true,
+        evidencia_carpeta_id: payload.carpetaId || row.evidencia_carpeta_id || '',
+        evidencia_carpeta_url: payload.carpetaUrl || row.evidencia_carpeta_url || '',
+        evidencia_fecha: new Date().toISOString(),
+        evidencia_total_fotos: totalFotos,
+      }));
 
       setAlert({
         active: true,
@@ -1582,14 +1597,15 @@ export default function Programador() {
                     {visibleColumns.salida_destino && renderProgramadorHeader('salida_destino', 'Salida destino')}
                     {visibleColumns.movimiento && renderProgramadorHeader('movimiento', 'Movimiento')}
                     {visibleColumns.contenedor && renderProgramadorHeader('contenedor', 'Contenedor')}
-                    {visibleColumns.estado_listado && renderProgramadorHeader('estado_listado', 'Estado listado')}
-                    {visibleColumns.evidencia && renderProgramadorHeader('evidencia', '📎 Evidencia')}
-                    {visibleColumns.eliminar && renderProgramadorHeader('eliminar', 'Eliminar')}
+                    {visibleColumns.estado_listado && renderProgramadorHeader('estado_listado', 'Estado')}
+                    {visibleColumns.evidencia && renderProgramadorHeader('evidencia', 'Evid.')}
+                    {visibleColumns.eliminar && renderProgramadorHeader('eliminar', '')}
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((item) => {
                     const rowEditable = canEditRow(item);
+                    const rowPending = normalizeValue(item?.estado_listado) !== ESTADO_LISTADO_ACTUALIZADO;
                     return (
                       <tr
                         key={item.id}
@@ -1850,28 +1866,50 @@ export default function Programador() {
                           )}
                         </td>}
                         {visibleColumns.estado_listado && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
-                          <div className="py-2 px-1 text-center">
-                            <span className={`badge ${normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO ? 'bg-success' : 'bg-warning text-dark'}`}>
+                          <div className="py-1 px-1 text-center">
+                            <span
+                              className={`badge rounded-pill fw-normal ${normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-warning-subtle text-warning-emphasis border border-warning-subtle'}`}
+                              style={{ fontSize: '0.68rem', lineHeight: 1, padding: '0.25rem 0.45rem' }}
+                            >
                               {item.estadoListadoLabel}
                             </span>
                           </div>
                         </td>}
                         {visibleColumns.evidencia && (
-                          <td className="text-center align-middle">
+                          <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
                             <Button
-                              variant="outline-primary"
+                              variant="link"
                               size="sm"
+                              className="text-decoration-none p-0"
+                              style={{
+                                width: 26,
+                                height: 26,
+                                lineHeight: '24px',
+                                color: item.evidenciaSubida ? '#6c757d' : '#14532d',
+                              }}
                               onClick={() => abrirModalEvidencia(item)}
-                              title="Subir evidencia fotográfica"
+                              title={item.evidenciaSubida ? 'Evidencia cargada' : 'Subir evidencia fotografica'}
                             >
-                              📸
+                              <FaCamera size={12} />
                             </Button>
                           </td>
                         )}
                         {visibleColumns.eliminar && (
-                          <td className="text-center align-middle">
-                            <button type="button" className="btn btn-sm btn-danger px-2 py-1" onClick={() => eliminar(item.id)}>
-                              X
+                          <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                            <button
+                              type="button"
+                              className="btn btn-link btn-sm text-decoration-none p-0"
+                              style={{
+                                width: 26,
+                                height: 26,
+                                lineHeight: '24px',
+                                color: rowPending ? '#7f1d1d' : '#6c757d',
+                              }}
+                              title={rowPending ? 'Eliminar' : 'Solo se eliminan pendientes'}
+                              disabled={!rowPending}
+                              onClick={() => eliminar(item.id)}
+                            >
+                              <FaTrashAlt size={12} />
                             </button>
                           </td>
                         )}

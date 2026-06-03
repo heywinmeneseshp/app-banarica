@@ -25,7 +25,7 @@ const DEFAULT_EMAIL_FORM = {
     password_correo: '',
     email_from_name: 'Bana Rica'
 };
-const DEFAULT_EVIDENCIAS_DRIVE_FOLDER_ID = process.env.NEXT_PUBLIC_EVIDENCIAS_DRIVE_FOLDER_ID || '1ZnxhLTlN5WROcl-oozkSJXwjI87aG4bM';
+const DEFAULT_EVIDENCIAS_DRIVE_FOLDER_ID = process.env.NEXT_PUBLIC_EVIDENCIAS_DRIVE_FOLDER_ID;
 const EVIDENCIAS_DRIVE_MODULE = 'Google_drive_evidencias';
 
 const parseEvidenciasDriveConfig = (config = {}) => {
