@@ -591,11 +591,6 @@ export default function HistoricoConsumoRuta() {
               onChange={listar}
             />
             <datalist id="movimientoListRuta" name="movimientoListRuta">
-              <option value="Local" />
-              <option value="Puerto" />
-              <option value="Contenedor" />
-              <option value="Transitorio" />
-              <option value="Otro" />
             </datalist>
           </div>
 
