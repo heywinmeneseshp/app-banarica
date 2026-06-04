@@ -37,6 +37,11 @@ const filtrarSemanaRangoMes = async (previousMonths, afterMonths) => {
     return semanas;
 };
 
+const filtrarSemanasRangoProgramador = async (body) => {
+    const res = await axios.post(`${endPoints.semanas.list}/rango`, body);
+    return res.data;
+};
+
 const eliminarSemanas = async (body) => {
     const res = await axios.delete(endPoints.semanas.delete(body));
     return res.data;
@@ -56,5 +61,6 @@ export {
     encontrarSemanas,
     eliminarSemanas,
     filtrarSemanaRangoMes,
+    filtrarSemanasRangoProgramador,
     paginarSemanas
 };

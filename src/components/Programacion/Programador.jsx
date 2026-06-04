@@ -17,7 +17,10 @@ import { listartipoMovimientoVehiculos } from '@services/api/tipoMovimientoVehic
 import useAlert from '@hooks/useAlert';
 import { agregarRutas, buscarRutaPost } from '@services/api/rutas';
 import { encontrarModulo } from '@services/api/configuracion';
-import { Button, Form, Modal } from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
+import ProgramadorColumnModal from '@components/Programacion/ProgramadorColumnModal';
+import ProgramadorPendingSyncModal from '@components/Programacion/ProgramadorPendingSyncModal';
+import ProgramadorEvidenceModal from '@components/Programacion/ProgramadorEvidenceModal';
 import { subirEvidencias } from '@services/api/googleDrive';
 import { FaCamera, FaTrashAlt } from 'react-icons/fa';
 
@@ -1396,6 +1399,15 @@ export default function Programador() {
       formData.append('item', itemEvidencia);
       formData.append('vehiculo', selectedProgramacion.vehiculoLabel || selectedProgramacion.vehiculo?.placa || '');
       formData.append('contenedor', selectedProgramacion.contenedorLabel || selectedProgramacion.contenedor || '');
+      formData.append(
+        'finca_destino',
+        selectedProgramacion.destino
+          || selectedProgramacion.destinoLabel
+          || selectedProgramacion.ruta?.ubicacion_2?.ubicacion
+          || selectedProgramacion.destino
+          || selectedProgramacion.ubicacion2
+          || ''
+      );
       formData.append('bl', selectedProgramacion.blLabel || selectedProgramacion.bl || '');
       formData.append('producto', selectedProgramacion.productoLabel || '');
       formData.append('carpetaID', evidenciasDriveFolderId);
@@ -1885,7 +1897,7 @@ export default function Programador() {
                                 width: 26,
                                 height: 26,
                                 lineHeight: '24px',
-                                color: item.evidenciaSubida ? '#6c757d' : '#14532d',
+                                color: item.evidenciaSubida ? '#7e83889d' : '#319c5c',
                               }}
                               onClick={() => abrirModalEvidencia(item)}
                               title={item.evidenciaSubida ? 'Evidencia cargada' : 'Subir evidencia fotografica'}
@@ -1935,211 +1947,46 @@ export default function Programador() {
         </div>
       </div>
 
-      <Modal show={showColumnConfig} onHide={() => setShowColumnConfig(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Columnas visibles</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <div className="row g-2">
-            {COLUMN_OPTIONS.map((column) => (
-              <div className="col-12 col-md-6" key={column.id}>
-                <Form.Check
-                  type="checkbox"
-                  id={`column-${column.id}`}
-                  label={column.label}
-                  checked={Boolean(visibleColumns[column.id])}
-                  onChange={() => toggleColumn(column.id)}
-                />
-              </div>
-            ))}
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button type="button" variant="outline-secondary" onClick={() => setShowColumnConfig(false)}>
-            Cerrar
-          </Button>
-          <Button
-            type="button"
-            variant="primary"
-            onClick={() => {
-              saveColumnConfig(visibleColumns);
-              setShowColumnConfig(false);
-            }}
-          >
-            Guardar
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <ProgramadorColumnModal
+        show={showColumnConfig}
+        onClose={() => setShowColumnConfig(false)}
+        columns={COLUMN_OPTIONS}
+        visibleColumns={visibleColumns}
+        onToggleColumn={toggleColumn}
+        onSave={() => {
+          saveColumnConfig(visibleColumns);
+          setShowColumnConfig(false);
+        }}
+      />
 
-      <Modal show={Boolean(pendingListadoSync)} onHide={() => setPendingListadoSync(null)} centered size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>Coincidencias incompletas</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <div className="small text-muted mb-3">
-            Se encontraron {pendingListadoSync?.processableCount || 0} registros listos para actualizar y {pendingListadoSync?.missingCount || 0} sin coincidencia.
-            Puedes descargar los no encontrados o continuar solo con las coincidencias.
-          </div>
+      <ProgramadorPendingSyncModal
+        show={Boolean(pendingListadoSync)}
+        pendingListadoSync={pendingListadoSync}
+        onClose={() => setPendingListadoSync(null)}
+        onDownloadMissing={descargarNoEncontradosListado}
+        onConfirm={confirmarListadoCoincidencias}
+        syncingListado={syncingListado}
+      />
 
-          <div className="table-responsive mb-3" style={{ maxHeight: '260px' }}>
-            <table className="table table-sm table-bordered mb-0">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>BL</th>
-                  <th>Contenedor</th>
-                  <th>Motivo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(pendingListadoSync?.missingRows || []).map((item, index) => (
-                  <tr key={`${item.contenedor || 'sin-contenedor'}-${item.fecha || 'sin-fecha'}-${index}`}>
-                    <td>{item.fecha || '-'}</td>
-                    <td>{item.bl || item.booking || '-'}</td>
-                    <td>{item.contenedor || '-'}</td>
-                    <td>{item.reason || 'Sin coincidencia'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="outline-secondary" onClick={descargarNoEncontradosListado} disabled={syncingListado}>
-            Descargar no encontrados
-          </Button>
-          <Button variant="secondary" onClick={() => setPendingListadoSync(null)} disabled={syncingListado}>
-            Cancelar
-          </Button>
-          <Button
-            variant="success"
-            onClick={confirmarListadoCoincidencias}
-            disabled={syncingListado || (pendingListadoSync?.processableCount || 0) === 0}
-          >
-            {syncingListado ? 'Actualizando...' : 'Actualizar coincidencias'}
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      {/* MODAL PARA SUBIR EVIDENCIAS */}
-      <Modal show={showEvidenciaModal} onHide={cerrarModalEvidencia} centered size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>
-            📸 Subir evidencia fotográfica
-            {selectedProgramacion && (
-              <small className="text-muted ms-2">
-                {selectedProgramacion.fecha} - {selectedProgramacion.vehiculoLabel || selectedProgramacion.contenedorLabel}
-              </small>
-            )}
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {evidenciaResultados ? (
-            <div className="mb-3">
-              <div className="alert alert-success">
-                <strong>✅ Subida completada</strong>
-                <p className="mb-0 mt-2">
-                  Se subieron {evidenciaResultados.totalFotos || evidenciaResultados.fotos?.length || 0} fotos.
-                </p>
-              </div>
-              {evidenciaResultados.fotos && evidenciaResultados.fotos.length > 0 && (
-                <div className="mt-3">
-                  <strong>Enlaces de las fotos subidas:</strong>
-                  <ul className="list-group list-group-flush mt-2">
-                    {evidenciaResultados.fotos.map((foto, idx) => (
-                      <li key={foto.idDrive || idx} className="list-group-item small">
-                        <a href={foto.urlDrive} target="_blank" rel="noopener noreferrer">
-                          📷 Foto {idx + 1}: {foto.nombreDrive || foto.urlDrive}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              <div className="mt-3 d-flex justify-content-end">
-                <Button variant="secondary" onClick={cerrarModalEvidencia}>
-                  Cerrar
-                </Button>
-                <Button variant="primary" onClick={() => {
-                  setEvidenciaResultados(null);
-                  setEvidenciaFiles([]);
-                }} className="ms-2">
-                  Subir más fotos
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="mb-3">
-                <label className="form-label fw-bold" htmlFor="evidenciaFotos">Seleccionar fotos (máximo 20, 5MB cada una)</label>
-                <input
-                  id="evidenciaFotos"
-                  type="file"
-                  className="form-control"
-                  accept="image/jpeg,image/png,image/gif,image/webp"
-                  onChange={handleEvidenciaFilesChange}
-                  multiple
-                  disabled={uploadingEvidencia}
-                />
-                <small className="text-muted">
-                  Formatos permitidos: JPG, PNG, GIF, WEBP. Tamaño máximo: 5MB por archivo.
-                </small>
-              </div>
-              
-              {evidenciaFiles.length > 0 && (
-                <div className="mt-3">
-                  <strong>Archivos seleccionados ({evidenciaFiles.length}):</strong>
-                  <ul className="list-group list-group-flush mt-2">
-                    {evidenciaFiles.map((file, idx) => (
-                      <li key={idx} className="list-group-item small d-flex justify-content-between align-items-center">
-                        <span>
-                          📷 {file.name}
-                          <span className="text-muted ms-2">
-                            ({(file.size / 1024).toFixed(1)} KB)
-                          </span>
-                        </span>
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="text-danger p-0"
-                          onClick={() => {
-                            const newFiles = [...evidenciaFiles];
-                            newFiles.splice(idx, 1);
-                            setEvidenciaFiles(newFiles);
-                          }}
-                        >
-                          ❌
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </>
-          )}
-        </Modal.Body>
-        {!evidenciaResultados && (
-          <Modal.Footer>
-            <Button variant="secondary" onClick={cerrarModalEvidencia} disabled={uploadingEvidencia}>
-              Cancelar
-            </Button>
-            <Button
-              variant="primary"
-              onClick={subirEvidenciasProgramacion}
-              disabled={uploadingEvidencia || evidenciaFiles.length === 0}
-            >
-              {uploadingEvidencia ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                  Subiendo...
-                </>
-              ) : (
-                'Subir evidencias'
-              )}
-            </Button>
-          </Modal.Footer>
-        )}
-      </Modal>
+      <ProgramadorEvidenceModal
+        show={showEvidenciaModal}
+        selectedProgramacion={selectedProgramacion}
+        evidenceResults={evidenciaResultados}
+        evidenceFiles={evidenciaFiles}
+        uploadingEvidencia={uploadingEvidencia}
+        onClose={cerrarModalEvidencia}
+        onFilesChange={handleEvidenciaFilesChange}
+        onRemoveFile={(idx) => {
+          const newFiles = [...evidenciaFiles];
+          newFiles.splice(idx, 1);
+          setEvidenciaFiles(newFiles);
+        }}
+        onUpload={subirEvidenciasProgramacion}
+        onReset={() => {
+          setEvidenciaResultados(null);
+          setEvidenciaFiles([]);
+        }}
+      />
 
       {open && (
         <FormulariosProgramacion

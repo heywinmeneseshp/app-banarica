@@ -7,7 +7,7 @@ import { agregarVehiculo, listarVehiculo } from "@services/api/vehiculos";
 import { agregarProgramaciones } from "@services/api/programaciones";
 import { agregarRutas, buscarRutaPost } from "@services/api/rutas";
 import { agregarConsumoRutaVehiculo } from "@services/api/consumoRutaVehiculo";
-import { listarSemanas } from "@services/api/semanas";
+import { listarSemanas, filtrarSemanasRangoProgramador } from "@services/api/semanas";
 import { paginarEmbarques } from "@services/api/embarques";
 import { listarCombos } from "@services/api/combos";
 import { listarcategoriaVehiculos } from "@services/api/CategoriaVehiculos";
@@ -35,7 +35,6 @@ const getEmbarqueClienteId = (item) => String(item?.id_cliente || item?.clientes
 const getEmbarqueNavieraId = (item) => String(item?.id_naviera || item?.Naviera?.id || item?.naviera?.id || "");
 const getEmbarqueDestinoId = (item) => String(item?.id_destino || item?.Destino?.id || item?.destino?.id || "");
 const getEmbarqueBuqueId = (item) => String(item?.id_buque || item?.Buque?.id || item?.buque?.id || "");
-
 export default function FormulariosProgramacion({
   setOpen,
   setAlert,
@@ -97,6 +96,7 @@ export default function FormulariosProgramacion({
       embarquesRes,
       combos,
       configProgramador,
+      configSemanaRes,
       userConfig,
     ] = await Promise.all([
       listarUbicaciones(),
@@ -111,6 +111,7 @@ export default function FormulariosProgramacion({
       paginarEmbarques(1, 5000, {}),
       listarCombos(),
       encontrarModulo("Programador_combustible"),
+      encontrarModulo("Semana"),
       usuario?.id_rol === "Super administrador" || !usuario?.username ? Promise.resolve([]) : encontrarModulo(usuario.username),
     ]);
 
@@ -122,7 +123,14 @@ export default function FormulariosProgramacion({
     setListaDestinos(destinos || []);
     setListaBuques(buques || []);
     setListaTiposMovimiento((tiposMovimiento || []).filter((item) => item?.activo !== false));
-    setListaSemanas(semanas || []);
+    const semanasFiltradas = await filtrarSemanasRangoProgramador({
+      anho_actual: configSemanaRes?.[0]?.anho_actual,
+      semana_actual: configSemanaRes?.[0]?.semana_actual,
+      semana_previa: configSemanaRes?.[0]?.semana_previa,
+      semana_siguiente: configSemanaRes?.[0]?.semana_siguiente,
+      total_semanas_anho: configSemanaRes?.[0]?.total_semanas_anho,
+    });
+    setListaSemanas(semanasFiltradas || semanas || []);
     setListaEmbarques(embarquesRes?.data || []);
     setListaCombos(combos || []);
     setVehiculosSinCombustible(parseVehiculosSinCombustible(configProgramador));
@@ -373,11 +381,9 @@ export default function FormulariosProgramacion({
 
   const handleSemanaChange = (event) => {
     const value = event.target.value;
-    const semana = listaSemanas.find(
-      (item) => String(item?.consecutivo || "").trim().toUpperCase() === String(value || "").trim().toUpperCase()
-    );
-    setSemanaInput(value);
-    setSemanaSeleccionada(semana ? String(semana?.id || "") : "");
+    setSemanaSeleccionada(value);
+    const semana = listaSemanas.find((item) => String(item?.id || "") === String(value || ""));
+    setSemanaInput(semana?.consecutivo || "");
     resetDependentSelectors("semana");
   };
 
@@ -409,6 +415,7 @@ export default function FormulariosProgramacion({
         categoria_id: "",
         combustible: 0,
         gal_por_km: 0,
+        programador_sin_combustible: true,
         activo: true,
       },
       targetField: "vehiculo",
@@ -488,6 +495,9 @@ export default function FormulariosProgramacion({
           placa: placaValue,
           conductor_id: quickCreateState.form?.conductor_id || null,
           categoria_id: quickCreateState.form?.categoria_id || null,
+          observacion: quickCreateState.form?.programador_sin_combustible
+            ? "Programador sin combustible"
+            : "",
           combustible: Number(quickCreateState.form?.combustible || 0),
           gal_por_km: Number(quickCreateState.form?.gal_por_km || 0),
           activo: true,
@@ -509,13 +519,14 @@ export default function FormulariosProgramacion({
 
         const created = await agregarConductor({
           conductor: conductorValue,
-          documento: String(quickCreateState.form?.documento || "").trim(),
-          telefono: String(quickCreateState.form?.telefono || "").trim(),
-          activo: true,
+          cons_transportadora: String(quickCreateState.form?.documento || "").trim() || '',
+          email: '',
+          tel: String(quickCreateState.form?.telefono || "").trim(),
+          isBlock: false,
         });
 
         await cargarCatalogos();
-        const createdId = String(created?.id || "");
+        const createdId = String(created?.consecutivo || created?.data?.consecutivo || "");
         if (quickCreateState.targetField === "conductor" && createdId) {
           conductorTouchedRef.current = true;
           setConductorSeleccionado(createdId);
@@ -562,37 +573,19 @@ export default function FormulariosProgramacion({
       const route = await buscarRutaPost({ ubicacion1: origenId, ubicacion2: destinoId });
       return route?.data?.id;
     } catch (error) {
-      const origenSeleccionado = listaUbicaciones.find((item) => String(item?.id || "") === String(origenId));
-      const destinoSeleccionado = listaUbicaciones.find((item) => String(item?.id || "") === String(destinoId));
+      const nuevaRuta = await agregarRutas({ ubicacion1: origenId, ubicacion2: destinoId });
+      const rutaId = nuevaRuta?.data?.id;
 
-      if (!vehiculoPuedeOmitirCombustible) {
-        const confirmarCrearRuta = window.confirm(
-          `No existe una ruta entre "${origenSeleccionado?.ubicacion || "origen"}" y "${destinoSeleccionado?.ubicacion || "destino"}". Desea crearla ahora y asignar el consumo del vehiculo?`
-        );
-
-        if (!confirmarCrearRuta) {
-          throw new Error("Cancelaste la creacion de la ruta.");
-        }
-
-        const consumoIngresado = window.prompt("Ingrese el consumo del vehiculo (km/gal) para esta nueva ruta:");
-        const consumoPorKm = Number(consumoIngresado);
-
-        if (!consumoIngresado || Number.isNaN(consumoPorKm) || consumoPorKm <= 0) {
-          throw new Error("Consumo invalido.");
-        }
-
-        const nuevaRuta = await agregarRutas({ ubicacion1: origenId, ubicacion2: destinoId });
+      if (rutaId) {
         await agregarConsumoRutaVehiculo({
           vehiculo_id: vehiculoSeleccionado,
-          ruta_id: nuevaRuta.data.id,
-          consumo_por_km: consumoPorKm,
+          ruta_id: rutaId,
+          consumo_por_km: 1,
           activo: true,
         });
-        return nuevaRuta?.data?.id;
       }
 
-      const nuevaRuta = await agregarRutas({ ubicacion1: origenId, ubicacion2: destinoId });
-      return nuevaRuta?.data?.id;
+      return rutaId || null;
     }
   };
 
@@ -786,23 +779,20 @@ export default function FormulariosProgramacion({
                 <div className="row g-2">
                   <div className="col-12 col-md-6 col-lg-2">
                     <label htmlFor="semana-programador" className="form-label mb-1">Semana</label>
-                    <input
+                    <select
                       id="semana-programador"
-                      type="text"
-                      list="semana-programador-items"
-                      className={`form-control form-control-sm ${!semanaSeleccionada ? "is-invalid" : ""}`}
-                      value={semanaInput}
+                      className={`form-select form-select-sm`}
+                      value={semanaSeleccionada}
                       onChange={handleSemanaChange}
-                      placeholder="Seleccione una semana"
-                    />
-                    <datalist id="semana-programador-items">
+                    >
+                      <option value="">Seleccione una semana</option>
                       {listaSemanas.map((item) => (
-                        <option key={item?.id || item?.consecutivo} value={item?.consecutivo} />
+                        <option key={item?.id || item?.consecutivo} value={String(item?.id || "")}>
+                          {item?.consecutivo}
+                        </option>
                       ))}
-                    </datalist>
-                    {!semanaSeleccionada && (
-                      <small className="text-danger d-block mt-1">Debes seleccionar una semana valida.</small>
-                    )}
+                    </select>
+             
                   </div>
 
                   <div className="col-12 col-md-6 col-lg-2">
@@ -1007,31 +997,7 @@ export default function FormulariosProgramacion({
                     </div>
                   </div>
 
-                  <div className="col-md-3">
-                    <div className="d-flex justify-content-between align-items-center mb-1">
-                      <label htmlFor="vehiculo-programador" className="form-label mb-0">Vehiculo</label>
-                      {canQuickCreateProgramador && (
-                        <Button type="button" variant="outline-primary" size="sm" onClick={handleQuickCreateVehiculo}>
-                          +
-                        </Button>
-                      )}
-                    </div>
-                    <select
-                      id="vehiculo-programador"
-                      className="form-control form-control-sm"
-                      value={vehiculoSeleccionado}
-                      onChange={(event) => {
-                        const nextVehiculoId = event.target.value;
-                        conductorTouchedRef.current = false;
-                        setVehiculoSeleccionado(nextVehiculoId);
-                      }}
-                    >
-                      <option value=""></option>
-                      {listaVehiculos.map((item) => (
-                        <option key={item?.id} value={item?.id}>{item?.placa}</option>
-                      ))}
-                    </select>
-                  </div>
+              
 
                   <div className="col-md-3">
                     <div className="d-flex justify-content-between align-items-center mb-1">
@@ -1054,6 +1020,33 @@ export default function FormulariosProgramacion({
                       <option value=""></option>
                       {listaConductores.map((item) => (
                         <option key={item?.id} value={item?.id}>{item?.conductor}</option>
+                      ))}
+                    </select>
+                  </div>
+
+
+                      <div className="col-md-3">
+                    <div className="d-flex justify-content-between align-items-center mb-1">
+                      <label htmlFor="vehiculo-programador" className="form-label mb-0">Vehiculo</label>
+                      {canQuickCreateProgramador && (
+                        <Button type="button" variant="outline-primary" size="sm" onClick={handleQuickCreateVehiculo}>
+                          +
+                        </Button>
+                      )}
+                    </div>
+                    <select
+                      id="vehiculo-programador"
+                      className="form-control form-control-sm"
+                      value={vehiculoSeleccionado}
+                      onChange={(event) => {
+                        const nextVehiculoId = event.target.value;
+                        conductorTouchedRef.current = false;
+                        setVehiculoSeleccionado(nextVehiculoId);
+                      }}
+                    >
+                      <option value=""></option>
+                      {listaVehiculos.map((item) => (
+                        <option key={item?.id} value={item?.id}>{item?.placa}</option>
                       ))}
                     </select>
                   </div>
@@ -1289,6 +1282,18 @@ export default function FormulariosProgramacion({
                     }))}
                   />
                 </Form.Group>
+              </div>
+              <div className="col-12">
+                <Form.Check
+                  id="vehiculo-programador-sin-combustible"
+                  type="checkbox"
+                  label="Programador sin combustible"
+                  checked={Boolean(quickCreateState.form?.programador_sin_combustible)}
+                  onChange={(event) => setQuickCreateState((prev) => ({
+                    ...prev,
+                    form: { ...prev.form, programador_sin_combustible: event.target.checked },
+                  }))}
+                />
               </div>
             </div>
           )}
