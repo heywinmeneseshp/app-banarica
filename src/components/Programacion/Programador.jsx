@@ -4,6 +4,7 @@ import Paginacion from '@components/shared/Tablas/Paginacion';
 import FormulariosProgramacion from '@components/shared/Formularios/FormularioProgramacion';
 import Alertas from '@assets/Alertas';
 import CargueMasivo from '@assets/Seguridad/Listado/CargueMasivo';
+import InsumoConfig from '@assets/InsumoConfig';
 import { paginarProgramaciones, eliminarProgramaciones, agregarProgramaciones, actualizarProgramaciones, listarProgramaciones } from '@services/api/programaciones';
 import { agregarProductosViaje, actualizarProductosViaje } from '@services/api/productos_viaje';
 import { actualizarListadoMasivo } from '@services/api/listado';
@@ -11,6 +12,7 @@ import { listarAlmacenes } from '@services/api/almacenes';
 import { listarUbicaciones } from '@services/api/ubicaciones';
 import { listarConductores } from '@services/api/conductores';
 import { listarVehiculo } from '@services/api/vehiculos';
+import { listarTransportadoras } from '@services/api/transportadoras';
 import { paginarEmbarques } from '@services/api/embarques';
 import { listarCombos } from '@services/api/combos';
 import { listartipoMovimientoVehiculos } from '@services/api/tipoMovimientoVehiculos';
@@ -21,10 +23,15 @@ import { Button } from 'react-bootstrap';
 import ProgramadorColumnModal from '@components/Programacion/ProgramadorColumnModal';
 import ProgramadorPendingSyncModal from '@components/Programacion/ProgramadorPendingSyncModal';
 import ProgramadorEvidenceModal from '@components/Programacion/ProgramadorEvidenceModal';
+import ProgramadorSerialesModal from '@components/Programacion/ProgramadorSerialesModal';
 import { subirEvidencias } from '@services/api/googleDrive';
-import { FaCamera, FaTrashAlt } from 'react-icons/fa';
+import { filtrarProductos } from '@services/api/productos';
+import { vincularContenedoresProgramacionSeriales } from '@services/api/programacionSeriales';
+import { getStoredTransporters } from '@utils/session';
+import { FaCamera, FaPlus, FaTrashAlt } from 'react-icons/fa';
 
 const COLUMN_STORAGE_KEY = 'programadorColumnConfig';
+const INSUMOS_PROGRAMADOR_MODULE_PREFIX = 'Relacion_programador_';
 const DEFAULT_EVIDENCIAS_DRIVE_FOLDER_ID = process.env.NEXT_PUBLIC_EVIDENCIAS_DRIVE_FOLDER_ID || '1ZnxhLTlN5WROcl-oozkSJXwjI87aG4bM';
 const EVIDENCIAS_DRIVE_MODULE = 'Google_drive_evidencias';
 const EVIDENCIA_MAX_FILES = 20;
@@ -42,6 +49,7 @@ const COLUMN_OPTIONS = [
   { id: 'buque', label: 'Buque' },
   { id: 'bl', label: 'BL' },
   { id: 'vehiculo', label: 'Vehiculo' },
+  { id: 'transportadora', label: 'Transportadora' },
   { id: 'conductor', label: 'Conductor' },
   { id: 'llegada_origen', label: 'Ingreso origen' },
   { id: 'salida_origen', label: 'Salida origen' },
@@ -51,6 +59,9 @@ const COLUMN_OPTIONS = [
   { id: 'estado_listado', label: 'Estado listado' },
   { id: 'movimiento', label: 'Movimiento' },
   { id: 'contenedor', label: 'Contenedor' },
+  { id: 'articulo_serial', label: 'Articulo serial' },
+  { id: 'serial', label: 'Serial' },
+  { id: 'agregar_serial', label: 'Agregar serial' },
   { id: 'evidencia', label: 'Evidencia' },
   { id: 'eliminar', label: 'Eliminar' },
 ];
@@ -91,7 +102,30 @@ const parseEvidenciasDriveFolderId = (configRows) => {
   }
 };
 
+const parseInsumosConfig = (configRows) => {
+  try {
+    const rawDetalles = configRows?.[0]?.detalles;
+    const detalles = rawDetalles ? JSON.parse(rawDetalles) : {};
+    if (Array.isArray(detalles)) {
+      return detalles.map((item) => item?.consecutivo || item?.id || item).filter(Boolean);
+    }
+    if (Array.isArray(detalles?.tags)) {
+      return detalles.tags.filter(Boolean);
+    }
+  } catch (error) {
+    console.warn('No fue posible leer la configuracion de insumos del programador:', error);
+  }
+  return [];
+};
+
 const normalizeValue = (value) => String(value || '').trim().toLowerCase();
+
+const getTransportadoraLabel = (transportadora = {}) => (
+  transportadora?.razon_social
+  || transportadora?.nombre
+  || transportadora?.consecutivo
+  || `Transportadora ${transportadora?.id || ''}`.trim()
+);
 
 const getRowValue = (row, aliases) => {
   const normalizedEntries = Object.entries(row || {}).map(([key, value]) => [normalizeValue(key), value]);
@@ -194,6 +228,7 @@ export default function Programador() {
   const [itemList, setItemsList] = useState([]);
   const [conductores, setConductores] = useState([]);
   const [vehiculos, setVehiculos] = useState([]);
+  const [transportadoras, setTransportadoras] = useState([]);
   const [embarques, setEmbarques] = useState([]);
   const [combos, setCombos] = useState([]);
   const [tiposMovimiento, setTiposMovimiento] = useState([]);
@@ -214,6 +249,12 @@ export default function Programador() {
   const [canEditarProgramador, setCanEditarProgramador] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [evidenciasDriveFolderId, setEvidenciasDriveFolderId] = useState(DEFAULT_EVIDENCIAS_DRIVE_FOLDER_ID);
+  const [configuracionInsumos, setConfiguracionInsumos] = useState([]);
+  const [showSerialesModal, setShowSerialesModal] = useState(false);
+  const [selectedSerialProgramacion, setSelectedSerialProgramacion] = useState(null);
+  const [showInsumoConfig, setShowInsumoConfig] = useState(false);
+  const [currentUsername, setCurrentUsername] = useState('');
+  const [transportadoraFiltro, setTransportadoraFiltro] = useState('');
 
   // Estados para evidencias
   const [showEvidenciaModal, setShowEvidenciaModal] = useState(false);
@@ -246,6 +287,15 @@ export default function Programador() {
     try {
       setLoading(true);
       const usuario = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('usuario') || '{}') : {};
+      setCurrentUsername(usuario?.username || '');
+      const superAdmin = usuario?.id_rol === 'Super administrador';
+      const transportadorasDisponibles = superAdmin
+        ? (await listarTransportadoras()) || []
+        : getStoredTransporters();
+      const transportadoraIdsPermitidas = transportadorasDisponibles
+        .map((item) => item?.id)
+        .filter((item) => item !== null && item !== undefined && item !== '');
+      setTransportadoras(transportadorasDisponibles);
       const formData = new FormData(formRef.current);
       const body = {
         ubicacion1: formData.get('origen') || '',
@@ -257,6 +307,16 @@ export default function Programador() {
         fecha: formData.get('fecha') || '',
         movimiento: formData.get('movimiento') || '',
       };
+
+      if (transportadoraFiltro && superAdmin) {
+        body.transportadoraId = transportadoraFiltro;
+      }
+
+      if (!superAdmin) {
+        body.transportadoraIds = transportadoraFiltro
+          ? [transportadoraFiltro]
+          : (transportadoraIdsPermitidas.length ? transportadoraIdsPermitidas : [-1]);
+      }
 
       const fechaFin = formData.get('fecha_fin');
       if (fechaFin) {
@@ -272,6 +332,7 @@ export default function Programador() {
         listartipoMovimientoVehiculos(),
         encontrarModulo('Programador_combustible'),
         encontrarModulo(EVIDENCIAS_DRIVE_MODULE).catch(() => []),
+        encontrarModulo(`${INSUMOS_PROGRAMADOR_MODULE_PREFIX}${usuario?.username || ''}`).catch(() => []),
         paginarProgramaciones(pagination, limit, body),
       ];
 
@@ -279,7 +340,11 @@ export default function Programador() {
         requests.push(encontrarModulo(usuario.username));
       }
 
-      const [newUbicaciones, newConductores, newVehiculos, embarquesRes, newCombos, newTiposMovimiento, configProgramador, driveConfig, res, userConfig] = await Promise.all(requests);
+      const [newUbicaciones, newConductores, newVehiculos, embarquesRes, newCombos, newTiposMovimiento, configProgramador, driveConfig, insumosConfig, res, userConfig] = await Promise.all(requests);
+      const insumosConsecutivos = parseInsumosConfig(insumosConfig);
+      const insumos = insumosConsecutivos.length
+        ? await filtrarProductos({ producto: { consecutivo: insumosConsecutivos } })
+        : [];
 
       setUbicaciones(newUbicaciones || []);
       setConductores(newConductores || []);
@@ -287,11 +352,15 @@ export default function Programador() {
       setEmbarques(embarquesRes?.data || []);
       setCombos(newCombos || []);
       setTiposMovimiento(newTiposMovimiento || []);
+      setConfiguracionInsumos(
+        insumosConsecutivos
+          .map((consecutivo) => (insumos || []).find((item) => String(item?.consecutivo) === String(consecutivo)))
+          .filter(Boolean)
+      );
       setVehiculosSinCombustible(parseVehiculosSinCombustible(configProgramador));
       setEvidenciasDriveFolderId(parseEvidenciasDriveFolderId(driveConfig));
       setItemsList(res?.data || []);
       setTotal(res?.total || 0);
-      const superAdmin = usuario?.id_rol === 'Super administrador';
       setIsSuperAdmin(superAdmin);
       if (superAdmin) {
         setCanActualizarPendientes(true);
@@ -317,7 +386,7 @@ export default function Programador() {
     } finally {
       setLoading(false);
     }
-  }, [limit, pagination, setAlert]);
+  }, [limit, pagination, setAlert, transportadoraFiltro]);
 
   useEffect(() => {
     listar();
@@ -366,6 +435,9 @@ export default function Programador() {
         const prevKey = prev ? `${prev?.fecha || ''}__${prev?.bl || ''}__${prev?.contenedor || ''}` : '';
         const productoPrincipal = (item?.productos_viajes || [])[0] || null;
         const comboPrincipal = comboMap.get(String(productoPrincipal?.producto_id || ''));
+        const serialesProgramador = Array.isArray(item?.seriales_programador)
+          ? item.seriales_programador.filter((serial) => serial?.activo !== false)
+          : [];
 
         return {
           ...item,
@@ -377,6 +449,7 @@ export default function Programador() {
           destinoId: item?.ruta?.ubicacion_2?.id || '',
           conductorLabel: item?.conductor?.conductor || '',
           vehiculoLabel: item?.vehiculo?.placa || '',
+          transportadoraLabel: getTransportadoraLabel(item?.vehiculo?.transportadora || {}),
           contenedorLabel: item?.contenedor || '',
           semanaLabel: item?.semana || '',
           blLabel: item?.bl || '',
@@ -390,6 +463,7 @@ export default function Programador() {
           productoClienteId: String(comboPrincipal?.id_cliente || ''),
           productoViajeId: productoPrincipal?.id || '',
           cantidadProductosLabel: productoPrincipal?.cantidad ?? '',
+          serialesProgramador,
           evidenciaSubida: Boolean(
             item?.evidencia_cargada
             || item?.evidencia_carpeta_id
@@ -456,6 +530,7 @@ export default function Programador() {
           BL: item?.bl || '',
           'Estado listado': normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO ? 'Actualizado' : 'Pendiente',
           Vehiculo: item?.vehiculo?.placa || '',
+          Transportadora: getTransportadoraLabel(item?.vehiculo?.transportadora || {}),
           Conductor: item?.conductor?.conductor || '',
           Movimiento: item?.movimiento || '',
           Contenedor: item?.contenedor || '',
@@ -811,6 +886,53 @@ export default function Programador() {
       });
       setReloadKey((prev) => prev + 1);
     }
+  };
+
+  const getVisibleSerialesProgramador = useCallback((row) => {
+    const seriales = Array.isArray(row?.serialesProgramador) ? row.serialesProgramador : [];
+    if (!configuracionInsumos.length) {
+      return seriales;
+    }
+
+    const visibles = new Set(configuracionInsumos.map((item) => String(item?.consecutivo || '')));
+    return seriales.filter((item) => {
+      const consProducto = item?.serial_articulo?.cons_producto || item?.cons_producto;
+      return visibles.has(String(consProducto || ''));
+    });
+  }, [configuracionInsumos]);
+
+  const formatSerialArticuloLabel = useCallback((row) => (
+    getVisibleSerialesProgramador(row)
+      .map((item) => item?.serial_articulo?.producto?.name || item?.producto?.name || item?.serial_articulo?.cons_producto || item?.cons_producto)
+      .filter(Boolean)
+      .join(', ')
+  ), [getVisibleSerialesProgramador]);
+
+  const formatSerialLabel = useCallback((row) => (
+    getVisibleSerialesProgramador(row)
+      .map((item) => item?.serial_articulo?.bag_pack || item?.serial_articulo?.serial || item?.bag_pack || item?.serial)
+      .filter(Boolean)
+      .join(', ')
+  ), [getVisibleSerialesProgramador]);
+
+  const abrirModalSeriales = (programacion) => {
+    setSelectedSerialProgramacion(programacion);
+    setShowSerialesModal(true);
+  };
+
+  const cerrarModalSeriales = () => {
+    setSelectedSerialProgramacion(null);
+    setShowSerialesModal(false);
+  };
+
+  const handleSerialesSaved = (serialesActualizados = []) => {
+    updateLocalRow(selectedSerialProgramacion?.id, (row) => ({
+      ...row,
+      seriales_programador: Array.isArray(serialesActualizados) ? serialesActualizados : row.seriales_programador,
+      serialesProgramador: Array.isArray(serialesActualizados) ? serialesActualizados : row.serialesProgramador,
+      estado_listado: ESTADO_LISTADO_PENDIENTE,
+    }));
+    setReloadKey((prev) => prev + 1);
   };
 
   const renderProgramadorHeader = (columnId, label) => (
@@ -1171,6 +1293,23 @@ export default function Programador() {
     ];
   }, [listadoRowKey, listadoRowMatchesMissing]);
 
+  const vincularSerialesPendientesDeListado = useCallback(async (payloadRows = [], processedIds = []) => {
+    const rows = payloadRows
+      .filter((row) => (
+        (row.programacionIds || []).some((id) => processedIds.includes(id))
+      ))
+      .flatMap((row) => (row.programacionIds || []).map((programacionId) => ({
+        programacion_id: programacionId,
+        contenedor: row.contenedor,
+      })));
+
+    if (!rows.length) {
+      return;
+    }
+
+    await vincularContenedoresProgramacionSeriales(rows);
+  }, []);
+
   const sincronizarListadoPendiente = useCallback(async () => {
     try {
       setSyncingListado(true);
@@ -1232,10 +1371,12 @@ export default function Programador() {
         return;
       }
 
+      const processedIds = getProcessedProgramacionIdsFromListadoResult(payloadRows, result);
       await markProgramacionesEstadoListado(
-        getProcessedProgramacionIdsFromListadoResult(payloadRows, result),
+        processedIds,
         ESTADO_LISTADO_ACTUALIZADO
       );
+      await vincularSerialesPendientesDeListado(payloadRows, processedIds);
 
       setAlert({
         active: true,
@@ -1255,7 +1396,7 @@ export default function Programador() {
     } finally {
       setSyncingListado(false);
     }
-  }, [buildListadoUpdateRowsFromProgramaciones, getProcessedProgramacionIdsFromListadoResult, markProgramacionesEstadoListado, setAlert, toListadoSyncPayload]);
+  }, [buildListadoUpdateRowsFromProgramaciones, getProcessedProgramacionIdsFromListadoResult, markProgramacionesEstadoListado, setAlert, toListadoSyncPayload, vincularSerialesPendientesDeListado]);
 
   const descargarNoEncontradosListado = useCallback(() => {
     if (!pendingListadoSync?.missingRows?.length) {
@@ -1299,6 +1440,7 @@ export default function Programador() {
         processedProgramacionIds,
         ESTADO_LISTADO_ACTUALIZADO
       );
+      await vincularSerialesPendientesDeListado(pendingListadoSync.payloadRows, processedProgramacionIds);
 
       setAlert({
         active: true,
@@ -1319,7 +1461,7 @@ export default function Programador() {
     } finally {
       setSyncingListado(false);
     }
-  }, [getProcessedProgramacionIdsFromListadoResult, markProgramacionesEstadoListado, pendingListadoSync, setAlert, toListadoSyncPayload]);
+  }, [getProcessedProgramacionIdsFromListadoResult, markProgramacionesEstadoListado, pendingListadoSync, setAlert, toListadoSyncPayload, vincularSerialesPendientesDeListado]);
 
   // Función: Abrir modal de evidencia
   const cerrarModalEvidencia = () => {
@@ -1494,6 +1636,22 @@ export default function Programador() {
                 </div>
 
                 <div className="col-12 col-md-6 col-lg-2">
+                  <label htmlFor="transportadoraFiltro" className="form-label mb-1">Transportadora</label>
+                  <select
+                    id="transportadoraFiltro"
+                    name="transportadoraFiltro"
+                    className="form-select form-select-sm"
+                    value={transportadoraFiltro}
+                    onChange={(event) => setTransportadoraFiltro(event.target.value)}
+                  >
+                    <option value="">Todas</option>
+                    {transportadoras.map((item) => (
+                      <option key={item.id} value={item.id}>{getTransportadoraLabel(item)}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-12 col-md-6 col-lg-2">
                   <label htmlFor="bl" className="form-label mb-1">BL</label>
                   <input id="bl" name="bl" type="text" onChange={listar} className="form-control form-control-sm" />
                 </div>
@@ -1580,6 +1738,14 @@ export default function Programador() {
                     Configurar columnas
                   </Button>
                 </div>
+
+                {isSuperAdmin && (
+                  <div className="col-12 col-md-6 col-lg-2">
+                    <Button type="button" onClick={() => setShowInsumoConfig(true)} className="w-100 mt-0 mt-md-4" variant="outline-secondary" size="sm">
+                      Configurar insumos
+                    </Button>
+                  </div>
+                )}
               </div>
             </form>
 
@@ -1601,6 +1767,7 @@ export default function Programador() {
                     {visibleColumns.buque && renderProgramadorHeader('buque', 'Buque')}
                     {visibleColumns.bl && renderProgramadorHeader('bl', 'BL')}
                     {visibleColumns.vehiculo && renderProgramadorHeader('vehiculo', 'Vehiculos')}
+                    {visibleColumns.transportadora && renderProgramadorHeader('transportadora', 'Transportadora')}
                     {visibleColumns.conductor && renderProgramadorHeader('conductor', 'Conductor')}
                     {visibleColumns.llegada_origen && renderProgramadorHeader('llegada_origen', 'Ingreso origen')}
                     {visibleColumns.salida_origen && renderProgramadorHeader('salida_origen', 'Salida origen')}
@@ -1609,7 +1776,10 @@ export default function Programador() {
                     {visibleColumns.salida_destino && renderProgramadorHeader('salida_destino', 'Salida destino')}
                     {visibleColumns.movimiento && renderProgramadorHeader('movimiento', 'Movimiento')}
                     {visibleColumns.contenedor && renderProgramadorHeader('contenedor', 'Contenedor')}
+                    {visibleColumns.articulo_serial && renderProgramadorHeader('articulo_serial', 'Articulo serial')}
+                    {visibleColumns.serial && renderProgramadorHeader('serial', 'Serial')}
                     {visibleColumns.estado_listado && renderProgramadorHeader('estado_listado', 'Estado')}
+                    {visibleColumns.agregar_serial && renderProgramadorHeader('agregar_serial', '')}
                     {visibleColumns.evidencia && renderProgramadorHeader('evidencia', 'Evid.')}
                     {visibleColumns.eliminar && renderProgramadorHeader('eliminar', '')}
                   </tr>
@@ -1767,6 +1937,11 @@ export default function Programador() {
                             <div className="py-2 px-1 text-center">{item.vehiculoLabel}</div>
                           )}
                         </td>}
+                        {visibleColumns.transportadora && (
+                          <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
+                            <div className="py-2 px-1 text-center">{item.transportadoraLabel || ''}</div>
+                          </td>
+                        )}
                         {visibleColumns.conductor && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
                           {rowEditable ? (
                             <>
@@ -1877,6 +2052,16 @@ export default function Programador() {
                             <div className="py-2 px-1 text-center">{item.contenedorLabel || ''}</div>
                           )}
                         </td>}
+                        {visibleColumns.articulo_serial && (
+                          <td className="text-center align-middle p-0" style={compactCellStyle}>
+                            <div className="py-2 px-1 text-center">{formatSerialArticuloLabel(item) || ''}</div>
+                          </td>
+                        )}
+                        {visibleColumns.serial && (
+                          <td className="text-center align-middle p-0" style={compactCellStyle}>
+                            <div className="py-2 px-1 text-center">{formatSerialLabel(item) || ''}</div>
+                          </td>
+                        )}
                         {visibleColumns.estado_listado && <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
                           <div className="py-1 px-1 text-center">
                             <span
@@ -1887,6 +2072,25 @@ export default function Programador() {
                             </span>
                           </div>
                         </td>}
+                        {visibleColumns.agregar_serial && (
+                          <td className="text-center align-middle p-0" style={compactCellStyle}>
+                            <Button
+                              variant="link"
+                              size="sm"
+                              className="text-decoration-none p-0"
+                              style={{
+                                width: 26,
+                                height: 26,
+                                lineHeight: '24px',
+                                color: '#0d6efd',
+                              }}
+                              onClick={() => abrirModalSeriales(item)}
+                              title="Agregar serial"
+                            >
+                              <FaPlus size={12} />
+                            </Button>
+                          </td>
+                        )}
                         {visibleColumns.evidencia && (
                           <td className="text-center align-middle p-0" style={rowEditable ? editableCellStyle : compactCellStyle}>
                             <Button
@@ -1959,6 +2163,16 @@ export default function Programador() {
         }}
       />
 
+      {showInsumoConfig && isSuperAdmin && (
+        <InsumoConfig
+          handleConfig={() => {
+            setShowInsumoConfig(false);
+            setReloadKey((prev) => prev + 1);
+          }}
+          modulo_confi={`${INSUMOS_PROGRAMADOR_MODULE_PREFIX}${currentUsername}`}
+        />
+      )}
+
       <ProgramadorPendingSyncModal
         show={Boolean(pendingListadoSync)}
         pendingListadoSync={pendingListadoSync}
@@ -1986,6 +2200,14 @@ export default function Programador() {
           setEvidenciaResultados(null);
           setEvidenciaFiles([]);
         }}
+      />
+
+      <ProgramadorSerialesModal
+        show={showSerialesModal}
+        programacion={selectedSerialProgramacion}
+        seriales={selectedSerialProgramacion?.serialesProgramador || selectedSerialProgramacion?.seriales_programador || []}
+        onClose={cerrarModalSeriales}
+        onSaved={handleSerialesSaved}
       />
 
       {open && (

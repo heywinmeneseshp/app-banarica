@@ -1,5 +1,6 @@
 import axios from 'axios';
 import endPoints from './index';
+import { getToken } from 'utils/session';
 
 const getErrorMessage = (error, fallback) => (
   error?.response?.data?.message ||
@@ -13,6 +14,11 @@ const config = {
     accept: 'application/json',
     'Content-Type': 'application/json',
   },
+};
+
+const authConfig = () => {
+  const token = getToken();
+  return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
 };
 
 const agregarProgramaciones = async (programaciones) => {
@@ -63,7 +69,7 @@ const listarProgramaciones = async () => {
 
 const paginarProgramaciones = async (page, limit, body) => {
   try {
-    const res = await axios.post(endPoints.programaciones.pagination(page, limit), body);
+    const res = await axios.post(endPoints.programaciones.pagination(page, limit), body, authConfig());
     return res.data;
   } catch (error) {
     throw new Error(getErrorMessage(error, 'Error al paginar programacion'));

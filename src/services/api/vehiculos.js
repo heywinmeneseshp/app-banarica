@@ -1,5 +1,6 @@
 import axios from 'axios';
 import endPoints from './index';
+import { getToken } from 'utils/session';
 const config = {
     headers: {
         accept: 'application/json',
@@ -14,6 +15,10 @@ const agregarVehiculo = async (Vehiculo) => {
    }catch(e){
     alert("Error al ingresar datos");
    }
+};
+const authConfig = () => {
+    const token = getToken();
+    return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
 };
 
 const cargueMasivoVehiculos = async (rows) => {
@@ -55,16 +60,16 @@ const buscarVehiculo = async(consecutivo) => {
 
 const listarVehiculo = async() => {
     try {
-        const res = await axios.get(endPoints.vehiculos.list);
+        const res = await axios.get(endPoints.vehiculos.list, authConfig());
         return res.data;
     } catch (e){
         alert("Error al listar Vehiculo");
     }
 };
 
-const paginarVehiculo = async (page, limit, nombre) => {
+const paginarVehiculo = async (page, limit, nombre, transportadoraId = '') => {
     try {
-        const res = await axios.get(endPoints.vehiculos.pagination(page, limit, nombre));
+        const res = await axios.get(endPoints.vehiculos.pagination(page, limit, nombre, transportadoraId), authConfig());
         return res.data;
     } catch {
         alert("Error al paginar vehiculos");

@@ -17,6 +17,7 @@ import ContenedoresDevueltos from "@containers/seguridad/ContenedoresDevueltos";
 import Transbordados from "@containers/seguridad/Transbordados";
 import TransbordarContenedor from "@containers/seguridad/TransbordarContenedor";
 import CartasAntinarcoticos from "@containers/seguridad/CartasAntinarcoticos";
+import ValidarSellosProgramador from "@containers/seguridad/ValidarSellosProgramador";
 //Components
 
 
@@ -42,6 +43,7 @@ export default function Seguridad() {
             {(router?.query.item == "Transbordar") && <TransbordarContenedor/>}
             {(router?.query.item == "Transbordados") && <Transbordados/>}
             {(router?.query.item == "CartasAntinarcoticos") && <CartasAntinarcoticos/>}
+            {(router?.query.item == "ValidarSellosProgramador") && <ValidarSellosProgramador/>}
         </div>
     );
 }

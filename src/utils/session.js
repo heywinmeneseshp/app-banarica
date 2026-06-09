@@ -3,6 +3,7 @@ import Cookie from 'js-cookie';
 const TOKEN_KEY = 'token';
 const USER_KEY = 'usuario';
 const WAREHOUSES_KEY = 'almacenByUser';
+const TRANSPORTERS_KEY = 'transportadorasByUser';
 const SESSION_NOTICE_KEY = 'sessionNotice';
 const LAST_ACTIVITY_KEY = 'lastActivityAt';
 const TOKEN_EXPIRATION_DAYS = 1 / 48;
@@ -34,6 +35,7 @@ const clearSessionStorage = () => {
 
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(WAREHOUSES_KEY);
+    localStorage.removeItem(TRANSPORTERS_KEY);
 };
 
 const getSessionNotice = () => (
@@ -122,8 +124,24 @@ const setStoredWarehouses = (warehouses) => {
     localStorage.setItem(WAREHOUSES_KEY, JSON.stringify(warehouses));
 };
 
+const getStoredTransporters = () => (
+    isBrowser ? parseJSON(localStorage.getItem(TRANSPORTERS_KEY), []) : []
+);
+
+const setStoredTransporters = (transporters) => {
+    if (!isBrowser) {
+        return;
+    }
+
+    localStorage.setItem(TRANSPORTERS_KEY, JSON.stringify(transporters));
+};
+
 const sortWarehousesByName = (warehouses = []) => (
     [...warehouses].sort((a, b) => a.nombre.localeCompare(b.nombre))
+);
+
+const sortTransportersByName = (transporters = []) => (
+    [...transporters].sort((a, b) => String(a.razon_social || '').localeCompare(String(b.razon_social || '')))
 );
 
 export {
@@ -136,11 +154,14 @@ export {
     getSessionNotice,
     getStoredUser,
     getStoredWarehouses,
+    getStoredTransporters,
     getToken,
     persistToken,
     setLastActivityAt,
     setSessionNotice,
     setStoredUser,
     setStoredWarehouses,
+    setStoredTransporters,
     sortWarehousesByName,
+    sortTransportersByName,
 };

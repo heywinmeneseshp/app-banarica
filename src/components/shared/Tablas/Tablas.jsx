@@ -26,6 +26,7 @@ export default function Tablas({
   switchFields,
   onMassUploadSuccess,
   onMassUpdateSuccess,
+  filtrosExtra = [],
 }) {
   const ItemdorRef = useRef();
   const [item, setItem] = useState(null);
@@ -38,6 +39,7 @@ export default function Tablas({
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [extraFilters, setExtraFilters] = useState({});
   const [openMasivo, setOpenMasivo] = useState(false);
   const [openActualizacionMasiva, setOpenActualizacionMasiva] = useState(false);
   const limit = 30;
@@ -63,7 +65,7 @@ export default function Tablas({
     setLoading(true);
     try {
       const nombre = ItemdorRef.current?.value || '';
-      const res = await paginar(pagination, limit, nombre);
+      const res = await paginar(pagination, limit, nombre, extraFilters);
       setItems(res?.data || []);
       setTotal(res?.total || 0);
     } catch (error) {
@@ -77,7 +79,7 @@ export default function Tablas({
     } finally {
       setLoading(false);
     }
-  }, [pagination, paginar, setAlert]);
+  }, [extraFilters, pagination, paginar, setAlert]);
 
   useEffect(() => {
     listarItems();
@@ -120,6 +122,11 @@ export default function Tablas({
 
   const handleInputChange = (e) => {
     setSearchTerm(e.target.value);
+  };
+
+  const handleExtraFilterChange = (field, value) => {
+    setExtraFilters((prev) => ({ ...prev, [field]: value }));
+    setPagination(1);
   };
 
   const onDescargar = async (e) => {
@@ -283,6 +290,21 @@ export default function Tablas({
                 </button>
               </div>
             </Col>
+
+            {filtrosExtra.map((filter) => (
+              <Col md={6} lg={3} key={filter.name}>
+                <Form.Select
+                  size="sm"
+                  value={extraFilters[filter.name] || ''}
+                  onChange={(event) => handleExtraFilterChange(filter.name, event.target.value)}
+                >
+                  <option value="">{filter.label}</option>
+                  {(filter.options || []).map((option) => (
+                    <option key={option.id} value={option.id}>{option.nombre}</option>
+                  ))}
+                </Form.Select>
+              </Col>
+            ))}
 
             <Col md={12} lg={4}>
               <ButtonGroup className="w-100">

@@ -30,6 +30,14 @@ const endPoints = {
             create: `${API}/api/${VERSION}/usuarios/almacen`,
             update: `${API}/api/${VERSION}/usuarios/almacen/actualizar`,
             delete: (username, almacen) => `${API}/api/${VERSION}/usuarios/almacen/${username}/${almacen}`
+        },
+        transportadoras: {
+            list: (username) => `${API}/api/${VERSION}/usuarios/transportadora/${username}`,
+            findByUsername: (username) => `${API}/api/${VERSION}/usuarios/transportadora/${username}`,
+            findUsersByTransportadora: (transportadora) => `${API}/api/${VERSION}/usuarios/transportadora/cons/${transportadora}`,
+            create: `${API}/api/${VERSION}/usuarios/transportadora`,
+            update: `${API}/api/${VERSION}/usuarios/transportadora/actualizar`,
+            delete: (username, transportadora) => `${API}/api/${VERSION}/usuarios/transportadora/${username}/${transportadora}`
         }
     },
     semanas: {
@@ -281,6 +289,15 @@ const endPoints = {
         update: (id) => `${API}/api/${VERSION}/programaciones/${id}`,
         delete: (id) => `${API}/api/${VERSION}/programaciones/${id}`,
     },
+    programacionSeriales: {
+        list: `${API}/api/${VERSION}/programacion-seriales`,
+        pagination: (page, limit) => `${API}/api/${VERSION}/programacion-seriales/paginar?page=${page}&limit=${limit}`,
+        create: `${API}/api/${VERSION}/programacion-seriales`,
+        bulkCreate: `${API}/api/${VERSION}/programacion-seriales/masivo`,
+        update: (id) => `${API}/api/${VERSION}/programacion-seriales/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/programacion-seriales/${id}`,
+        linkPending: `${API}/api/${VERSION}/programacion-seriales/vincular-contenedores`,
+    },
     consumoRutaVehiculo: {
         list: `${API}/api/${VERSION}/consumoRutaVehiculo`,
         create: `${API}/api/${VERSION}/consumoRutaVehiculo`,
@@ -299,7 +316,7 @@ const endPoints = {
     vehiculos: {
         list: `${API}/api/${VERSION}/vehiculos`,
         findOne: (id) => `${API}/api/${VERSION}/vehiculos/${id}`,
-        pagination: (page, limit, item) => `${API}/api/${VERSION}/vehiculos/paginar?page=${page}&limit=${limit}&item=${item}`,
+        pagination: (page, limit, item, transportadoraId = '') => `${API}/api/${VERSION}/vehiculos/paginar?page=${page}&limit=${limit}&item=${item}&transportadoraId=${transportadoraId}`,
         create: `${API}/api/${VERSION}/vehiculos`,
         bulkCreate: `${API}/api/${VERSION}/vehiculos/masivo`,
         bulkUpdate: `${API}/api/${VERSION}/vehiculos/actualizar-masivo`,

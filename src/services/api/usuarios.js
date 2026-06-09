@@ -73,8 +73,29 @@ const cargarAlmacenesPorUsuario = async (username, id_almacen, habilitado) => {
     }
 };
 
+const listarTransportadorasPorUsuario = async (username) => {
+    try {
+        const res = await axios.get(endPoints.usuarios.transportadoras.list(username));
+        return res.data;
+    } catch (e) {
+        alert("Se ha presentado un error al listar transportadoras por usuario");
+    }
+};
+
+const cargarTransportadorasPorUsuario = async (username, id_transportadora, habilitado) => {
+    const data = { username, id_transportadora, habilitado };
+    try {
+        const result = await axios.patch(endPoints.usuarios.transportadoras.update, data);
+        return result.data;
+    } catch (e) {
+        alert("Se ha presentado un error al cargar transportadoras por usuario");
+    }
+};
+
 export {
     agregarUsuario,
     cargarAlmacenesPorUsuario,
-    eliminarUsuario, actualizarUsuario, buscarUsuario, listarUsuarios, listarAlmacenesPorUsuario
+    cargarTransportadorasPorUsuario,
+    eliminarUsuario, actualizarUsuario, buscarUsuario, listarUsuarios, listarAlmacenesPorUsuario,
+    listarTransportadorasPorUsuario
 };

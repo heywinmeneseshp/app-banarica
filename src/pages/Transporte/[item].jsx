@@ -6,6 +6,7 @@ import ConsumoKm from "@components/Programacion/ConsumoKm";
 import ConsumoRutas from "@components/Programacion/ConsumoRutas";
 import Reportes from "@components/Programacion/Reportes";
 import SaldoCombustible from "@components/Programacion/SaldoCombustible";
+import DashboardSellosProgramador from "@components/Programacion/DashboardSellosProgramador";
 //Components
 
 
@@ -21,6 +22,7 @@ export default function Seguridad() {
             {router?.query.item == "ConsumoRutas" && <ConsumoRutas />}
             {router?.query.item == "Reportes" && <Reportes />}
             {router?.query.item == "CargarCombustible" && <SaldoCombustible/>}
+            {["DashboardProgramador", "ResumenProgramador", "SellosProgramador"].includes(router?.query.item) && <DashboardSellosProgramador />}
         </div>
     );
 }

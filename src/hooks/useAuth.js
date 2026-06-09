@@ -7,7 +7,9 @@ import {
     getStoredUser,
     setStoredUser,
     setStoredWarehouses,
+    setStoredTransporters,
     sortWarehousesByName,
+    sortTransportersByName,
 } from 'utils/session';
 
 const defaultAuthContext = {
@@ -53,6 +55,7 @@ function useProviderAuth() {
             const almacenes = sortWarehousesByName(res.data.almacenes);
             setAlmacenByUser(almacenes);
             setStoredWarehouses(almacenes);
+            setStoredTransporters(sortTransportersByName(res.data.transportadoras || []));
 
             router.push('/');
         } catch (e) {

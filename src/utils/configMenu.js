@@ -23,6 +23,7 @@ const menuCompleto = {
         ["/Embarques", "Embarques"],
         ["/InspLleno", "Insp Lleno"],
         ["/Lector", "Insp Vacio"],
+        ["/ValidarSellosProgramador", "Validar Sellos Programador"],
         ["/LlenadoContenedor", "Llenado"],
         ["/Transbordar", "Transbordar"],
         ["/Recepcion", "Recepcion"],
@@ -35,6 +36,7 @@ const menuCompleto = {
     ],
     transporte: [
         ["/Programador", "Programador"],
+        ["/SellosProgramador", "Sellos Programador"],
         ["/CargarCombustible", "Cargar Combustible"],
         ["/ConsumoRutas", "Consumo Ruta Vehiculo"],
         ["/ConsumoKm", "Consumo Km"],
@@ -71,6 +73,7 @@ const botones = [
     "programador_creacion_rapida",
     "programador_edicion",
     "programador_actualizar_pendientes",
+    "programador_sellos_configuracion",
 ];
 
 const menuPrincipal = () => {

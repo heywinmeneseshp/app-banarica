@@ -6,9 +6,12 @@ import {
     actualizarUsuario,
     agregarUsuario,
     cargarAlmacenesPorUsuario,
+    cargarTransportadorasPorUsuario,
     listarAlmacenesPorUsuario,
+    listarTransportadorasPorUsuario,
     listarUsuarios,
 } from '@services/api/usuarios';
+import { listarTransportadoras } from '@services/api/transportadoras';
 import { actualizarModulo, encontrarModulo, listarModulos } from '@services/api/configuracion';
 import { botones, menuCompleto, menuPrincipal } from 'utils/configMenu';
 
@@ -44,13 +47,17 @@ const buildProfileLabel = (profile) => {
 export default function NuevoUsuario({ setAlert, setOpen, user }) {
     const formRef = useRef(null);
     const [almacenes, setAlmacenes] = useState([]);
+    const [transportadoras, setTransportadoras] = useState([]);
     const [checkedState, setCheckedState] = useState([]);
+    const [checkedTransportadorasState, setCheckedTransportadorasState] = useState([]);
     const [tagMenu, setTagMenu] = useState([]);
     const [tagSubMenu, setTagSubMenu] = useState([]);
     const [tagBotones, setTagBotones] = useState([]);
     const [menuSelected, setMenuSelected] = useState([]);
     const [selectedMenuKey, setSelectedMenuKey] = useState('');
+    const [activeTab, setActiveTab] = useState('basicos');
     const [almacenSearch, setAlmacenSearch] = useState('');
+    const [transportadoraSearch, setTransportadoraSearch] = useState('');
     const [usuariosDisponibles, setUsuariosDisponibles] = useState([]);
     const [usuarioBase, setUsuarioBase] = useState('');
     const [perfilesDisponibles, setPerfilesDisponibles] = useState([]);
@@ -84,6 +91,21 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
             ));
     }, [almacenSearch, almacenes]);
 
+    const filteredTransportadoras = useMemo(() => {
+        const rawQuery = transportadoraSearch.trim().toLowerCase();
+        const queryParts = rawQuery
+            .split(/[\s,]+/)
+            .map((item) => item.trim())
+            .filter(Boolean);
+
+        return transportadoras
+            .map((transportadora, index) => ({ transportadora, index }))
+            .filter(({ transportadora }) => {
+                const label = `${transportadora?.razon_social || ''} ${transportadora?.consecutivo || ''}`.toLowerCase();
+                return !queryParts.length || queryParts.some((query) => label.includes(query));
+            });
+    }, [transportadoraSearch, transportadoras]);
+
     const resolveMenuOptions = useCallback((menuKey) => {
         if (!menuKey) {
             return [];
@@ -107,8 +129,16 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
         setOpen(false);
     };
 
-    const applyAccessConfiguration = useCallback((details = {}, enabledWarehouses = [], roleOverride = '', warehousesSource = []) => {
+    const applyAccessConfiguration = useCallback((
+        details = {},
+        enabledWarehouses = [],
+        roleOverride = '',
+        warehousesSource = [],
+        enabledTransportadoras = [],
+        transportadorasSource = [],
+    ) => {
         const almacenesHabilitados = new Set(enabledWarehouses);
+        const transportadorasHabilitadas = new Set(enabledTransportadoras.map((item) => String(item)));
 
         if (formRef.current?.elements?.id_rol && roleOverride) {
             formRef.current.elements.id_rol.value = roleOverride;
@@ -122,20 +152,27 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
         setCheckedState(
             warehousesSource.map((almacen) => almacenesHabilitados.has(almacen.consecutivo)),
         );
+        setCheckedTransportadorasState(
+            transportadorasSource.map((transportadora) => transportadorasHabilitadas.has(String(transportadora.id))),
+        );
     }, []);
 
     useEffect(() => {
         const loadData = async () => {
             try {
-                const [almacenesResponse, usuariosResponse, perfilesResponse] = await Promise.all([
+                const [almacenesResponse, transportadorasResponse, usuariosResponse, perfilesResponse] = await Promise.all([
                     axios.get(endPoints.almacenes.list),
+                    listarTransportadoras(),
                     listarUsuarios(),
                     listarModulos(PROFILE_PREFIX),
                 ]);
 
                 const almacenesData = almacenesResponse.data || [];
+                const transportadorasData = transportadorasResponse || [];
                 setAlmacenes(almacenesData);
+                setTransportadoras(transportadorasData);
                 setCheckedState(new Array(almacenesData.length).fill(false));
+                setCheckedTransportadorasState(new Array(transportadorasData.length).fill(false));
                 setPerfilesDisponibles(perfilesResponse || []);
                 setUsuariosDisponibles(
                     (usuariosResponse || []).filter((item) => item?.username && item.username !== user?.username),
@@ -148,8 +185,9 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                     return;
                 }
 
-                const [almacenesUsuario, configUsuario] = await Promise.all([
+                const [almacenesUsuario, transportadorasUsuario, configUsuario] = await Promise.all([
                     axios.get(endPoints.usuarios.almacenes.findByUsername(user.username)),
+                    listarTransportadorasPorUsuario(user.username),
                     encontrarModulo(user.username),
                 ]);
 
@@ -158,9 +196,21 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                         .filter((item) => item?.habilitado)
                         .map((item) => item.id_almacen),
                 );
+                const transportadorasHabilitadas = new Set(
+                    (transportadorasUsuario || [])
+                        .filter((item) => item?.habilitado)
+                        .map((item) => item.id_transportadora),
+                );
 
                 const detalles = parseDetallesModulo(configUsuario);
-                applyAccessConfiguration(detalles, Array.from(almacenesHabilitados), user?.id_rol, almacenesData);
+                applyAccessConfiguration(
+                    detalles,
+                    Array.from(almacenesHabilitados),
+                    user?.id_rol,
+                    almacenesData,
+                    Array.from(transportadorasHabilitadas),
+                    transportadorasData,
+                );
             } catch (error) {
                 console.error("Error cargando datos del usuario:", error);
                 window.alert("No fue posible cargar la informacion del usuario.");
@@ -183,6 +233,23 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
     const updateVisibleWarehouses = (nextValue) => {
         const visibleIndexes = new Set(filteredWarehouses.map(({ index }) => index));
         setCheckedState((prev) => prev.map((item, index) => (
+            visibleIndexes.has(index) ? nextValue : item
+        )));
+    };
+
+    const handleTransportadoraChange = (position) => {
+        setCheckedTransportadorasState((prev) => prev.map((item, index) => (
+            index === position ? !item : item
+        )));
+    };
+
+    const updateAllTransportadoras = (nextValue) => {
+        setCheckedTransportadorasState((prev) => prev.map(() => nextValue));
+    };
+
+    const updateVisibleTransportadoras = (nextValue) => {
+        const visibleIndexes = new Set(filteredTransportadoras.map(({ index }) => index));
+        setCheckedTransportadorasState((prev) => prev.map((item, index) => (
             visibleIndexes.has(index) ? nextValue : item
         )));
     };
@@ -220,9 +287,10 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
 
         try {
             setIsCopyingAccess(true);
-            const [sourceUser, sourceWarehouses, sourceConfig] = await Promise.all([
+            const [sourceUser, sourceWarehouses, sourceTransportadoras, sourceConfig] = await Promise.all([
                 axios.get(endPoints.usuarios.findOne(usuarioBase)),
                 listarAlmacenesPorUsuario(usuarioBase),
+                listarTransportadorasPorUsuario(usuarioBase),
                 encontrarModulo(usuarioBase),
             ]);
 
@@ -232,12 +300,19 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                     .filter((item) => item?.habilitado)
                     .map((item) => item.id_almacen),
             );
+            const transportadorasHabilitadas = new Set(
+                (sourceTransportadoras || [])
+                    .filter((item) => item?.habilitado)
+                    .map((item) => item.id_transportadora),
+            );
 
             applyAccessConfiguration(
                 detalles,
                 Array.from(almacenesHabilitados),
                 sourceUser?.data?.id_rol || '',
                 almacenes,
+                Array.from(transportadorasHabilitadas),
+                transportadoras,
             );
         } catch (error) {
             console.error("Error al copiar permisos del usuario:", error);
@@ -262,6 +337,8 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                 Array.isArray(detalles?.almacenes) ? detalles.almacenes : [],
                 detalles?.rol || '',
                 almacenes,
+                Array.isArray(detalles?.transportadoras) ? detalles.transportadoras : [],
+                transportadoras,
             );
         } catch (error) {
             console.error("Error al aplicar perfil:", error);
@@ -282,6 +359,9 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
         const almacenesSeleccionados = almacenes
             .filter((_, index) => checkedState[index])
             .map((item) => item.consecutivo);
+        const transportadorasSeleccionadas = transportadoras
+            .filter((_, index) => checkedTransportadorasState[index])
+            .map((item) => item.id);
         const moduloPerfil = `${PROFILE_PREFIX}${slug}`;
 
         try {
@@ -296,6 +376,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                     submenu: tagSubMenu,
                     botones: tagBotones,
                     almacenes: almacenesSeleccionados,
+                    transportadoras: transportadorasSeleccionadas,
                 }),
             });
 
@@ -345,6 +426,11 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                         cargarAlmacenesPorUsuario(payload.username, item.consecutivo, checkedState[index]),
                     ),
                 );
+                await Promise.all(
+                    transportadoras.map((item, index) =>
+                        cargarTransportadorasPorUsuario(payload.username, item.id, checkedTransportadorasState[index]),
+                    ),
+                );
             } else {
                 if (!payload.password) delete payload.password;
                 if (!payload.username) delete payload.username;
@@ -355,6 +441,11 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                 await Promise.all(
                     almacenes.map((item, index) =>
                         cargarAlmacenesPorUsuario(user.username, item.consecutivo, checkedState[index]),
+                    ),
+                );
+                await Promise.all(
+                    transportadoras.map((item, index) =>
+                        cargarTransportadorasPorUsuario(user.username, item.id, checkedTransportadorasState[index]),
                     ),
                 );
             }
@@ -431,6 +522,26 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                             style={{ minHeight: 0 }}
                         >
                             <div className="modal-body overflow-auto">
+                                <div className="nav nav-tabs mb-3">
+                                    {[
+                                        ['basicos', 'Datos basicos'],
+                                        ['permisos', 'Permisos'],
+                                        ['almacenes', 'Almacenes'],
+                                        ['transportadoras', 'Transportadoras'],
+                                    ].map(([tabKey, label]) => (
+                                        <button
+                                            key={tabKey}
+                                            type="button"
+                                            className={`nav-link ${activeTab === tabKey ? 'active' : ''}`}
+                                            onClick={() => setActiveTab(tabKey)}
+                                        >
+                                            {label}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {activeTab === 'basicos' && (
+                                    <>
                                 <div className="row g-3">
                                     <div className="col-12 col-md-3">
                                         <label htmlFor="username" className="form-label">Usuario</label>
@@ -569,6 +680,11 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                                     </div>
                                 )}
 
+                                    </>
+                                )}
+
+                                {activeTab === 'permisos' && (
+                                    <>
                                 <div className="mt-4 pt-3 border-top">
                                     <h6 className="mb-3">Perfiles de permisos</h6>
                                     <div className="row g-3">
@@ -793,6 +909,11 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                                     </div>
                                 </div>
 
+                                    </>
+                                )}
+
+                                {activeTab === 'almacenes' && (
+                                    <>
                                 <div className="mt-4 pt-3 border-top">
                                     <div className="d-flex flex-column flex-lg-row align-items-lg-end justify-content-between gap-3 mb-3">
                                         <div>
@@ -887,6 +1008,105 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                                         )}
                                     </div>
                                 </div>
+                                    </>
+                                )}
+
+                                {activeTab === 'transportadoras' && (
+                                    <div className="mt-4 pt-3 border-top">
+                                        <div className="d-flex flex-column flex-lg-row align-items-lg-end justify-content-between gap-3 mb-3">
+                                            <div>
+                                                <h6 className="mb-1">Habilitar transportadoras</h6>
+                                                <div className="small text-muted">
+                                                    Busca por nombre o consecutivo y marca las transportadoras disponibles para el usuario.
+                                                </div>
+                                            </div>
+                                            <div className="d-flex flex-wrap gap-2">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-outline-primary btn-sm"
+                                                    onClick={() => updateAllTransportadoras(true)}
+                                                >
+                                                    Seleccionar todas
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-outline-secondary btn-sm"
+                                                    onClick={() => updateAllTransportadoras(false)}
+                                                >
+                                                    Limpiar todas
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="row g-2 align-items-end mb-3">
+                                            <div className="col-12 col-lg-4">
+                                                <label htmlFor="transportadoraSearch" className="form-label">Buscar transportadora</label>
+                                                <input
+                                                    id="transportadoraSearch"
+                                                    type="text"
+                                                    className="form-control form-control-sm"
+                                                    placeholder="Ej: BAN, DHL, 001"
+                                                    value={transportadoraSearch}
+                                                    onChange={(event) => setTransportadoraSearch(event.target.value)}
+                                                />
+                                            </div>
+                                            <div className="col-12 col-lg">
+                                                <div className="d-flex flex-wrap gap-2">
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-outline-primary btn-sm"
+                                                        onClick={() => updateVisibleTransportadoras(true)}
+                                                        disabled={!filteredTransportadoras.length}
+                                                    >
+                                                        Seleccionar visibles
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-outline-secondary btn-sm"
+                                                        onClick={() => updateVisibleTransportadoras(false)}
+                                                        disabled={!filteredTransportadoras.length}
+                                                    >
+                                                        Limpiar visibles
+                                                    </button>
+                                                    <span className="small text-muted align-self-center">
+                                                        {filteredTransportadoras.length} de {transportadoras.length} transportadoras visibles
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="row g-3">
+                                            {filteredTransportadoras.map(({ transportadora, index }) => {
+                                                const label = transportadora?.razon_social || transportadora?.consecutivo || `Transportadora ${transportadora?.id}`;
+                                                return (
+                                                    <div key={transportadora.id} className="col-12 col-md-6 col-xl-4">
+                                                        <div className="form-check">
+                                                            <input
+                                                                className="form-check-input"
+                                                                type="checkbox"
+                                                                checked={checkedTransportadorasState[index] || false}
+                                                                onChange={() => handleTransportadoraChange(index)}
+                                                                name={`transportadora-${transportadora.id}`}
+                                                                id={`transportadora-${transportadora.id}`}
+                                                            />
+                                                            <label
+                                                                className="form-check-label"
+                                                                htmlFor={`transportadora-${transportadora.id}`}
+                                                            >
+                                                                {label}
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                            {!filteredTransportadoras.length && (
+                                                <div className="col-12">
+                                                    <div className="alert alert-light border mb-0 py-2">
+                                                        No hay transportadoras que coincidan con la b&uacute;squeda.
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="modal-footer">
