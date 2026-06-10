@@ -316,7 +316,7 @@ const endPoints = {
     vehiculos: {
         list: `${API}/api/${VERSION}/vehiculos`,
         findOne: (id) => `${API}/api/${VERSION}/vehiculos/${id}`,
-        pagination: (page, limit, item, transportadoraId = '') => `${API}/api/${VERSION}/vehiculos/paginar?page=${page}&limit=${limit}&item=${item}&transportadoraId=${transportadoraId}`,
+        pagination: (page, limit, item, transportadoraId = '', includeUnassigned = false) => `${API}/api/${VERSION}/vehiculos/paginar?page=${page}&limit=${limit}&item=${item}&transportadoraId=${transportadoraId}&includeUnassigned=${includeUnassigned}`,
         create: `${API}/api/${VERSION}/vehiculos`,
         bulkCreate: `${API}/api/${VERSION}/vehiculos/masivo`,
         bulkUpdate: `${API}/api/${VERSION}/vehiculos/actualizar-masivo`,

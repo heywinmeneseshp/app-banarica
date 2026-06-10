@@ -1,6 +1,13 @@
 import axios from 'axios';
 import endPoints from './index';
 import { getToken } from 'utils/session';
+const getErrorMessage = (error, fallback) => (
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    error?.message ||
+    fallback
+);
+
 const config = {
     headers: {
         accept: 'application/json',
@@ -12,8 +19,8 @@ const agregarVehiculo = async (Vehiculo) => {
     const url = endPoints.vehiculos.create;
     const response = await axios.post(url, Vehiculo, config);
     return response.data;
-   }catch(e){
-    alert("Error al ingresar datos");
+   }catch(error){
+    throw new Error(getErrorMessage(error, "Error al ingresar vehiculo"));
    }
 };
 const authConfig = () => {
@@ -53,26 +60,27 @@ const buscarVehiculo = async(consecutivo) => {
     try {
     const res = await axios.get(endPoints.vehiculos.findOne(consecutivo));
     return res.data;
-    } catch (e) {
-        alert("Error al buscar Vehiculo");
+    } catch (error) {
+        throw new Error(getErrorMessage(error, "Error al buscar Vehiculo"));
     } 
 };
 
-const listarVehiculo = async() => {
+const listarVehiculo = async(includeUnassigned = false) => {
     try {
-        const res = await axios.get(endPoints.vehiculos.list, authConfig());
+        const separator = endPoints.vehiculos.list.includes('?') ? '&' : '?';
+        const res = await axios.get(`${endPoints.vehiculos.list}${separator}includeUnassigned=${includeUnassigned}`, authConfig());
         return res.data;
-    } catch (e){
-        alert("Error al listar Vehiculo");
+    } catch (error){
+        throw new Error(getErrorMessage(error, "Error al listar Vehiculo"));
     }
 };
 
-const paginarVehiculo = async (page, limit, nombre, transportadoraId = '') => {
+const paginarVehiculo = async (page, limit, nombre, transportadoraId = '', includeUnassigned = false) => {
     try {
-        const res = await axios.get(endPoints.vehiculos.pagination(page, limit, nombre, transportadoraId), authConfig());
+        const res = await axios.get(endPoints.vehiculos.pagination(page, limit, nombre, transportadoraId, includeUnassigned), authConfig());
         return res.data;
-    } catch {
-        alert("Error al paginar vehiculos");
+    } catch (error) {
+        throw new Error(getErrorMessage(error, "Error al paginar vehiculos"));
     }
 };
 

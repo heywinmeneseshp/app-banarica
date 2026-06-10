@@ -39,7 +39,10 @@ function Formularios({ titulo, setAlert, listas, element, setOpen, encabezados, 
           throw new Error("No se encontró el id del item a editar");
         }
         delete objeto.id;
-        await actualizar(id, objeto);
+        const updateResult = await actualizar(id, objeto);
+        if (typeof updateResult === "undefined") {
+          throw new Error("No se recibio confirmacion de actualizacion del servidor");
+        }
         setOpen(false);
         setAlert({
           active: true,
@@ -55,7 +58,10 @@ function Formularios({ titulo, setAlert, listas, element, setOpen, encabezados, 
       }
 
       objeto.activo = true;
-      await crear(objeto);
+      const createResult = await crear(objeto);
+      if (typeof createResult === "undefined") {
+        throw new Error("No se recibio confirmacion de creacion del servidor");
+      }
       setOpen(false);
       setAlert({
         active: true,

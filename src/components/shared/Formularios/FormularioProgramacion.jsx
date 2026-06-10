@@ -7,7 +7,7 @@ import { agregarVehiculo, listarVehiculo } from "@services/api/vehiculos";
 import { agregarProgramaciones } from "@services/api/programaciones";
 import { agregarRutas, buscarRutaPost } from "@services/api/rutas";
 import { agregarConsumoRutaVehiculo } from "@services/api/consumoRutaVehiculo";
-import { listarSemanas, filtrarSemanasRangoProgramador } from "@services/api/semanas";
+import { filtrarSemanasRangoProgramador } from "@services/api/semanas";
 import { paginarEmbarques } from "@services/api/embarques";
 import { listarCombos } from "@services/api/combos";
 import { listarcategoriaVehiculos } from "@services/api/CategoriaVehiculos";
@@ -56,6 +56,8 @@ export default function FormulariosProgramacion({
   const [listaCombos, setListaCombos] = useState([]);
   const [vehiculosSinCombustible, setVehiculosSinCombustible] = useState([]);
   const [canQuickCreateProgramador, setCanQuickCreateProgramador] = useState(false);
+  const [loadingEmbarques, setLoadingEmbarques] = useState(false);
+  const [embarquesError, setEmbarquesError] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [semanaInput, setSemanaInput] = useState("");
   const [semanaSeleccionada, setSemanaSeleccionada] = useState("");
@@ -83,22 +85,7 @@ export default function FormulariosProgramacion({
 
   const cargarCatalogos = useCallback(async () => {
     const usuario = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("usuario") || "{}") : {};
-    const [
-      ubicaciones,
-      conductores,
-      vehiculos,
-      categoriasVehiculo,
-      navieras,
-      destinos,
-      buques,
-      tiposMovimiento,
-      semanas,
-      embarquesRes,
-      combos,
-      configProgramador,
-      configSemanaRes,
-      userConfig,
-    ] = await Promise.all([
+    const catalogResults = await Promise.allSettled([
       listarUbicaciones(),
       listarConductores(),
       listarVehiculo(),
@@ -107,13 +94,28 @@ export default function FormulariosProgramacion({
       listarDestinos(),
       listarBuques(),
       listartipoMovimientoVehiculos(),
-      listarSemanas(),
-      paginarEmbarques(1, 5000, {}),
       listarCombos(),
       encontrarModulo("Programador_combustible"),
-      encontrarModulo("Semana"),
+      encontrarModulo("Semana", { syncWeeks: false }),
       usuario?.id_rol === "Super administrador" || !usuario?.username ? Promise.resolve([]) : encontrarModulo(usuario.username),
     ]);
+
+    const getCatalogValue = (index, fallback) => (
+      catalogResults[index]?.status === "fulfilled" ? catalogResults[index].value : fallback
+    );
+
+    const ubicaciones = getCatalogValue(0, []);
+    const conductores = getCatalogValue(1, []);
+    const vehiculos = getCatalogValue(2, []);
+    const categoriasVehiculo = getCatalogValue(3, []);
+    const navieras = getCatalogValue(4, []);
+    const destinos = getCatalogValue(5, []);
+    const buques = getCatalogValue(6, []);
+    const tiposMovimiento = getCatalogValue(7, []);
+    const combos = getCatalogValue(8, []);
+    const configProgramador = getCatalogValue(9, []);
+    const configSemanaRes = getCatalogValue(10, []);
+    const userConfig = getCatalogValue(11, []);
 
     setListaUbicaciones(ubicaciones || []);
     setListaConductores(conductores || []);
@@ -123,15 +125,19 @@ export default function FormulariosProgramacion({
     setListaDestinos(destinos || []);
     setListaBuques(buques || []);
     setListaTiposMovimiento((tiposMovimiento || []).filter((item) => item?.activo !== false));
-    const semanasFiltradas = await filtrarSemanasRangoProgramador({
-      anho_actual: configSemanaRes?.[0]?.anho_actual,
-      semana_actual: configSemanaRes?.[0]?.semana_actual,
-      semana_previa: configSemanaRes?.[0]?.semana_previa,
-      semana_siguiente: configSemanaRes?.[0]?.semana_siguiente,
-      total_semanas_anho: configSemanaRes?.[0]?.total_semanas_anho,
-    });
-    setListaSemanas(semanasFiltradas || semanas || []);
-    setListaEmbarques(embarquesRes?.data || []);
+    let semanasFiltradas = [];
+    try {
+      semanasFiltradas = await filtrarSemanasRangoProgramador({
+        anho_actual: configSemanaRes?.[0]?.anho_actual,
+        semana_actual: configSemanaRes?.[0]?.semana_actual,
+        semana_previa: configSemanaRes?.[0]?.semana_previa,
+        semana_siguiente: configSemanaRes?.[0]?.semana_siguiente,
+        total_semanas_anho: configSemanaRes?.[0]?.total_semanas_anho,
+      });
+    } catch (error) {
+      console.warn("No se pudo filtrar el rango de semanas del programador:", error);
+    }
+    setListaSemanas(semanasFiltradas || []);
     setListaCombos(combos || []);
     setVehiculosSinCombustible(parseVehiculosSinCombustible(configProgramador));
     if (usuario?.id_rol === "Super administrador") {
@@ -155,6 +161,45 @@ export default function FormulariosProgramacion({
     () => listaSemanas.find((item) => String(item?.id || "") === String(semanaSeleccionada)),
     [listaSemanas, semanaSeleccionada]
   );
+
+  useEffect(() => {
+    const consecutivoSemana = String(semanaActual?.consecutivo || "").trim();
+
+    if (!semanaSeleccionada || !consecutivoSemana) {
+      setListaEmbarques([]);
+      setEmbarquesError("");
+      return undefined;
+    }
+
+    let active = true;
+
+    const cargarEmbarquesSemana = async () => {
+      try {
+        setLoadingEmbarques(true);
+        setEmbarquesError("");
+        const embarquesRes = await paginarEmbarques(1, 5000, { semana: consecutivoSemana });
+        if (active) {
+          setListaEmbarques(embarquesRes?.data || []);
+        }
+      } catch (error) {
+        console.error("No fue posible cargar embarques de la semana:", error);
+        if (active) {
+          setListaEmbarques([]);
+          setEmbarquesError("No fue posible cargar los embarques de la semana.");
+        }
+      } finally {
+        if (active) {
+          setLoadingEmbarques(false);
+        }
+      }
+    };
+
+    cargarEmbarquesSemana();
+
+    return () => {
+      active = false;
+    };
+  }, [semanaActual, semanaSeleccionada]);
 
   const combosActivos = useMemo(
     () => (listaCombos || []).filter((item) => item?.isBlock !== true),
@@ -384,6 +429,8 @@ export default function FormulariosProgramacion({
     setSemanaSeleccionada(value);
     const semana = listaSemanas.find((item) => String(item?.id || "") === String(value || ""));
     setSemanaInput(semana?.consecutivo || "");
+    setListaEmbarques([]);
+    setEmbarquesError("");
     resetDependentSelectors("semana");
   };
 
@@ -827,13 +874,13 @@ export default function FormulariosProgramacion({
                       id="naviera-programador"
                       className="form-control form-control-sm"
                       value={navieraSeleccionada}
-                      disabled={!semanaSeleccionada}
+                      disabled={!semanaSeleccionada || loadingEmbarques}
                       onChange={(event) => {
                         setNavieraSeleccionada(event.target.value);
                         resetDependentSelectors("naviera");
                       }}
                     >
-                      <option value=""></option>
+                      <option value="">{loadingEmbarques ? "Cargando embarques..." : ""}</option>
                       {navierasDisponibles.map((item) => (
                         <option key={item.id} value={item.id}>{item.nombre}</option>
                       ))}
@@ -846,7 +893,7 @@ export default function FormulariosProgramacion({
                       id="destino-programador"
                       className="form-control form-control-sm"
                       value={destinoSeleccionado}
-                      disabled={!navieraSeleccionada}
+                      disabled={!navieraSeleccionada || loadingEmbarques}
                       onChange={(event) => {
                         setDestinoSeleccionado(event.target.value);
                         resetDependentSelectors("destino");
@@ -865,7 +912,7 @@ export default function FormulariosProgramacion({
                       id="buque-programador"
                       className="form-control form-control-sm"
                       value={buqueSeleccionado}
-                      disabled={!destinoSeleccionado}
+                      disabled={!destinoSeleccionado || loadingEmbarques}
                       onChange={(event) => {
                         setBuqueSeleccionado(event.target.value);
                         resetDependentSelectors("buque");
@@ -884,7 +931,7 @@ export default function FormulariosProgramacion({
                       id="booking-programador"
                       className="form-control form-control-sm"
                       value={bookingSeleccionado}
-                      disabled={!buqueSeleccionado}
+                      disabled={!buqueSeleccionado || loadingEmbarques}
                       onChange={(event) => setBookingSeleccionado(event.target.value)}
                     >
                       <option value=""></option>
@@ -893,6 +940,22 @@ export default function FormulariosProgramacion({
                       ))}
                     </select>
                   </div>
+
+                  {semanaSeleccionada && !loadingEmbarques && !embarquesError && listaEmbarques.length === 0 && (
+                    <div className="col-12">
+                      <div className="alert alert-light border py-2 mb-0 small">
+                        No hay embarques disponibles para la semana seleccionada.
+                      </div>
+                    </div>
+                  )}
+
+                  {embarquesError && (
+                    <div className="col-12">
+                      <div className="alert alert-warning py-2 mb-0 small">
+                        {embarquesError}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="col-12">
                     <div className="px-0 py-1">

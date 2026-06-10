@@ -4,7 +4,9 @@ import {
     getToken,
     persistToken,
     setStoredUser,
+    setStoredTransporters,
     setStoredWarehouses,
+    sortTransportersByName,
     sortWarehousesByName,
 } from 'utils/session';
 
@@ -61,6 +63,7 @@ const fetchAuthenticatedProfile = async (token = getToken()) => {
 const syncSessionFromProfile = (profileData) => {
     const usuario = profileData?.usuario ?? null;
     const almacenes = sortWarehousesByName(profileData?.almacenes ?? []);
+    const transportadoras = sortTransportersByName(profileData?.transportadoras ?? []);
 
     if (usuario) {
         setStoredUser(usuario);
@@ -70,7 +73,11 @@ const syncSessionFromProfile = (profileData) => {
         setStoredWarehouses(almacenes);
     }
 
-    return { usuario, almacenes };
+    if (profileData?.transportadoras) {
+        setStoredTransporters(transportadoras);
+    }
+
+    return { usuario, almacenes, transportadoras };
 };
 
 export {

@@ -16,8 +16,9 @@ const getAuthConfig = () => {
     };
 };
 
-const encontrarModulo = async (modulo) => {
-    const res = await axios.get(endPoints.confi.buscarModulo(modulo), getAuthConfig());
+const encontrarModulo = async (modulo, options = {}) => {
+    const query = options.syncWeeks === false ? '?syncWeeks=false' : '';
+    const res = await axios.get(`${endPoints.confi.buscarModulo(modulo)}${query}`, getAuthConfig());
     return res.data;
 };
 

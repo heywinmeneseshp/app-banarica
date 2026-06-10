@@ -98,9 +98,13 @@ export default function Tablas({
 
   useEffect(() => {
     if (!open) {
+      if (!item && pagination !== 1) {
+        setPagination(1);
+        return;
+      }
       listarItems();
     }
-  }, [open, listarItems]);
+  }, [item, listarItems, open, pagination]);
 
   const handleNuevo = (e) => {
     if (e) e.preventDefault();

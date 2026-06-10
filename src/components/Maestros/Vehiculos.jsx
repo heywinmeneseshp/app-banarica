@@ -112,7 +112,7 @@ export default function Vehiculo() {
 
   const listarVehiculosConConfig = useCallback(async () => {
     const [listaVehiculos, configVehiculos] = await Promise.all([
-      listarVehiculo(),
+      listarVehiculo(true),
       cargarConfiguracionProgramador(),
     ]);
     return enrichVehiculos(listaVehiculos || [], configVehiculos);
@@ -120,7 +120,7 @@ export default function Vehiculo() {
 
   const paginarVehiculosConConfig = useCallback(async (page, limit, item, filters = {}) => {
     const [res, configVehiculos] = await Promise.all([
-      paginarVehiculo(page, limit, item, filters.transportadoraId || ''),
+      paginarVehiculo(page, limit, item, filters.transportadoraId || '', !filters.transportadoraId),
       cargarConfiguracionProgramador(),
     ]);
 

@@ -1,6 +1,13 @@
 import axios from 'axios';
 import endPoints from './index';
 
+const getErrorMessage = (error, fallback) => (
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    error?.message ||
+    fallback
+);
+
 const agregarConductor = async (Conductor) => {
     const config = {
         headers: {
@@ -27,8 +34,8 @@ const buscarConductor = async (consecutivo) => {
     try {
         const res = await axios.get(endPoints.conductores.findOne(consecutivo));
         return res.data;
-    } catch (e) {
-        alert("Se ha presentado un error al buscar el conductor");
+    } catch (error) {
+        throw new Error(getErrorMessage(error, "Se ha presentado un error al buscar el conductor"));
     }
 };
 
@@ -36,8 +43,8 @@ const listarConductores = async () => {
     try {
         const res = await axios.get(endPoints.conductores.list);
         return res.data;
-    } catch {
-        alert("Se ha presentado un error al listar los conductores");
+    } catch (error) {
+        throw new Error(getErrorMessage(error, "Se ha presentado un error al listar los conductores"));
     }
 };
 
@@ -45,8 +52,8 @@ const paginarConductores = async (page, limit, nombre) => {
     try {
         const res = await axios.get(endPoints.conductores.pagination(page, limit, nombre));
         return res.data;
-    } catch {
-        alert("Error al paginar conductores");
+    } catch (error) {
+        throw new Error(getErrorMessage(error, "Error al paginar conductores"));
     }
 };
 

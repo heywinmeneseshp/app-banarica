@@ -313,9 +313,11 @@ export default function Programador() {
       }
 
       if (!superAdmin) {
-        body.transportadoraIds = transportadoraFiltro
-          ? [transportadoraFiltro]
-          : (transportadoraIdsPermitidas.length ? transportadoraIdsPermitidas : [-1]);
+        if (transportadoraFiltro) {
+          body.transportadoraIds = [transportadoraFiltro];
+        } else if (transportadoraIdsPermitidas.length) {
+          body.transportadoraIds = transportadoraIdsPermitidas;
+        }
       }
 
       const fechaFin = formData.get('fecha_fin');
@@ -390,7 +392,7 @@ export default function Programador() {
 
   useEffect(() => {
     listar();
-  }, [pagination, reloadKey, alert, listar]);
+  }, [pagination, reloadKey, listar]);
 
   const embarqueCatalog = useMemo(() => (
     (embarques || []).map((item) => ({
