@@ -348,9 +348,10 @@ export default function Programador() {
         ? await filtrarProductos({ producto: { consecutivo: insumosConsecutivos } })
         : [];
 
+
       setUbicaciones(newUbicaciones || []);
-      setConductores(newConductores || []);
-      setVehiculos(newVehiculos || []);
+      setConductores(newConductores.sort((a, b) => String(a.conductor).localeCompare(String(b.conductor))) || []);
+      setVehiculos(newVehiculos.sort((a, b) => String(a.placa).localeCompare(String(b.placa))) || []);
       setEmbarques(embarquesRes?.data || []);
       setCombos(newCombos || []);
       setTiposMovimiento(newTiposMovimiento || []);
@@ -413,6 +414,35 @@ export default function Programador() {
     () => (combos || []).filter((item) => item?.isBlock !== true),
     [combos]
   );
+
+  // ========== FUNCIONES MOVIDAS AQUÍ (ANTES del useMemo de rows) ==========
+  const getVisibleSerialesProgramador = useCallback((row) => {
+    const seriales = Array.isArray(row?.serialesProgramador) ? row.serialesProgramador : [];
+    if (!configuracionInsumos.length) {
+      return seriales;
+    }
+
+    const visibles = new Set(configuracionInsumos.map((item) => String(item?.consecutivo || '')));
+    return seriales.filter((item) => {
+      const consProducto = item?.serial_articulo?.cons_producto || item?.cons_producto;
+      return visibles.has(String(consProducto || ''));
+    });
+  }, [configuracionInsumos]);
+
+  const formatSerialArticuloLabel = useCallback((row) => (
+    getVisibleSerialesProgramador(row)
+      .map((item) => item?.serial_articulo?.producto?.name || item?.producto?.name || item?.serial_articulo?.cons_producto || item?.cons_producto)
+      .filter(Boolean)
+      .join(', ')
+  ), [getVisibleSerialesProgramador]);
+
+  const formatSerialLabel = useCallback((row) => (
+    getVisibleSerialesProgramador(row)
+      .map((item) => item?.serial_articulo?.bag_pack || item?.serial_articulo?.serial || item?.bag_pack || item?.serial)
+      .filter(Boolean)
+      .join(', ')
+  ), [getVisibleSerialesProgramador]);
+  // ========== FIN DE FUNCIONES MOVIDAS ==========
 
   const rows = useMemo(() => {
     const comboMap = new Map((combos || []).map((item) => [String(item?.id || ''), item]));
@@ -889,33 +919,6 @@ export default function Programador() {
       setReloadKey((prev) => prev + 1);
     }
   };
-
-  const getVisibleSerialesProgramador = useCallback((row) => {
-    const seriales = Array.isArray(row?.serialesProgramador) ? row.serialesProgramador : [];
-    if (!configuracionInsumos.length) {
-      return seriales;
-    }
-
-    const visibles = new Set(configuracionInsumos.map((item) => String(item?.consecutivo || '')));
-    return seriales.filter((item) => {
-      const consProducto = item?.serial_articulo?.cons_producto || item?.cons_producto;
-      return visibles.has(String(consProducto || ''));
-    });
-  }, [configuracionInsumos]);
-
-  const formatSerialArticuloLabel = useCallback((row) => (
-    getVisibleSerialesProgramador(row)
-      .map((item) => item?.serial_articulo?.producto?.name || item?.producto?.name || item?.serial_articulo?.cons_producto || item?.cons_producto)
-      .filter(Boolean)
-      .join(', ')
-  ), [getVisibleSerialesProgramador]);
-
-  const formatSerialLabel = useCallback((row) => (
-    getVisibleSerialesProgramador(row)
-      .map((item) => item?.serial_articulo?.bag_pack || item?.serial_articulo?.serial || item?.bag_pack || item?.serial)
-      .filter(Boolean)
-      .join(', ')
-  ), [getVisibleSerialesProgramador]);
 
   const abrirModalSeriales = (programacion) => {
     setSelectedSerialProgramacion(programacion);

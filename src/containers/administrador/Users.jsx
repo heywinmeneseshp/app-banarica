@@ -17,44 +17,45 @@ import styles from '@styles/Listar.module.css';
 
 const Users = () => {
     const buscardorRef = useRef(null);
-    const [user, setUser] = useState(null);
-    const [usuarios, setUsuarios] = useState([]);
-    const [statusFilter, setStatusFilter] = useState('todos');
-    const { alert, setAlert, toogleAlert } = useAlert();
-    const [open, setOpen] = useState(false);
-    const [pagination, setPagination] = useState(1);
-    const [total, setTotal] = useState(0);
-    const limit = 10;
+const [currentUser, setCurrentUser] = useState(null);
+const [editUser, setEditUser] = useState(null);
+const [usuarios, setUsuarios] = useState([]);
+const [statusFilter, setStatusFilter] = useState('todos');
+const { alert, setAlert, toogleAlert } = useAlert();
+const [open, setOpen] = useState(false);
+const [pagination, setPagination] = useState(1);
+const [total, setTotal] = useState(0);
+const limit = 10;
 
-    const listarUsurios = useCallback(async () => {
-        const username = buscardorRef.current?.value || '';
-        const res = await axios.get(endPoints.usuarios.pagination(pagination, limit, username));
-        setTotal(res.data.total);
-        setUsuarios(res.data.data);
-    }, [pagination]);
+const listarUsurios = useCallback(async () => {
+    const username = buscardorRef.current?.value || '';
+    const res = await axios.get(endPoints.usuarios.pagination(pagination, limit, username));
+    setTotal(res.data.total);
+    setUsuarios(res.data.data);
+}, [pagination]);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const profile = await fetchAuthenticatedProfile();
-                if (!profile) {
-                    return;
-                }
-
-                if (profile.usuario.isBlock) {
-                    window.alert("El usuario esta deshabilitado, por favor comuniquese con el administrador");
-                    return;
-                }
-
-                setUser(profile.usuario);
-                listarUsurios();
-            } catch (error) {
-                window.alert("Error al cargar los usuarios: " + error.message);
+useEffect(() => {
+    const fetchData = async () => {
+        try {
+            const profile = await fetchAuthenticatedProfile();
+            if (!profile) {
+                return;
             }
-        };
 
-        fetchData();
-    }, [alert, listarUsurios]);
+            if (profile.usuario.isBlock) {
+                window.alert("El usuario esta deshabilitado, por favor comuniquese con el administrador");
+                return;
+            }
+
+            setCurrentUser(profile.usuario);
+            listarUsurios();
+        } catch (error) {
+            window.alert("Error al cargar los usuarios: " + error.message);
+        }
+    };
+
+    fetchData();
+}, [alert, listarUsurios]);
 
     const onChangeBuscador = () => {
         setPagination(1);
@@ -67,12 +68,12 @@ const Users = () => {
 
     const handleNuevo = async () => {
         setOpen(true);
-        setUser(null);
+        setEditUser(null);
     };
 
     const handleEditar = async (usuario) => {
         setOpen(true);
-        setUser(usuario);
+        setEditUser(usuario);
     };
 
     const onDescargar = async () => {
@@ -80,13 +81,13 @@ const Users = () => {
         excel(data, "Usuarios", "Usuarios");
     };
 
-    const handleActivar = (usuario) => {
+    const handleActivar = async (usuario) => {
         try {
             const nextAction = usuario.isBlock ? "activar" : "deshabilitar";
             const deleteUser = window.confirm(`Esta seguro que desea ${nextAction} el usuario?`);
             if (!deleteUser) return;
             const changes = { isBlock: !usuario.isBlock };
-            actualizarUsuario(usuario.username, changes);
+            await actualizarUsuario(usuario.username, changes);
             setAlert({
                 active: true,
                 mensaje: 'El usuario "' + usuario.username + '" se ha actualizado',
@@ -158,7 +159,7 @@ const Users = () => {
                 </thead>
                 <tbody className={styles.letter}>
                     {usuariosFiltrados.map((usuario, index) => {
-                        const allowDelete = usuario.username !== user?.username;
+                        const allowDelete = usuario.username !== currentUser?.username;
 
                         return (
                             <tr key={index}>
@@ -201,7 +202,7 @@ const Users = () => {
             </table>
             </div>
             <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
-            {open && <NuevoUsuario setOpen={setOpen} setAlert={setAlert} user={user} />}
+            {open && <NuevoUsuario setOpen={setOpen} setAlert={setAlert} user={editUser} />}
         </div>
     );
 };

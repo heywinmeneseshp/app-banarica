@@ -9,13 +9,9 @@ const config = {
 };
 
 const agregarUsuario = async (usuario) => {
-    try {
-        const url = endPoints.usuarios.create;
-        const response = await axios.post(url, usuario, config);
-        return response.data;
-    } catch (e) {
-        alert("Se ha presentado un error al agregar al usuario");
-    }
+    const url = endPoints.usuarios.create;
+    const response = await axios.post(url, usuario, config);
+    return response.data;
 };
 
 const eliminarUsuario = async (username) => {
@@ -28,12 +24,8 @@ const eliminarUsuario = async (username) => {
 };
 
 const actualizarUsuario = async (username, changes) => {
-    try {
-        const res = await axios.patch(endPoints.usuarios.update(username), changes);
-        return res.data;
-    } catch (e) {
-        alert("Se ha presentado un error al actualizar el usuario");
-    }
+    const res = await axios.patch(endPoints.usuarios.update(username), changes);
+    return res.data;
 };
 
 const buscarUsuario = async (username) => {
@@ -46,50 +38,30 @@ const buscarUsuario = async (username) => {
 };
 
 const listarUsuarios = async () => {
-    try {
-        const res = await axios.get(endPoints.usuarios.list);
-        return res.data;
-    } catch {
-        alert("Se ha presnetado un error al listar los usuarios");
-    }
+    const res = await axios.get(endPoints.usuarios.list);
+    return res.data;
 };
 
 const listarAlmacenesPorUsuario = async (username) => {
-    try {
-        const res = await axios.get(endPoints.usuarios.almacenes.list(username));
-        return res.data;
-    } catch (e) {
-        alert("Se ha presentado un error al listar almacenes por usuario");
-    }
+    const res = await axios.get(endPoints.usuarios.almacenes.list(username));
+    return res.data;
 };
 
 const cargarAlmacenesPorUsuario = async (username, id_almacen, habilitado) => {
     let data = { username: username, id_almacen: id_almacen, habilitado: habilitado };
-    try {
-        const result = await axios.patch(endPoints.usuarios.almacenes.update, data);
-        return result.data;
-    } catch (e) {
-        alert("Se ha presentado un error al cargar almacenes por usuario");
-    }
+    const result = await axios.patch(endPoints.usuarios.almacenes.update, data);
+    return result.data;
 };
 
 const listarTransportadorasPorUsuario = async (username) => {
-    try {
-        const res = await axios.get(endPoints.usuarios.transportadoras.list(username));
-        return res.data;
-    } catch (e) {
-        alert("Se ha presentado un error al listar transportadoras por usuario");
-    }
+    const res = await axios.get(endPoints.usuarios.transportadoras.list(username));
+    return res.data;
 };
 
 const cargarTransportadorasPorUsuario = async (username, id_transportadora, habilitado) => {
     const data = { username, id_transportadora, habilitado };
-    try {
-        const result = await axios.patch(endPoints.usuarios.transportadoras.update, data);
-        return result.data;
-    } catch (e) {
-        alert("Se ha presentado un error al cargar transportadoras por usuario");
-    }
+    const result = await axios.patch(endPoints.usuarios.transportadoras.update, data);
+    return result.data;
 };
 
 export {

@@ -34,6 +34,7 @@ export default function NuevoConductor({ setAlert, setOpen, item }) {
         const data = {
             conductor: formData.get('conductor'),
             cons_transportadora: formData.get('transportadora'),
+            licencia: formData.get('identificacion'),
             tel: formData.get('telefono'),
             email: formData.get('email'),
             isBlock: false
@@ -83,13 +84,22 @@ export default function NuevoConductor({ setAlert, setOpen, item }) {
                             </div>
                         </div>
 
+
+                        <div className={styles.grupo}>
+                            <label htmlFor="identificacion">Identificación</label>
+                            <div>
+                                <input defaultValue={item?.licencia} type="text" className="form-control form-control-sm" name="identificacion" id="identificacion"></input>
+                            </div>
+                        </div>
+
+
                         <div className={styles.grupo}>
                             <label htmlFor="transportadora">Transportadora</label>
                             <div>
                                 <select defaultValue={item?.cons_transportadora} id="transportadora" name='transportadora' className="form-select form-select-sm">
 
                                     {transportadoras.map((item, index) => (
-                                        <option key={index}>{item.razon_social}</option>
+                                        <option key={index} value={item.id}>{item.razon_social}</option>
                                     ))}
 
                                 </select>

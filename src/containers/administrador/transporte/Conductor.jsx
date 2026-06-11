@@ -29,6 +29,7 @@ const Conductor = () => {
         const res = await paginarConductores(pagination, limit, nombre);
         setTotal(res.total);
         setItems(res.data);
+        console.log(res.data);
     }
 
     const handleNuevo = () => {
@@ -102,6 +103,7 @@ const Conductor = () => {
                             <th><input type="checkbox" id="topping" name="topping" value="Paneer" /></th>
                             <th scope="col">Código</th>
                             <th scope="col">Conductor</th>
+                            <th scope="col">Identificación</th>
                             <th scope="col">Transportadora</th>
                             <th scope="col">Correo</th>
                             <th scope="col">Telefono</th>
@@ -116,7 +118,8 @@ const Conductor = () => {
                                 <td><input type="checkbox" id="topping" name="topping" value="Paneer" /></td>
                                 <td>{itemA.consecutivo}</td>
                                 <td>{itemA.conductor}</td>
-                                <td>{itemA.cons_transportadora}</td>
+                                <td>{itemA.licencia}</td>
+                                <td>{itemA.transportadora?.razon_social}</td>
                                 <td>{itemA.email}</td>
                                 <td>{itemA.tel}</td>
                                 <td>

@@ -40,6 +40,7 @@ function Formularios({ titulo, setAlert, listas, element, setOpen, encabezados, 
         }
         delete objeto.id;
         const updateResult = await actualizar(id, objeto);
+        console.log(updateResult);
         if (typeof updateResult === "undefined") {
           throw new Error("No se recibio confirmacion de actualizacion del servidor");
         }

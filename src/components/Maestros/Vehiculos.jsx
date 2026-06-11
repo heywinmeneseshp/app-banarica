@@ -103,11 +103,11 @@ export default function Vehiculo() {
 
   const actualizarVehiculoConConfig = useCallback(async (id, changes) => {
     const { programador_sin_combustible, ...vehiculoChanges } = changes;
-    await actualizarVehiculo(id, vehiculoChanges);
-
+    const updateResult = await actualizarVehiculo(id, vehiculoChanges);
     if (typeof programador_sin_combustible !== "undefined") {
       await syncConfigForVehicle(id, Boolean(programador_sin_combustible));
     }
+    return updateResult;
   }, [syncConfigForVehicle]);
 
   const listarVehiculosConConfig = useCallback(async () => {

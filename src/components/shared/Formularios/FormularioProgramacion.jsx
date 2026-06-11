@@ -11,6 +11,7 @@ import { filtrarSemanasRangoProgramador } from "@services/api/semanas";
 import { paginarEmbarques } from "@services/api/embarques";
 import { listarCombos } from "@services/api/combos";
 import { listarcategoriaVehiculos } from "@services/api/CategoriaVehiculos";
+import { listarTransportadoras } from "@services/api/transportadoras";
 import { listarNavieras } from "@services/api/navieras";
 import { listarDestinos } from "@services/api/destinos";
 import { listarBuques } from "@services/api/buques";
@@ -47,6 +48,7 @@ export default function FormulariosProgramacion({
   const [listaConductores, setListaConductores] = useState([]);
   const [listaVehiculos, setListaVehiculos] = useState([]);
   const [listaCategoriasVehiculo, setListaCategoriasVehiculo] = useState([]);
+  const [listaTransportadoras, setListaTransportadoras] = useState([]);
   const [listaNavieras, setListaNavieras] = useState([]);
   const [listaDestinos, setListaDestinos] = useState([]);
   const [listaBuques, setListaBuques] = useState([]);
@@ -90,6 +92,7 @@ export default function FormulariosProgramacion({
       listarConductores(),
       listarVehiculo(),
       listarcategoriaVehiculos(),
+      listarTransportadoras(),
       listarNavieras(),
       listarDestinos(),
       listarBuques(),
@@ -108,19 +111,21 @@ export default function FormulariosProgramacion({
     const conductores = getCatalogValue(1, []);
     const vehiculos = getCatalogValue(2, []);
     const categoriasVehiculo = getCatalogValue(3, []);
-    const navieras = getCatalogValue(4, []);
-    const destinos = getCatalogValue(5, []);
-    const buques = getCatalogValue(6, []);
-    const tiposMovimiento = getCatalogValue(7, []);
-    const combos = getCatalogValue(8, []);
-    const configProgramador = getCatalogValue(9, []);
-    const configSemanaRes = getCatalogValue(10, []);
-    const userConfig = getCatalogValue(11, []);
+    const transportadoras = getCatalogValue(4, []);
+    const navieras = getCatalogValue(5, []);
+    const destinos = getCatalogValue(6, []);
+    const buques = getCatalogValue(7, []);
+    const tiposMovimiento = getCatalogValue(8, []);
+    const combos = getCatalogValue(9, []);
+    const configProgramador = getCatalogValue(10, []);
+    const configSemanaRes = getCatalogValue(11, []);
+    const userConfig = getCatalogValue(12, []);
 
     setListaUbicaciones(ubicaciones || []);
-    setListaConductores(conductores || []);
-    setListaVehiculos(vehiculos || []);
+    setListaConductores(conductores.sort((a, b) => String(a.conductor).localeCompare(String(b.conductor))) || []);
+    setListaVehiculos(vehiculos.sort((a, b) => String(a.placa).localeCompare(String(b.placa))) || []);
     setListaCategoriasVehiculo(categoriasVehiculo || []);
+    setListaTransportadoras(transportadoras || []);
     setListaNavieras(navieras || []);
     setListaDestinos(destinos || []);
     setListaBuques(buques || []);
@@ -460,6 +465,7 @@ export default function FormulariosProgramacion({
         placa: "",
         conductor_id: "",
         categoria_id: "",
+        transportadoraId: "",
         combustible: 0,
         gal_por_km: 0,
         programador_sin_combustible: true,
@@ -476,7 +482,8 @@ export default function FormulariosProgramacion({
       title: "Nuevo conductor",
       form: {
         conductor: "",
-        documento: "",
+        identificacion: "",
+        transportadoraId: "",
         telefono: "",
         activo: true,
       },
@@ -535,6 +542,9 @@ export default function FormulariosProgramacion({
         if (!placaValue) {
           throw new Error("Debes ingresar la placa.");
         }
+        if (!quickCreateState.form?.transportadoraId) {
+          throw new Error("Debes asignar una transportadora al vehículo.");
+        }
 
         const created = await agregarVehiculo({
           vehiculo: String(quickCreateState.form?.vehiculo || placaValue).trim(),
@@ -542,6 +552,7 @@ export default function FormulariosProgramacion({
           placa: placaValue,
           conductor_id: quickCreateState.form?.conductor_id || null,
           categoria_id: quickCreateState.form?.categoria_id || null,
+          transportadoraId: quickCreateState.form?.transportadoraId || null,
           observacion: quickCreateState.form?.programador_sin_combustible
             ? "Programador sin combustible"
             : "",
@@ -566,7 +577,8 @@ export default function FormulariosProgramacion({
 
         const created = await agregarConductor({
           conductor: conductorValue,
-          cons_transportadora: String(quickCreateState.form?.documento || "").trim() || '',
+          cons_transportadora: String(quickCreateState.form?.transportadoraId || "").trim() || '',
+          licencia: String(quickCreateState.form?.identificacion || "").trim() || '',
           email: '',
           tel: String(quickCreateState.form?.telefono || "").trim(),
           isBlock: false,
@@ -1316,6 +1328,23 @@ export default function FormulariosProgramacion({
                   </Form.Select>
                 </Form.Group>
               </div>
+              <div className="col-md-6">
+                <Form.Group>
+                  <Form.Label>Transportadora</Form.Label>
+                  <Form.Select
+                    value={quickCreateState.form?.transportadoraId || ""}
+                    onChange={(event) => setQuickCreateState((prev) => ({
+                      ...prev,
+                      form: { ...prev.form, transportadoraId: event.target.value },
+                    }))}
+                  >
+                    <option value=""></option>
+                    {(listaTransportadoras || []).map((item) => (
+                      <option key={item?.id} value={item?.id}>{item?.razon_social || item?.consecutivo}</option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+              </div>
               <div className="col-md-3">
                 <Form.Group>
                   <Form.Label>Combustible</Form.Label>
@@ -1378,15 +1407,32 @@ export default function FormulariosProgramacion({
               </div>
               <div className="col-md-3">
                 <Form.Group>
-                  <Form.Label>Documento</Form.Label>
+                  <Form.Label>Identificación</Form.Label>
                   <Form.Control
                     type="text"
-                    value={quickCreateState.form?.documento || ""}
+                    value={quickCreateState.form?.identificacion || ""}
                     onChange={(event) => setQuickCreateState((prev) => ({
                       ...prev,
-                      form: { ...prev.form, documento: event.target.value },
+                      form: { ...prev.form, identificacion: event.target.value },
                     }))}
                   />
+                </Form.Group>
+              </div>
+               <div className="col-md-3">
+                <Form.Group>
+                  <Form.Label>Transportadora</Form.Label>
+                  <Form.Select
+                    value={quickCreateState.form?.transportadoraId || ""}
+                    onChange={(event) => setQuickCreateState((prev) => ({
+                      ...prev,
+                      form: { ...prev.form, transportadoraId: event.target.value },
+                    }))}
+                  >
+                    <option value=""></option>
+                    {(listaTransportadoras || []).map((item) => (
+                      <option key={item?.id} value={item?.id}>{item?.razon_social || item?.consecutivo}</option>
+                    ))}
+                  </Form.Select>
                 </Form.Group>
               </div>
               <div className="col-md-3">
