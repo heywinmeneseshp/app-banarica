@@ -9,7 +9,7 @@ import Programador from "@components/Programacion/Programador";
 export default function Inicio() {
 
     const [inicio, setInicio] = useState(null);
-    const [open, setOpen] = useState(false);
+
 
     useEffect(() => {
         const fetchData = async () => {
@@ -28,8 +28,7 @@ export default function Inicio() {
                     const confiInicio = JSON.parse(res[0].detalles);
                     const existeConfig = confiInicio?.inicio || null;
                     setInicio(existeConfig);
-                    if (!existeConfig) setOpen(true);
-
+            
                 } else {
                     console.warn('No se encontraron detalles para el usuario.');
                 }
