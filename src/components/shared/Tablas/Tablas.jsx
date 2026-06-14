@@ -6,7 +6,7 @@ import Paginacion from '@components/shared/Tablas/Paginacion';
 import NuevoItem from '@components/shared/Formularios/Formularios';
 import Alertas from '@assets/Alertas';
 import excel from '@hooks/useExcel';
-import { Button, ButtonGroup, Col, Row, Form, Badge, Tooltip, OverlayTrigger } from 'react-bootstrap';
+import { Button, Col, Row, Form, Badge, Tooltip, OverlayTrigger } from 'react-bootstrap';
 
 export default function Tablas({
   encabezados,
@@ -27,6 +27,7 @@ export default function Tablas({
   onMassUploadSuccess,
   onMassUpdateSuccess,
   filtrosExtra = [],
+  optionalFields = [],
 }) {
   const ItemdorRef = useRef();
   const [item, setItem] = useState(null);
@@ -249,12 +250,13 @@ export default function Tablas({
           )}
         </div>
 
-        <form onSubmit={(e) => e.preventDefault()}>
-          <Row className="mb-3 g-2">
-            <Col md={6} lg={4}>
-              <ButtonGroup className="w-100">
+        <form onSubmit={(e) => e.preventDefault()} className="mb-3">
+          <div className="rounded bg-light">
+            <Row className="g-2 align-items-center">
+              <Col xs={12} md={6} xl="auto">
+                <div className="d-flex flex-column flex-sm-row gap-2 w-100">
                 <OverlayTrigger placement="top" overlay={renderTooltip('Nuevo item')}>
-                  <Button onClick={handleNuevo} variant="success" className="btn-sm" type="button">
+                  <Button onClick={handleNuevo} variant="success" className="btn-sm px-3 flex-fill text-nowrap" style={{ minWidth: 145 }} type="button">
                     <FaPlus className="me-1" /> Nuevo
                   </Button>
                 </OverlayTrigger>
@@ -263,89 +265,94 @@ export default function Tablas({
                   <Button
                     onClick={handleDesactivarMasivo}
                     variant="danger"
-                    className="btn-sm"
+                    className="btn-sm px-3 flex-fill text-nowrap"
+                    style={{ minWidth: 145 }}
                     disabled={selectedItems.length === 0 || loading}
                     type="button"
                   >
                     <FaBan className="me-1" /> Desactivar
                   </Button>
                 </OverlayTrigger>
-              </ButtonGroup>
-            </Col>
-
-            <Col md={6} lg={4}>
-              <div className="d-flex border rounded">
-                <input
-                  ref={ItemdorRef}
-                  type="text"
-                  className="form-control border-0 shadow-none"
-                  placeholder="Buscar..."
-                  onChange={handleInputChange}
-                  value={searchTerm}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleSearch();
-                    }
-                  }}
-                />
-                <button className="btn btn-sm border-0 bg-transparent" onClick={handleSearch} type="button">
-                  <FaSearch className="text-muted" size={14} />
-                </button>
-              </div>
-            </Col>
-
-            {filtrosExtra.map((filter) => (
-              <Col md={6} lg={3} key={filter.name}>
-                <Form.Select
-                  size="sm"
-                  value={extraFilters[filter.name] || ''}
-                  onChange={(event) => handleExtraFilterChange(filter.name, event.target.value)}
-                >
-                  <option value="">{filter.label}</option>
-                  {(filter.options || []).map((option) => (
-                    <option key={option.id} value={option.id}>{option.nombre}</option>
-                  ))}
-                </Form.Select>
+                </div>
               </Col>
-            ))}
 
-            <Col md={12} lg={4}>
-              <ButtonGroup className="w-100">
-                {endPointActualizacionMasiva && (
-                  <OverlayTrigger placement="top" overlay={renderTooltip('Actualizacion masiva')}>
-                    <Button
-                      onClick={() => setOpenActualizacionMasiva(true)}
-                      variant="outline-primary"
-                      className="btn-sm"
-                      type="button"
-                    >
-                      <FaUpload className="me-1" /> Actualizar masivo
+              <Col xs={12} md={6} xl>
+                <div className="d-flex border rounded bg-white">
+                  <input
+                    ref={ItemdorRef}
+                    type="text"
+                    className="form-control form-control-sm border-0 shadow-none"
+                    placeholder="Buscar..."
+                    onChange={handleInputChange}
+                    value={searchTerm}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSearch();
+                      }
+                    }}
+                  />
+                  <button className="btn btn-sm border-0 bg-transparent px-3" onClick={handleSearch} type="button">
+                    <FaSearch className="text-muted" size={14} />
+                  </button>
+                </div>
+              </Col>
+
+              {filtrosExtra.map((filter) => (
+                <Col xs={12} md={6} xl key={filter.name}>
+                  <Form.Select
+                    size="sm"
+                    value={extraFilters[filter.name] || ''}
+                    onChange={(event) => handleExtraFilterChange(filter.name, event.target.value)}
+                    aria-label={filter.label}
+                  >
+                    <option value="">{filter.label}</option>
+                    {(filter.options || []).map((option) => (
+                      <option key={option.id} value={option.id}>{option.nombre}</option>
+                    ))}
+                  </Form.Select>
+                </Col>
+              ))}
+
+              <Col xs={12} md={6} xl="auto">
+                <div className="d-flex flex-column flex-sm-row gap-2 justify-content-xl-end w-100">
+                  {endPointActualizacionMasiva && (
+                    <OverlayTrigger placement="top" overlay={renderTooltip('Actualizacion masiva')}>
+                      <Button
+                        onClick={() => setOpenActualizacionMasiva(true)}
+                        variant="outline-primary"
+                        className="btn-sm px-3 flex-fill text-nowrap"
+                        style={{ minWidth: 170 }}
+                        type="button"
+                      >
+                        <FaUpload className="me-1" /> Actualizar masivo
+                      </Button>
+                    </OverlayTrigger>
+                  )}
+
+                  {endPointCargueMasivo && (
+                    <OverlayTrigger placement="top" overlay={renderTooltip('Cargue masivo')}>
+                      <Button
+                        onClick={() => setOpenMasivo(true)}
+                        variant="primary"
+                        className="btn-sm px-3 flex-fill text-nowrap"
+                        style={{ minWidth: 145 }}
+                        type="button"
+                      >
+                        <FaUpload className="me-1" /> Cargue masivo
+                      </Button>
+                    </OverlayTrigger>
+                  )}
+
+                  <OverlayTrigger placement="top" overlay={renderTooltip('Descargar lista')}>
+                    <Button onClick={onDescargar} variant="secondary" className="btn-sm px-3 flex-fill text-nowrap" style={{ minWidth: 105 }} type="button">
+                      <FaDownload className="me-1" /> Exportar
                     </Button>
                   </OverlayTrigger>
-                )}
-
-                {endPointCargueMasivo && (
-                  <OverlayTrigger placement="top" overlay={renderTooltip('Cargue masivo')}>
-                    <Button
-                      onClick={() => setOpenMasivo(true)}
-                      variant="primary"
-                      className="btn-sm"
-                      type="button"
-                    >
-                      <FaUpload className="me-1" /> Cargue masivo
-                    </Button>
-                  </OverlayTrigger>
-                )}
-
-                <OverlayTrigger placement="top" overlay={renderTooltip('Descargar lista')}>
-                  <Button onClick={onDescargar} variant="secondary" className="btn-sm" type="button">
-                    <FaDownload className="me-1" /> Exportar
-                  </Button>
-                </OverlayTrigger>
-              </ButtonGroup>
-            </Col>
-          </Row>
+                </div>
+              </Col>
+            </Row>
+          </div>
         </form>
 
         <div className="table-responsive">
@@ -526,6 +533,7 @@ export default function Tablas({
           listas={listas}
           actualizar={actualizar}
           checkboxFields={checkboxFields}
+          optionalFields={optionalFields}
           setOpen={setOpen}
           setAlert={setAlert}
           element={item}

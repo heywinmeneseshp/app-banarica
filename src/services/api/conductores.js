@@ -48,9 +48,9 @@ const listarConductores = async () => {
     }
 };
 
-const paginarConductores = async (page, limit, nombre) => {
+const paginarConductores = async (page, limit, nombre, transportadoraId = '') => {
     try {
-        const res = await axios.get(endPoints.conductores.pagination(page, limit, nombre));
+        const res = await axios.get(endPoints.conductores.pagination(page, limit, nombre, transportadoraId));
         return res.data;
     } catch (error) {
         throw new Error(getErrorMessage(error, "Error al paginar conductores"));

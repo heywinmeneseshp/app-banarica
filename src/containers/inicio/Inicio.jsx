@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Dashboard from '@containers/seguridad/Dashboard';
 import { encontrarModulo } from '@services/api/configuracion';
-import Configuracion from '@components/administrador/Configuracion';
 import Inspeccionados from '@containers/seguridad/Inspeccionados';
+import Programador from "@components/Programacion/Programador";
 
 //CSS
 
@@ -45,8 +45,7 @@ export default function Inicio() {
         <>
             {inicio == "Dashboard Contenedores" && <Dashboard />}
             {inicio == "Dashboard Inspeccionados" && <Inspeccionados />}
-
-            {open && <Configuracion setOpen={setOpen} />}
+            {inicio == "Programador" && <Programador />}
         </>
     );
 }

@@ -106,7 +106,7 @@ const endPoints = {
     conductores: { //Crear
         list: `${API}/api/${VERSION}/conductores`,
         findOne: (id) => `${API}/api/${VERSION}/conductores/${id}`,
-        pagination: (page, limit, nombre) => `${API}/api/${VERSION}/conductores/paginar?page=${page}&limit=${limit}&nombre=${nombre}`,
+        pagination: (page, limit, nombre, transportadoraId = '') => `${API}/api/${VERSION}/conductores/paginar?page=${page}&limit=${limit}&nombre=${nombre}&transportadoraId=${transportadoraId}`,
         create: `${API}/api/${VERSION}/conductores`,
         update: (id) => `${API}/api/${VERSION}/conductores/${id}`,
         delete: (id) => `${API}/api/${VERSION}/conductores/${id}`

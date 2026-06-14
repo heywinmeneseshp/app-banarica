@@ -2,7 +2,7 @@ import React, { useRef } from "react";
 import styles from "@components/shared/Formularios/Formularios.module.css";
 import { Form } from "react-bootstrap";
 
-function Formularios({ titulo, setAlert, listas, element, setOpen, encabezados, actualizar, crear, onlyRead, valorPredeterminado, checkboxFields = [] }) {
+function Formularios({ titulo, setAlert, listas, element, setOpen, encabezados, actualizar, crear, onlyRead, valorPredeterminado, checkboxFields = [], optionalFields = [] }) {
   const formRef = useRef();
 
   const handleSubmit = async (e) => {
@@ -16,7 +16,7 @@ function Formularios({ titulo, setAlert, listas, element, setOpen, encabezados, 
       if (checkboxFields.includes(key)) {
         return;
       }
-      if (value === "" && key !== "id") {
+      if (value === "" && key !== "id" && !optionalFields.includes(key)) {
         validar = false;
       }
       objeto[key] = value;
@@ -117,8 +117,9 @@ function Formularios({ titulo, setAlert, listas, element, setOpen, encabezados, 
                             id={encabezados[item]}
                             name={encabezados[item]}
                             className="form-control form-control-sm"
-                            defaultValue={element ? element[encabezados[item]] : ""}
-                          >
+                          defaultValue={element ? element[encabezados[item]] : ""}
+                          required={!optionalFields.includes(encabezados[item])}
+                        >
                             <option value=""></option>
                             {listas[item].map((item2) => (
                               <option key={item2.id} value={item2.id}>{item2.nombre}</option>
@@ -152,7 +153,7 @@ function Formularios({ titulo, setAlert, listas, element, setOpen, encabezados, 
                           name={encabezados[item]}
                           className="form-control form-control-sm"
                           defaultValue={encabezados[item] === onlyRead ? valorPredeterminado : (element ? element[encabezados[item]] : "")}
-                          required
+                          required={!optionalFields.includes(encabezados[item])}
                           readOnly={read}
                         />
                       </div>

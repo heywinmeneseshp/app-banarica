@@ -231,9 +231,9 @@ const Header = () => {
   if (isLoadingConfig) {
     return (
       <div className="sticky-top shadow-sm" style={{ zIndex: 1050 }}>
-        <Navbar bg="dark" variant="dark" expand="lg" className="py-2">
-          <Container fluid="xl">
-            <Navbar.Brand>
+        <Navbar bg="dark" variant="dark" expand="lg" className="py-2 w-100">
+          <Container fluid="xl" className="px-2 px-sm-3">
+            <Navbar.Brand className="me-2 text-truncate" style={{ maxWidth: 'calc(100vw - 56px)', minWidth: 0 }}>
               <b>Cargando...</b>
             </Navbar.Brand>
           </Container>
@@ -244,13 +244,17 @@ const Header = () => {
 
   return (
     <div className="sticky-top shadow-sm" style={{ zIndex: 1050 }}>
-      <Navbar bg="dark" variant="dark" expand="lg" className="py-2">
-        <Container fluid="xl">
-          <Navbar.Brand onClick={() => openMenu("inicio")} style={{ cursor: 'pointer' }}>
+      <Navbar bg="dark" variant="dark" expand="lg" className="py-2 w-100">
+        <Container fluid="xl" className="px-2 px-sm-3">
+          <Navbar.Brand
+            onClick={() => openMenu("inicio")}
+            className="me-2 text-truncate"
+            style={{ cursor: 'pointer', maxWidth: 'calc(100vw - 72px)', minWidth: 0 }}
+          >
             <b>{nombreApp || "LogiCrack App"}</b>
           </Navbar.Brand>
 
-          <Navbar.Toggle aria-controls="navbar-nav" />
+          <Navbar.Toggle aria-controls="navbar-nav" className="ms-auto flex-shrink-0" />
           <Navbar.Collapse id="navbar-nav" className="pt-3 pt-lg-0">
             <Nav className="me-auto align-items-lg-center gap-lg-1 flex-lg-row">
               {renderMenu('maestros')}
@@ -265,7 +269,7 @@ const Header = () => {
                 variant="link"
                 size="sm"
                 onClick={handleProfile}
-                className="w-auto d-inline-flex align-items-center justify-content-center gap-2 px-2 py-1 text-nowrap text-white text-decoration-none border-0 shadow-none"
+                className="w-auto d-inline-flex align-items-center justify-content-center gap-2 px-2 py-1 text-lg-nowrap text-white text-decoration-none border-0 shadow-none"
               >
                 <FaUserCircle />
                 {user?.nombre} {user?.apellido}

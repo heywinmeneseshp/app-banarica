@@ -1,143 +1,104 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { actualizarConductor,  listarConductores, paginarConductores } from '@services/api/conductores';
-//Hooks
-import useAlert from '@hooks/useAlert';
-//Components
-import Paginacion from '@components/Paginacion';
-import Alertas from '@assets/Alertas';
-import NuevoConductor from '@components/administrador/NuevoConductor';
-//CSS
-import styles from '@styles/Listar.module.css';
-import excel from '@hooks/useExcel';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import Tablas from '@components/shared/Tablas/Tablas';
+import {
+  actualizarConductor,
+  agregarConductor,
+  buscarConductor,
+  listarConductores,
+  paginarConductores,
+} from '@services/api/conductores';
+import { listarTransportadoras } from '@services/api/transportadoras';
+import { getStoredTransporters, getStoredUser } from '@utils/session';
 
 const Conductor = () => {
-    const buscardorRef = useRef(null);
-    const [item, setItem] = useState(null);
-    const [items, setItems] = useState([]);
-    const { alert, setAlert, toogleAlert } = useAlert();
-    const [open, setOpen] = useState(false);
-    const [pagination, setPagination] = useState(1);
-    const [total, setTotal] = useState(0);
-    const limit = 10;
+  const [transportadoras, setTransportadoras] = useState([]);
 
-    useEffect(() => {
-        listrasItems();
-    }, [alert, pagination]);
+  const listarCatalogos = useCallback(async () => {
+    const user = getStoredUser();
+    const transportadorasAsignadas = getStoredTransporters();
+    const transportadorasData = user?.id_rol === 'Super administrador'
+      ? await listarTransportadoras()
+      : transportadorasAsignadas;
 
-    async function listrasItems() {
-        const nombre = buscardorRef.current.value;
-        const res = await paginarConductores(pagination, limit, nombre);
-        setTotal(res.total);
-        setItems(res.data);
-        console.log(res.data);
+    setTransportadoras((transportadorasData || []).map((item) => ({
+      id: item?.id,
+      nombre: item?.razon_social || item?.nombre || item?.consecutivo,
+    })));
+  }, []);
+
+  useEffect(() => {
+    listarCatalogos();
+  }, [listarCatalogos]);
+
+  const listas = useMemo(() => ({
+    Transportadora: transportadoras,
+  }), [transportadoras]);
+
+  const mapConductor = useCallback((item) => ({
+    ...item,
+    activo: !item?.isBlock,
+  }), []);
+
+  const listarConductoresNormalizados = useCallback(async () => {
+    const res = await listarConductores();
+    return (res || []).map(mapConductor);
+  }, [mapConductor]);
+
+  const paginarConFiltros = useCallback((page, limit, nombre, filters = {}) => (
+    paginarConductores(page, limit, nombre, filters.transportadoraId || '')
+      .then((res) => ({
+        ...res,
+        data: (res?.data || []).map(mapConductor),
+      }))
+  ), [mapConductor]);
+
+  const actualizarConductorNormalizado = useCallback((id, changes) => {
+    const payload = { ...changes };
+    if (Object.prototype.hasOwnProperty.call(payload, 'activo')) {
+      payload.isBlock = !payload.activo;
+      delete payload.activo;
     }
+    return actualizarConductor(id, payload);
+  }, []);
 
-    const handleNuevo = () => {
-        setOpen(true);
-        setItem(null);
-    };
+  const crearConductorNormalizado = useCallback((payload) => (
+    agregarConductor({
+      ...payload,
+      conductor: String(payload?.conductor || '').trim().toUpperCase(),
+      isBlock: false,
+    })
+  ), []);
 
-    const handleEditar = (item) => {
-        setOpen(true);
-        setItem(item);
-    };
-
-    const buscar = async () => {
-        setPagination(1);
-        listrasItems();
-    };
-
-    const onDescargar = async () => {
-        const res = await listarConductores();
-        excel(res, "Conductores", "Conductores");
-    };
-
-    const handleActivar = (item) => {
-        try {
-            const changes = { isBlock: true };
-            if (item.isBlock === "1") changes.isBlock = false;
-            actualizarConductor(item.consecutivo, changes);
-            setAlert({
-                active: true,
-                mensaje: 'El item "' + item.consecutivo + '" se ha actualizado',
-                color: "success",
-                autoClose: true
-            });
-        } catch (e) {
-            setAlert({
-                active: true,
-                mensaje: 'Se ha presentado un error',
-                color: "danger",
-                autoClose: true
-            });
-        }
-    };
-    return (
-        <>
-            <div>
-                <Alertas alert={alert} handleClose={toogleAlert}></Alertas>
-                <h3>Conductores</h3>
-                <div className={styles.cajaBotones}>
-                    <div className={styles.botones}>
-                        <button onClick={handleNuevo} type="button" className="btn btn-success btn-sm w-100">Nuevo</button>
-                    </div>
-                    <div className={styles.botones}>
-                        <button type="button" className="btn btn-danger btn-sm w-100">Eliminar</button>
-                    </div>
-                    <div className={styles.buscar}>
-                        <input 
-                        ref={buscardorRef} 
-                        className="form-control form-control-sm" 
-                        type="text" 
-                        placeholder="Buscar"
-                        onChange={buscar}></input>
-                    </div>
-                    <div className={styles.botones}>
-                        <button onClick={onDescargar} type="button" className="btn btn-light btn-sm w-100">Descargar lista</button>
-                    </div>
-                </div>
-
-                <table className="table">
-                    <thead className={styles.letter}>
-                        <tr>
-                            <th><input type="checkbox" id="topping" name="topping" value="Paneer" /></th>
-                            <th scope="col">Código</th>
-                            <th scope="col">Conductor</th>
-                            <th scope="col">Identificación</th>
-                            <th scope="col">Transportadora</th>
-                            <th scope="col">Correo</th>
-                            <th scope="col">Telefono</th>
-                            <th scope="col"></th>
-                            <th scope="col"></th>
-                        </tr>
-                    </thead>
-                    <tbody className={styles.letter}>
-
-                        {items.map((itemA, index) => (
-                            <tr key={index}>
-                                <td><input type="checkbox" id="topping" name="topping" value="Paneer" /></td>
-                                <td>{itemA.consecutivo}</td>
-                                <td>{itemA.conductor}</td>
-                                <td>{itemA.licencia}</td>
-                                <td>{itemA.transportadora?.razon_social}</td>
-                                <td>{itemA.email}</td>
-                                <td>{itemA.tel}</td>
-                                <td>
-                                    <button onClick={() => handleEditar(itemA)} type="button" className="btn btn-warning btn-sm w-80">Editar</button>
-                                </td>
-                                <td>
-                                    {(itemA.isBlock === "1") && <button onClick={() => handleActivar(itemA)} type="button" className="btn btn-danger btn-sm w-80">Activar</button>}
-                                    {(itemA.isBlock === "0") && <button onClick={() => handleActivar(itemA)} type="button" className="btn btn-success btn-sm w-80">Desactivar</button>}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-            <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
-            {open && <NuevoConductor setOpen={setOpen} setAlert={setAlert} item={item} />}
-        </>
-    );
+  return (
+    <Tablas
+      titulo="Conductores"
+      actualizar={actualizarConductorNormalizado}
+      buscarItem={buscarConductor}
+      listar={listarConductoresNormalizados}
+      paginar={paginarConFiltros}
+      crear={crearConductorNormalizado}
+      encabezados={{
+        ID: 'id',
+        Codigo: 'consecutivo',
+        Conductor: 'conductor',
+        Identificacion: 'licencia',
+        Transportadora: 'cons_transportadora',
+        Correo: 'email',
+        Telefono: 'tel',
+        Editar: '',
+        Activar: 'activo',
+      }}
+      listas={listas}
+      optionalFields={['consecutivo', 'licencia', 'email', 'tel']}
+      filtrosExtra={[
+        {
+          name: 'transportadoraId',
+          label: 'Transportadora',
+          options: transportadoras,
+        },
+      ]}
+    />
+  );
 };
 
 export default Conductor;

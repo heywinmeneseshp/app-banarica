@@ -375,6 +375,7 @@ export default function Configuracion({ setOpen }) {
                                     <option value="Dashboard Contenedores">Dashboard Contenedores</option>
                                     <option value="Dashboard Inspeccionados">Dashboard Inspeccionados</option>
                                     <option value="Dashboard Combustible">Dashboard Combustible</option>
+                                       <option value="Programador">Programador</option>
                                 </Form.Select>
                             </InputGroup>
                         </div>
