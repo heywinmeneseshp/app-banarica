@@ -542,7 +542,7 @@ export default function InspeccionLLeno() {
       if (inspectionCount >= 1) {
         const shouldContinue = await confirm({
           title: 'Contenedor ya inspeccionado',
-          message: 'Este contenedor ya fue inspeccionado anteriormente. �Estas seguro de enviarlo nuevamente?',
+          message: 'Este contenedor ya fue inspeccionado anteriormente. ¿Estás seguro de enviarlo nuevamente?',
           confirmLabel: 'Si, enviar',
           cancelLabel: 'Cancelar',
           variant: 'warning'
@@ -588,7 +588,7 @@ export default function InspeccionLLeno() {
         setProducts(productsData || []);
         setAlmacenes(almacenesData || []);
       } catch (error) {
-        console.error("Error inicializando inspecci�n lleno:", error);
+        console.error("Error inicializando inspección lleno:", error);
       }
     };
 
@@ -727,9 +727,9 @@ export default function InspeccionLLeno() {
         <div className="container py-3">
           <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
             <div className="text-center text-md-start">
-              <h2 className="mb-2">inspecci�n Lleno</h2>
+              <h2 className="mb-2">Inspección Lleno</h2>
               <p className="text-muted mb-0">
-                Registra la inspecci�n antinarc�ticos del contenedor lleno.
+                Registra la inspección antinarcóticos del contenedor lleno.
               </p>
             </div>
 
@@ -842,7 +842,7 @@ export default function InspeccionLLeno() {
                     id="agente"
                     value={formData.agente}
                     onChange={handleInputChange}
-                    placeholder="Nombre del agente de polic�a"
+                    placeholder="Nombre del agente de policía"
                     required
                   />
                 </div>
@@ -853,7 +853,7 @@ export default function InspeccionLLeno() {
                     id="zona"
                     value={formData.zona}
                     onChange={handleInputChange}
-                    placeholder="Zona de inspecci�n"
+                    placeholder="Zona de inspección"
                     required
                   />
                 </div>
