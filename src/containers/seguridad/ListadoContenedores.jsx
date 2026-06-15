@@ -607,7 +607,7 @@ const ListadoContenedores = () => {
 
       updateState({
         tableData: visibleRows,
-        total: visibleRows.length,
+        total: listadoList.total,
         configuracionInsumos: insumosConfig,
         embarques: embarquesRes.data,
         productos: productoRes.data,
