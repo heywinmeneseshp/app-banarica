@@ -8,7 +8,6 @@ import { ejecutarTraslado } from "@services/api/traslados";
 import { encontrarModulo } from "@services/api/configuracion";
 import { enviarCorreo } from "@services/api/correo";
 import { filtrarSemanasRangoProgramador } from "@services/api/semanas";
-import uSemana from "@hooks/useSemana";
 
 import Paginacion from "@components/Paginacion";
 import { generateTransferExcelBase64 } from "utils/generateTransferExcelBase64.js";
@@ -190,7 +189,6 @@ export default function Transferencias() {
     const [itemsToTransfer, setItemsToTransfer] = useState([]);
     const [showModal, setShowModal] = useState(false);
 
-    const [semanaData, setSemanaData] = useState(null);
     const [semanas, setSemanas] = useState([]);
     const [bool, setBool] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -246,7 +244,6 @@ export default function Transferencias() {
             encontrarModulo("Semana", { syncWeeks: false })
                 .then((res) => {
                     const config = res[0];
-                    setSemanaData(config);
                     return filtrarSemanasRangoProgramador({
                         anho_actual: config.anho_actual,
                         semana_actual: config.semana_actual,
