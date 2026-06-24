@@ -5,7 +5,7 @@ import { LiaUndoAltSolid } from "react-icons/lia";
 import { useAuth } from "@hooks/useAuth";
 import useFeedback from '@hooks/useFeedback';
 import { crearInspeccionVacio, encontrarUnSerial } from "@services/api/seguridad";
-import { filtrarSemanaRangoMes } from "@services/api/semanas";
+import { filtrarSemanasRangoProgramador } from "@services/api/semanas";
 import { encontrarModulo } from "@services/api/configuracion";
 import endPoints from "@services/api";
 import Loader from "@components/shared/Loader";
@@ -337,8 +337,7 @@ export default function InspeccionVacio() {
       setStateValue("loading", true);
 
       const requests = [
-        filtrarSemanaRangoMes(1, 1),
-        encontrarModulo("Semana"),
+        encontrarModulo("Semana", { syncWeeks: false }),
         encontrarModulo("Insumos_inspeccion_vacio")
       ];
 
@@ -346,12 +345,20 @@ export default function InspeccionVacio() {
         requests.push(encontrarModulo(user.username));
       }
 
-      const [semanasData, moduloSemana, moduloInsumos, moduloUsuario] = await Promise.all(requests);
+      const [moduloSemana, moduloInsumos, moduloUsuario] = await Promise.all(requests);
+
+      const semanaActual = moduloSemana[0]?.semana_actual;
+      const semanasData = await filtrarSemanasRangoProgramador({
+        anho_actual: moduloSemana[0]?.anho_actual,
+        semana_actual: moduloSemana[0]?.semana_actual,
+        semana_previa: moduloSemana[0]?.semana_previa,
+        semana_siguiente: moduloSemana[0]?.semana_siguiente,
+        total_semanas_anho: moduloSemana[0]?.total_semanas_anho,
+      }).catch(() => []);
 
       const inputsGuardados = JSON.parse(localStorage.getItem(STORAGE_KEYS.INSPECCION_VACIO) || "{}");
       const digitalForm = JSON.parse(localStorage.getItem(STORAGE_KEYS.FORMULARIO_DIGITAL) || "{}");
 
-      const semanaActual = moduloSemana[0]?.semana_actual;
       const semanaSeleccionada = semanasData.find((item) => item.semana == semanaActual);
 
       const insumos = JSON.parse(moduloInsumos[0]?.detalles || "[]").map((item) => ({

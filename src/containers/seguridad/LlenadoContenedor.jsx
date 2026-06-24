@@ -3,7 +3,8 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { FaPlus, FaMinus } from 'react-icons/fa';
 import Loader from '@components/shared/Loader';
 
-import { filtrarSemanaRangoMes } from '@services/api/semanas';
+import { filtrarSemanasRangoProgramador } from '@services/api/semanas';
+import { encontrarModulo } from '@services/api/configuracion';
 import { paginarEmbarques } from '@services/api/embarques';
 import { actualizarListado, duplicarListado, paginarListado } from '@services/api/listado';
 import { listarAlmacenes } from "@services/api/almacenes";
@@ -68,15 +69,23 @@ const FormularioDinamico = () => {
 
   const init = useCallback(async () => {
     try {
-      const [weeks, prods, motivos, alms] = await Promise.all([
-        filtrarSemanaRangoMes(1, 1),
+      const [moduloSemana, prods, motivos, alms] = await Promise.all([
+        encontrarModulo("Semana", { syncWeeks: false }),
         listarCombos(),
         listarMotivoDeRechazo(),
         listarAlmacenes()
       ]);
 
+      const weeks = await filtrarSemanasRangoProgramador({
+        anho_actual: moduloSemana[0]?.anho_actual,
+        semana_actual: moduloSemana[0]?.semana_actual,
+        semana_previa: moduloSemana[0]?.semana_previa,
+        semana_siguiente: moduloSemana[0]?.semana_siguiente,
+        total_semanas_anho: moduloSemana[0]?.total_semanas_anho,
+      }).catch(() => []);
+
       setOptions({
-        semanas: weeks.map((w) => w.consecutivo),
+        semanas: (weeks || []).map((w) => w.consecutivo),
         productos: Array.isArray(prods) ? prods : [],
         motivosRechazo: Array.isArray(motivos) ? motivos : [],
         almacenes: Array.isArray(alms) ? alms : [],

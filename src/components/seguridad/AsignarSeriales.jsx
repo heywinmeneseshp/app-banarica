@@ -5,7 +5,7 @@ import { filtrarProductos } from "@services/api/productos";
 import { FaMinusCircle } from "react-icons/fa";
 import { listarMotivoDeUso } from "@services/api/motivoDeUso";
 import { encontrarUnSerial, usarSeriales } from "@services/api/seguridad";
-import { filtrarSemanaRangoMes } from "@services/api/semanas";
+import { filtrarSemanasRangoProgramador } from "@services/api/semanas";
 import { encontrarModulo } from "@services/api/configuracion";
 import Loader from "@components/shared/Loader";
 
@@ -34,17 +34,24 @@ export default function AsignarSeriales({ contenedor, setContenedor }) {
             const almacenes = JSON.parse(localStorage.getItem("almacenByUser"))?.map(item => item.consecutivo) || [];
             const body = { producto: { serial: true }, stock: { cons_almacen: almacenes, isBlock: false } };
 
-            const [productos, motivos, weeks, currentWeek] = await Promise.all([
+            const [productos, motivos, moduloSemana] = await Promise.all([
                 filtrarProductos(body),
                 listarMotivoDeUso(),
-                filtrarSemanaRangoMes(1, 1),
-                encontrarModulo("Semana")
+                encontrarModulo("Semana", { syncWeeks: false }),
             ]);
+
+            const weeks = await filtrarSemanasRangoProgramador({
+                anho_actual: moduloSemana[0]?.anho_actual,
+                semana_actual: moduloSemana[0]?.semana_actual,
+                semana_previa: moduloSemana[0]?.semana_previa,
+                semana_siguiente: moduloSemana[0]?.semana_siguiente,
+                total_semanas_anho: moduloSemana[0]?.total_semanas_anho,
+            }).catch(() => []);
 
             setArticulos(productos || []);
             setMotivosDeUsos(motivos);
-            setSemanas(weeks);
-            setSemanaActual(currentWeek[0].semana_actual);
+            setSemanas(weeks || []);
+            setSemanaActual(moduloSemana[0]?.semana_actual);
             setAlmacenByUser(almacenes);
         } catch (error) {
             console.error("Error al listar productos:", error);

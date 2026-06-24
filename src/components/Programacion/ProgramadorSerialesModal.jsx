@@ -4,7 +4,7 @@ import { FaMinusCircle } from 'react-icons/fa';
 import { filtrarProductos } from '@services/api/productos';
 import { encontrarUnSerial } from '@services/api/seguridad';
 import { crearProgramacionSerialesMasivo } from '@services/api/programacionSeriales';
-import { filtrarSemanaRangoMes } from '@services/api/semanas';
+import { filtrarSemanasRangoProgramador } from '@services/api/semanas';
 import { encontrarModulo } from '@services/api/configuracion';
 
 const MOTIVO_PROGRAMADOR = 'Uso Transportadora';
@@ -42,15 +42,22 @@ function ProgramadorSerialesModal({
       const almacenes = JSON.parse(localStorage.getItem('almacenByUser') || '[]')?.map((item) => item.consecutivo) || [];
       const body = { producto: { serial: true }, stock: { cons_almacen: almacenes, isBlock: false } };
 
-      const [productos, weeks, currentWeek] = await Promise.all([
+      const [productos, moduloSemana] = await Promise.all([
         filtrarProductos(body),
-        filtrarSemanaRangoMes(1, 1),
-        encontrarModulo('Semana'),
+        encontrarModulo('Semana', { syncWeeks: false }),
       ]);
+
+      const weeks = await filtrarSemanasRangoProgramador({
+        anho_actual: moduloSemana[0]?.anho_actual,
+        semana_actual: moduloSemana[0]?.semana_actual,
+        semana_previa: moduloSemana[0]?.semana_previa,
+        semana_siguiente: moduloSemana[0]?.semana_siguiente,
+        total_semanas_anho: moduloSemana[0]?.total_semanas_anho,
+      }).catch(() => []);
 
       setArticulos(productos || []);
       setSemanas(weeks || []);
-      setSemanaActual(currentWeek?.[0]?.semana_actual || programacion?.semana || '');
+      setSemanaActual(moduloSemana[0]?.semana_actual || programacion?.semana || '');
       setAlmacenByUser(almacenes);
     };
 
