@@ -6,6 +6,7 @@ const nextConfig = {
   images: {
     domains: ['placeimg.com', 'banarica.com'], // Para permitir imágenes de esos dominios
   },
+  transpilePackages: ['@react-pdf/renderer'],
 };
 
 const withPWA = require('next-pwa')({

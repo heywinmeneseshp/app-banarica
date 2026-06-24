@@ -15,10 +15,11 @@ function VistaContenedor({ vistaCont, setVistaCont, correos, configProducts, can
     const [massApproveActive, setMassApproveActive] = useState({});
     const [loading, setLoading] = useState(false);
     const [serialesSinRevision, setSerialesSinRevision] = useState([]);
-    const user = getUser();
-    const userRole = user?.id_rol;
 
     useEffect(() => {
+        const user = getUser();
+        const userRole = user?.id_rol;
+
         const filtrarProductosAsync = async () => {
             try {
                 const configuredProducts = Array.isArray(configProducts) ? configProducts : [];
@@ -78,7 +79,7 @@ function VistaContenedor({ vistaCont, setVistaCont, correos, configProducts, can
         if (vistaCont?.serial_de_articulos?.length) {
             filtrarProductosAsync();
         }
-    }, [canViewSerials, vistaCont, userRole, configProducts]);
+    }, [canViewSerials, vistaCont, configProducts]);
 
     const handleCheck = serial => {
         setSerialChecks(prev => ({ ...prev, [serial]: !prev[serial] }));

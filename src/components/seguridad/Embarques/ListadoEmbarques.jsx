@@ -8,7 +8,7 @@ import NuevoEmbarque from '@assets/Seguridad/Embarques/NuevoEmbarque';
 import Alertas from '@assets/Alertas';
 import { listarBuques } from '@services/api/buques';
 import { listarNavieras } from '@services/api/navieras';
-import { filtrarSemanaRangoMes } from '@services/api/semanas';
+import { filtrarSemanasRangoProgramador } from '@services/api/semanas';
 import { listarClientes } from '@services/api/clientes';
 import { listarDestinos } from '@services/api/destinos';
 import CargueMasivo from '@assets/Seguridad/Listado/CargueMasivo';
@@ -41,7 +41,7 @@ const ListadoEmbarques = () => {
   const [navieras, setNavieras] = useState([]);
   const [destinos, setDestinos] = useState([]);
   const [clientes, setCliente] = useState([]);
-  const [semanas, setSemanas] = useState();
+  const [semanas, setSemanas] = useState([]);
   const [cargueMasivo, setCargueMasivo] = useState(false);
   const [actualizarMasivo, setActualizarMasivo] = useState(false);
 
@@ -104,31 +104,18 @@ const ListadoEmbarques = () => {
 
   const fetchInitialData = async () => {
     try {
-      const [
-        buquesList,
-        navierasList,
-        semanasList,
-        clientesList,
-        destinosList
-      ] = await Promise.all([
+      const [buquesList, navierasList, clientesList, destinosList] = await Promise.all([
         listarBuques(),
         listarNavieras(),
-        filtrarSemanaRangoMes(1, 1),
         listarClientes(),
         listarDestinos()
       ]);
-
       setBuques(buquesList);
       setNavieras(navierasList);
-      setSemanas(semanasList);
       setCliente(clientesList);
       setDestinos(destinosList);
     } catch (error) {
       console.error('Error fetching initial data:', error);
-      // Considera una estrategia de manejo de errores más específica o una UI de error
-      alert('Ocurrió un error al cargar los datos iniciales. Por favor, inténtelo de nuevo.');
-      // Puedes manejar el error de otras maneras según tu caso de uso
-      // Ejemplo: enviar el error a un servicio de monitoreo
     }
   };
 
@@ -165,10 +152,21 @@ const ListadoEmbarques = () => {
     const iniciar = async () => {
       await fetchInitialData();
       await listar();
-      encontrarModulo("Semana").then(res => setSemana(res[0]?.semana_actual));
+      encontrarModulo("Semana").then(res => {
+      setSemana(res[0]?.semana_actual);
+      return filtrarSemanasRangoProgramador({
+        anho_actual: res[0]?.anho_actual,
+        semana_actual: res[0]?.semana_actual,
+        semana_previa: res[0]?.semana_previa,
+        semana_siguiente: res[0]?.semana_siguiente,
+        total_semanas_anho: res[0]?.total_semanas_anho,
+      });
+    }).then(semanasList => {
+      setSemanas(semanasList);
+    }).catch(() => {});
     };
     iniciar();
-  }, [limit, pagination, alert]);
+  }, [limit, pagination]);
 
 
   return (

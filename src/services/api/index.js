@@ -472,7 +472,19 @@ const endPoints = {
         subirEvidenciaUnica: `${API}/api/${VERSION}/googleDrive/subir-evidencia`,
         test: `${API}/api/${VERSION}/googleDrive/test-drive`,
     },
-
+    registroTemperatura: {
+        list: `${API}/api/${VERSION}/registro-temperatura`,
+        findOne: (id) => `${API}/api/${VERSION}/registro-temperatura/${id}`,
+        paginar: `${API}/api/${VERSION}/registro-temperatura/paginar`,
+        resumen: `${API}/api/${VERSION}/registro-temperatura/resumen`,
+        grafica: (idSerial) => `${API}/api/${VERSION}/registro-temperatura/grafica/${idSerial}`,
+        contexto: (idSerial) => `${API}/api/${VERSION}/registro-temperatura/contexto/${idSerial}`,
+        create: `${API}/api/${VERSION}/registro-temperatura`,
+        update: (id) => `${API}/api/${VERSION}/registro-temperatura/${id}`,
+        delete: (id) => `${API}/api/${VERSION}/registro-temperatura/${id}`,
+        cargarMasivo: `${API}/api/${VERSION}/registro-temperatura/cargar-masivo`,
+        actualizarMasivo: `${API}/api/${VERSION}/registro-temperatura/actualizar-masivo`,
+    },
 
 };
 

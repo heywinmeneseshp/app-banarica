@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useRouter } from "next/router";
-
+import dynamic from "next/dynamic";
 
 import Disponibles from "@containers/seguridad/Disponibles";
 import Transferencias from "@containers/seguridad/Transferencias";
@@ -16,8 +16,9 @@ import Inspeccionados from "@containers/seguridad/Inspeccionados";
 import ContenedoresDevueltos from "@containers/seguridad/ContenedoresDevueltos";
 import Transbordados from "@containers/seguridad/Transbordados";
 import TransbordarContenedor from "@containers/seguridad/TransbordarContenedor";
-import CartasAntinarcoticos from "@containers/seguridad/CartasAntinarcoticos";
 import ValidarSellosProgramador from "@containers/seguridad/ValidarSellosProgramador";
+
+const CartasAntinarcoticos = dynamic(() => import("@containers/seguridad/CartasAntinarcoticos"), { ssr: false });
 //Components
 
 

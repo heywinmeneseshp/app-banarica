@@ -5,7 +5,8 @@ const initialInfoMenu = {
     movimientos: true,
     stock: false,
     traslados: false,
-    pedidos: false
+    pedidos: false,
+    temperatura: false
 };
 
 const useInfoMenu = () => {
@@ -17,7 +18,8 @@ const useInfoMenu = () => {
             movimientos: true,
             stock: false,
             traslados: false,
-            pedidos: false
+            pedidos: false,
+            temperatura: false
         });
     };
 
@@ -27,7 +29,8 @@ const useInfoMenu = () => {
             movimientos: false,
             stock: true,
             traslados: false,
-            pedidos: false
+            pedidos: false,
+            temperatura: false
         });
     };
 
@@ -37,7 +40,8 @@ const useInfoMenu = () => {
             movimientos: false,
             stock: false,
             traslados: true,
-            pedidos: false
+            pedidos: false,
+            temperatura: false
         });
     };
 
@@ -47,7 +51,18 @@ const useInfoMenu = () => {
             movimientos: false,
             stock: false,
             traslados: false,
-            pedidos: true
+            pedidos: true,
+            temperatura: false
+        });
+    };
+
+    const handleTemperatura = () => {
+        setInfoMenu({
+            movimientos: false,
+            stock: false,
+            traslados: false,
+            pedidos: false,
+            temperatura: true
         });
     };
 
@@ -56,7 +71,8 @@ const useInfoMenu = () => {
         handleMovimientos,
         handleStock,
         handleTraslados,
-        handlePedidos
+        handlePedidos,
+        handleTemperatura
     };
 };
 

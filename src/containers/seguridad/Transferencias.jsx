@@ -7,6 +7,7 @@ import { listarProductosSeguridad, listarSeriales } from "@services/api/segurida
 import { ejecutarTraslado } from "@services/api/traslados";
 import { encontrarModulo } from "@services/api/configuracion";
 import { enviarCorreo } from "@services/api/correo";
+import { filtrarSemanasRangoProgramador } from "@services/api/semanas";
 import uSemana from "@hooks/useSemana";
 
 import Paginacion from "@components/Paginacion";
@@ -190,6 +191,7 @@ export default function Transferencias() {
     const [showModal, setShowModal] = useState(false);
 
     const [semanaData, setSemanaData] = useState(null);
+    const [semanas, setSemanas] = useState([]);
     const [bool, setBool] = useState(false);
     const [loading, setLoading] = useState(false);
     const [mostrarSerial, setMostrarSerial] = useState(false);
@@ -241,7 +243,20 @@ export default function Transferencias() {
 
         const loadConfig = async () => {
             listarProductosSeguridad().then((res) => setProductos(res.filter((item) => item.serial === true)));
-            encontrarModulo("Semana").then((res) => setSemanaData(res[0]));
+            encontrarModulo("Semana", { syncWeeks: false })
+                .then((res) => {
+                    const config = res[0];
+                    setSemanaData(config);
+                    return filtrarSemanasRangoProgramador({
+                        anho_actual: config.anho_actual,
+                        semana_actual: config.semana_actual,
+                        semana_previa: config.semana_previa,
+                        semana_siguiente: config.semana_siguiente,
+                        total_semanas_anho: config.total_semanas_anho,
+                    });
+                })
+                .then((lista) => setSemanas(lista || []))
+                .catch(() => {});
 
             if (user?.id_rol === "Super administrador") {
                 setMostrarSerial(true);
@@ -460,12 +475,11 @@ export default function Transferencias() {
         }
 
         try {
-            const semana = await uSemana(semanaInput);
             const trasladoResponse = await ejecutarTraslado({
                 origen,
                 destino,
                 fecha,
-                semana,
+                semana: semanaInput,
                 realizado_por: user.username,
                 observaciones: `Precintos transferidos al almacen ${destino}`,
                 items: transferencias,
@@ -662,16 +676,21 @@ export default function Transferencias() {
 
                                     <div className="col">
                                         <label htmlFor="semana" className="form-label fw-semibold small mb-1">Semana</label>
-                                        <input
-                                            type="number"
-                                            className="form-control form-control-sm"
+                                        <select
+                                            className="form-select form-select-sm"
                                             id="semana"
                                             name="semana"
-                                            min={semanaData ? semanaData.semana_actual - semanaData.semana_previa : 0}
-                                            max={semanaData ? semanaData.semana_actual * 1 + semanaData.semana_siguiente : 99}
                                             required
                                             disabled={bool}
-                                        />
+                                            defaultValue=""
+                                        >
+                                            <option value="" disabled>Seleccione</option>
+                                            {semanas.map((s) => (
+                                                <option key={s.consecutivo} value={s.consecutivo}>
+                                                    {s.consecutivo}
+                                                </option>
+                                            ))}
+                                        </select>
                                     </div>
                                 </div>
                             </div>

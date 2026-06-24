@@ -4,8 +4,9 @@ import styles from "@components/shared/Formularios/Formularios.module.css";
 import { listarNavieras } from "@services/api/navieras";
 import { listarClientes } from "@services/api/clientes";
 import { listarBuques } from "@services/api/buques";
-import { filtrarSemanaRangoMes } from "@services/api/semanas";
+import { filtrarSemanasRangoProgramador } from "@services/api/semanas";
 import { listarDestinos } from "@services/api/destinos";
+import { encontrarModulo } from "@services/api/configuracion";
 
 function NuevoEmbarque({ setAlert, element, setOpen, actualizar, crear }) {
 
@@ -30,7 +31,14 @@ function NuevoEmbarque({ setAlert, element, setOpen, actualizar, crear }) {
 
     const listar = async () => {
         const formData = new FormData(formRef.current);
-        const semanas = await filtrarSemanaRangoMes(1,1);
+        const configSemana = await encontrarModulo("Semana");
+        const semanas = await filtrarSemanasRangoProgramador({
+            anho_actual: configSemana?.[0]?.anho_actual,
+            semana_actual: configSemana?.[0]?.semana_actual,
+            semana_previa: configSemana?.[0]?.semana_previa,
+            semana_siguiente: configSemana?.[0]?.semana_siguiente,
+            total_semanas_anho: configSemana?.[0]?.total_semanas_anho,
+        });
         const naviera = await listarNavieras();
         const destino = await listarDestinos();
         let buques = await listarBuques();

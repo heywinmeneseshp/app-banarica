@@ -160,7 +160,8 @@ const Header = () => {
     movimientos: initialInfoMenu.handleMovimientos,
     pedidos: initialInfoMenu.handlePedidos,
     stock: initialInfoMenu.handleStock,
-    traslados: initialInfoMenu.handleTraslados
+    traslados: initialInfoMenu.handleTraslados,
+    temperatura: initialInfoMenu.handleTemperatura
   }), [initialInfoMenu]);
 
   const cerrarSesion = useCallback(() => {

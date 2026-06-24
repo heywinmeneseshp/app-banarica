@@ -53,7 +53,8 @@ const menuCompleto = {
         ["movimientos", "Movimientos"],
         ["pedidos", "Pedidos"],
         ["stock", "Stock"],
-        ["traslados", "Traslados"]
+        ["traslados", "Traslados"],
+        ["temperatura", "Termógrafos"]
     ],
 };
 

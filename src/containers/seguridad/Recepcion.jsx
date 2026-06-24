@@ -10,7 +10,8 @@ import excel from "@hooks/useExcel";
 import Alertas from "@assets/Alertas";
 import useAlert from "@hooks/useAlert";
 import { InputGroup, Form } from "react-bootstrap";
-import { filtrarSemanaRangoMes } from "@services/api/semanas";
+import { filtrarSemanasRangoProgramador } from "@services/api/semanas";
+import { encontrarModulo } from "@services/api/configuracion";
 
 function getDefaultWarehouse(warehouses = []) {
     return warehouses.find((item) => item.consecutivo === "BRC")?.consecutivo || warehouses[0]?.consecutivo || "";
@@ -85,20 +86,32 @@ export default function Recepcion() {
     useEffect(() => {
         const cargarDatos = async () => {
             try {
-                const [productosRes, semanasRes] = await Promise.all([
+                const [productosRes, moduloRes] = await Promise.all([
                     listarProductosSeguridad(),
-                    filtrarSemanaRangoMes(1, 1),
+                    encontrarModulo("Semana", { syncWeeks: false }).catch(() => null),
                 ]);
 
                 setProductos((productosRes || []).filter((item) => item.serial === true));
-                setSemanas(semanasRes || []);
+
+                if (moduloRes?.[0]) {
+                    const config = moduloRes[0];
+                    filtrarSemanasRangoProgramador({
+                        anho_actual: config.anho_actual,
+                        semana_actual: config.semana_actual,
+                        semana_previa: config.semana_previa,
+                        semana_siguiente: config.semana_siguiente,
+                        total_semanas_anho: config.total_semanas_anho,
+                    })
+                        .then((semanasList) => setSemanas(semanasList || []))
+                        .catch(() => {});
+                }
             } catch (error) {
-                console.error("Error al cargar datos iniciales de recepcion:", error);
+                console.error("Error al cargar datos iniciales de recepcion:", error?.message);
                 setAlert({
                     active: true,
                     mensaje: "No fue posible cargar los datos iniciales.",
                     color: "danger",
-                    autoClose: false
+                    autoClose: false,
                 });
             }
         };
