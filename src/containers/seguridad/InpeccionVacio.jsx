@@ -960,29 +960,19 @@ export default function InspeccionVacio() {
                 <span className="input-group-text">{field.label}:</span>
 
                 {field.id === "semana" ? (
-                  <>
-                    <input
-                      ref={(element) => setInputRef(field.id, element)}
-                      id={field.id}
-                      name={field.id}
-                      type={field.type}
-                      pattern={field.pattern}
-                      required={field.required}
-                      className={`form-control ${fieldErrors[field.id] ? "is-invalid" : ""}`}
-                      onInvalid={handleInvalid}
-                      onChange={handleChange}
-                      value={formValues[field.id] || ""}
-                      list={`${field.id}-list`}
-                      autoComplete="off"
-                      placeholder={field.placeholder}
-                      onKeyDown={handleFieldKeyDown}
-                    />
-                    <datalist id={`${field.id}-list`}>
-                      {semanas.map((s) => (
-                        <option key={s.consecutivo} value={s.consecutivo} />
-                      ))}
-                    </datalist>
-                  </>
+                  <select
+                    id={field.id}
+                    name={field.id}
+                    required={field.required}
+                    className={`form-select ${fieldErrors[field.id] ? "is-invalid" : ""}`}
+                    onChange={handleChange}
+                    value={formValues[field.id] || ""}
+                  >
+                    <option value="">Seleccionar semana...</option>
+                    {semanas.map((s) => (
+                      <option key={s.consecutivo} value={s.consecutivo}>{s.consecutivo}</option>
+                    ))}
+                  </select>
                 ) : (
                   <input
                     ref={(element) => setInputRef(field.id, element)}

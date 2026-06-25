@@ -28,6 +28,7 @@ export default function Tablas({
   onMassUpdateSuccess,
   filtrosExtra = [],
   optionalFields = [],
+  renderModal,
 }) {
   const ItemdorRef = useRef();
   const [item, setItem] = useState(null);
@@ -528,17 +529,21 @@ export default function Tablas({
       <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
 
       {open && (
-        <NuevoItem
-          crear={crear}
-          listas={listas}
-          actualizar={actualizar}
-          checkboxFields={checkboxFields}
-          optionalFields={optionalFields}
-          setOpen={setOpen}
-          setAlert={setAlert}
-          element={item}
-          encabezados={labelForm}
-        />
+        renderModal
+          ? renderModal({ open, setOpen, setAlert, item })
+          : (
+            <NuevoItem
+              crear={crear}
+              listas={listas}
+              actualizar={actualizar}
+              checkboxFields={checkboxFields}
+              optionalFields={optionalFields}
+              setOpen={setOpen}
+              setAlert={setAlert}
+              element={item}
+              encabezados={labelForm}
+            />
+          )
       )}
     </>
   );

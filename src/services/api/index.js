@@ -70,6 +70,8 @@ const endPoints = {
         assemble: `${API}/api/${VERSION}/combos/listar`,
         update: (id) => `${API}/api/${VERSION}/combos/${id}`,
         delete: (id) => `${API}/api/${VERSION}/combos/${id}`,
+        bulkCreate: `${API}/api/${VERSION}/combos/masivo`,
+        bulkUpdate: `${API}/api/${VERSION}/combos/masivo-actualizar`,
     },
     categorias: {
         list: `${API}/api/${VERSION}/categorias`,
@@ -78,6 +80,8 @@ const endPoints = {
         create: `${API}/api/${VERSION}/categorias/`,
         update: (id) => `${API}/api/${VERSION}/categorias/${id}`,
         delete: (id) => `${API}/api/${VERSION}/categorias/${id}`,
+        bulkCreate: `${API}/api/${VERSION}/categorias/masivo`,
+        bulkUpdate: `${API}/api/${VERSION}/categorias/masivo-actualizar`,
     },
     proveedores: {
         list: `${API}/api/${VERSION}/proveedores`,
@@ -94,6 +98,8 @@ const endPoints = {
         create: `${API}/api/${VERSION}/almacenes`,
         update: (id) => `${API}/api/${VERSION}/almacenes/${id}`,
         delete: (id) => `${API}/api/${VERSION}/almacenes/${id}`,
+        bulkCreate: `${API}/api/${VERSION}/almacenes/masivo`,
+        bulkUpdate: `${API}/api/${VERSION}/almacenes/masivo-actualizar`,
     },
     transportadoras: {
         list: `${API}/api/${VERSION}/transportadoras`,
@@ -259,6 +265,8 @@ const endPoints = {
         create: `${API}/api/${VERSION}/clientes`,
         update: (id) => `${API}/api/${VERSION}/clientes/${id}`,
         delete: (id) => `${API}/api/${VERSION}/clientes/${id}`,
+        bulkCreate: `${API}/api/${VERSION}/clientes/masivo`,
+        bulkUpdate: `${API}/api/${VERSION}/clientes/masivo-actualizar`,
     },
     galonesPorRuta: {
         list: `${API}/api/${VERSION}/galonesPorRuta`,
@@ -339,6 +347,8 @@ const endPoints = {
         create: `${API}/api/${VERSION}/categoriaVehiculos`,
         update: (id) => `${API}/api/${VERSION}/categoriaVehiculos/${id}`,
         delete: (id) => `${API}/api/${VERSION}/categoriaVehiculos/${id}`,
+        bulkCreate: `${API}/api/${VERSION}/categoriaVehiculos/masivo`,
+        bulkUpdate: `${API}/api/${VERSION}/categoriaVehiculos/masivo-actualizar`,
     },
     tanqueo: {
         list: `${API}/api/${VERSION}/tanqueo`,

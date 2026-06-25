@@ -32,19 +32,12 @@ export default function Clientes() {
           "Activar": "activo"
         }}
 
-        //Cargue Masivo
-        tituloCargueMasivo={"Clientes"}
-        endPointCargueMasivo={endPoints.clientes.create + "/masivo"}
-        encabezadosCargueMasivo={{
-          "cod": null,
-          "nit": null,
-          "razon_social": null,
-          "domicilio": null,
-          "telefono": null,
-          "email": null,
-          "pais": null,
-          "activo": null,
-        }}
+        tituloCargueMasivo="Clientes"
+        endPointCargueMasivo={endPoints.clientes.bulkCreate}
+        encabezadosCargueMasivo={{ cod: null, nit: null, razon_social: null, domicilio: null, telefono: null, email: null, pais: null, activo: null }}
+        endPointActualizacionMasiva={endPoints.clientes.bulkUpdate}
+        encabezadosActualizacionMasiva={{ nit: null, razon_social: null, cod: null, domicilio: null, telefono: null, email: null, activo: null }}
+        tituloActualizacionMasiva="Actualizar clientes masivo"
       />
 
     </>
