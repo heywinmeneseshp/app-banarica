@@ -10,7 +10,7 @@ import { agregarConsumoRutaVehiculo } from "@services/api/consumoRutaVehiculo";
 import { filtrarSemanasRangoProgramador } from "@services/api/semanas";
 import { paginarEmbarques } from "@services/api/embarques";
 import { listarCombos } from "@services/api/combos";
-import { listarcategoriaVehiculos } from "@services/api/categoriaVehiculos";
+import { listarcategoriaVehiculos } from "@services/api/CategoriaVehiculos";
 import { listarTransportadoras } from "@services/api/transportadoras";
 import { listarNavieras } from "@services/api/navieras";
 import { listarDestinos } from "@services/api/destinos";

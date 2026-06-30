@@ -11,7 +11,7 @@ import {
   paginarVehiculo,
   agregarVehiculo
 } from "@services/api/vehiculos";
-import { listarcategoriaVehiculos } from "@services/api/categoriaVehiculos";
+import { listarcategoriaVehiculos } from "@services/api/CategoriaVehiculos";
 import { listarConductores } from "@services/api/conductores";
 import { listarTransportadoras } from "@services/api/transportadoras";
 import { getStoredTransporters, getStoredUser } from "@utils/session";
