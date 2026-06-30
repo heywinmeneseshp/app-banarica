@@ -7,8 +7,8 @@ import { paginarProgramaciones } from '@services/api/programaciones';
 import { listarRecord_consumo } from '@services/api/record_consumo';
 import { consultarTanqueos } from '@services/api/tanqueo';
 import { encontrarModulo } from '@services/api/configuracion';
-import Bars from './Bars';
-import BarHorizontar from './BarsHorizonal';
+import Bars from '@components/Programacion/Bars';
+import BarHorizontar from '@components/Programacion/BarsHorizonal';
 
 const getToday = () => {
     const date = new Date();

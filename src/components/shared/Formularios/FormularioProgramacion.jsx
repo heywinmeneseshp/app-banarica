@@ -10,7 +10,7 @@ import { agregarConsumoRutaVehiculo } from "@services/api/consumoRutaVehiculo";
 import { filtrarSemanasRangoProgramador } from "@services/api/semanas";
 import { paginarEmbarques } from "@services/api/embarques";
 import { listarCombos } from "@services/api/combos";
-import { listarcategoriaVehiculos } from "@services/api/CategoriaVehiculos";
+import { listarcategoriaVehiculos } from "@services/api/categoriaVehiculos";
 import { listarTransportadoras } from "@services/api/transportadoras";
 import { listarNavieras } from "@services/api/navieras";
 import { listarDestinos } from "@services/api/destinos";
@@ -590,6 +590,16 @@ export default function FormulariosProgramacion({
           conductorTouchedRef.current = true;
           setConductorSeleccionado(createdId);
         }
+        if (quickCreateState.targetField === "conductor_vehiculo" && createdId) {
+          setQuickCreateState((prev) => ({
+            ...prev,
+            type: "vehiculo",
+            title: "Nuevo vehiculo",
+            form: { ...prev.form, conductor_id: createdId },
+            targetField: null,
+          }));
+          return;
+        }
       }
 
       if (quickCreateState.type === "tipoMovimientoVehiculo") {
@@ -1076,32 +1086,6 @@ export default function FormulariosProgramacion({
 
                   <div className="col-md-3">
                     <div className="d-flex justify-content-between align-items-center mb-1">
-                      <label htmlFor="conductor-programador" className="form-label mb-0">Conductor</label>
-                      {canQuickCreateProgramador && (
-                        <Button type="button" variant="outline-primary" size="sm" onClick={handleQuickCreateConductor}>
-                          +
-                        </Button>
-                      )}
-                    </div>
-                    <select
-                      id="conductor-programador"
-                      className="form-control form-control-sm"
-                      value={conductorSeleccionado}
-                      onChange={(event) => {
-                        conductorTouchedRef.current = true;
-                        setConductorSeleccionado(event.target.value);
-                      }}
-                    >
-                      <option value=""></option>
-                      {listaConductores.map((item) => (
-                        <option key={item?.id} value={item?.id}>{item?.conductor}</option>
-                      ))}
-                    </select>
-                  </div>
-
-
-                      <div className="col-md-3">
-                    <div className="d-flex justify-content-between align-items-center mb-1">
                       <label htmlFor="vehiculo-programador" className="form-label mb-0">Vehiculo</label>
                       {canQuickCreateProgramador && (
                         <Button type="button" variant="outline-primary" size="sm" onClick={handleQuickCreateVehiculo}>
@@ -1122,6 +1106,31 @@ export default function FormulariosProgramacion({
                       <option value=""></option>
                       {listaVehiculos.map((item) => (
                         <option key={item?.id} value={item?.id}>{item?.placa}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="col-md-3">
+                    <div className="d-flex justify-content-between align-items-center mb-1">
+                      <label htmlFor="conductor-programador" className="form-label mb-0">Conductor</label>
+                      {canQuickCreateProgramador && (
+                        <Button type="button" variant="outline-primary" size="sm" onClick={handleQuickCreateConductor}>
+                          +
+                        </Button>
+                      )}
+                    </div>
+                    <select
+                      id="conductor-programador"
+                      className="form-control form-control-sm"
+                      value={conductorSeleccionado}
+                      onChange={(event) => {
+                        conductorTouchedRef.current = true;
+                        setConductorSeleccionado(event.target.value);
+                      }}
+                    >
+                      <option value=""></option>
+                      {listaConductores.map((item) => (
+                        <option key={item?.id} value={item?.id}>{item?.conductor}</option>
                       ))}
                     </select>
                   </div>
@@ -1296,7 +1305,23 @@ export default function FormulariosProgramacion({
               </div>
               <div className="col-md-6">
                 <Form.Group>
-                  <Form.Label>Conductor</Form.Label>
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <Form.Label className="mb-0">Conductor</Form.Label>
+                    <Button
+                      type="button"
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={() => setQuickCreateState((prev) => ({
+                        ...prev,
+                        type: "conductor",
+                        title: "Nuevo conductor",
+                        form: { conductor: "" },
+                        targetField: "conductor_vehiculo",
+                      }))}
+                    >
+                      +
+                    </Button>
+                  </div>
                   <Form.Select
                     value={quickCreateState.form?.conductor_id || ""}
                     onChange={(event) => setQuickCreateState((prev) => ({

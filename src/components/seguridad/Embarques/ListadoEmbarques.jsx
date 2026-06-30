@@ -4,14 +4,14 @@ import useAlert from '@hooks/useAlert';
 import Paginacion from '@components/shared/Tablas/Paginacion';
 import { actualizarEmbarques, crearEmbarques, paginarEmbarques } from '@services/api/embarques';
 import { encontrarModulo } from '@services/api/configuracion';
-import NuevoEmbarque from '@assets/Seguridad/Embarques/NuevoEmbarque';
-import Alertas from '@assets/Alertas';
+import NuevoEmbarque from '@components/seguridad/Embarques/NuevoEmbarque';
+import Alertas from '@components/shared/Alertas';
 import { listarBuques } from '@services/api/buques';
 import { listarNavieras } from '@services/api/navieras';
 import { filtrarSemanasRangoProgramador } from '@services/api/semanas';
 import { listarClientes } from '@services/api/clientes';
 import { listarDestinos } from '@services/api/destinos';
-import CargueMasivo from '@assets/Seguridad/Listado/CargueMasivo';
+import CargueMasivo from '@components/seguridad/Listado/CargueMasivo';
 import endPoints from '@services/api';
 
 const inputs = [

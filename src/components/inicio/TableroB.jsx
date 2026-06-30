@@ -8,7 +8,7 @@ import { useAuth } from '@hooks/useAuth';
 import useAlert from '@hooks/useAlert';
 //Components
 import NuevoAviso from './NuevoAviso';
-import Alertas from '@assets/Alertas';
+import Alertas from '@components/shared/Alertas';
 //Bootstrap
 import { Alert } from 'react-bootstrap';
 import styles from '@styles/Tablero.module.css';

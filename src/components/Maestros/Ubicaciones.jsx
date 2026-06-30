@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { Button } from "react-bootstrap";
 import Tablas from "@components/shared/Tablas/Tablas";
-import Alertas from "@assets/Alertas";
+import Alertas from "@components/shared/Alertas";
 import useAlert from "@hooks/useAlert";
 import { listarAlmacenes } from "@services/api/almacenes";
 import { actualizarUbicacion, buscarUbicacion, listarUbicaciones, paginarUbicaciones, agregarUbicacion } from '@services/api/ubicaciones';

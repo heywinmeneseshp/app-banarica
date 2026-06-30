@@ -7,7 +7,7 @@ import {
   listarcategoriaVehiculos,
   paginarcategoriaVehiculos,
   agregarcategoriaVehiculos
-} from '@services/api/CategoriaVehiculos';
+} from '@services/api/categoriaVehiculos';
 
 export default function CategoriaVehiculos() {
   return (

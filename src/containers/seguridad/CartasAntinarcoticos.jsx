@@ -9,7 +9,7 @@ import { actualizarModulo, encontrarModulo } from '@services/api/configuracion';
 import { paginarEmbarques } from '@services/api/embarques';
 import { paginarListado } from '@services/api/listado';
 import { listarSemanas } from '@services/api/semanas';
-import { enviarCorreo } from '@services/api/correo';
+import { enviarCorreo } from '@services/api/email';
 import { listarProductosSeguridad } from '@services/api/seguridad';
 import { filterActiveContainerRows } from '@utils/contenedorEstado';
 import {

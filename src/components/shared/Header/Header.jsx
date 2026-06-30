@@ -9,7 +9,7 @@ import useAlert from '@hooks/useAlert';
 import AppContext from '@context/AppContext';
 
 import EditarPerfilModal from "@components/administrador/EditarPerfilModal";
-import Configuracion from '@components/administrador/Configuracion';
+import Configuracion from '@containers/administrador/Configuracion';
 
 import { encontrarEmpresa, encontrarModulo } from '@services/api/configuracion';
 import { menuCompleto } from 'utils/configMenu';

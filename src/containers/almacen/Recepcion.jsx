@@ -16,8 +16,8 @@ import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import Button from 'react-bootstrap/Button';
 //Components
-import Alertas from "@assets/Alertas";
-import AlertaPedido from "@assets/AlertaPedido";
+import Alertas from "@components/shared/Alertas";
+import AlertaPedido from "@components/shared/AlertaPedido";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
 import { encontrarModulo } from "@services/api/configuracion";

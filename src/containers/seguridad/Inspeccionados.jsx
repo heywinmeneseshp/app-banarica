@@ -6,9 +6,9 @@ import { Dropdown } from "react-bootstrap";
 import Paginacion from "@components/shared/Tablas/Paginacion";
 import CorregirInspeccionContenedorModal from "@components/seguridad/CorregirInspeccionContenedorModal";
 import { encontrarModulo } from "@services/api/configuracion";
-import { paginarInspecciones } from "@services/api/inpecciones";
+import { paginarInspecciones } from "@services/api/inspecciones";
 import { aprobarInspeccionLleno, corregirInspeccionContenedor, rechazarInspeccionLleno } from "@services/api/seguridad";
-import InsumoConfig from "@assets/InsumoConfig";
+import InsumoConfig from "@components/shared/InsumoConfig";
 import { useAuth } from "@hooks/useAuth";
 
 const isEmptyInspectionZone = (zone) =>

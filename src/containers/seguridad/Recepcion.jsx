@@ -7,7 +7,7 @@ import { useAuth } from "@hooks/useAuth";
 import { cargarSeriales, listarProductosSeguridad } from "@services/api/seguridad";
 import file from "@hooks/useFile";
 import excel from "@hooks/useExcel";
-import Alertas from "@assets/Alertas";
+import Alertas from "@components/shared/Alertas";
 import useAlert from "@hooks/useAlert";
 import { InputGroup, Form } from "react-bootstrap";
 import { filtrarSemanasRangoProgramador } from "@services/api/semanas";

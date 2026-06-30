@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Alertas from '@assets/Alertas';
+import Alertas from '@components/shared/Alertas';
 import { listarVehiculo } from '@services/api/vehiculos';
 import { listarRutas } from '@services/api/rutas';
 import {

@@ -4,9 +4,10 @@ import { PropagateLoader } from "react-spinners";
 import useDate from "@hooks/useDate";
 
 import { listarProductosSeguridad, listarSeriales } from "@services/api/seguridad";
+import { listarAlmacenes } from "@services/api/almacenes";
 import { ejecutarTraslado } from "@services/api/traslados";
 import { encontrarModulo } from "@services/api/configuracion";
-import { enviarCorreo } from "@services/api/correo";
+import { enviarCorreo } from "@services/api/email";
 import { filtrarSemanasRangoProgramador } from "@services/api/semanas";
 
 import Paginacion from "@components/Paginacion";
@@ -190,6 +191,7 @@ export default function Transferencias() {
     const [showModal, setShowModal] = useState(false);
 
     const [semanas, setSemanas] = useState([]);
+    const [todosAlmacenes, setTodosAlmacenes] = useState([]);
     const [bool, setBool] = useState(false);
     const [loading, setLoading] = useState(false);
     const [mostrarSerial, setMostrarSerial] = useState(false);
@@ -240,6 +242,7 @@ export default function Transferencias() {
         setDestinoSeleccionado(destinoInicial);
 
         const loadConfig = async () => {
+            listarAlmacenes().then((res) => setTodosAlmacenes((res || []).filter((item) => item.activo !== false)));
             listarProductosSeguridad().then((res) => setProductos(res.filter((item) => item.serial === true)));
             encontrarModulo("Semana", { syncWeeks: false })
                 .then((res) => {
@@ -631,7 +634,7 @@ export default function Transferencias() {
                                             onChange={handleDestinoChange}
                                             disabled={bool}
                                         >
-                                            {almacenByUser.map((item, index) => (
+                                            {todosAlmacenes.map((item, index) => (
                                                 <option
                                                     key={index}
                                                     value={item.consecutivo}

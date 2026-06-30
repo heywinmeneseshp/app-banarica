@@ -296,6 +296,7 @@ const endPoints = {
         create: `${API}/api/${VERSION}/programaciones`,
         update: (id) => `${API}/api/${VERSION}/programaciones/${id}`,
         delete: (id) => `${API}/api/${VERSION}/programaciones/${id}`,
+        bulkUpdate: `${API}/api/${VERSION}/programaciones/actualizar-masivo`,
     },
     programacionSeriales: {
         list: `${API}/api/${VERSION}/programacion-seriales`,
@@ -407,6 +408,7 @@ const endPoints = {
     },
     Embarques: {
         list: `${API}/api/${VERSION}/embarque`,
+        catalogo: `${API}/api/${VERSION}/embarque/catalogo`,
         create: `${API}/api/${VERSION}/embarque`,
         findOne: (id) => `${API}/api/${VERSION}/embarque/${id}`,
         paginar: (offset, limit) => `${API}/api/${VERSION}/embarque/paginar?offset=${offset}&limit=${limit}`,

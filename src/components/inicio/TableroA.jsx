@@ -4,8 +4,8 @@ import AppContext from '@context/AppContext';
 import { filtrarNotificaciones } from '@services/api/notificaciones';
 import { useAuth } from '@hooks/useAuth';
 //Components
-import Alerta from '@assets/Alerta';
-import BotonDespliegue from '@assets/BotonDespliegue';
+import Alerta from '@components/shared/Alerta';
+import BotonDespliegue from '@components/shared/BotonDespliegue';
 //Bootstrap
 import styles from '@styles/Tablero.module.css';
 

@@ -1,10 +1,10 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { FaPowerOff, FaRegCircle, FaEdit, FaSearch, FaDownload, FaUpload, FaPlus, FaBan } from 'react-icons/fa';
 import useAlert from '@hooks/useAlert';
-import CargueMasivo from '@assets/Seguridad/Listado/CargueMasivo';
+import CargueMasivo from '@components/seguridad/Listado/CargueMasivo';
 import Paginacion from '@components/shared/Tablas/Paginacion';
 import NuevoItem from '@components/shared/Formularios/Formularios';
-import Alertas from '@assets/Alertas';
+import Alertas from '@components/shared/Alertas';
 import excel from '@hooks/useExcel';
 import { Button, Col, Row, Form, Badge, Tooltip, OverlayTrigger } from 'react-bootstrap';
 

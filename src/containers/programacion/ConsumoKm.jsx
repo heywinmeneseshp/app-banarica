@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
-import style from "@components/Programacion/camiones.module.css";
+import style from './camiones.module.css';
 import Paginacion from '@components/shared/Tablas/Paginacion';
 import FormulariosProgramacion from '@components/shared/Formularios/FormularioProgramacion';
-import Alertas from '@assets/Alertas';
+import Alertas from '@components/shared/Alertas';
 import menos from '@public/images/menos.png';
 import * as XLSX from 'xlsx';
 

@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from 'react';
 
 import { paginarRecord_consumo } from '@services/api/record_consumo';
-import Bars from '@components/Programacion/Bars';
+import Bars from '@containers/programacion/Bars';
 import Tabla from '@components/shared/Tablas/Tabla';
-import BarHorizontar from '@components/Programacion/BarsHorizonal';
+import BarHorizontar from '@containers/programacion/BarsHorizonal';
 import { useRouter } from 'next/router';
 
 

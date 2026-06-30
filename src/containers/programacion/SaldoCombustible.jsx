@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
-import Alertas from '@assets/Alertas';
+import Alertas from '@components/shared/Alertas';
 import useAlert from '@hooks/useAlert';
 import { encontrarModulo } from '@services/api/configuracion';
 import { listarSemanas } from '@services/api/semanas';
 import { listarVehiculo } from '@services/api/vehiculos';
 import { ajustarSaldoCombustible, cargarCombustible } from '@services/api/tanqueo';
-import HistoricoCarguesCombustible from '@components/Programacion/CargueCombustible';
+import HistoricoCarguesCombustible from './CargueCombustible';
 
 const getToday = () => {
   const today = new Date();

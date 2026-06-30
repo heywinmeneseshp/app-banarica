@@ -21,15 +21,15 @@ import Rutas from '@components/Maestros/Rutas';
 import TipoMovimientoVehiculos from '@components/Maestros/TipoMovimientoVehiculos';
 import Vehiculos from '@components/Maestros/Vehiculos';
 //PROGRAMACIONES
-import Programador from '@components/Programacion/Programador';
+import Programador from '@containers/programacion/Programador';
 import Contenedores from '@components/Programacion/Contenedores';
-import Notificaciones from '@components/Programacion/Notificaciones';
+import Notificaciones from '@containers/programacion/Notificaciones';
 import Clientes from '@components/Maestros/Clientes';
-import HistorialConsumo from "@components/Programacion/ConsumoKm";
-import HistoricoConsumoRuta from '@components/Programacion/ConsumoRutas';
-import SaldoCombustibleVehiculos from '@components/Programacion/SaldoCombustible';
-import ReportesConsumo from '@components/Programacion/Reportes';
-import ConsumoRutaVehiculo from '@components/Programacion/ConsumoRutaVehiculo';
+import HistorialConsumo from "@containers/programacion/ConsumoKm";
+import HistoricoConsumoRuta from '@containers/programacion/ConsumoRutas';
+import SaldoCombustibleVehiculos from '@containers/programacion/SaldoCombustible';
+import ReportesConsumo from '@containers/programacion/Reportes';
+import ConsumoRutaVehiculo from '@containers/programacion/ConsumoRutaVehiculo';
 import MotivoDeRechazo from '@containers/administrador/MotivoDeRechazo';
 
 

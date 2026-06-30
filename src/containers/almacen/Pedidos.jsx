@@ -16,11 +16,11 @@ import InputGroup from 'react-bootstrap/InputGroup';
 import Button from 'react-bootstrap/Button';
 
 //Components
-import NuevoAlmacenPedido from "@components/almacen/NuevoAlmacenPedido.jsx";
+import NuevoAlmacenPedido from "@containers/almacen/NuevoAlmacenPedido";
 
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
-import Alertas from "@assets/Alertas";
+import Alertas from "@components/shared/Alertas";
 import { encontrarModulo } from "@services/api/configuracion";
 
 

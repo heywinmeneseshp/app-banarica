@@ -4,7 +4,7 @@ import * as XLSX from "xlsx";
 import endPoints from "@services/api";
 import { Form, Row, Col, Button } from "react-bootstrap";
 import Paginacion from "@components/shared/Tablas/Paginacion";
-import CargueMasivo from "@assets/Seguridad/Listado/CargueMasivo";
+import CargueMasivo from "@components/seguridad/Listado/CargueMasivo";
 import styles2 from "@components/shared/Formularios/Formularios.module.css";
 import styles from "@styles/Seguridad.module.css";
 import {

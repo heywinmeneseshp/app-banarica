@@ -7,13 +7,15 @@ const config = {
     }
 };
 const agregarProductosViaje = async (ProductosViaje) => {
-   try {
+  try {
     const url = endPoints.ProductosViaje.create;
     const response = await axios.post(url, ProductosViaje, config);
     return response.data;
-   }catch(e){
-    alert("Error al ingresar datos");
-   }
+  } catch (e) {
+    throw new Error(
+      e?.response?.data?.message || e?.response?.data?.error || e?.message || 'Error al ingresar datos'
+    );
+  }
 };
 
 const eliminarProductosViaje = async(consecutivo) => {

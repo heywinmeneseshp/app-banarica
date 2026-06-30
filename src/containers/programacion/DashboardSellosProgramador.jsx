@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { DownloadTableExcel } from 'react-export-table-to-excel';
 import { FaCog, FaSyncAlt } from 'react-icons/fa';
-import InsumoConfig from '@assets/InsumoConfig';
+import InsumoConfig from '@components/shared/InsumoConfig';
 import Paginacion from '@components/shared/Tablas/Paginacion';
 import { encontrarModulo } from '@services/api/configuracion';
 import { filtrarProductos } from '@services/api/productos';

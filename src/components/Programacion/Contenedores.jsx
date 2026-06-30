@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import style from "@components/Programacion/camiones.module.css";
+import style from './camiones.module.css';
 import Paginacion from '@components/shared/Tablas/Paginacion';
-import Alertas from '@assets/Alertas';
+import Alertas from '@components/shared/Alertas';
 
 import { paginarProgramaciones } from '@services/api/programaciones';
 import { listarUbicaciones } from '@services/api/ubicaciones';

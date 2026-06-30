@@ -8,7 +8,7 @@ import useAlert from '@hooks/useAlert';
 //Components
 import Paginacion from '@components/Paginacion';
 import NuevoProveedor from '@components/administrador/NuevoProveedor';
-import Alertas from '@assets/Alertas';
+import Alertas from '@components/shared/Alertas';
 //CSS
 import styles from '@styles/Listar.module.css';
 import excel from '@hooks/excel';

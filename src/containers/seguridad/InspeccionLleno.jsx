@@ -5,7 +5,7 @@ import Loader from "@components/shared/Loader";
 import { listarAlmacenes } from "@services/api/almacenes";
 import { listarCombos } from "@services/api/combos";
 import { actualizarModulo, encontrarModulo } from "@services/api/configuracion";
-import { paginarInspecciones } from "@services/api/inpecciones";
+import { paginarInspecciones } from "@services/api/inspecciones";
 import { paginarListado } from "@services/api/listado";
 import { encontrarUnSerial, inspeccionAntinarcoticos } from "@services/api/seguridad";
 import { filterActiveContainerRows } from "@utils/contenedorEstado";

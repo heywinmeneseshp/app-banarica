@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useRouter } from "next/router";
-import Liquidacion from "@components/almacen/Liquidacion";
+import Liquidacion from "@containers/almacen/Liquidacion";
 import ThirdLayout from 'layout/ThirdLayout';
 
 export default function RLiquidacion() {

@@ -76,10 +76,20 @@ const paginarProgramaciones = async (page, limit, body) => {
   }
 };
 
+const actualizarMasivoProgramaciones = async (rows) => {
+  try {
+    const res = await axios.post(endPoints.programaciones.bulkUpdate, rows, authConfig());
+    return res.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error, 'Error al actualizar programaciones masivamente'));
+  }
+};
+
 export {
   agregarProgramaciones,
   eliminarProgramaciones,
   actualizarProgramaciones,
+  actualizarMasivoProgramaciones,
   buscarProgramaciones,
   listarProgramaciones,
   paginarProgramaciones,

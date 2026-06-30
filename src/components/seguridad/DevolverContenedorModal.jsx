@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import styles from "@components/shared/Formularios/Formularios.module.css";
 import Loader from "@components/shared/Loader";
 import { crearContenedor } from "@services/api/contenedores";
-import { crearInspeccion } from "@services/api/inpecciones";
+import { crearInspeccion } from "@services/api/inspecciones";
 import { RETURNED_STATUS } from "@utils/contenedorEstado";
 
 const DEFAULT_REASON =

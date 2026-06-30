@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import Paginacion from '@components/shared/Tablas/Paginacion';
-import Alertas from '@assets/Alertas';
+import Alertas from '@components/shared/Alertas';
 import { listarConductores } from '@services/api/conductores';
 import { paginarProgramaciones } from '@services/api/programaciones';
 import { listarConsumoRutaVehiculo } from '@services/api/consumoRutaVehiculo';

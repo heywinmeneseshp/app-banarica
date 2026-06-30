@@ -2,8 +2,8 @@ import React, { useEffect, useState, useContext } from "react";
 import { useRouter } from "next/router";
 import AppContext from "@context/AppContext";
 //Services";
-import RealizarTraslado from "@components/almacen/RealizarTraslado";
-import Alerta from "@assets/Alerta";
+import RealizarTraslado from "@containers/almacen/RealizarTraslado";
+import Alerta from "@components/shared/Alerta";
 
 //CSS
 import styles from "@styles/almacen/almacen.module.css";

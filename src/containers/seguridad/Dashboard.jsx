@@ -5,13 +5,13 @@ import { DownloadTableExcel } from 'react-export-table-to-excel';
 import Paginacion from "@components/shared/Tablas/Paginacion";
 import { paginarListado } from "@services/api/listado";
 import { encontrarModulo } from "@services/api/configuracion";
-import InsumoConfig from "@assets/InsumoConfig";
+import InsumoConfig from "@components/shared/InsumoConfig";
 import { filtrarProductos } from "@services/api/productos";
 import { FaCog, FaEye, FaPlus } from 'react-icons/fa';
-import VistaContenedor from "@assets/Seguridad/VistaContenedor";
+import VistaContenedor from "@components/seguridad/VistaContenedor";
 import AsignarSeriales from "@components/seguridad/AsignarSeriales";
 import { useAuth } from "@hooks/useAuth";
-import GenerarCarruselExcel from "@assets/Seguridad/GenerarCarruselExcel";
+import GenerarCarruselExcel from "@components/seguridad/GenerarCarruselExcel";
 import DevolverContenedorModal from "@components/seguridad/DevolverContenedorModal";
 import { filterActiveContainerRows } from "@utils/contenedorEstado";
 

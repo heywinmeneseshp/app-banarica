@@ -4,10 +4,10 @@ import Button from 'react-bootstrap/Button';
 
 
 //Components
-import Ajuste from "@components/almacen/Ajuste";
-import Liquidacion from "@components/almacen/Liquidacion";
-import Exportacion from "@components/almacen/Exportacion";
-import Devolucion from "@components/almacen/Devolucion";
+import Ajuste from "@containers/almacen/Ajuste";
+import Liquidacion from "@containers/almacen/Liquidacion";
+import Exportacion from "@containers/almacen/Exportacion";
+import Devolucion from "@containers/almacen/Devolucion";
 
 //CSS
 import styles from "@styles/almacen/almacen.module.css";

@@ -11,7 +11,7 @@ import endPoints from "@services/api";
 import Loader from "@components/shared/Loader";
 import InsumoInspeccVacio from "@components/seguridad/InsumoInspeccVacio";
 import DevolverContenedorModal from "@components/seguridad/DevolverContenedorModal";
-import CargueMasivo from "@assets/Seguridad/Listado/CargueMasivo";
+import CargueMasivo from "@components/seguridad/Listado/CargueMasivo";
 
 const FIELD_CONFIG = {
   semana: {

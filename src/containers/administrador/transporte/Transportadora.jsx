@@ -5,7 +5,7 @@ import { actualizarTransportadora,  listarTransportadoras, paginarTransportadora
 import useAlert from '@hooks/useAlert';
 //Components
 import Paginacion from '@components/Paginacion';
-import Alertas from '@assets/Alertas';
+import Alertas from '@components/shared/Alertas';
 //CSS
 import styles from '@styles/Listar.module.css';
 import NuevoTransporte from '@components/administrador/NuevoTransporte';

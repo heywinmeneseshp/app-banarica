@@ -1,12 +1,12 @@
 import React, { useEffect } from "react";
 import { useRouter } from "next/router";
 
-import Programador from "@components/Programacion/Programador";
-import ConsumoKm from "@components/Programacion/ConsumoKm";
-import ConsumoRutas from "@components/Programacion/ConsumoRutas";
-import Reportes from "@components/Programacion/Reportes";
-import SaldoCombustible from "@components/Programacion/SaldoCombustible";
-import DashboardSellosProgramador from "@components/Programacion/DashboardSellosProgramador";
+import Programador from "@containers/programacion/Programador";
+import ConsumoKm from "@containers/programacion/ConsumoKm";
+import ConsumoRutas from "@containers/programacion/ConsumoRutas";
+import Reportes from "@containers/programacion/Reportes";
+import SaldoCombustible from "@containers/programacion/SaldoCombustible";
+import DashboardSellosProgramador from "@containers/programacion/DashboardSellosProgramador";
 //Components
 
 

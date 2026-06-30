@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import Ajuste from "@components/almacen/Ajuste";
+import Ajuste from "@containers/almacen/Ajuste";
 import ThirdLayout from 'layout/ThirdLayout';
 
 export default function Editar() {

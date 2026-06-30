@@ -5,7 +5,7 @@ import CorregirSerialModal from "@components/seguridad/CorregirSerialModal";
 import { useAuth } from "@hooks/useAuth";
 import { encontrarModulo } from "@services/api/configuracion";
 import { encontrarContenedor } from "@services/api/contenedores";
-import { listarInspecciones, paginarInspecciones } from "@services/api/inpecciones";
+import { listarInspecciones, paginarInspecciones } from "@services/api/inspecciones";
 import { paginarListado } from "@services/api/listado";
 import { paginarRechazos } from "@services/api/rechazos";
 import { corregirAsignacionSerial, listarSeriales } from "@services/api/seguridad";

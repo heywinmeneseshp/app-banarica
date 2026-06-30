@@ -437,7 +437,7 @@ const GenerarCarruselExcelConEstilos = ({ data = [], setOpen }) => {
         datosCorreo.cc = ccValue;
       }
 
-      const { enviarCorreo } = await import('@services/api/correo');
+      const { enviarCorreo } = await import('@services/api/email');
       const respuesta = await enviarCorreo(datosCorreo);
       if (respuesta?.success) {
         alert('¡Archivo enviado por correo exitosamente!');

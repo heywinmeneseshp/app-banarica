@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Tablas from "@components/shared/Tablas/Tablas";
-import Alertas from "@assets/Alertas";
+import Alertas from "@components/shared/Alertas";
 import useAlert from "@hooks/useAlert";
 import { actualizarModulo, encontrarModulo } from "@services/api/configuracion";
 import endPoints from "@services/api";
@@ -11,7 +11,7 @@ import {
   paginarVehiculo,
   agregarVehiculo
 } from "@services/api/vehiculos";
-import { listarcategoriaVehiculos } from "@services/api/CategoriaVehiculos";
+import { listarcategoriaVehiculos } from "@services/api/categoriaVehiculos";
 import { listarConductores } from "@services/api/conductores";
 import { listarTransportadoras } from "@services/api/transportadoras";
 import { getStoredTransporters, getStoredUser } from "@utils/session";

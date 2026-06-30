@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Dashboard from '@containers/seguridad/Dashboard';
 import { encontrarModulo } from '@services/api/configuracion';
 import Inspeccionados from '@containers/seguridad/Inspeccionados';
-import Programador from "@components/Programacion/Programador";
+import Programador from "@containers/programacion/Programador";
 
 //CSS
 

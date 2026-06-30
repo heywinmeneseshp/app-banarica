@@ -32,8 +32,14 @@ const eliminarEmbarques = async (body) => {
 };
 
 
+const catalogoEmbarques = async () => {
+    const res = await axios.get(endPoints.Embarques.catalogo);
+    return res.data;
+};
+
 export {
     listarEmbarques,
+    catalogoEmbarques,
     crearEmbarques,
     actualizarEmbarques,
     paginarEmbarques,

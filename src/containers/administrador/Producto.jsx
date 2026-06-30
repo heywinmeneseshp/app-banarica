@@ -7,7 +7,7 @@ import { actualizarProducto, listarProductos } from '@services/api/productos';
 import useAlert from '@hooks/useAlert';
 import excel from '@hooks/useExcel';
 //Components
-import Alertas from '@assets/Alertas';
+import Alertas from '@components/shared/Alertas';
 import Paginacion from '@components/Paginacion';
 import NuevoProducto from '@components/administrador/NuevoProducto';
 //CSS

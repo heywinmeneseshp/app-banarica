@@ -36,7 +36,7 @@ const actualizarcategoriaVehiculos = async(consecutivo, changes) => {
 
 const buscarcategoriaVehiculos = async(consecutivo) => {
     try {
-    const res = await axios.get(endPoints.catego.findOne(consecutivo));
+    const res = await axios.get(endPoints.categoriaVehiculos.findOne(consecutivo));
     return res.data;
     } catch (error) {
         throw new Error(getErrorMessage(error, "Error al buscar categoriaVehiculos"));

@@ -7,7 +7,7 @@ import endPoints from '@services/api';
 import { fetchAuthenticatedProfile } from '@services/api/auth';
 //Components
 import NuevoUsuario from '@components/administrador/NuevoUsuario';
-import Alertas from '@assets/Alertas';
+import Alertas from '@components/shared/Alertas';
 import Paginacion from '@components/Paginacion';
 //Hooks
 import useAlert from '@hooks/useAlert';

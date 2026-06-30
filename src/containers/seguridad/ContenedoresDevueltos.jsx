@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { filtrarContenedor } from "@services/api/contenedores";
-import { listarInspecciones } from "@services/api/inpecciones";
+import { listarInspecciones } from "@services/api/inspecciones";
 import { RETURNED_STATUS } from "@utils/contenedorEstado";
 
 const formatDateTimeValue = (value) => {

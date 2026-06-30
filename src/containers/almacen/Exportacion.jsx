@@ -13,7 +13,7 @@ import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import Button from 'react-bootstrap/Button';
 //Components
-import Alertas from "@assets/Alertas";
+import Alertas from "@components/shared/Alertas";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
 import { listarCombos } from "@services/api/combos";

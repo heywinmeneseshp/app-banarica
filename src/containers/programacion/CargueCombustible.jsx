@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from 'react-bootstrap';
-import Alertas from '@assets/Alertas';
+import Alertas from '@components/shared/Alertas';
 import useAlert from '@hooks/useAlert';
 import exportToExcel from '@hooks/useExcel';
 import { consultarTanqueos } from '@services/api/tanqueo';
