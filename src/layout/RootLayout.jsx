@@ -1,13 +1,11 @@
-// RootLayout.tsx
 import React from 'react';
 import { useRouter } from 'next/router';
 import Header from '@components/shared/Header/Header';
 import Footer from '@components/shared/Footer/Footer';
 
-
 export default function RootLayout({ children, showChrome = false }) {
   const router = useRouter();
-  const isOperationalRoute = ['/Seguridad', '/Movimiento', '/tracecode', '/cartas'].some((prefix) => (
+  const isOperationalRoute = ['/Seguridad', '/Movimiento', '/tracecode', '/cartas', '/Transporte', '/Almacen', '/Informes'].some((prefix) => (
     router.pathname.startsWith(prefix) || router.asPath.startsWith(prefix)
   ));
 

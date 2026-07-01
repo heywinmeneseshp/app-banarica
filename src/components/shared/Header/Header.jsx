@@ -1,4 +1,3 @@
-// Importacion de dependencias necesarias
 import React, { useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { Navbar, Nav, DropdownButton, Dropdown, Button, Container } from 'react-bootstrap';
@@ -11,15 +10,13 @@ import AppContext from '@context/AppContext';
 import EditarPerfilModal from "@components/administrador/EditarPerfilModal";
 import Configuracion from '@containers/administrador/Configuracion';
 
-import { encontrarEmpresa, encontrarModulo } from '@services/api/configuracion';
+import { encontrarModulo } from '@services/api/configuracion';
 import { menuCompleto } from 'utils/configMenu';
 import { clearSession, getStoredUser, getStoredWarehouses, getToken } from 'utils/session';
 
-// Constantes
 const SUPER_ADMIN_ROLE = "Super administrador";
 const DEFAULT_MENU_KEYS = Object.keys(menuCompleto);
 
-// Componente de menú reutilizable
 const MenuDropdown = ({ title, items, variant = "dark", onItemClick, isVisible, userRole, configSubMenu }) => {
   if (!isVisible) return null;
 
@@ -53,24 +50,20 @@ const Header = () => {
   const router = useRouter();
   const { setAlert } = useAlert();
   const { user, setUser, setAlmacenByUser } = useAuth();
-  const { initialMenu, initialAdminMenu, initialAlmacenMenu, initialInfoMenu } = useContext(AppContext);
+  const { initialMenu, nombreApp } = useContext(AppContext);
 
   const [openProfile, setOpenProfile] = useState(false);
   const [openConfig, setOpenConfig] = useState(false);
-  const [nombreApp, setNombreApp] = useState(null);
   const [configMenu, setConfigMenu] = useState([]);
   const [configSubMenu, setConfigSubMenu] = useState([]);
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
 
-  // Verificar si es super admin
   const isSuperAdmin = useMemo(() => user?.id_rol === SUPER_ADMIN_ROLE, [user?.id_rol]);
 
-  // Verificar acceso a menús
   const hasMenuAccess = useCallback((menuName) => {
     return configMenu.includes(menuName) || isSuperAdmin;
   }, [configMenu, isSuperAdmin]);
 
-  // Función para cargar configuración del usuario
   const loadUserConfig = useCallback(async (usuario) => {
     setIsLoadingConfig(true);
     try {
@@ -97,18 +90,6 @@ const Header = () => {
     }
   }, [isSuperAdmin]);
 
-  // Cargar nombre de la empresa
-  const loadCompanyName = useCallback(async () => {
-    try {
-      const res = await encontrarEmpresa();
-      setNombreApp(res?.nombreComercial || null);
-    } catch (error) {
-      console.error('Error al cargar nombre de empresa:', error);
-      setNombreApp(null);
-    }
-  }, []);
-
-  // Efecto principal
   useEffect(() => {
     const token = getToken();
     const usuario = user || getStoredUser();
@@ -122,54 +103,28 @@ const Header = () => {
       setUser(usuario);
     }
 
-    loadCompanyName();
     loadUserConfig(usuario);
     setAlmacenByUser(getStoredWarehouses());
-  }, [user, setUser, setAlmacenByUser, loadCompanyName, loadUserConfig]);
+  }, [user, setUser, setAlmacenByUser, loadUserConfig]);
 
-  // Handlers
   const handleProfile = useCallback(() => setOpenProfile(prev => !prev), []);
-  const handleOpenWindow = useCallback((window) => initialAdminMenu.hadleOpenWindows(window), [initialAdminMenu]);
-  
-  const openMenu = useCallback((itemMenu) => {
+
+  const goHome = useCallback(() => {
     if (router.pathname !== "/") {
       router.push("/");
     }
-
-    const menuActions = {
-      admin: initialMenu.handleAdministrador,
-      almacen: initialMenu.handleAlmacen,
-      info: initialMenu.handleInformes,
-      inicio: initialMenu.handleInicio
-    };
-    menuActions[itemMenu]?.();
+    initialMenu.handleInicio();
   }, [router, initialMenu]);
 
   const onSeguridad = useCallback((ruta) => {
     router.push(`/Seguridad${ruta}`);
   }, [router]);
 
-  const almacenActions = useMemo(() => ({
-    movimientos: initialAlmacenMenu.handleMovimientos,
-    pedidos: initialAlmacenMenu.handlePedidos,
-    recepcion: initialAlmacenMenu.handleRecepcion,
-    traslados: initialAlmacenMenu.handleTraslados
-  }), [initialAlmacenMenu]);
-
-  const infoActions = useMemo(() => ({
-    movimientos: initialInfoMenu.handleMovimientos,
-    pedidos: initialInfoMenu.handlePedidos,
-    stock: initialInfoMenu.handleStock,
-    traslados: initialInfoMenu.handleTraslados,
-    temperatura: initialInfoMenu.handleTemperatura
-  }), [initialInfoMenu]);
-
   const cerrarSesion = useCallback(() => {
     clearSession();
     router.push('/login');
   }, [router]);
 
-  // Configuración de menús
   const menuConfigs = useMemo(() => ({
     maestros: {
       title: "Maestros",
@@ -178,8 +133,7 @@ const Header = () => {
         if (item[1] === 'Configuracion') {
           setOpenConfig(true);
         } else {
-          openMenu('admin');
-          handleOpenWindow(item[0]);
+          router.push(`/Maestros/${item[0]}`);
         }
       }
     },
@@ -196,22 +150,15 @@ const Header = () => {
     almacen: {
       title: "Almacen",
       items: menuCompleto.almacen,
-      onItemClick: (item) => {
-        openMenu('almacen');
-        almacenActions[item[0]]?.();
-      }
+      onItemClick: (item) => router.push(`/Almacen/${item[0]}`)
     },
     informes: {
       title: "Informes",
       items: menuCompleto.informes,
-      onItemClick: (item) => {
-        openMenu('info');
-        infoActions[item[0]]?.();
-      }
+      onItemClick: (item) => router.push(`/Informes/${item[0]}`)
     }
-  }), [almacenActions, handleOpenWindow, infoActions, onSeguridad, openMenu, router]);
+  }), [onSeguridad, router]);
 
-  // Renderizar menús dinámicamente
   const renderMenu = (menuKey) => {
     const config = menuConfigs[menuKey];
     if (!config || !hasMenuAccess(menuKey)) return null;
@@ -228,7 +175,6 @@ const Header = () => {
     );
   };
 
-  // Si está cargando configuración, mostrar versión simplificada o skeleton
   if (isLoadingConfig) {
     return (
       <div className="sticky-top shadow-sm" style={{ zIndex: 1050 }}>
@@ -248,7 +194,7 @@ const Header = () => {
       <Navbar bg="dark" variant="dark" expand="lg" className="py-2 w-100">
         <Container fluid="xl" className="px-2 px-sm-3">
           <Navbar.Brand
-            onClick={() => openMenu("inicio")}
+            onClick={goHome}
             className="me-2 text-truncate"
             style={{ cursor: 'pointer', maxWidth: 'calc(100vw - 72px)', minWidth: 0 }}
           >

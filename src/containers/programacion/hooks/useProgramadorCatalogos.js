@@ -76,9 +76,20 @@ export function useProgramadorCatalogos({ setAlert }) {
           ? await filtrarProductos({ producto: { consecutivo: insumosConsecutivos } })
           : [];
 
+        const transportadoraIdSet = new Set(transportadorasDisponibles.map((t) => String(t.id)));
+        const filtrarPorTransportadora = !superAdmin && transportadoraIdSet.size > 0;
+
+        const conductoresFiltrados = filtrarPorTransportadora
+          ? (newConductores || []).filter((c) => transportadoraIdSet.has(String(c.cons_transportadora)))
+          : (newConductores || []);
+
+        const vehiculosFiltrados = filtrarPorTransportadora
+          ? (newVehiculos || []).filter((v) => transportadoraIdSet.has(String(v.transportadoraId)))
+          : (newVehiculos || []);
+
         setUbicaciones(newUbicaciones || []);
-        setConductores((newConductores || []).sort((a, b) => String(a.conductor).localeCompare(String(b.conductor))));
-        setVehiculos((newVehiculos || []).sort((a, b) => String(a.placa).localeCompare(String(b.placa))));
+        setConductores(conductoresFiltrados.sort((a, b) => String(a.conductor).localeCompare(String(b.conductor))));
+        setVehiculos(vehiculosFiltrados.sort((a, b) => String(a.placa).localeCompare(String(b.placa))));
         setEmbarques(newEmbarques || []);
         setCombos(newCombos || []);
         setTiposMovimiento(newTiposMovimiento || []);

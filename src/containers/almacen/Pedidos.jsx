@@ -182,7 +182,7 @@ export default function Pedidos() {
 
                     <div className={styles.contenedor6}>
 
-                        {(user.id_rol == "Super administrador" || user.id_rol == "Administrador") &&
+                        {(user?.id_rol == "Super administrador" || user?.id_rol == "Administrador") &&
                             <span>
                                 {bool && <span></span>}
                                 {!bool && <Button className={styles.button} onClick={addDeposit} variant="info" size="sm">
@@ -192,7 +192,7 @@ export default function Pedidos() {
                         }
 
 
-                        {(user.id_rol == "Super administrador" || user.id_rol == "Administrador") &&
+                        {(user?.id_rol == "Super administrador" || user?.id_rol == "Administrador") &&
                             <span>
                                 {bool && <span></span>}
                                 {!bool && <Button className={styles.buttonB} onClick={removeDeposit} size="sm">
@@ -202,8 +202,8 @@ export default function Pedidos() {
                         }
                         <div className={styles.display}></div>
                         <div className={styles.display}></div>
-                        {!(user.id_rol == "Super administrador" || user.id_rol == "Administrador") && <div className={styles.display}></div>}
-                        {!(user.id_rol == "Super administrador" || user.id_rol == "Administrador") && <div className={styles.display}></div>}
+                        {!(user?.id_rol == "Super administrador" || user?.id_rol == "Administrador") && <div className={styles.display}></div>}
+                        {!(user?.id_rol == "Super administrador" || user?.id_rol == "Administrador") && <div className={styles.display}></div>}
                         <div>
                             {!bool && <Button type='submit' className={styles.button} variant="success" size="sm">
                                 Cargar productos

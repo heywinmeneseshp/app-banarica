@@ -176,7 +176,7 @@ export default function ReporteSemanalMovimientos() {
                                 name="categoria"
                                 onChange={listarTabla}
                             >
-                                {!(user.id_rol == "Super seguridad" || user.id_rol == "Seguridad") &&
+                                {!(user?.id_rol == "Super seguridad" || user?.id_rol == "Seguridad") &&
                                     <option value={0}>All</option>
                                 }
 

@@ -13,7 +13,7 @@ import {
 } from '@services/api/usuarios';
 import { listarTransportadoras } from '@services/api/transportadoras';
 import { actualizarModulo, encontrarModulo, listarModulos } from '@services/api/configuracion';
-import { botones, menuCompleto, menuPrincipal } from 'utils/configMenu';
+import { botones, menuCompleto, menuPrincipal, pantallasInicio } from 'utils/configMenu';
 
 const PROFILE_PREFIX = 'perfil:';
 const ROLE_OPTIONS = ['Super administrador', 'Operador'];
@@ -67,6 +67,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
     const [isApplyingProfile, setIsApplyingProfile] = useState(false);
     const [isSavingProfile, setIsSavingProfile] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [pantallaInicio, setPantallaInicio] = useState('/');
 
     const isEditing = Boolean(user);
     const actionLabel = isEditing ? 'Editar usuario' : 'Agregar usuario';
@@ -212,6 +213,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                     Array.from(transportadorasHabilitadas),
                     transportadorasData,
                 );
+                setPantallaInicio(detalles?.inicio || '/');
             } catch (error) {
                 console.error("Error cargando datos del usuario:", error);
                 window.alert("No fue posible cargar la informacion del usuario.");
@@ -465,7 +467,8 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                     ...confUser,
                     menu: tagMenu,
                     submenu: tagSubMenu,
-                    botones: tagBotones
+                    botones: tagBotones,
+                    inicio: pantallaInicio,
                 })
             });
 
@@ -642,6 +645,20 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                                                 >
                                                     {ROLE_OPTIONS.map((role) => (
                                                         <option key={role} value={role}>{role}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            <div className="col-12 col-md-3">
+                                                <label htmlFor="pantallaInicio" className="form-label">Pantalla principal</label>
+                                                <select
+                                                    id="pantallaInicio"
+                                                    className="form-select form-select-sm"
+                                                    value={pantallaInicio}
+                                                    onChange={(e) => setPantallaInicio(e.target.value)}
+                                                >
+                                                    {pantallasInicio.map((item) => (
+                                                        <option key={item.path} value={item.path}>{item.label}</option>
                                                     ))}
                                                 </select>
                                             </div>

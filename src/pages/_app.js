@@ -2,11 +2,8 @@ import React, { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import AppContext from '@context/AppContext';
-import { ProviderAuth } from '@hooks/useAuth';
-import useAdminMenu from '@hooks/useAdminMenu';
-import useAlmacenMenu from "@hooks/useAlmacenMenu";
+import { ProviderAuth, useAuth } from '@hooks/useAuth';
 import useNotificacion from '@hooks/useNotificacion';
-import useInfoMenu from "@hooks/useInfoMenu";
 import useMenu from '@hooks/useMenu';
 import usePedido from '@hooks/usePedido';
 import MainLayout from '@layout/MainLayout';
@@ -16,16 +13,27 @@ import '@styles/globals.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { encontrarEmpresa } from '@services/api/configuracion';
 
+const appShellRoutes = ['/', '/Seguridad/[item]', '/Transporte/[item]', '/Almacen/[item]', '/Informes/[item]', '/Maestros/[item]'];
+
+function AppShell({ Component, pageProps, useAppShell }) {
+    const { user } = useAuth();
+    const showShell = useAppShell && !!user;
+
+    return showShell ? (
+        <RootLayout showChrome>
+            <Component {...pageProps} />
+        </RootLayout>
+    ) : (
+        <Component {...pageProps} />
+    );
+}
+
 function MyApp({ Component, pageProps }) {
     const [nombreApp, setNombreApp] = useState("");
     const router = useRouter();
-    const appShellRoutes = ['/', '/Seguridad/[item]', '/Transporte/[item]'];
     const useAppShell = appShellRoutes.includes(router.pathname);
 
     const initialMenu = useMenu();
-    const initialAdminMenu = useAdminMenu();
-    const initialAlmacenMenu = useAlmacenMenu();
-    const initialInfoMenu = useInfoMenu();
     const gestionNotificacion = useNotificacion();
     const gestionPedido = usePedido();
 
@@ -34,37 +42,31 @@ function MyApp({ Component, pageProps }) {
     }, []);
 
     return (
-        <>
-            <ProviderAuth>
-                <FeedbackProvider>
-                    <AppContext.Provider value={{
-                        gestionNotificacion,
-                        initialMenu,
-                        initialAdminMenu,
-                        initialAlmacenMenu,
-                        initialInfoMenu,
-                        gestionPedido
-                    }}>
-                        <Head>
-                            <title>{nombreApp}</title>
-                            <meta name="description" content="LogiCrack - Aplicación de gestión logística, desarrollada por Craken.com.co" />
-                            <meta name="author" content="Craken.com.co" />
-                            <link rel="icon" href="/favicon.ico" />
-                        </Head>
+        <ProviderAuth>
+            <FeedbackProvider>
+                <AppContext.Provider value={{
+                    gestionNotificacion,
+                    initialMenu,
+                    gestionPedido,
+                    nombreApp,
+                }}>
+                    <Head>
+                        <title>{nombreApp}</title>
+                        <meta name="description" content="LogiCrack - Aplicación de gestión logística, desarrollada por Craken.com.co" />
+                        <meta name="author" content="Craken.com.co" />
+                        <link rel="icon" href="/favicon.ico" />
+                    </Head>
 
-                        <MainLayout>
-                            {useAppShell ? (
-                                <RootLayout showChrome>
-                                    <Component {...pageProps} />
-                                </RootLayout>
-                            ) : (
-                                <Component {...pageProps} />
-                            )}
-                        </MainLayout>
-                    </AppContext.Provider>
-                </FeedbackProvider>
-            </ProviderAuth>
-        </>
+                    <MainLayout>
+                        <AppShell
+                            Component={Component}
+                            pageProps={pageProps}
+                            useAppShell={useAppShell}
+                        />
+                    </MainLayout>
+                </AppContext.Provider>
+            </FeedbackProvider>
+        </ProviderAuth>
     );
 }
 

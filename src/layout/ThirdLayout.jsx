@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '@hooks/useAuth';
 import { fetchAuthenticatedProfile, syncSessionFromProfile } from '@services/api/auth';
 import { getStoredWarehouses, getToken } from 'utils/session';
-import Footer from "@components/Footer";
+import Footer from "@components/shared/Footer/Footer";
 import Header from '@components/shared/Header/Header';
 
 export default function ThirdLayout({ children }) {
@@ -21,7 +21,9 @@ export default function ThirdLayout({ children }) {
         try {
             const profile = await fetchAuthenticatedProfile(token);
             if (profile.usuario.isBlock) {
-                return window.alert("El usuario esta deshabilitado, por favor comuniquese con el administrador");
+                window.alert("El usuario esta deshabilitado, por favor comuniquese con el administrador");
+                router.replace('/login');
+                return;
             }
 
             const { usuario } = syncSessionFromProfile(profile);

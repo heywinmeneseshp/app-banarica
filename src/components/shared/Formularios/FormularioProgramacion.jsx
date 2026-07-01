@@ -685,7 +685,7 @@ export default function FormulariosProgramacion({
         throw new Error("Debes seleccionar una semana valida.");
       }
       if (!navieraSeleccionada || !destinoSeleccionado || !buqueSeleccionado || !bookingSeleccionado) {
-        throw new Error("Debes completar naviera, destino, buque y BL.");
+        throw new Error("Debes completar naviera, destino, buque y Booking.");
       }
       if (!fecha) {
         throw new Error("Debes seleccionar la fecha.");
@@ -833,7 +833,7 @@ export default function FormulariosProgramacion({
                 <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                   <div>
                     <h6 className="mb-0">Nuevo movimiento</h6>
-                    <div className="small text-muted">Programa rapido por BL, recorrido, vehiculo y conductor.</div>
+                    <div className="small text-muted">Programa rapido por Booking, recorrido, vehiculo y conductor.</div>
                   </div>
                   <div className="d-flex gap-2">
                     <Button type="button" variant="outline-primary" size="sm" onClick={onOpenMassCreate} disabled={massActionLoading || !onOpenMassCreate}>
@@ -948,7 +948,7 @@ export default function FormulariosProgramacion({
                   </div>
 
                   <div className="col-12 col-md-6 col-lg-3">
-                    <label htmlFor="booking-programador" className="form-label mb-1">BL</label>
+                    <label htmlFor="booking-programador" className="form-label mb-1">Booking</label>
                     <select
                       id="booking-programador"
                       className="form-control form-control-sm"

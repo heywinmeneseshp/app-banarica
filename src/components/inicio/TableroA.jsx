@@ -20,7 +20,7 @@ const TableroA = () => {
     useEffect(() => {
         const consAlmacen = almacenByUser.map(item => item.consecutivo);
         let data;
-        if (user.id_rol == "Super administrador") {
+        if (user?.id_rol == "Super administrador") {
             data = {
                 "almacen_receptor": consAlmacen,
                 "aprobado": false

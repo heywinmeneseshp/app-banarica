@@ -59,7 +59,7 @@ export default function ProgramadorFilters({
             value={transportadoraFiltro}
             onChange={(event) => { setPagination(1); setTransportadoraFiltro(event.target.value); }}
           >
-            <option value="">Todas</option>
+            {transportadoras.length > 1 && <option value="">Todas</option>}
             {transportadoras.map((item) => (
               <option key={item.id} value={item.id}>{getTransportadoraLabel(item)}</option>
             ))}
@@ -67,7 +67,7 @@ export default function ProgramadorFilters({
         </div>
 
         <div className="col-12 col-md-6 col-lg-2">
-          <label htmlFor="bl" className="form-label mb-1">BL</label>
+          <label htmlFor="bl" className="form-label mb-1">Booking</label>
           <input id="bl" name="bl" type="text" onChange={onFilter} className="form-control form-control-sm" />
         </div>
 
@@ -84,13 +84,12 @@ export default function ProgramadorFilters({
 
         <div className="col-12 col-md-6 col-lg-2">
           <label htmlFor="movimiento" className="form-label mb-1">Movimiento</label>
-          <input id="movimiento" name="movimiento" type="text" list="movimientoList" onChange={onFilter} className="form-control form-control-sm" />
-          <datalist id="movimientoList">
-            <option value="" />
+          <select id="movimiento" name="movimiento" className="form-select form-select-sm" onChange={onFilter}>
+            <option value="">Todos</option>
             {movimientoOptions.map((item) => (
-              <option key={item.id || item.movimiento} value={item.movimiento} />
+              <option key={item.id || item.movimiento} value={item.movimiento}>{item.movimiento}</option>
             ))}
-          </datalist>
+          </select>
         </div>
 
         <div className="col-12 col-md-6 col-lg-2">

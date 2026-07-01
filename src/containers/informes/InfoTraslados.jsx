@@ -37,7 +37,7 @@ export default function InfoTraslados() {
     useEffect(() => {
         async function listar() {
             const categorias = await axios.get(endPoints.categorias.list);
-            const categoria_lis = user.id_rol == "Seguridad" || user.id_rol == "Super seguridad" ? categorias.data.filter(item => item.nombre == "Seguridad") : categorias.data;
+            const categoria_lis = user?.id_rol == "Seguridad" || user?.id_rol == "Super seguridad" ? categorias.data.filter(item => item.nombre == "Seguridad") : categorias.data;
             setCategorias(categoria_lis);
             onBuscar();
         }
@@ -53,7 +53,7 @@ export default function InfoTraslados() {
         let almacenes = formData.get("almacen");
         const semana = formData.get("semana");
         const producto = formData.get("articulo");
-        const seguridad = user.id_rol == "Seguridad" || user.id_rol == "Super seguridad" ? await listarCategorias() : false;
+        const seguridad = user?.id_rol == "Seguridad" || user?.id_rol == "Super seguridad" ? await listarCategorias() : false;
         const categoria = seguridad ? seguridad.find(item => item.nombre == "Seguridad").consecutivo : formData.get("categoria");
         if (almacenes == 0) almacenes = almacenByUser.map(item => item.consecutivo);
         if (almacenes != 0) almacenes = [almacenes];
@@ -140,7 +140,7 @@ export default function InfoTraslados() {
                                     name="categoria"
                                     onChange={onBuscar}
                                 >
-                                    {!(user.id_rol == "Seguridad" || user.id_rol == "Super seguridad") &&
+                                    {!(user?.id_rol == "Seguridad" || user?.id_rol == "Super seguridad") &&
                                     <option value={""}>All</option>
                                     }
                                     {categorias.map((categoria, index) => (

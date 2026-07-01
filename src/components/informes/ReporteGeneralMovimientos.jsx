@@ -31,7 +31,7 @@ export default function ReporteGeneralMovimientos() {
     useEffect(() => {
         try {
             listarCategorias().then(res => {
-                if (user.id_rol == "Super seguridad" || user.id_rol == "Seguridad") {
+                if (user?.id_rol == "Super seguridad" || user?.id_rol == "Seguridad") {
                     setCategorias(res.filter(item => item.nombre == "Seguridad"));
                 } else {
                     setCategorias(res);
@@ -59,7 +59,7 @@ export default function ReporteGeneralMovimientos() {
         let cons_semana = formData.get('semana');
         const producto = formData.get('articulo');
         const categoria = formData.get('categoria') == 0 ? "" : formData.get('categoria');
-        const seguridad = user.id_rol == "Seguridad" || user.id_rol == "Super seguridad" ? await listarCategorias() : false;
+        const seguridad = user?.id_rol == "Seguridad" || user?.id_rol == "Super seguridad" ? await listarCategorias() : false;
         const cons_categoria = !seguridad ? categoria : seguridad.find(item => item.nombre == "Seguridad").consecutivo;
         let url = `${endPoints.historial.list}/filter`;
         let body = {};
@@ -200,7 +200,7 @@ export default function ReporteGeneralMovimientos() {
                                     name="categoria"
                                     onChange={onBuscar}
                                 >
-                                    {!(user.id_rol == "Super seguridad" || user.id_rol == "Seguridad") &&
+                                    {!(user?.id_rol == "Super seguridad" || user?.id_rol == "Seguridad") &&
                                         <option value={0}>All</option>
                                     }
 

@@ -209,11 +209,7 @@ export default function MainLayout({ children }) {
         </div>
       )}
 
-      <div>
-        <main>
-          <div>{children}</div>
-        </main>
-      </div>
+      {children}
     </>
   );
 }

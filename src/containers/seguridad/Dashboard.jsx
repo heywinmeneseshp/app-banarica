@@ -112,7 +112,7 @@ export default function Dashboard() {
     const [contenedorDevuelto, setContenedorDevuelto] = useState(null);
     const [refreshTick, setRefreshTick] = useState(0);
     const username = user?.username;
-    const isSuperAdmin = user.id_rol == "Super administrador";
+    const isSuperAdmin = user?.id_rol === "Super administrador";
 
     const dataVisible = useMemo(
         () => dedupeDashboardRows(filterActiveContainerRows(data)),
@@ -278,7 +278,7 @@ export default function Dashboard() {
                     </div>
 
                     {/* Columna 3: Icono de Configuración */}
-                    {(user.id_rol == "Super administrador" || botones.includes("dashboard_configuracion")) && <div className="col-12 col-md-2 d-flex justify-content-md-center justify-content-start">
+                    {(user?.id_rol == "Super administrador" || botones.includes("dashboard_configuracion")) && <div className="col-12 col-md-2 d-flex justify-content-md-center justify-content-start">
                         <button
                             onClick={() => handleConfig()}
                             type="button"
@@ -289,12 +289,12 @@ export default function Dashboard() {
                     </div>}
 
                     {/* Columna 4: Botón Descargar Carrusel */}
-                    {(botones.includes("dashboard_descargar_carrusel") || user.id_rol == "Super administrador") && <div className="col-12 col-md-2 d-flex justify-content-md-end">
+                    {(botones.includes("dashboard_descargar_carrusel") || user?.id_rol == "Super administrador") && <div className="col-12 col-md-2 d-flex justify-content-md-end">
                         <button type="button" onClick={() => setOpenCarrusel(true)} className="btn btn-primary w-100">Carrusel</button>
                     </div>}
 
                     {/* Columna 5: Botón Descargar Relación */}
-                    {(botones.includes("dashboard_descargar_relacion") || user.id_rol == "Super administrador") && <div className="col-12 col-md-2">
+                    {(botones.includes("dashboard_descargar_relacion") || user?.id_rol == "Super administrador") && <div className="col-12 col-md-2">
                         <DownloadTableExcel
                             filename={`Contenedores Inspecc_Banarica ${new Date().toISOString().split('T')[0]}`}
                             sheet={`Del ${startDate} al ${endDate}`}

@@ -121,7 +121,7 @@ export default function Liquidacion({ movimiento }) {
         e.preventDefault();
         const formData = new FormData(formRef.current);
         try {
-            if (user.id_rol == "Super administrador" && movimiento) {
+            if (user?.id_rol == "Super administrador" && movimiento) {
                 const consAlmacen = almacenByUser.find((item) => item.nombre == almacen).consecutivo;
                 const respuesta = formData.get("respuesta");
                 const changes = {
@@ -397,7 +397,7 @@ export default function Liquidacion({ movimiento }) {
                             />
                         </InputGroup>
                     </div>
-                    {movimiento && (user.id_rol == "Super administrador") && <InputGroup size="sm" className="mb-3">
+                    {movimiento && (user?.id_rol == "Super administrador") && <InputGroup size="sm" className="mb-3">
                         <InputGroup.Text id="inputGroup-sizing-sm">Respuesta</InputGroup.Text>
                         <Form.Control
                             id="respuesta"
@@ -431,7 +431,7 @@ export default function Liquidacion({ movimiento }) {
                             </div>
                         </div>
                     }
-                    {pendiente && (user.id_rol == "Super administrador") &&
+                    {pendiente && (user?.id_rol == "Super administrador") &&
                         <div className={styles.contenedor6}>
                             <div>
                             </div>

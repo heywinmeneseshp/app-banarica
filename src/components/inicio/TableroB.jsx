@@ -55,7 +55,7 @@ const TableroB = () => {
             <div className={styles.superTablero}>
                 <div className={styles.tablero}>
                     <div className='d-flex justify-content-between'>
-                        {(user.id_rol == "Super administrador") &&
+                        {(user?.id_rol == "Super administrador") &&
                             <button onClick={nuevoAviso} className={styles.circulo}>+</button>
                         }
                         <div>
@@ -68,7 +68,7 @@ const TableroB = () => {
                         {avisos.map((aviso, index) => (
                             <Alert className={styles.alerta} key={index} variant="info">
                                 <span className={styles.eliminarAviso}>
-                                    {(user.id_rol == "Super administrador") &&
+                                    {(user?.id_rol == "Super administrador") &&
                                         <button onClick={() => eliminar(aviso.id)} type="button" className="btn-close" aria-label="Close"></button>
                                     }
                                 </span>
@@ -77,7 +77,7 @@ const TableroB = () => {
                                 </div>
 
                                 <span className={styles.editarAviso}>
-                                    {(user.id_rol == "Super administrador") &&
+                                    {(user?.id_rol == "Super administrador") &&
                                         <Image onClick={() => editar(aviso)} className={styles.imagenEditar} width="20" height="20" src={editarPick} alt="editar" />
                                     }
                                 </span>

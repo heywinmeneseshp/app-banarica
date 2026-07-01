@@ -58,6 +58,27 @@ const menuCompleto = {
     ],
 };
 
+const pantallasInicio = [
+    { label: 'Inicio (por defecto)', path: '/' },
+    { label: 'Contenedores', path: '/Seguridad/Listado' },
+    { label: 'Dashboard', path: '/Seguridad/Dashboard' },
+    { label: 'Disponibles', path: '/Seguridad/Disponibles' },
+    { label: 'Embarques', path: '/Seguridad/Embarques' },
+    { label: 'Insp. Lleno', path: '/Seguridad/InspLleno' },
+    { label: 'Insp. Vacío', path: '/Seguridad/Lector' },
+    { label: 'Llenado', path: '/Seguridad/LlenadoContenedor' },
+    { label: 'Transbordar', path: '/Seguridad/Transbordar' },
+    { label: 'Recepcion (seg.)', path: '/Seguridad/Recepcion' },
+    { label: 'Rechazos', path: '/Seguridad/Rechazos' },
+    { label: 'Transferencias', path: '/Seguridad/Transferencias' },
+    { label: 'Inspeccionados', path: '/Seguridad/Inspeccionados' },
+    { label: 'Programador', path: '/Transporte/Programador' },
+    { label: 'Sellos Programador', path: '/Transporte/SellosProgramador' },
+    { label: 'Cargar Combustible', path: '/Transporte/CargarCombustible' },
+    { label: 'Consumo Rutas', path: '/Transporte/ConsumoRutas' },
+    { label: 'Reportes Transporte', path: '/Transporte/Reportes' },
+];
+
 const botones = [
     "dashboard_descargar_carrusel",
     "dashboard_descargar_relacion",
@@ -81,4 +102,4 @@ const menuPrincipal = () => {
     return Object.keys(menuCompleto);
 };
 
-export { menuPrincipal, menuCompleto, botones };
+export { menuPrincipal, menuCompleto, botones, pantallasInicio };

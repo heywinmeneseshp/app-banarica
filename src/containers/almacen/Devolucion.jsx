@@ -400,7 +400,7 @@ export default function Devolucion({ movimiento, exportacion }) {
 
                     </div>
 
-                    {bool && movimiento && (user.id_rol == "Super administrador") && <InputGroup size="sm" className="mb-3">
+                    {bool && movimiento && (user?.id_rol == "Super administrador") && <InputGroup size="sm" className="mb-3">
                         <InputGroup.Text id="inputGroup-sizing-sm">Respuesta</InputGroup.Text>
                         <Form.Control
                             id="respuesta"
@@ -435,7 +435,7 @@ export default function Devolucion({ movimiento, exportacion }) {
                             </div>
                         </div>
                     }
-                    {pendiente && (user.id_rol == "Super administrador") &&
+                    {pendiente && (user?.id_rol == "Super administrador") &&
                         <div className={styles.contenedor7}>
                             <div>
                             </div>

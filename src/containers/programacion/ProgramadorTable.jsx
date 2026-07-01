@@ -103,7 +103,7 @@ export default function ProgramadorTable({
               {visibleColumns.linea && renderProgramadorHeader('linea', 'Linea', isEditable)}
               {visibleColumns.destino_embarque && renderProgramadorHeader('destino_embarque', 'Destino', isEditable)}
               {visibleColumns.buque && renderProgramadorHeader('buque', 'Buque', isEditable)}
-              {visibleColumns.bl && renderProgramadorHeader('bl', 'BL', isEditable)}
+              {visibleColumns.bl && renderProgramadorHeader('bl', 'Booking', isEditable)}
               {visibleColumns.vehiculo && renderProgramadorHeader('vehiculo', 'Vehiculos', isEditable)}
               {visibleColumns.transportadora && renderProgramadorHeader('transportadora', 'Transportadora', isEditable)}
               {visibleColumns.conductor && renderProgramadorHeader('conductor', 'Conductor', isEditable)}

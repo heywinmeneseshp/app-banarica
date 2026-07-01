@@ -1,4 +1,4 @@
-import React, { useState, useContext, createContext } from 'react';
+import React, { useState, useEffect, useContext, createContext } from 'react';
 import axios from 'axios';
 import endPoints from '@services/api';
 import { useRouter } from 'next/router';
@@ -38,6 +38,15 @@ function useProviderAuth() {
     const [almacenByUser, setAlmacenByUser] = useState([]);
     const [isLoggingIn, setIsLoggingIn] = useState(false);
     const router = useRouter();
+
+    // Initialize from localStorage after hydration to avoid SSR mismatch
+    useEffect(() => {
+        if (!user) {
+            const stored = getStoredUser();
+            if (stored) setUser(stored);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const login = async (username, password) => {
         try {

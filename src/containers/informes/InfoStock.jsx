@@ -37,7 +37,7 @@ export default function InfoStock() {
     useEffect(() => {
         try {
             listarCategorias().then((res) => {
-                if (user.id_rol == "Super seguridad" || user.id_rol == "Seguridad") {
+                if (user?.id_rol == "Super seguridad" || user?.id_rol == "Seguridad") {
                     setCategorias(res.filter(item => item.nombre == "Seguridad"));
                 } else {
                     setCategorias(res);
@@ -52,7 +52,7 @@ export default function InfoStock() {
     async function listar() {
         const formData = new FormData(formRef.current);
         const cons_almacen = formData.get('almacen');
-        const cons_cat_rol = user.id_rol == "Seguridad" || user.id_rol == "Super seguridad" ? await listarCategorias() : false;
+        const cons_cat_rol = user?.id_rol == "Seguridad" || user?.id_rol == "Super seguridad" ? await listarCategorias() : false;
         const cons_categoria = cons_cat_rol ? cons_cat_rol.find(item => item.nombre == "Seguridad").consecutivo : formData.get('categoria');
         const product_name = formData.get('articulo');
         let body = {
@@ -174,7 +174,7 @@ export default function InfoStock() {
                                 name="categoria"
                                 onChange={onBuscar}
                             >
-                                {!(user.id_rol == "Seguridad" || user.id_rol == "Super seguridad") &&
+                                {!(user?.id_rol == "Seguridad" || user?.id_rol == "Super seguridad") &&
                                     <option value={""}>All</option>
                                 }
 

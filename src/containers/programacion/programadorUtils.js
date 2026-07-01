@@ -38,7 +38,7 @@ export const COLUMN_OPTIONS = [
   { id: 'linea', label: 'Linea' },
   { id: 'destino_embarque', label: 'Destino embarque' },
   { id: 'buque', label: 'Buque' },
-  { id: 'bl', label: 'BL' },
+  { id: 'bl', label: 'Booking' },
   { id: 'vehiculo', label: 'Vehiculo' },
   { id: 'transportadora', label: 'Transportadora' },
   { id: 'conductor', label: 'Conductor' },
