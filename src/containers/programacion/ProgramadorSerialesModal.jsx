@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Col, Form, InputGroup, Modal, Row, Table } from 'react-bootstrap';
 import { FaMinusCircle } from 'react-icons/fa';
+import { getStoredUser } from '@utils/session';
 import { filtrarProductos } from '@services/api/productos';
 import { encontrarUnSerial } from '@services/api/seguridad';
 import { crearProgramacionSerialesMasivo } from '@services/api/programacionSeriales';
@@ -15,6 +16,7 @@ function ProgramadorSerialesModal({
   seriales = [],
   onClose,
   onSaved,
+  setAlert,
 }) {
   const formRef = useRef(null);
   const [articulos, setArticulos] = useState([]);
@@ -63,7 +65,7 @@ function ProgramadorSerialesModal({
 
     cargarDatos().catch((error) => {
       console.error('Error cargando datos de seriales del programador:', error);
-      window.alert('No fue posible cargar los datos para agregar seriales.');
+      setAlert?.({ active: true, mensaje: 'No fue posible cargar los datos para agregar seriales.', color: 'danger', autoClose: true });
     });
   }, [programacion?.semana, show]);
 
@@ -72,7 +74,7 @@ function ProgramadorSerialesModal({
   const handleAdd = () => {
     const item = articulos.find((producto) => producto.name === articulo);
     if (!item) {
-      window.alert('Selecciona un articulo valido.');
+      setAlert?.({ active: true, mensaje: 'Selecciona un articulo valido.', color: 'warning', autoClose: true });
       return;
     }
 
@@ -105,11 +107,11 @@ function ProgramadorSerialesModal({
     event.preventDefault();
 
     if (!programacion?.id) {
-      window.alert('No fue posible identificar la linea del programador.');
+      setAlert?.({ active: true, mensaje: 'No fue posible identificar la linea del programador.', color: 'danger', autoClose: true });
       return;
     }
     if (!inputs.length) {
-      window.alert('Debe agregar al menos un articulo.');
+      setAlert?.({ active: true, mensaje: 'Debe agregar al menos un articulo.', color: 'warning', autoClose: true });
       return;
     }
 
@@ -125,7 +127,7 @@ function ProgramadorSerialesModal({
 
     if (nextErrores.size) {
       setErrores(nextErrores);
-      window.alert('Existen seriales duplicados.');
+      setAlert?.({ active: true, mensaje: 'Existen seriales duplicados.', color: 'warning', autoClose: true });
       return;
     }
 
@@ -151,12 +153,12 @@ function ProgramadorSerialesModal({
 
       if (nextErrores.size) {
         setErrores(nextErrores);
-        window.alert('Uno o mas seriales no existen, no estan disponibles o no pertenecen al articulo seleccionado.');
+        setAlert?.({ active: true, mensaje: 'Uno o mas seriales no existen, no estan disponibles o no pertenecen al articulo seleccionado.', color: 'warning', autoClose: true });
         return;
       }
 
       const formData = new FormData(formRef.current);
-      const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+      const usuario = getStoredUser() || {};
       const semana = formData.get('semana') || programacion?.semana || '';
       const fecha = formData.get('fecha') || programacion?.fecha || getToday();
 
@@ -171,12 +173,12 @@ function ProgramadorSerialesModal({
       })));
       const actualizados = response?.data || response || [];
 
-      window.alert('Seriales agregados a la linea.');
+      setAlert?.({ active: true, mensaje: 'Seriales agregados a la linea.', color: 'success', autoClose: true });
       onSaved?.(actualizados);
       onClose?.();
     } catch (error) {
       console.error('Error agregando seriales al programador:', error);
-      window.alert(error.message || 'No fue posible agregar los seriales.');
+      setAlert?.({ active: true, mensaje: error.message || 'No fue posible agregar los seriales.', color: 'danger', autoClose: true });
     } finally {
       setSaving(false);
     }

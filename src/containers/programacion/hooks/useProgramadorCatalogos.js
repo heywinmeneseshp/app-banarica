@@ -8,7 +8,7 @@ import { listarCombos } from '@services/api/combos';
 import { listartipoMovimientoVehiculos } from '@services/api/tipoMovimientoVehiculos';
 import { encontrarModulo } from '@services/api/configuracion';
 import { filtrarProductos } from '@services/api/productos';
-import { getStoredTransporters } from '@utils/session';
+import { getStoredUser, getStoredTransporters } from '@utils/session';
 import {
   ROL_SUPER_ADMIN,
   INSUMOS_PROGRAMADOR_MODULE_PREFIX,
@@ -39,7 +39,7 @@ export function useProgramadorCatalogos({ setAlert }) {
   useEffect(() => {
     const cargarCatalogos = async () => {
       try {
-        const usuario = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('usuario') || '{}') : {};
+        const usuario = getStoredUser() || {};
         setCurrentUsername(usuario?.username || '');
         const superAdmin = usuario?.id_rol === ROL_SUPER_ADMIN;
         setIsSuperAdmin(superAdmin);

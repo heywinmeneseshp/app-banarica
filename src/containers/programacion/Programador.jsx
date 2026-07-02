@@ -18,7 +18,6 @@ import { useListadoSync } from './hooks/useListadoSync';
 import { useProgramadorImport } from './hooks/useProgramadorImport';
 import { useEvidencias } from './hooks/useEvidencias';
 import {
-  ROL_SUPER_ADMIN,
   PAGE_LIMIT,
   COLUMN_STORAGE_KEY,
   COLUMN_OPTIONS,
@@ -38,8 +37,7 @@ export default function Programador() {
   const [loading, setLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [open, setOpen] = useState(false);
-  const [openMasivo, setOpenMasivo] = useState(false);
-  const [openActualizarMasivo, setOpenActualizarMasivo] = useState(false);
+  const [masivoMode, setMasivoMode] = useState(null); // null | 'create' | 'update'
   const [isEditable, setIsEditable] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState(DEFAULT_VISIBLE_COLUMNS);
   const [showColumnConfig, setShowColumnConfig] = useState(false);
@@ -86,8 +84,7 @@ export default function Programador() {
     if (!formRef.current) return;
     try {
       setLoading(true);
-      const usuario = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('usuario') || '{}') : {};
-      const superAdmin = usuario?.id_rol === ROL_SUPER_ADMIN;
+      const superAdmin = isSuperAdmin;
 
       const transportadoraIdsPermitidas = transportadoras
         .map((item) => item?.id)
@@ -119,12 +116,13 @@ export default function Programador() {
     } finally {
       setLoading(false);
     }
-  }, [pagination, setAlert, transportadoraFiltro, transportadoras]);
+  }, [pagination, setAlert, transportadoraFiltro, transportadoras, isSuperAdmin]);
 
   useEffect(() => {
     if (!catalogsReady) return;
     listar();
-  }, [pagination, reloadKey, listar, catalogsReady]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagination, reloadKey, transportadoraFiltro, transportadoras, isSuperAdmin, catalogsReady]);
 
   // Derived catalog structures
   const embarqueCatalog = useMemo(() => (
@@ -271,9 +269,9 @@ export default function Programador() {
   }, [canEditarProgramador, isEditable, isSuperAdmin]);
 
   // Local row mutation helpers
-  const updateLocalRow = (id, updater) => {
+  const updateLocalRow = useCallback((id, updater) => {
     setItemsList((prev) => prev.map((row) => (row.id === id ? updater(row) : row)));
-  };
+  }, []);
 
   const markLocalProgramacionStatus = useCallback((id, estadoListado) => {
     updateLocalRow(id, (row) => ({ ...row, estado_listado: estadoListado }));
@@ -600,7 +598,7 @@ export default function Programador() {
                 transportadoraFiltro={transportadoraFiltro}
                 setTransportadoraFiltro={setTransportadoraFiltro}
                 setPagination={setPagination}
-                listar={listar}
+                setReloadKey={setReloadKey}
                 setOpen={setOpen}
                 canEditarProgramador={canEditarProgramador}
                 isSuperAdmin={isSuperAdmin}
@@ -688,6 +686,7 @@ export default function Programador() {
         seriales={selectedSerialProgramacion?.serialesProgramador || selectedSerialProgramacion?.seriales_programador || []}
         onClose={cerrarModalSeriales}
         onSaved={handleSerialesSaved}
+        setAlert={setAlert}
       />
 
       {open && (
@@ -695,37 +694,31 @@ export default function Programador() {
           setOpen={setOpen}
           setAlert={setAlert}
           onSaved={() => setReloadKey((prev) => prev + 1)}
-          onOpenMassCreate={() => setOpenMasivo(true)}
-          onOpenMassUpdate={() => setOpenActualizarMasivo(true)}
+          onOpenMassCreate={() => setMasivoMode('create')}
+          onOpenMassUpdate={() => setMasivoMode('update')}
           massActionLoading={importing || updatingMass}
         />
       )}
 
-      {openMasivo && (
+      {masivoMode && (
         <CargueMasivo
-          setOpenMasivo={setOpenMasivo}
-          titulo="Cargar programaciones"
-          encabezados={{
-            Sem: null, Fecha: null, Origen: null, "Destino L": null, Producto: null, Cantidad: null,
-            Linea: null, Destino: null, Buque: null, BL: null, Vehiculos: null, Conductor: null,
-            "Ingreso origen": null, "Salida origen": null, "Ingreso destino": null,
-            Cierre: null, "Salida destino": null, Movimiento: null, Contenedor: null,
-          }}
-          onProcessRows={(parsedRows) => processProgramacionRows(parsedRows, 'create')}
-        />
-      )}
-
-      {openActualizarMasivo && (
-        <CargueMasivo
-          setOpenMasivo={setOpenActualizarMasivo}
-          titulo="Actualizar programaciones"
-          encabezados={{
-            id: null, Sem: null, Fecha: null, Origen: null, "Destino L": null, Producto: null,
-            Cantidad: null, Linea: null, Destino: null, Buque: null, BL: null, Vehiculos: null,
-            Conductor: null, "Ingreso origen": null, "Salida origen": null, "Ingreso destino": null,
-            Cierre: null, "Salida destino": null, Movimiento: null, Contenedor: null,
-          }}
-          onProcessRows={(parsedRows) => processProgramacionRows(parsedRows, 'update')}
+          setOpenMasivo={() => setMasivoMode(null)}
+          titulo={masivoMode === 'create' ? 'Cargar programaciones' : 'Actualizar programaciones'}
+          encabezados={masivoMode === 'create'
+            ? {
+                Sem: null, Fecha: null, Origen: null, "Destino L": null, Producto: null, Cantidad: null,
+                Linea: null, Destino: null, Buque: null, BL: null, Vehiculos: null, Conductor: null,
+                "Ingreso origen": null, "Salida origen": null, "Ingreso destino": null,
+                Cierre: null, "Salida destino": null, Movimiento: null, Contenedor: null,
+              }
+            : {
+                id: null, Sem: null, Fecha: null, Origen: null, "Destino L": null, Producto: null,
+                Cantidad: null, Linea: null, Destino: null, Buque: null, BL: null, Vehiculos: null,
+                Conductor: null, "Ingreso origen": null, "Salida origen": null, "Ingreso destino": null,
+                Cierre: null, "Salida destino": null, Movimiento: null, Contenedor: null,
+              }
+          }
+          onProcessRows={(parsedRows) => processProgramacionRows(parsedRows, masivoMode)}
         />
       )}
     </>

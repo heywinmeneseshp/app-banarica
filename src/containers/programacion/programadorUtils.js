@@ -14,7 +14,7 @@ export const buildFilterBody = (formEl) => {
     vehiculo: formData.get('vehiculo') || '',
     conductor: formData.get('conductor') || '',
     fecha: formData.get('fecha') || '',
-    movimiento: formData.get('movimiento') || '',
+    movimiento: formData.getAll('movimiento'),
   };
   const fechaFin = formData.get('fecha_fin');
   if (fechaFin) body.fechaFin = fechaFin;
