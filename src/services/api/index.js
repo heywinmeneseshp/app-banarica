@@ -385,6 +385,7 @@ const endPoints = {
         duplicar: (id) => `${API}/api/${VERSION}/listado/duplicar/${id}`,
         findOne: (id) => `${API}/api/${VERSION}/listado/${id}`,
         paginar: (offset, limit) => `${API}/api/${VERSION}/listado/paginar?offset=${offset}&limit=${limit}`,
+        contarUnicos: `${API}/api/${VERSION}/listado/contar-unicos`,
         update: (id) => `${API}/api/${VERSION}/listado/${id}`,
         updateMasivo: `${API}/api/${VERSION}/listado/actualizar-masivo`,
         delete: (id) => `${API}/api/${VERSION}/listado/${id}`,

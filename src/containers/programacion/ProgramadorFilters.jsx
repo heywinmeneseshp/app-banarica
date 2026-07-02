@@ -24,11 +24,24 @@ export default function ProgramadorFilters({
   canActualizarPendientes,
   setShowColumnConfig,
   setShowInsumoConfig,
+  rowCount,
+  total,
 }) {
   const [movimientoOpen, setMovimientoOpen] = useState(false);
   const [selectedMovimientos, setSelectedMovimientos] = useState([]);
   const movimientoDropdownRef = useRef(null);
   const debounceRef = useRef(null);
+  const fechaInicialRef = useRef(null);
+
+  useEffect(() => {
+    if (fechaInicialRef.current) {
+      const hoy = new Date();
+      const yyyy = hoy.getFullYear();
+      const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+      const dd = String(hoy.getDate()).padStart(2, '0');
+      fechaInicialRef.current.value = `${yyyy}-${mm}-${dd}`;
+    }
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -70,7 +83,7 @@ export default function ProgramadorFilters({
 
         <div className="col-12 col-md-6 col-lg-2">
           <label htmlFor="fecha" className="form-label mb-1">Fecha inicial</label>
-          <input id="fecha" name="fecha" type="date" onChange={onFilter} className="form-control form-control-sm" />
+          <input id="fecha" name="fecha" type="date" ref={fechaInicialRef} onChange={onFilter} className="form-control form-control-sm" />
         </div>
 
         <div className="col-12 col-md-6 col-lg-2">
@@ -226,6 +239,12 @@ export default function ProgramadorFilters({
             </Button>
           </div>
         )}
+
+        <div className="col-12 col-md-6 col-lg-2 d-flex align-items-end mt-0 mt-md-4">
+          <span className="text-muted small">
+            <strong className="text-dark">{rowCount ?? 0}</strong> de <strong className="text-dark">{total ?? 0}</strong>
+          </span>
+        </div>
       </div>
     </form>
   );

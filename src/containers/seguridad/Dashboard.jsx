@@ -3,7 +3,7 @@ import { DownloadTableExcel } from 'react-export-table-to-excel';
 
 
 import Paginacion from "@components/shared/Tablas/Paginacion";
-import { paginarListado } from "@services/api/listado";
+import { paginarListado, contarUnicosListado } from "@services/api/listado";
 import { encontrarModulo } from "@services/api/configuracion";
 import InsumoConfig from "@components/shared/InsumoConfig";
 import { filtrarProductos } from "@services/api/productos";
@@ -98,6 +98,7 @@ export default function Dashboard() {
     const [offset, setOffset] = useState(1);
     const [data, setData] = useState([]);
     const [total, setTotal] = useState(0);
+    const [totalUnicosContenedores, setTotalUnicosContenedores] = useState(0);
     const [configuracion, setConfig] = useState([]);
     const [openConfig, setOpenConfig] = useState(false);
     const [startDate, setStartDate] = useState(formattedDate); // Fecha actual por defecto
@@ -176,9 +177,13 @@ export default function Dashboard() {
                     fecha_final: endDate,
                     habilitado: true,
                 };
-                const { data, total } = await paginarListado(offset, 25, filtros);
+                const [{ data, total }, { total: unicos }] = await Promise.all([
+                    paginarListado(offset, 25, filtros),
+                    contarUnicosListado(filtros),
+                ]);
                 setData(data);
                 setTotal(total);
+                setTotalUnicosContenedores(unicos);
             } catch (error) {
                 console.error("Error al obtener datos:", error);
             }
@@ -277,8 +282,8 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    {/* Columna 3: Icono de Configuración */}
-                    {(user?.id_rol == "Super administrador" || botones.includes("dashboard_configuracion")) && <div className="col-12 col-md-2 d-flex justify-content-md-center justify-content-start">
+                    {/* Icono de Configuración */}
+                    {(user?.id_rol == "Super administrador" || botones.includes("dashboard_configuracion")) && <div className="col-auto">
                         <button
                             onClick={() => handleConfig()}
                             type="button"
@@ -288,13 +293,27 @@ export default function Dashboard() {
                         </button>
                     </div>}
 
-                    {/* Columna 4: Botón Descargar Carrusel */}
-                    {(botones.includes("dashboard_descargar_carrusel") || user?.id_rol == "Super administrador") && <div className="col-12 col-md-2 d-flex justify-content-md-end">
+                    {/* Contador de contenedores */}
+                    <div className="col-auto d-flex align-items-center gap-2">
+                        <span
+                            className="badge rounded-pill bg-primary fs-6 px-3 py-2"
+                            title={`${totalUnicosContenedores} contenedores únicos en el filtro`}
+                        >
+                            {totalUnicosContenedores}
+                        </span>
+                        <span className="text-muted small">Contenedor{totalUnicosContenedores !== 1 ? 'es' : ''}</span>
+                    </div>
+
+                    {/* Espacio flexible */}
+                    <div className="col d-none d-md-block" />
+
+                    {/* Botón Carrusel */}
+                    {(botones.includes("dashboard_descargar_carrusel") || user?.id_rol == "Super administrador") && <div className="col-12 col-md-auto">
                         <button type="button" onClick={() => setOpenCarrusel(true)} className="btn btn-primary w-100">Carrusel</button>
                     </div>}
 
-                    {/* Columna 5: Botón Descargar Relación */}
-                    {(botones.includes("dashboard_descargar_relacion") || user?.id_rol == "Super administrador") && <div className="col-12 col-md-2">
+                    {/* Botón Descargar Relación */}
+                    {(botones.includes("dashboard_descargar_relacion") || user?.id_rol == "Super administrador") && <div className="col-12 col-md-auto">
                         <DownloadTableExcel
                             filename={`Contenedores Inspecc_Banarica ${new Date().toISOString().split('T')[0]}`}
                             sheet={`Del ${startDate} al ${endDate}`}

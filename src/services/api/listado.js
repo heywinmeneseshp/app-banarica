@@ -35,6 +35,11 @@ const paginarListado = async (offset, limit, body) => {
     return res.data;
 };
 
+const contarUnicosListado = async (body) => {
+    const res = await axios.post(endPoints.listado.contarUnicos, body);
+    return res.data;
+};
+
 const eliminarListado = async (id) => {
     const res = await axios.delete(endPoints.listado.delete(id));
     return res.data;
@@ -47,6 +52,7 @@ export {
     actualizarListado,
     actualizarListadoMasivo,
     paginarListado,
+    contarUnicosListado,
     encontrarListado,
     eliminarListado
 };

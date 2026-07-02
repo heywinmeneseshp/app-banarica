@@ -44,6 +44,8 @@ export const COLUMN_OPTIONS = [
   { id: 'conductor', label: 'Conductor' },
   { id: 'llegada_origen', label: 'Ingreso origen' },
   { id: 'salida_origen', label: 'Salida origen' },
+  { id: 'llegada_patio', label: 'Llegada Patio' },
+  { id: 'retiro_patio', label: 'Retiro Patio' },
   { id: 'llegada_destino', label: 'Ingreso destino' },
   { id: 'cierre', label: 'Cierre' },
   { id: 'salida_destino', label: 'Salida destino' },

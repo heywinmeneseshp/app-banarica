@@ -6,6 +6,7 @@ import {
   normalizeValue,
   READONLY_PROGRAMADOR_COLUMNS,
   ESTADO_LISTADO_ACTUALIZADO,
+  ESTADO_LISTADO_PENDIENTE,
   compactCellStyle,
   editableCellStyle,
   PAGE_LIMIT,
@@ -36,7 +37,9 @@ export default function ProgramadorTable({
   movimientoOptions,
   formatSerialArticuloLabel,
   formatSerialLabel,
+  isSuperAdmin,
   canEditRow,
+  canEditTimeColumns,
   handleCellEdit,
   handleLookupTextEdit,
   handleEliminarProducto2,
@@ -110,6 +113,8 @@ export default function ProgramadorTable({
               {visibleColumns.conductor && renderProgramadorHeader('conductor', 'Conductor', isEditable)}
               {visibleColumns.llegada_origen && renderProgramadorHeader('llegada_origen', 'Ingreso origen', isEditable)}
               {visibleColumns.salida_origen && renderProgramadorHeader('salida_origen', 'Salida origen', isEditable)}
+              {visibleColumns.llegada_patio && renderProgramadorHeader('llegada_patio', 'Llegada Patio', isEditable)}
+              {visibleColumns.retiro_patio && renderProgramadorHeader('retiro_patio', 'Retiro Patio', isEditable)}
               {visibleColumns.llegada_destino && renderProgramadorHeader('llegada_destino', 'Ingreso destino', isEditable)}
               {visibleColumns.cierre && renderProgramadorHeader('cierre', 'Cierre', isEditable)}
               {visibleColumns.salida_destino && renderProgramadorHeader('salida_destino', 'Salida destino', isEditable)}
@@ -128,6 +133,7 @@ export default function ProgramadorTable({
               const contenedorColorMap = buildContenedorColorMap(rows);
               return rows.map((item) => {
               const rowEditable = canEditRow(item);
+              const rowTimeEditable = !rowEditable && canEditTimeColumns(item);
               const rowPending = normalizeValue(item?.estado_listado) !== ESTADO_LISTADO_ACTUALIZADO;
               const contenedor = item?.contenedor || item?.contenedorLabel || '';
               const isDemo = contenedor === 'DEMO0000000';
@@ -138,6 +144,7 @@ export default function ProgramadorTable({
                 ? { ...baseStyle, backgroundColor: rowBgColor }
                 : { ...baseStyle, ...demoStyle };
               const accentClass = (rowBgColor || isDemo) ? '' : 'table-success';
+              const accentClassPatio = (rowBgColor || isDemo) ? '' : 'table-warning';
               const accentClass2 = (rowBgColor || isDemo) ? '' : 'table-primary';
               const hasMultipleProducts = (item.productosViaje || []).length > 1;
               return (
@@ -346,36 +353,50 @@ export default function ProgramadorTable({
                     )}
                   </td>}
                   {visibleColumns.llegada_origen && <td className={`${accentClass} text-center align-middle p-0`} style={cellStyle}>
-                    {rowEditable ? (
-                      <input type="time" defaultValue={item.llegada_origen || ''} className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1" onBlur={(e) => handleCellEdit(item.id, 'llegada_origen', e.target.value)} />
+                    {(rowEditable || rowTimeEditable) ? (
+                      <input type="time" defaultValue={item.llegada_origen || ''} className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1" onBlur={(e) => handleCellEdit(item.id, 'llegada_origen', e.target.value, rowTimeEditable ? { preserveEstado: true } : {})} />
                     ) : (
                       <div className="py-2 px-1 text-center">{item.llegada_origen || ''}</div>
                     )}
                   </td>}
                   {visibleColumns.salida_origen && <td className={`${accentClass} text-center align-middle p-0`} style={cellStyle}>
-                    {rowEditable ? (
-                      <input type="time" defaultValue={item.salida_origen || ''} className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1" onBlur={(e) => handleCellEdit(item.id, 'salida_origen', e.target.value)} />
+                    {(rowEditable || rowTimeEditable) ? (
+                      <input type="time" defaultValue={item.salida_origen || ''} className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1" onBlur={(e) => handleCellEdit(item.id, 'salida_origen', e.target.value, rowTimeEditable ? { preserveEstado: true } : {})} />
                     ) : (
                       <div className="py-2 px-1 text-center">{item.salida_origen || ''}</div>
                     )}
                   </td>}
+                  {visibleColumns.llegada_patio && <td className={`${accentClassPatio} text-center align-middle p-0`} style={cellStyle}>
+                    {(rowEditable || rowTimeEditable) ? (
+                      <input type="time" defaultValue={item.llegada_patio || ''} className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1" onBlur={(e) => handleCellEdit(item.id, 'llegada_patio', e.target.value, rowTimeEditable ? { preserveEstado: true } : {})} />
+                    ) : (
+                      <div className="py-2 px-1 text-center">{item.llegada_patio || ''}</div>
+                    )}
+                  </td>}
+                  {visibleColumns.retiro_patio && <td className={`${accentClassPatio} text-center align-middle p-0`} style={cellStyle}>
+                    {(rowEditable || rowTimeEditable) ? (
+                      <input type="time" defaultValue={item.retiro_patio || ''} className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1" onBlur={(e) => handleCellEdit(item.id, 'retiro_patio', e.target.value, rowTimeEditable ? { preserveEstado: true } : {})} />
+                    ) : (
+                      <div className="py-2 px-1 text-center">{item.retiro_patio || ''}</div>
+                    )}
+                  </td>}
                   {visibleColumns.llegada_destino && <td className={`${accentClass2} text-center align-middle p-0`} style={cellStyle}>
-                    {rowEditable ? (
-                      <input type="time" defaultValue={item.llegada_destino || ''} className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1" onBlur={(e) => handleCellEdit(item.id, 'llegada_destino', e.target.value)} />
+                    {(rowEditable || rowTimeEditable) ? (
+                      <input type="time" defaultValue={item.llegada_destino || ''} className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1" onBlur={(e) => handleCellEdit(item.id, 'llegada_destino', e.target.value, rowTimeEditable ? { preserveEstado: true } : {})} />
                     ) : (
                       <div className="py-2 px-1 text-center">{item.llegada_destino || ''}</div>
                     )}
                   </td>}
                   {visibleColumns.cierre && <td className={`${accentClass2} text-center align-middle p-0`} style={cellStyle}>
-                    {rowEditable ? (
-                      <input type="time" defaultValue={item.cierre || ''} className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1" onBlur={(e) => handleCellEdit(item.id, 'cierre', e.target.value)} />
+                    {(rowEditable || rowTimeEditable) ? (
+                      <input type="time" defaultValue={item.cierre || ''} className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1" onBlur={(e) => handleCellEdit(item.id, 'cierre', e.target.value, rowTimeEditable ? { preserveEstado: true } : {})} />
                     ) : (
                       <div className="py-2 px-1 text-center">{item.cierre || ''}</div>
                     )}
                   </td>}
                   {visibleColumns.salida_destino && <td className={`${accentClass2} text-center align-middle p-0`} style={cellStyle}>
-                    {rowEditable ? (
-                      <input type="time" defaultValue={item.salida_destino || ''} className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1" onBlur={(e) => handleCellEdit(item.id, 'salida_destino', e.target.value)} />
+                    {(rowEditable || rowTimeEditable) ? (
+                      <input type="time" defaultValue={item.salida_destino || ''} className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1" onBlur={(e) => handleCellEdit(item.id, 'salida_destino', e.target.value, rowTimeEditable ? { preserveEstado: true } : {})} />
                     ) : (
                       <div className="py-2 px-1 text-center">{item.salida_destino || ''}</div>
                     )}
@@ -417,7 +438,15 @@ export default function ProgramadorTable({
                   {visibleColumns.estado_listado && <td className="text-center align-middle p-0" style={cellStyle}>
                     <div className="py-1 px-1 text-center">
                       <span
-                        title={item.estadoListadoLabel}
+                        title={isSuperAdmin
+                          ? (normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO ? 'Actualizado — click para marcar pendiente' : 'Pendiente — click para marcar actualizado')
+                          : item.estadoListadoLabel}
+                        onClick={isSuperAdmin ? () => {
+                          const next = normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO
+                            ? ESTADO_LISTADO_PENDIENTE
+                            : ESTADO_LISTADO_ACTUALIZADO;
+                          handleCellEdit(item.id, 'estado_listado', next);
+                        } : undefined}
                         style={{
                           display: 'inline-block',
                           width: 10,
@@ -425,6 +454,7 @@ export default function ProgramadorTable({
                           borderRadius: '50%',
                           backgroundColor: normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO ? '#198754' : '#ffc107',
                           boxShadow: normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO ? '0 0 0 2px #d1e7dd' : '0 0 0 2px #fff3cd',
+                          cursor: isSuperAdmin ? 'pointer' : 'default',
                         }}
                       />
                     </div>

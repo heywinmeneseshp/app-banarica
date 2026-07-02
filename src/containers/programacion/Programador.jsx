@@ -268,6 +268,19 @@ export default function Programador() {
     return canEditarProgramador || isSuperAdmin;
   }, [canEditarProgramador, isEditable, isSuperAdmin]);
 
+  const canEditTimeColumns = useCallback((row) => {
+    if (!isEditable) return false;
+    if (!(canEditarProgramador || isSuperAdmin)) return false;
+    if (!row?.fecha) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const rowDate = new Date(row.fecha);
+    rowDate.setHours(0, 0, 0, 0);
+    return rowDate >= yesterday;
+  }, [canEditarProgramador, isEditable, isSuperAdmin]);
+
   // Local row mutation helpers
   const updateLocalRow = useCallback((id, updater) => {
     setItemsList((prev) => prev.map((row) => (row.id === id ? updater(row) : row)));
@@ -299,10 +312,20 @@ export default function Programador() {
   };
 
   // Cell edit handlers
-  const handleCellEdit = async (id, field, value) => {
+  const handleCellEdit = async (id, field, value, { preserveEstado = false } = {}) => {
+    const isEstadoField = field === 'estado_listado';
     try {
-      updateLocalRow(id, (row) => ({ ...row, [field]: value, estado_listado: ESTADO_LISTADO_PENDIENTE }));
-      await actualizarProgramaciones(id, { [field]: value });
+      updateLocalRow(id, (row) => ({
+        ...row,
+        [field]: value,
+        ...(preserveEstado || isEstadoField ? {} : { estado_listado: ESTADO_LISTADO_PENDIENTE }),
+      }));
+      const apiPayload = { [field]: value };
+      if (preserveEstado && !isEstadoField) {
+        const currentRow = itemList.find((r) => r.id === id);
+        if (currentRow?.estado_listado) apiPayload.estado_listado = currentRow.estado_listado;
+      }
+      await actualizarProgramaciones(id, apiPayload);
     } catch (error) {
       setAlert({ active: true, mensaje: error.message || 'No fue posible actualizar el movimiento.', color: 'danger', autoClose: true });
       setReloadKey((prev) => prev + 1);
@@ -612,6 +635,8 @@ export default function Programador() {
                 showColumnConfig={showColumnConfig}
                 setShowColumnConfig={setShowColumnConfig}
                 setShowInsumoConfig={setShowInsumoConfig}
+                rowCount={itemList.length}
+                total={total}
               />
 
             <ProgramadorTable
@@ -627,7 +652,9 @@ export default function Programador() {
               movimientoOptions={movimientoOptions}
               formatSerialArticuloLabel={formatSerialArticuloLabel}
               formatSerialLabel={formatSerialLabel}
+              isSuperAdmin={isSuperAdmin}
               canEditRow={canEditRow}
+              canEditTimeColumns={canEditTimeColumns}
               handleCellEdit={handleCellEdit}
               handleLookupTextEdit={handleLookupTextEdit}
               handleEliminarProducto2={handleEliminarProducto2}
