@@ -73,6 +73,7 @@ export default function FormulariosProgramacion({
   const [conductorSeleccionado, setConductorSeleccionado] = useState("");
   const [movimientoSeleccionado, setMovimientoSeleccionado] = useState("");
   const [contenedor, setContenedor] = useState("");
+  const [usarContenedorDemo, setUsarContenedorDemo] = useState(false);
   const [paradas, setParadas] = useState([]);
   const [ubicacionPendiente, setUbicacionPendiente] = useState("");
   const [showPostSavePrompt, setShowPostSavePrompt] = useState(false);
@@ -664,6 +665,7 @@ export default function FormulariosProgramacion({
     setConductorSeleccionado("");
     setMovimientoSeleccionado("");
     setContenedor("");
+    setUsarContenedorDemo(false);
     setParadas([]);
     setUbicacionPendiente("");
     conductorTouchedRef.current = false;
@@ -684,7 +686,7 @@ export default function FormulariosProgramacion({
       if (!semanaSeleccionada) {
         throw new Error("Debes seleccionar una semana valida.");
       }
-      if (!navieraSeleccionada || !destinoSeleccionado || !buqueSeleccionado || !bookingSeleccionado) {
+      if (requiereContenedor && (!navieraSeleccionada || !destinoSeleccionado || !buqueSeleccionado || !bookingSeleccionado)) {
         throw new Error("Debes completar naviera, destino, buque y Booking.");
       }
       if (!fecha) {
@@ -702,7 +704,7 @@ export default function FormulariosProgramacion({
       if (!movimientoSeleccionado) {
         throw new Error("Debes seleccionar el tipo de movimiento.");
       }
-      if (requiereContenedor && !String(contenedor || "").trim()) {
+      if (requiereContenedor && !usarContenedorDemo && !String(contenedor || "").trim()) {
         throw new Error("El movimiento seleccionado requiere contenedor.");
       }
 
@@ -728,7 +730,9 @@ export default function FormulariosProgramacion({
 
       const semanaTexto = semanaActual?.consecutivo || semanaInput;
       const bookingActualBl = bookingActual?.bl || null;
-      const contenedorFinal = requiereContenedor ? String(contenedor || "").trim().toUpperCase() : null;
+      const contenedorFinal = requiereContenedor
+        ? (usarContenedorDemo ? 'DEMO0000000' : String(contenedor || "").trim().toUpperCase())
+        : null;
       const productoPayload = productoActual?.id
         ? {
             producto_id: productoActual.id,
@@ -1148,7 +1152,7 @@ export default function FormulariosProgramacion({
                       id="movimiento-programador"
                       className="form-control form-control-sm"
                       value={movimientoSeleccionado}
-                      onChange={(event) => setMovimientoSeleccionado(event.target.value)}
+                      onChange={(event) => { setMovimientoSeleccionado(event.target.value); setUsarContenedorDemo(false); setContenedor(""); }}
                     >
                       <option value=""></option>
                       {listaTiposMovimiento.map((item) => (
@@ -1157,18 +1161,37 @@ export default function FormulariosProgramacion({
                     </select>
                   </div>
 
-                  <div className="col-md-3 d-flex flex-column">
-                    <label htmlFor="contenedor-programador" className="form-label mb-1">Contenedor</label>
+                  <div className="col-md-3">
+                    <div className="d-flex justify-content-between align-items-center mb-1">
+                      <label htmlFor="contenedor-programador" className="form-label mb-0">Contenedor</label>
+                      {canQuickCreateProgramador && (
+                        <Button type="button" variant="outline-primary" size="sm" style={{ visibility: 'hidden' }} tabIndex={-1} aria-hidden="true">+</Button>
+                      )}
+                    </div>
                     <input
                       id="contenedor-programador"
                       type="text"
                       maxLength={11}
-                      className="form-control form-control-sm mt-auto"
-                      value={contenedor}
-                      disabled={!requiereContenedor}
+                      className="form-control form-control-sm"
+                      value={usarContenedorDemo ? 'DEMO0000000' : contenedor}
+                      disabled={!requiereContenedor || usarContenedorDemo}
                       onChange={(event) => setContenedor(event.target.value.toUpperCase())}
                       placeholder={requiereContenedor ? "Ingrese contenedor" : "No requerido"}
                     />
+                    {requiereContenedor && (
+                      <div className="form-check mt-1">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id="contenedor-demo-check"
+                          checked={usarContenedorDemo}
+                          onChange={(e) => { setUsarContenedorDemo(e.target.checked); if (e.target.checked) setContenedor(""); }}
+                        />
+                        <label className="form-check-label small text-muted" htmlFor="contenedor-demo-check">
+                          Pendiente (registra DEMO)
+                        </label>
+                      </div>
+                    )}
                   </div>
 
                   <div className="col-12">

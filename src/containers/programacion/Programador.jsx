@@ -275,7 +275,7 @@ export default function Programador() {
 
   const markLocalProgramacionStatus = useCallback((id, estadoListado) => {
     updateLocalRow(id, (row) => ({ ...row, estado_listado: estadoListado }));
-  }, []);
+  }, [updateLocalRow]);
 
   const markProgramacionesEstadoListado = useCallback(async (ids = [], estadoListado = ESTADO_LISTADO_ACTUALIZADO) => {
     const uniqueIds = [...new Set((ids || []).map((item) => String(item)).filter(Boolean))];

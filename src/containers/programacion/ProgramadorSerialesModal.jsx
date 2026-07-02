@@ -67,6 +67,7 @@ function ProgramadorSerialesModal({
       console.error('Error cargando datos de seriales del programador:', error);
       setAlert?.({ active: true, mensaje: 'No fue posible cargar los datos para agregar seriales.', color: 'danger', autoClose: true });
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [programacion?.semana, show]);
 
   const getToday = () => new Date().toISOString().split('T')[0];

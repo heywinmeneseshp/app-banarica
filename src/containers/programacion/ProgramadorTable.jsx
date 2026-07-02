@@ -86,6 +86,7 @@ export default function ProgramadorTable({
       <style>{`
         .programador-table tbody tr:hover td { filter: brightness(0.94); }
         .programador-table tbody tr { transition: filter 0.1s; }
+        .programador-table tbody tr.row-demo td { background-color: transparent !important; color: red !important; }
       `}</style>
       <div className="table-responsive mt-4" style={{ overflowX: 'auto', maxHeight: '75vh', overflowY: 'auto' }}>
         <table
@@ -129,15 +130,20 @@ export default function ProgramadorTable({
               const rowEditable = canEditRow(item);
               const rowPending = normalizeValue(item?.estado_listado) !== ESTADO_LISTADO_ACTUALIZADO;
               const contenedor = item?.contenedor || item?.contenedorLabel || '';
-              const rowBgColor = contenedorColorMap[contenedor] || undefined;
+              const isDemo = contenedor === 'DEMO0000000';
+              const rowBgColor = isDemo ? undefined : (contenedorColorMap[contenedor] || undefined);
               const baseStyle = rowEditable ? editableCellStyle : compactCellStyle;
-              const cellStyle = rowBgColor ? { ...baseStyle, backgroundColor: rowBgColor } : baseStyle;
-              const accentClass = rowBgColor ? '' : 'table-success';
-              const accentClass2 = rowBgColor ? '' : 'table-primary';
+              const demoStyle = isDemo ? { color: 'red', backgroundColor: 'transparent' } : {};
+              const cellStyle = rowBgColor
+                ? { ...baseStyle, backgroundColor: rowBgColor }
+                : { ...baseStyle, ...demoStyle };
+              const accentClass = (rowBgColor || isDemo) ? '' : 'table-success';
+              const accentClass2 = (rowBgColor || isDemo) ? '' : 'table-primary';
               const hasMultipleProducts = (item.productosViaje || []).length > 1;
               return (
                 <tr
                   key={item.id}
+                  className={isDemo ? 'row-demo' : undefined}
                   style={{
                     ...(item.groupStart && !hasMultipleProducts ? { borderTop: '2px solid #356854' } : {}),
                     ...(hasMultipleProducts ? { borderTop: '2px solid #6c757d', borderBottom: '2px solid #6c757d' } : {}),

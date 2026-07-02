@@ -116,8 +116,9 @@ export default function ProgramadorFilters({
         </div>
 
         <div className="col-12 col-md-6 col-lg-2" ref={movimientoDropdownRef} style={{ position: 'relative' }}>
-          <label className="form-label mb-1">Movimiento</label>
+          <label htmlFor="movimientoDropdownBtn" className="form-label mb-1">Movimiento</label>
           <button
+            id="movimientoDropdownBtn"
             type="button"
             className="form-select form-select-sm text-start d-flex align-items-center justify-content-between"
             onClick={() => setMovimientoOpen((prev) => !prev)}
