@@ -33,6 +33,7 @@ import {
 export default function Programador() {
   const [pagination, setPagination] = useState(1);
   const [total, setTotal] = useState(0);
+  const [distinctContenedores, setDistinctContenedores] = useState(0);
   const [itemList, setItemsList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -45,6 +46,7 @@ export default function Programador() {
   const [selectedSerialProgramacion, setSelectedSerialProgramacion] = useState(null);
   const [showInsumoConfig, setShowInsumoConfig] = useState(false);
   const [transportadoraFiltro, setTransportadoraFiltro] = useState('');
+  const [pageLimit, setPageLimit] = useState(PAGE_LIMIT);
 
   const { alert, setAlert, toogleAlert } = useAlert();
   const formRef = useRef(null);
@@ -103,9 +105,10 @@ export default function Programador() {
         }
       }
 
-      const res = await paginarProgramaciones(pagination, PAGE_LIMIT, body);
+      const res = await paginarProgramaciones(pagination, pageLimit, body);
       setItemsList(res?.data || []);
       setTotal(res?.total || 0);
+      setDistinctContenedores(res?.distinctContenedores ?? 0);
     } catch (error) {
       setAlert({
         active: true,
@@ -116,13 +119,13 @@ export default function Programador() {
     } finally {
       setLoading(false);
     }
-  }, [pagination, setAlert, transportadoraFiltro, transportadoras, isSuperAdmin]);
+  }, [pagination, setAlert, transportadoraFiltro, transportadoras, isSuperAdmin, pageLimit]);
 
   useEffect(() => {
     if (!catalogsReady) return;
     listar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination, reloadKey, transportadoraFiltro, transportadoras, isSuperAdmin, catalogsReady]);
+  }, [pagination, reloadKey, transportadoraFiltro, transportadoras, isSuperAdmin, catalogsReady, pageLimit]);
 
   // Derived catalog structures
   const embarqueCatalog = useMemo(() => (
@@ -298,12 +301,12 @@ export default function Programador() {
   }, [markLocalProgramacionStatus]);
 
   const ensureRoute = async (origenId, destinoId, options = {}) => {
-    const { vehiculoId = '', allowCreateIfExempt = false } = options;
+    const { vehiculoId = '', allowCreateIfExempt = false, alwaysCreate = false } = options;
     try {
       const route = await buscarRutaPost({ ubicacion1: origenId, ubicacion2: destinoId });
       return route?.data?.id;
     } catch (error) {
-      if (allowCreateIfExempt && vehiculosSinCombustible.includes(String(vehiculoId || ''))) {
+      if (alwaysCreate || (allowCreateIfExempt && vehiculosSinCombustible.includes(String(vehiculoId || '')))) {
         const nuevaRuta = await agregarRutas({ ubicacion1: origenId, ubicacion2: destinoId });
         return nuevaRuta?.data?.id;
       }
@@ -389,7 +392,7 @@ export default function Programador() {
         const origenId = value.origenId ?? row?.ruta?.ubicacion_1?.id;
         const destinoId = value.destinoId ?? row?.ruta?.ubicacion_2?.id;
         if (!origenId || !destinoId || String(origenId) === String(destinoId)) return;
-        const rutaId = await ensureRoute(origenId, destinoId);
+        const rutaId = await ensureRoute(origenId, destinoId, { alwaysCreate: true });
         const origen = ubicaciones.find((item) => String(item.id) === String(origenId));
         const destino = ubicaciones.find((item) => String(item.id) === String(destinoId));
         updateLocalRow(row.id, (current) => ({
@@ -497,8 +500,8 @@ export default function Programador() {
         const ubicacion = ubicaciones.find((item) => normalizeValue(item?.ubicacion) === normalizeValue(text));
         if (!ubicacion) throw new Error(`La ubicacion "${text}" no existe.`);
         await handleLookupEdit(row, 'ruta', {
-          origenId: field === 'origen' ? ubicacion.id : row.destinoId,
-          destinoId: field === 'destino' ? ubicacion.id : row.origenId,
+          origenId: field === 'origen' ? ubicacion.id : row.origenId,
+          destinoId: field === 'destino' ? ubicacion.id : row.destinoId,
         });
       }
     } catch (error) {
@@ -635,8 +638,11 @@ export default function Programador() {
                 showColumnConfig={showColumnConfig}
                 setShowColumnConfig={setShowColumnConfig}
                 setShowInsumoConfig={setShowInsumoConfig}
-                rowCount={itemList.length}
+                rowCount={distinctContenedores}
                 total={total}
+                rowsShown={itemList.length}
+                pageLimit={pageLimit}
+                setPageLimit={setPageLimit}
               />
 
             <ProgramadorTable

@@ -26,8 +26,20 @@ export default function ProgramadorFilters({
   setShowInsumoConfig,
   rowCount,
   total,
+  rowsShown,
+  pageLimit,
+  setPageLimit,
 }) {
   const [movimientoOpen, setMovimientoOpen] = useState(false);
+  const [draftLimit, setDraftLimit] = useState(pageLimit ?? 25);
+
+  useEffect(() => { setDraftLimit(pageLimit ?? 25); }, [pageLimit]);
+
+  const commitLimit = () => {
+    const v = Math.max(1, Math.min(500, Number(draftLimit) || 25));
+    setDraftLimit(v);
+    if (v !== pageLimit) setPageLimit(v);
+  };
   const [selectedMovimientos, setSelectedMovimientos] = useState([]);
   const movimientoDropdownRef = useRef(null);
   const debounceRef = useRef(null);
@@ -240,10 +252,37 @@ export default function ProgramadorFilters({
           </div>
         )}
 
-        <div className="col-12 col-md-6 col-lg-2 d-flex align-items-end mt-0 mt-md-4">
-          <span className="text-muted small">
-            <strong className="text-dark">{rowCount ?? 0}</strong> de <strong className="text-dark">{total ?? 0}</strong>
-          </span>
+        <div className="col-12 col-md-6 col-lg-auto">
+          <div className="d-flex align-items-center gap-2 mt-0 mt-md-4" style={{ height: '31px' }}>
+            <span className="text-muted small">Mostrando</span>
+            <span style={{ color: '#198754', fontWeight: 700 }}>{rowsShown ?? 0}</span>
+            <span className="text-muted small">de</span>
+            <span style={{ color: '#0d6efd', fontWeight: 700 }}>{total ?? 0}</span>
+            <span className="text-muted small" style={{ marginLeft: '4px' }}>Límite:</span>
+            <input
+              type="number"
+              min={1}
+              max={500}
+              value={draftLimit}
+              onChange={(e) => setDraftLimit(e.target.value)}
+              onBlur={commitLimit}
+              onKeyDown={(e) => e.key === 'Enter' && commitLimit()}
+              className="form-control form-control-sm"
+              style={{ width: '60px' }}
+            />
+          </div>
+        </div>
+
+        <div className="col-12 col-md-6 col-lg-2">
+          <div className="d-flex align-items-center gap-2 mt-0 mt-md-4" style={{ height: '31px' }}>
+            <span
+              className="badge rounded-pill bg-primary fs-6 px-3 py-2"
+              title={`${rowCount ?? 0} contenedores únicos de ${total ?? 0} registros en el filtro`}
+            >
+              {rowCount ?? 0}
+            </span>
+            <span className="text-muted small">Contenedor{(rowCount ?? 0) !== 1 ? 'es' : ''}</span>
+          </div>
         </div>
       </div>
     </form>
