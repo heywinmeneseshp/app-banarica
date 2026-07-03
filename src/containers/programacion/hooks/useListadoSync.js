@@ -57,6 +57,8 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
             ? null
             : Number(cantidad);
 
+          const transportadoraId = item?.vehiculo?.transportadoraId || item?.vehiculo?.transportadora?.id || null;
+
           const key = `${fecha}__${contenedor}__${bl}__${almacenDestino.id}__${productoId || 'sin-producto'}`;
           const existing = groupedRows.get(key) || {
             fecha,
@@ -64,6 +66,7 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
             bl,
             id_lugar_de_llenado: almacenDestino.id,
             id_producto: productoId || null,
+            id_transportadora: null,
             cajas_unidades: null,
             programacionIds: [],
           };
@@ -74,6 +77,7 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
             bl,
             id_lugar_de_llenado: almacenDestino.id,
             id_producto: productoId || existing.id_producto,
+            id_transportadora: transportadoraId || existing.id_transportadora,
             cajas_unidades: Number.isFinite(cantidadNumero)
               ? (Number(existing.cajas_unidades || 0) + cantidadNumero)
               : existing.cajas_unidades,
