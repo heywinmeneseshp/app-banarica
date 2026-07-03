@@ -437,26 +437,41 @@ export default function ProgramadorTable({
                   )}
                   {visibleColumns.estado_listado && <td className="text-center align-middle p-0" style={cellStyle}>
                     <div className="py-1 px-1 text-center">
-                      <span
-                        title={isSuperAdmin
-                          ? (normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO ? 'Actualizado — click para marcar pendiente' : 'Pendiente — click para marcar actualizado')
-                          : item.estadoListadoLabel}
-                        onClick={isSuperAdmin ? () => {
-                          const next = normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO
-                            ? ESTADO_LISTADO_PENDIENTE
-                            : ESTADO_LISTADO_ACTUALIZADO;
-                          handleCellEdit(item.id, 'estado_listado', next);
-                        } : undefined}
-                        style={{
-                          display: 'inline-block',
-                          width: 10,
-                          height: 10,
-                          borderRadius: '50%',
-                          backgroundColor: normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO ? '#198754' : '#ffc107',
-                          boxShadow: normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO ? '0 0 0 2px #d1e7dd' : '0 0 0 2px #fff3cd',
-                          cursor: isSuperAdmin ? 'pointer' : 'default',
-                        }}
-                      />
+                      {isSuperAdmin ? (
+                        <button
+                          type="button"
+                          title={normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO ? 'Actualizado — click para marcar pendiente' : 'Pendiente — click para marcar actualizado'}
+                          onClick={() => {
+                            const next = normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO
+                              ? ESTADO_LISTADO_PENDIENTE
+                              : ESTADO_LISTADO_ACTUALIZADO;
+                            handleCellEdit(item.id, 'estado_listado', next);
+                          }}
+                          style={{
+                            display: 'inline-block',
+                            width: 10,
+                            height: 10,
+                            borderRadius: '50%',
+                            backgroundColor: normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO ? '#198754' : '#ffc107',
+                            boxShadow: normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO ? '0 0 0 2px #d1e7dd' : '0 0 0 2px #fff3cd',
+                            cursor: 'pointer',
+                            border: 'none',
+                            padding: 0,
+                          }}
+                        />
+                      ) : (
+                        <span
+                          title={item.estadoListadoLabel}
+                          style={{
+                            display: 'inline-block',
+                            width: 10,
+                            height: 10,
+                            borderRadius: '50%',
+                            backgroundColor: normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO ? '#198754' : '#ffc107',
+                            boxShadow: normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO ? '0 0 0 2px #d1e7dd' : '0 0 0 2px #fff3cd',
+                          }}
+                        />
+                      )}
                     </div>
                   </td>}
                   {visibleColumns.agregar_serial && (
