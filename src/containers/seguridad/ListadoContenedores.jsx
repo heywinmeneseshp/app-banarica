@@ -1,5 +1,5 @@
 import Paginacion from '@components/shared/Tablas/Paginacion';
-import { actualizarListado, duplicarListado, paginarListado } from '@services/api/listado';
+import { actualizarListado, duplicarListado, paginarListado, contarUnicosListado } from '@services/api/listado';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Form, Col, Row, Button } from 'react-bootstrap';
 import { FaExternalLinkAlt, FaQrcode } from 'react-icons/fa';
@@ -111,7 +111,8 @@ const useListadoState = () => {
     openActualizarMasivo: false,
     isEditable: false,
     openQR: false,
-    loading: false
+    loading: false,
+    uniqueCount: 0
   }));
 
   const updateState = useCallback((updates) => {
@@ -552,29 +553,32 @@ const ListadoContenedores = () => {
     updateState({ loading: true });
 
     try {
-      const [modulo, embarquesRes, productoRes, transportadorasRes, listadoList] = await Promise.all([
+      const filterBody = Object.entries({
+        contenedor: debouncedFilters.contenedor,
+        booking: debouncedFilters.booking,
+        bl: debouncedFilters.BoL,
+        destino: debouncedFilters.destino,
+        naviera: debouncedFilters.naviera,
+        cliente: debouncedFilters.cliente,
+        semana: debouncedFilters.semana,
+        buque: debouncedFilters.buque,
+        fecha_inicial: debouncedFilters.fecha_inicial,
+        fecha_final: debouncedFilters.fecha_final,
+        llenado: debouncedFilters.llenado,
+        producto: debouncedFilters.producto,
+        habilitado: true
+      }).reduce((acc, [key, value]) => {
+        if (value) acc[key] = value;
+        return acc;
+      }, {});
+
+      const [modulo, embarquesRes, productoRes, transportadorasRes, listadoList, uniqueRes] = await Promise.all([
         encontrarModulo(`Relación_listado_${user.username}`).catch(() => []),
         paginarEmbarques(1, 20, {}),
         paginarCombos(1, 20, "", {isBlock: false}),
         listarTransportadoras(),
-        paginarListado(state.pagination, state.limit, Object.entries({
-          contenedor: debouncedFilters.contenedor,
-          booking: debouncedFilters.booking,
-          bl: debouncedFilters.BoL,
-          destino: debouncedFilters.destino,
-          naviera: debouncedFilters.naviera,
-          cliente: debouncedFilters.cliente,
-          semana: debouncedFilters.semana,
-          buque: debouncedFilters.buque,
-          fecha_inicial: debouncedFilters.fecha_inicial,
-          fecha_final: debouncedFilters.fecha_final,
-          llenado: debouncedFilters.llenado,
-          producto: debouncedFilters.producto,
-          habilitado: true
-        }).reduce((acc, [key, value]) => {
-          if (value) acc[key] = value;
-          return acc;
-        }, {}))
+        paginarListado(state.pagination, state.limit, filterBody),
+        contarUnicosListado(filterBody).catch(() => ({ total: 0 })),
       ]);
 
       // Configuración de insumos
@@ -608,6 +612,7 @@ const ListadoContenedores = () => {
       updateState({
         tableData: visibleRows,
         total: listadoList.total,
+        uniqueCount: uniqueRes?.total ?? 0,
         configuracionInsumos: insumosConfig,
         embarques: embarquesRes.data,
         productos: productoRes.data,
@@ -991,8 +996,11 @@ const ListadoContenedores = () => {
         </Col>
 
         <Col className="d-flex justify-content-end">
-          <span className="text-sm d-flex align-items-center mx-2">
-            Mostrando {state.tableData.length} de {state.total}
+          <span className="text-sm d-flex align-items-center gap-1 mx-2">
+            <span>Mostrando {state.tableData.length} de {state.total}</span>
+            <span className="text-muted">·</span>
+            <span className="fw-semibold text-primary">{state.uniqueCount}</span>
+            <span>contenedores unicos</span>
           </span>
 
           <div className="config-icon">
