@@ -243,6 +243,16 @@ const crearInspeccionVacio = async (body) => {
     }
 };
 
+const revertirSerialesContenedor = async (id_contenedor, serial_ids = []) => {
+    try {
+        const response = await axios.post(endPoints.seguridad.revertirSerialesContenedor, { id_contenedor, serial_ids }, buildConfig());
+        return response.data;
+    } catch (error) {
+        const message = getErrorMessage(error, "No fue posible revertir los seriales al inventario.");
+        throw new Error(message);
+    }
+};
+
 export {
     listarSeriales,
     listarUsuariosSeguridad,
@@ -259,5 +269,6 @@ export {
     corregirInspeccionContenedor,
     aprobarInspeccionLleno,
     rechazarInspeccionLleno,
-    crearInspeccionVacio
+    crearInspeccionVacio,
+    revertirSerialesContenedor
 };

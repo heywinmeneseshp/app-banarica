@@ -2,7 +2,7 @@ import axios from "axios";
 import endPoints from "@services/api/index";
 
 const crearInspeccion = async (body) => {
-    const res = await axios.post(endPoints.inspecciones, body);
+    const res = await axios.post(endPoints.inspecciones.create, body);
     return res.data;
 };
 
@@ -24,7 +24,7 @@ const paginarInspecciones = async (offset, limit, body) => {
 };
 
 const eliminarInspeccion = async (id) => {
-    const res = await axios.delete(endPoints.listado.delete(id));
+    const res = await axios.delete(endPoints.inspecciones.delete(id));
     return res.data;
 };
 

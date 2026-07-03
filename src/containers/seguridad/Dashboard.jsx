@@ -410,7 +410,7 @@ export default function Dashboard() {
                                     {(botones.includes("dashboard_devolver") || isSuperAdmin) && (
                                         <td className="text-custom-small text-center align-middle text-nowrap" style={{ padding: '2px', width: '90px' }}>
                                             <button
-                                                onClick={() => setContenedorDevuelto(item?.Contenedor)}
+                                                onClick={() => setContenedorDevuelto({ contenedor: item?.Contenedor, listadoItem: item })}
                                                 type="button"
                                                 className="btn btn-danger btn-sm"
                                             >
@@ -442,7 +442,8 @@ export default function Dashboard() {
             {contenedor && <AsignarSeriales contenedor={contenedor} setContenedor={setContenedor} />}
             {contenedorDevuelto && (
                 <DevolverContenedorModal
-                    contenedor={contenedorDevuelto}
+                    contenedor={contenedorDevuelto.contenedor}
+                    listadoItem={contenedorDevuelto.listadoItem}
                     usuario={user}
                     origen="dashboard"
                     onClose={() => setContenedorDevuelto(null)}

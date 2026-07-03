@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { filtrarContenedor } from "@services/api/contenedores";
 import { listarInspecciones } from "@services/api/inspecciones";
+import { useAuth } from "@hooks/useAuth";
 import { RETURNED_STATUS } from "@utils/contenedorEstado";
+import RevertirSerialesModal from "@components/seguridad/RevertirSerialesModal";
 
 const formatDateTimeValue = (value) => {
   if (!value) return "Sin fecha registrada";
@@ -38,10 +40,15 @@ const getReturnInspectionMap = (inspecciones = []) => {
 };
 
 export default function ContenedoresDevueltos() {
+  const { getUser } = useAuth();
+  const user = getUser();
+  const isSuperAdmin = user?.id_rol === "Super administrador";
+
   const [loading, setLoading] = useState(true);
   const [contenedores, setContenedores] = useState([]);
   const [inspeccionesMap, setInspeccionesMap] = useState(new Map());
   const [filtro, setFiltro] = useState("");
+  const [modalRevertir, setModalRevertir] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -86,6 +93,7 @@ export default function ContenedoresDevueltos() {
       .sort((a, b) => new Date(b.fecha_registro || 0) - new Date(a.fecha_registro || 0));
   }, [contenedores, filtro, inspeccionesMap]);
 
+
   return (
     <div className="container py-4">
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
@@ -119,12 +127,13 @@ export default function ContenedoresDevueltos() {
                 <th>Agente</th>
                 <th>Origen</th>
                 <th>Motivo</th>
+                {isSuperAdmin && <th className="text-center">Acciones</th>}
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="text-center py-4">
+                  <td colSpan={isSuperAdmin ? 6 : 5} className="text-center py-4">
                     No hay contenedores devueltos registrados.
                   </td>
                 </tr>
@@ -136,12 +145,30 @@ export default function ContenedoresDevueltos() {
                     <td className="text-center">{item.agente}</td>
                     <td className="text-center text-capitalize">{item.origen.replaceAll("_", " ")}</td>
                     <td>{item.motivo}</td>
+                    {isSuperAdmin && (
+                      <td className="text-center">
+                        <button
+                          type="button"
+                          className="btn btn-warning btn-sm text-nowrap"
+                          onClick={() => setModalRevertir(item)}
+                        >
+                          Revertir seriales
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
             </tbody>
           </table>
         </div>
+      )}
+      {modalRevertir && (
+        <RevertirSerialesModal
+          contenedor={modalRevertir}
+          onClose={() => setModalRevertir(null)}
+          onSuccess={() => setModalRevertir(null)}
+        />
       )}
     </div>
   );

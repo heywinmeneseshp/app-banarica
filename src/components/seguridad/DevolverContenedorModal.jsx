@@ -3,13 +3,14 @@ import styles from "@components/shared/Formularios/Formularios.module.css";
 import Loader from "@components/shared/Loader";
 import { crearContenedor } from "@services/api/contenedores";
 import { crearInspeccion } from "@services/api/inspecciones";
+import { revertirSerialesContenedor } from "@services/api/seguridad";
 import { RETURNED_STATUS } from "@utils/contenedorEstado";
 
-const DEFAULT_REASON =
-  "Contenedor devuelto por mal estado. No cumple condiciones para continuar el proceso.";
+const DEFAULT_REASON = "";
 
 export default function DevolverContenedorModal({
   contenedor,
+  listadoItem,
   onClose,
   onSuccess,
   origen = "dashboard",
@@ -17,10 +18,18 @@ export default function DevolverContenedorModal({
 }) {
   const [loading, setLoading] = useState(false);
   const [motivo, setMotivo] = useState(DEFAULT_REASON);
+  const [revertirSeriales, setRevertirSeriales] = useState(false);
+
+  const resolvedContenedor = contenedor || listadoItem?.Contenedor;
 
   const label = useMemo(
-    () => contenedor?.contenedor || contenedor?.Contenedor?.contenedor || "",
-    [contenedor]
+    () => resolvedContenedor?.contenedor || resolvedContenedor?.Contenedor?.contenedor || "",
+    [resolvedContenedor]
+  );
+
+  const serialesAsignados = useMemo(
+    () => (listadoItem?.serial_de_articulos || []).filter((s) => s?.serial),
+    [listadoItem]
   );
 
   const handleSubmit = async (event) => {
@@ -68,12 +77,20 @@ export default function DevolverContenedorModal({
         habilitado: true
       });
 
-      window.alert(`Se registro el contenedor ${label} como devuelto por mal estado.`);
+      if (revertirSeriales) {
+        const idContenedor = listadoItem?.id_contenedor || resolvedContenedor?.id;
+        const serialIds = serialesAsignados.map((s) => s.id).filter(Boolean);
+        if (idContenedor) {
+          await revertirSerialesContenedor(idContenedor, serialIds);
+        }
+      }
+
+      window.alert(`Se registro la devolucion del contenedor ${label}.`);
       onSuccess?.();
       onClose?.();
     } catch (error) {
       console.error("Error al devolver contenedor:", error);
-      window.alert("No fue posible registrar la devolucion del contenedor.");
+      window.alert(error?.message || "No fue posible registrar la devolucion del contenedor.");
     } finally {
       setLoading(false);
     }
@@ -84,7 +101,7 @@ export default function DevolverContenedorModal({
       <div className={styles.floatingform} style={{ maxWidth: "720px" }}>
         <div className="card">
           <div className="card-header d-flex justify-content-between align-items-center">
-            <span className="fw-bold">Devolucion por mal estado</span>
+            <span className="fw-bold">Devolucion de contenedor</span>
             <button type="button" onClick={onClose} className="btn-close" aria-label="Cerrar" />
           </div>
 
@@ -105,13 +122,55 @@ export default function DevolverContenedorModal({
                 <textarea
                   id="motivo-devolucion"
                   className="form-control"
-                  rows="5"
+                  rows="4"
                   value={motivo}
                   onChange={(event) => setMotivo(event.target.value)}
                   placeholder="Describe el dano o la condicion encontrada"
                   required
                 />
               </div>
+
+              {listadoItem && (
+                <div className="border rounded p-3 bg-light">
+                  <p className="mb-2 fw-semibold">
+                    Seriales del contenedor
+                    {serialesAsignados.length > 0 && (
+                      <span className="badge bg-secondary ms-2">{serialesAsignados.length}</span>
+                    )}
+                  </p>
+                  <div className="form-check mb-1">
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      id="revertir-no"
+                      name="revertir"
+                      checked={!revertirSeriales}
+                      onChange={() => setRevertirSeriales(false)}
+                    />
+                    <label className="form-check-label" htmlFor="revertir-no">
+                      Conservar seriales (no vuelven al inventario)
+                    </label>
+                  </div>
+                  <div className="form-check">
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      id="revertir-si"
+                      name="revertir"
+                      checked={revertirSeriales}
+                      onChange={() => setRevertirSeriales(true)}
+                    />
+                    <label className="form-check-label" htmlFor="revertir-si">
+                      Revertir seriales al inventario
+                    </label>
+                  </div>
+                  {revertirSeriales && (
+                    <div className="alert alert-info mt-2 mb-0 py-2 small">
+                      Los seriales asignados a este contenedor quedaran disponibles nuevamente en el inventario.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="card-footer d-flex gap-2 justify-content-end">
