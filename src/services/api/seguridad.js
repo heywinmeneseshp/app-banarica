@@ -243,6 +243,16 @@ const crearInspeccionVacio = async (body) => {
     }
 };
 
+const darDeBajaSerial = async (body) => {
+    try {
+        const response = await axios.post(endPoints.seguridad.darDeBajaSerial, body, buildConfig());
+        return response.data;
+    } catch (error) {
+        const message = getErrorMessage(error, "No fue posible dar de baja los seriales.");
+        throw new Error(message);
+    }
+};
+
 const revertirSerialesContenedor = async (id_contenedor, serial_ids = []) => {
     try {
         const response = await axios.post(endPoints.seguridad.revertirSerialesContenedor, { id_contenedor, serial_ids }, buildConfig());
@@ -270,5 +280,6 @@ export {
     aprobarInspeccionLleno,
     rechazarInspeccionLleno,
     crearInspeccionVacio,
-    revertirSerialesContenedor
+    revertirSerialesContenedor,
+    darDeBajaSerial
 };

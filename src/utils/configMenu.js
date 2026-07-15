@@ -47,7 +47,8 @@ const menuCompleto = {
         ["movimientos", "Movimientos"],
         ["pedidos", "Pedidos"],
         ["recepcion", "Recepcion"],
-        ["traslados", "Traslados"]
+        ["traslados", "Traslados"],
+        ["baja-seriales", "Baja Seriales"]
     ],
     informes: [
         ["movimientos", "Movimientos"],
