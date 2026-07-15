@@ -581,355 +581,199 @@ export default function Transferencias() {
                 mostrarSerial={mostrarSerial}
             />
 
-            <form ref={formRef} onSubmit={handleSubmit} className="py-2">
-                <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-1 mb-2">
-                    <div>
-                        <h3 className="mb-0">Transferencias</h3>
-                        <p className="text-muted small mb-0">Seleccione seriales disponibles y confirme el traslado.</p>
-                    </div>
-                </div>
+            <form ref={formRef} onSubmit={handleSubmit}>
+                <h2 className="mb-2">Transferencias</h2>
+                <div className="line"></div>
 
                 {feedback && (
-                    <div className={`alert alert-${feedback.type} alert-dismissible fade show py-2 px-3 mb-2 small`} role="alert">
+                    <div className={`alert alert-${feedback.type} alert-dismissible fade show py-2 mb-3 small`} role="alert">
                         {feedback.message}
-                        <button type="button" className="btn-close" aria-label="Cerrar" onClick={() => setFeedback(null)}></button>
+                        <button type="button" className="btn-close" onClick={() => setFeedback(null)} />
                     </div>
                 )}
 
-                <div className="d-flex flex-wrap gap-2 mb-2">
-                    <span className="badge text-bg-light border text-dark py-2 px-3">Origen: {origenSeleccionado || "Sin definir"}</span>
-                    <span className="badge text-bg-light border text-dark py-2 px-3">Destino: {destinoSeleccionado || "Sin definir"}</span>
-                    <span className="badge text-bg-light border text-dark py-2 px-3">Seleccion: {seleccionadosActuales}</span>
-                    <span className="badge text-bg-light border text-dark py-2 px-3">En lista: {itemsToTransfer.length}</span>
-                </div>
-
-                <div className="card border-0 shadow-sm mb-2">
-                    <div className="card-body py-2 px-3">
-                        <div className="row g-3">
-                            <div className="col-12">
-                                <div className="row row-cols-1 row-cols-md-2 row-cols-xl-5 g-2">
-                                    <div className="col">
-                                        <label htmlFor="origen" className="form-label fw-semibold small mb-1">Origen</label>
-                                        <select
-                                            className="form-select form-select-sm"
-                                            id="origen"
-                                            name="origen"
-                                            value={origenSeleccionado}
-                                            onChange={onChanageBuscar}
-                                            disabled={bool}
-                                        >
-                                            {almacenByUser.map((item, index) => (
-                                                <option key={index} value={item.consecutivo}>{item.nombre}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="col">
-                                        <label htmlFor="destino" className="form-label fw-semibold small mb-1">Destino</label>
-                                        <select
-                                            className="form-select form-select-sm"
-                                            id="destino"
-                                            name="destino"
-                                            value={destinoSeleccionado}
-                                            onChange={handleDestinoChange}
-                                            disabled={bool}
-                                        >
-                                            {todosAlmacenes.map((item, index) => (
-                                                <option
-                                                    key={index}
-                                                    value={item.consecutivo}
-                                                    disabled={item.consecutivo === origenSeleccionado}
-                                                >
-                                                    {item.nombre}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="col">
-                                        <label htmlFor="producto" className="form-label fw-semibold small mb-1">Articulo</label>
-                                        <select
-                                            className="form-select form-select-sm"
-                                            id="producto"
-                                            name="producto"
-                                            disabled={bool}
-                                            onChange={onChanageBuscar}
-                                        >
-                                            <option value="">Todos</option>
-                                            {productos.map((item, index) => (
-                                                <option key={index} value={item.consecutivo}>{item.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="col">
-                                        <label htmlFor="fecha" className="form-label fw-semibold small mb-1">Fecha</label>
-                                        <input
-                                            type="date"
-                                            className="form-control form-control-sm"
-                                            id="fecha"
-                                            name="fecha"
-                                            defaultValue={fechaActual}
-                                            disabled={bool}
-                                        />
-                                    </div>
-
-                                    <div className="col">
-                                        <label htmlFor="semana" className="form-label fw-semibold small mb-1">Semana</label>
-                                        <select
-                                            className="form-select form-select-sm"
-                                            id="semana"
-                                            name="semana"
-                                            required
-                                            disabled={bool}
-                                            defaultValue=""
-                                        >
-                                            <option value="" disabled>Seleccione</option>
-                                            {semanas.map((s) => (
-                                                <option key={s.consecutivo} value={s.consecutivo}>
-                                                    {s.consecutivo}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="col-12">
-                                <div className="row row-cols-1 row-cols-md-2 row-cols-xl-5 g-2">
-                                    {mostrarSerial && (
-                                        <div className="col">
-                                            <label htmlFor="serial" className="form-label fw-semibold small mb-1">Serial Int</label>
-                                            <input
-                                                type="text"
-                                                className="form-control form-control-sm"
-                                                id="serial"
-                                                name="serial"
-                                                onChange={onChanageBuscar}
-                                                disabled={bool}
-                                            />
-                                        </div>
-                                    )}
-
-                                    <div className="col">
-                                        <label htmlFor="bag_pack" className="form-label fw-semibold small mb-1">Serial Ext</label>
-                                        <input
-                                            type="text"
-                                            className="form-control form-control-sm"
-                                            id="bag_pack"
-                                            name="bag_pack"
-                                            onChange={onChanageBuscar}
-                                            disabled={bool}
-                                        />
-                                    </div>
-
-                                    <div className="col">
-                                        <label htmlFor="s_pack" className="form-label fw-semibold small mb-1">S Pack</label>
-                                        <input
-                                            type="text"
-                                            className="form-control form-control-sm"
-                                            id="s_pack"
-                                            name="s_pack"
-                                            onChange={onChanageBuscar}
-                                            disabled={bool}
-                                        />
-                                    </div>
-
-                                    <div className="col">
-                                        <label htmlFor="m_pack" className="form-label fw-semibold small mb-1">M Pack</label>
-                                        <input
-                                            type="text"
-                                            className="form-control form-control-sm"
-                                            id="m_pack"
-                                            name="m_pack"
-                                            onChange={onChanageBuscar}
-                                            disabled={bool}
-                                        />
-                                    </div>
-
-                                    <div className="col">
-                                        <label htmlFor="l_pack" className="form-label fw-semibold small mb-1">L Pack</label>
-                                        <input
-                                            type="text"
-                                            className="form-control form-control-sm"
-                                            id="l_pack"
-                                            name="l_pack"
-                                            onChange={onChanageBuscar}
-                                            disabled={bool}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
+                {/* Filtros */}
+                <div className="row g-2 mb-3">
+                    <div className="col-6 col-sm-4 col-md-3 col-xl-2">
+                        <label className="form-label mt-1 mb-1">Origen</label>
+                        <select className="form-select form-select-sm" id="origen" name="origen" value={origenSeleccionado} onChange={onChanageBuscar} disabled={bool}>
+                            {almacenByUser.map((item, index) => (
+                                <option key={index} value={item.consecutivo}>{item.nombre}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="col-6 col-sm-4 col-md-3 col-xl-2">
+                        <label className="form-label mt-1 mb-1">Destino</label>
+                        <select className="form-select form-select-sm" id="destino" name="destino" value={destinoSeleccionado} onChange={handleDestinoChange} disabled={bool}>
+                            {todosAlmacenes.map((item, index) => (
+                                <option key={index} value={item.consecutivo} disabled={item.consecutivo === origenSeleccionado}>{item.nombre}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="col-6 col-sm-4 col-md-3 col-xl-2">
+                        <label className="form-label mt-1 mb-1">Articulo</label>
+                        <select className="form-select form-select-sm" id="producto" name="producto" disabled={bool} onChange={onChanageBuscar}>
+                            <option value="">Todos</option>
+                            {productos.map((item, index) => (
+                                <option key={index} value={item.consecutivo}>{item.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="col-6 col-sm-4 col-md-3 col-xl-2">
+                        <label className="form-label mt-1 mb-1">Fecha</label>
+                        <input type="date" className="form-control form-control-sm" id="fecha" name="fecha" defaultValue={fechaActual} disabled={bool} />
+                    </div>
+                    <div className="col-6 col-sm-4 col-md-3 col-xl-2">
+                        <label className="form-label mt-1 mb-1">Semana</label>
+                        <select className="form-select form-select-sm" id="semana" name="semana" required disabled={bool} defaultValue="">
+                            <option value="" disabled>Seleccione</option>
+                            {semanas.map((s) => (
+                                <option key={s.consecutivo} value={s.consecutivo}>{s.consecutivo}</option>
+                            ))}
+                        </select>
+                    </div>
+                    {mostrarSerial && (
+                        <div className="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <label className="form-label mt-1 mb-1">Serial Int</label>
+                            <input type="text" className="form-control form-control-sm" id="serial" name="serial" onChange={onChanageBuscar} disabled={bool} />
                         </div>
+                    )}
+                    <div className="col-6 col-sm-4 col-md-3 col-xl-2">
+                        <label className="form-label mt-1 mb-1">Serial Ext</label>
+                        <input type="text" className="form-control form-control-sm" id="bag_pack" name="bag_pack" onChange={onChanageBuscar} disabled={bool} />
+                    </div>
+                    <div className="col-6 col-sm-4 col-md-3 col-xl-2">
+                        <label className="form-label mt-1 mb-1">S Pack</label>
+                        <input type="text" className="form-control form-control-sm" id="s_pack" name="s_pack" onChange={onChanageBuscar} disabled={bool} />
+                    </div>
+                    <div className="col-6 col-sm-4 col-md-3 col-xl-2">
+                        <label className="form-label mt-1 mb-1">M Pack</label>
+                        <input type="text" className="form-control form-control-sm" id="m_pack" name="m_pack" onChange={onChanageBuscar} disabled={bool} />
+                    </div>
+                    <div className="col-6 col-sm-4 col-md-3 col-xl-2">
+                        <label className="form-label mt-1 mb-1">L Pack</label>
+                        <input type="text" className="form-control form-control-sm" id="l_pack" name="l_pack" onChange={onChanageBuscar} disabled={bool} />
                     </div>
                 </div>
 
+                {/* Resumen lista */}
                 {itemsToTransfer.length > 0 && (
-                    <div className="card border-0 shadow-sm mb-2">
-                        <div className="card-body py-2 px-3">
-                            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-1 mb-2">
-                                <div>
-                                    <h6 className="mb-0">Resumen de la lista</h6>
-                                    <small className="text-muted">Revise antes de confirmar.</small>
-                                </div>
-                            </div>
-                            <div className="table-responsive">
-                                <table className="table table-sm table-bordered align-middle mb-0">
-                                    <thead className="table-light">
-                                        <tr>
-                                            <th>Articulo</th>
-                                            <th>Cantidad</th>
-                                            <th>Referencia</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {Object.entries(resumenTransferencia).map(([consProducto, detalle]) => (
-                                            <tr key={consProducto}>
-                                                <td>{consProducto}</td>
-                                                <td>{detalle.cantidad}</td>
-                                                <td>{detalle.seriales.slice(0, 3).join(", ")}{detalle.seriales.length > 3 ? "..." : ""}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                <div className="card border-0 shadow-sm">
-                    <div className="card-body py-2 px-3">
-                        <div className="row g-2 align-items-end mb-2">
-                            <div className="col-12 col-md-3 col-xl-2">
-                                <label htmlFor="limit" className="form-label fw-semibold small mb-1">Limite</label>
-                                <input
-                                    type="number"
-                                    className="form-control form-control-sm"
-                                    id="limit"
-                                    name="limit"
-                                    min={1}
-                                    max={total}
-                                    ref={limitRef}
-                                    value={draftLimit}
-                                    onChange={handleDraftLimitChange}
-                                    onBlur={handleDraftLimitCommit}
-                                    onKeyDown={(e) => e.key === "Enter" && handleDraftLimitCommit()}
-                                />
-                            </div>
-                            <div className="col-12 col-md-9 col-xl-3">
-                                <div className="small text-uppercase text-muted fw-semibold">Resultados</div>
-                                <div className="fw-semibold small">{total}</div>
-                            </div>
-                            <div className="col-12 col-md-6 col-xl-3">
-                                <div className="small text-uppercase text-muted fw-semibold">Estado de seleccion</div>
-                                <div className="fw-semibold small">Seleccionados: {seleccionadosActuales} | En lista: {itemsToTransfer.length}</div>
-                            </div>
-                            <div className="col-12 col-md-6 col-xl-4">
-                                <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                                    <button
-                                        type="button"
-                                        onClick={limpiarFiltros}
-                                        className="btn btn-outline-secondary btn-sm"
-                                        disabled={bool}
-                                    >
-                                        Limpiar filtros
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowModal(true)}
-                                        className="btn btn-warning btn-sm"
-                                        disabled={bool}
-                                    >
-                                        Ver lista ({itemsToTransfer.length})
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={agregarItem}
-                                        className="btn btn-primary btn-sm"
-                                        disabled={bool || loading || checKs.every((c) => c === false)}
-                                    >
-                                        Agregar
-                                    </button>
-                                    {!bool ? (
-                                        <button type="submit" className="btn btn-success btn-sm" disabled={loading}>
-                                            {loading ? "Procesando..." : "Transferir"}
-                                        </button>
-                                    ) : (
-                                        <button type="button" onClick={nuevaTranferencia} className="btn btn-primary btn-sm">
-                                            Nueva transferencia
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
+                    <div className="mb-3">
+                        <h6 className="mb-1">
+                            Resumen de transferencia &nbsp;
+                            <span className="badge bg-primary">{itemsToTransfer.length}</span>
+                        </h6>
                         <div className="table-responsive">
-                            <table className="table table-sm table-striped table-hover align-middle text-center mb-2">
-                                <thead className="table-light align-middle text-center">
+                            <table className="table table-sm table-bordered table-striped align-middle text-center mb-0">
+                                <thead className="table-light">
                                     <tr>
-                                        <th className="text-center">
-                                            <input
-                                                className="form-check-input"
-                                                type="checkbox"
-                                                id="checkAll"
-                                                name="checkAll"
-                                                onChange={handleCheckAll}
-                                                checked={checkAll}
-                                            />
-                                        </th>
-                                        <th className="text-center">Alm</th>
-                                        <th className="text-center">Articulo</th>
-                                        {mostrarSerial && <th className="text-center">Serial Int</th>}
-                                        <th className="text-center">Serial Ext</th>
-                                        <th className="text-center">S Pack</th>
-                                        <th className="text-center">M Pack</th>
-                                        <th className="text-center">L Pack</th>
-                                        <th className="d-none d-md-table-cell text-center">Estado</th>
+                                        <th className="text-custom-small">Articulo</th>
+                                        <th className="text-custom-small">Cantidad</th>
+                                        <th className="text-custom-small">Referencia</th>
                                     </tr>
                                 </thead>
-                                <tbody className="align-middle text-center">
-                                    {tabla.length === 0 && (
-                                        <tr>
-                                            <td colSpan={mostrarSerial ? 9 : 8} className="text-center text-muted py-4">
-                                                No hay seriales disponibles con esos filtros.
-                                            </td>
-                                        </tr>
-                                    )}
-                                    {tabla.map((item, index) => (
-                                        <tr key={item.id || `${item.cons_producto}-${index}`} className="align-middle text-center">
-                                            <td className="text-center">
-                                                <input
-                                                    className="form-check-input"
-                                                    type="checkbox"
-                                                    id={`check-${index}`}
-                                                    name={`check-${index}`}
-                                                    checked={checKs[index] || false}
-                                                    onChange={() => hadleChecks(index)}
-                                                />
-                                            </td>
-                                            <td className="text-center">{item?.cons_almacen}</td>
-                                            <td className="text-center">{item?.cons_producto}</td>
-                                            {mostrarSerial && <td className="text-center">{item?.serial}</td>}
-                                            <td className="text-center">{item?.bag_pack}</td>
-                                            <td className="text-center">{item?.s_pack}</td>
-                                            <td className="text-center">{item?.m_pack}</td>
-                                            <td className="text-center">{item?.l_pack}</td>
-                                            <td className="d-none d-md-table-cell text-center">
-                                                <span className={`badge ${item?.available === true ? "text-bg-success" : "text-bg-secondary"}`}>
-                                                    {item?.available === true ? "Disponible" : "Usado"}
-                                                </span>
-                                            </td>
+                                <tbody>
+                                    {Object.entries(resumenTransferencia).map(([consProducto, detalle]) => (
+                                        <tr key={consProducto}>
+                                            <td className="text-custom-small">{consProducto}</td>
+                                            <td className="text-custom-small">{detalle.cantidad}</td>
+                                            <td className="text-custom-small">{detalle.seriales.slice(0, 3).join(", ")}{detalle.seriales.length > 3 ? "..." : ""}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                )}
 
-                        <div className="d-flex justify-content-center">
-                            <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
-                        </div>
+                {/* Barra de control */}
+                <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2 mt-3">
+                    <div className="d-flex align-items-center gap-2 flex-wrap">
+                        <label className="mb-0 small">Limite:</label>
+                        <input
+                            type="number"
+                            className="form-control form-control-sm"
+                            style={{ width: "65px" }}
+                            min={1}
+                            ref={limitRef}
+                            value={draftLimit}
+                            onChange={handleDraftLimitChange}
+                            onBlur={handleDraftLimitCommit}
+                            onKeyDown={(e) => e.key === "Enter" && handleDraftLimitCommit()}
+                        />
+                        <span className="text-custom-small text-muted">
+                            {total} resultados &nbsp;·&nbsp; Sel: {seleccionadosActuales} &nbsp;·&nbsp; Lista: {itemsToTransfer.length}
+                        </span>
+                    </div>
+                    <div className="d-flex gap-1 flex-wrap">
+                        <button type="button" onClick={limpiarFiltros} className="btn btn-sm btn-outline-secondary" disabled={bool}>Limpiar</button>
+                        <button type="button" onClick={() => setShowModal(true)} className="btn btn-sm btn-warning" disabled={bool}>Ver lista ({itemsToTransfer.length})</button>
+                        <button type="button" onClick={agregarItem} className="btn btn-sm btn-primary" disabled={bool || loading || checKs.every((c) => !c)}>Agregar</button>
+                        {!bool ? (
+                            <button type="submit" className="btn btn-sm btn-success" disabled={loading}>
+                                {loading ? "Procesando..." : "Transferir"}
+                            </button>
+                        ) : (
+                            <button type="button" onClick={nuevaTranferencia} className="btn btn-sm btn-primary">Nueva transferencia</button>
+                        )}
                     </div>
                 </div>
+
+                {/* Tabla */}
+                <div className="table-responsive">
+                    <table className="table table-striped table-bordered table-sm mt-2 text-center align-middle">
+                        <thead className="align-middle">
+                            <tr>
+                                <th className="text-custom-small text-center">
+                                    <input className="form-check-input" type="checkbox" onChange={handleCheckAll} checked={checkAll} />
+                                </th>
+                                <th className="text-custom-small text-center">Alm</th>
+                                <th className="text-custom-small text-center">Articulo</th>
+                                {mostrarSerial && <th className="text-custom-small text-center">Serial Int</th>}
+                                <th className="text-custom-small text-center">Serial Ext</th>
+                                <th className="text-custom-small text-center">S Pack</th>
+                                <th className="text-custom-small text-center">M Pack</th>
+                                <th className="text-custom-small text-center">L Pack</th>
+                                <th className="text-custom-small d-none d-md-table-cell text-center">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody className="align-middle">
+                            {tabla.length === 0 && (
+                                <tr>
+                                    <td colSpan={mostrarSerial ? 9 : 8} className="text-center text-muted py-4 text-custom-small">
+                                        No hay seriales disponibles con esos filtros.
+                                    </td>
+                                </tr>
+                            )}
+                            {tabla.map((item, index) => (
+                                <tr key={item.id || `${item.cons_producto}-${index}`}>
+                                    <td className="text-center">
+                                        <input
+                                            className="form-check-input"
+                                            type="checkbox"
+                                            checked={checKs[index] || false}
+                                            onChange={() => hadleChecks(index)}
+                                        />
+                                    </td>
+                                    <td className="text-custom-small text-center">{item?.cons_almacen}</td>
+                                    <td className="text-custom-small text-center">{item?.cons_producto}</td>
+                                    {mostrarSerial && <td className="text-custom-small text-center">{item?.serial}</td>}
+                                    <td className="text-custom-small text-center">{item?.bag_pack}</td>
+                                    <td className="text-custom-small text-center">{item?.s_pack}</td>
+                                    <td className="text-custom-small text-center">{item?.m_pack}</td>
+                                    <td className="text-custom-small text-center">{item?.l_pack}</td>
+                                    <td className="text-custom-small d-none d-md-table-cell text-center">
+                                        <span className={`badge ${item?.available === true ? "text-bg-success" : "text-bg-secondary"}`}>
+                                            {item?.available === true ? "Disponible" : "Usado"}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
             </form>
         </>
     );

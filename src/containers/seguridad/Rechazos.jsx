@@ -1,5 +1,5 @@
 import Paginacion from '@components/shared/Tablas/Paginacion';
-import { actualizarRechazo, eliminarRechazo, paginarRechazos } from '@services/api/rechazos';
+import { actualizarRechazo, eliminarRechazo, paginarRechazos, aprobarRechazoApi } from '@services/api/rechazos';
 import { useEffect, useRef, useState } from 'react';
 import { Form, Col, Row } from 'react-bootstrap';
 import { FaEdit } from 'react-icons/fa';
@@ -7,8 +7,10 @@ import { BsSendCheckFill } from "react-icons/bs";
 import { TiDelete } from "react-icons/ti";
 import { FaSave } from "react-icons/fa";
 import { listarAlmacenes } from '@services/api/almacenes';
-import { actualizarListado } from '@services/api/listado';
+import { filtrarContenedor } from '@services/api/contenedores';
 import { paginarSemanas } from '@services/api/semanas';
+import { paginarListado } from '@services/api/listado';
+
 
 
 
@@ -25,6 +27,7 @@ const Rechazos = () => {
     const [valoresEditados, setValoresEditados] = useState({});
     const [almacenes, setAlmacenes] = useState([]);
     const [semana, setSemana] = useState([]);
+    const [contenedoresSemana, setContenedoresSemana] = useState([]);
 
     useEffect(() => {
         buscarSemana();
@@ -78,21 +81,23 @@ const Rechazos = () => {
 
     const aprobarRechazo = async (rechazo) => {
         try {
-
             const { Contenedor, id_producto, cod_productor, almacene } = rechazo;
             const { Listados, contenedor } = Contenedor;
             const existeProductoRechazado = Listados.some(item => item.combo.id === id_producto);
             const existeProductorRechazado = Listados.some(item => item.almacen.consecutivo === cod_productor);
+
             if (!existeProductorRechazado) {
-                const confirm = window.confirm(`⚠ El productor "${almacene.nombre}" no está asignado al contenedor "${contenedor}". ¿Desea continuar?`);
-                if (!confirm) return;
+                const ok = window.confirm(`⚠ El productor "${almacene.nombre}" no está asignado al contenedor "${contenedor}". ¿Desea continuar?`);
+                if (!ok) return;
             }
             if (!existeProductoRechazado) {
                 return window.alert(`⚠ El producto "${rechazo.combo.nombre}" no está asignado al contenedor "${contenedor}".`);
             }
-            let almacen = null;
+
+            // Seleccionar el productor responsable
+            let almacenCod = null;
             let message = "🔹 Ingresa el código del productor responsable del rechazo del producto. Opciones disponibles:";
-            while (!almacen) {
+            while (!almacenCod) {
                 let almacenesFiltrados = Listados.filter(item => item.combo.id === id_producto).map(item => item.almacen);
                 const almacenExist = almacenesFiltrados.find(item => item.consecutivo == almacene.consecutivo);
                 almacenesFiltrados = almacenExist == null ? almacenesFiltrados : [almacenExist];
@@ -100,40 +105,61 @@ const Rechazos = () => {
                     const opciones = almacenesFiltrados.map(el => `${el.consecutivo} ${el.nombre}`).join(", ");
                     const inputUsuario = window.prompt(`${message} ${opciones}`);
                     if (!inputUsuario) return;
-                    almacen = almacenesFiltrados.find(item => item.consecutivo === inputUsuario)?.consecutivo;
-                    rechazo.cod_productor = almacen;
+                    almacenCod = almacenesFiltrados.find(item => item.consecutivo === inputUsuario)?.consecutivo;
                 } else {
-                    almacen = almacenesFiltrados[0]?.consecutivo || cod_productor;
+                    almacenCod = almacenesFiltrados[0]?.consecutivo || cod_productor;
                 }
-
-                if (!almacen) {
+                if (!almacenCod) {
                     message = "⚠ El código ingresado no es válido. Inténtalo de nuevo:";
                 }
             }
+
             if (!window.confirm("¿Estás seguro de aprobar el rechazo?")) return;
-            const itemListado = Listados.find(item =>
-                (item.almacen.consecutivo == almacen) &&
-                (item.id_producto == id_producto)
-            );
-            const cajas = itemListado.cajas_unidades - rechazo.cantidad;
-            await actualizarRechazo(rechazo.id, { habilitado: true, cod_productor: rechazo.cod_productor });
-            await actualizarListado(itemListado.id, { cajas_unidades: cajas });
-            listar();
+
+            // El backend lee las cajas actuales con SELECT FOR UPDATE para evitar
+            // descuentos incorrectos cuando se aprueban múltiples rechazos del mismo contenedor
+            await aprobarRechazoApi(rechazo.id, { cod_productor: almacenCod });
+            await listar();
         } catch (error) {
             console.error("❌ Error al aprobar rechazo:", error);
+            window.alert(error?.response?.data?.message || "Error al aprobar el rechazo.");
         }
     };
 
-    const editarRechazo = (rechazo) => {
+    const editarRechazo = async (rechazo) => {
         setValoresEditados([]);
         setEditando(rechazo.id);
+        const semanaCons = rechazo.Contenedor?.Listados?.[0]?.Embarque?.semana?.consecutivo;
+        if (semanaCons) {
+            try {
+                const res = await paginarListado(1, 500, { semana: semanaCons });
+                const unique = [...new Set((res?.data || []).map(l => l?.Contenedor?.contenedor).filter(Boolean))];
+                setContenedoresSemana(unique);
+            } catch {
+                setContenedoresSemana([]);
+            }
+        }
     };
 
     const guardarEdicion = async (rechazo) => {
         try {
-
             const { Contenedor } = rechazo;
-            const { Listados, contenedor } = Contenedor;
+            let { Listados, contenedor: contenedorActual } = Contenedor;
+
+            // Validación y resolución de nuevo contenedor
+            let nuevoIdContenedor = null;
+            if (valoresEditados?.contenedor && valoresEditados.contenedor !== contenedorActual) {
+                const res = await filtrarContenedor({ contenedor: valoresEditados.contenedor });
+                const encontrado = (res?.data || []).find(c => c.contenedor === valoresEditados.contenedor);
+                if (!encontrado) {
+                    return window.alert(`⚠ El contenedor "${valoresEditados.contenedor}" no existe.`);
+                }
+                nuevoIdContenedor = encontrado.id;
+                // Al cambiar contenedor, los Listados del nuevo contenedor no están disponibles en memoria.
+                // Se omite la validación de producto/productor contra el nuevo contenedor.
+                Listados = [];
+                contenedorActual = valoresEditados.contenedor;
+            }
 
             // Validación de productor
             if (valoresEditados?.productor) {
@@ -142,65 +168,60 @@ const Rechazos = () => {
                 rechazo.cod_productor = ibm.consecutivo;
             }
 
-            // Validación de producto
-            if (valoresEditados?.producto) {
+            // Validación de producto (solo si no cambió el contenedor)
+            if (valoresEditados?.producto && !nuevoIdContenedor) {
                 const producto = Listados.find(item => item.combo.nombre === valoresEditados.producto);
                 if (!producto) {
-                    return window.alert(`⚠ Error: el producto "${valoresEditados.producto}" no está asignado al contenedor "${contenedor}".`);
+                    return window.alert(`⚠ Error: el producto "${valoresEditados.producto}" no está asignado al contenedor "${contenedorActual}".`);
                 }
                 rechazo.id_producto = producto.combo.id;
                 rechazo.combo.nombre = producto.combo.nombre;
             }
 
-            const existeProductoRechazado = Listados.some(item => item.combo.id === rechazo.id_producto);
-            if (!existeProductoRechazado) {
-                return window.alert(`⚠ El producto "${rechazo.combo.nombre}" no está asignado al contenedor "${contenedor}".`);
-            }
-
-            // Selección del código de almacén
-            let almacen = null;
-            let message = "🔹 Ingresa el código del productor responsable del rechazo del producto. Opciones disponibles:";
-
-            while (!almacen) {
-                const almacenesFiltrados = Listados.filter(item => item.combo.id === rechazo.id_producto).map(item => item.almacen);
-
-                if (almacenesFiltrados.length > 1) {
-                    const opciones = almacenesFiltrados.map(el => `${el.consecutivo} ${el.nombre}`).join(", ");
-                    const inputUsuario = window.prompt(`${message} ${opciones}`);
-                    if (!inputUsuario) return;
-                    almacen = almacenesFiltrados.find(item => item.consecutivo === inputUsuario)?.consecutivo;
-                    rechazo.cod_productor = almacen;
-                } else {
-                    almacen = almacenesFiltrados[0]?.consecutivo || rechazo.cod_productor;
+            // Validar producto en el contenedor actual (solo si no cambió el contenedor)
+            if (!nuevoIdContenedor) {
+                const existeProductoRechazado = Listados.some(item => item.combo.id === rechazo.id_producto);
+                if (!existeProductoRechazado) {
+                    return window.alert(`⚠ El producto "${rechazo.combo.nombre}" no está asignado al contenedor "${contenedorActual}".`);
                 }
 
-                if (!almacen) {
-                    message = "⚠ El código ingresado no es válido. Inténtalo de nuevo:";
+                // Selección del código de almacén
+                let almacen = null;
+                let message = "🔹 Ingresa el código del productor responsable del rechazo del producto. Opciones disponibles:";
+                while (!almacen) {
+                    const almacenesFiltrados = Listados.filter(item => item.combo.id === rechazo.id_producto).map(item => item.almacen);
+                    if (almacenesFiltrados.length > 1) {
+                        const opciones = almacenesFiltrados.map(el => `${el.consecutivo} ${el.nombre}`).join(", ");
+                        const inputUsuario = window.prompt(`${message} ${opciones}`);
+                        if (!inputUsuario) return;
+                        almacen = almacenesFiltrados.find(item => item.consecutivo === inputUsuario)?.consecutivo;
+                        rechazo.cod_productor = almacen;
+                    } else {
+                        almacen = almacenesFiltrados[0]?.consecutivo || rechazo.cod_productor;
+                    }
+                    if (!almacen) message = "⚠ El código ingresado no es válido. Inténtalo de nuevo:";
+                }
+
+                if (rechazo.cod_productor !== almacen) {
+                    if (!window.confirm("El productor seleccionado no está asignado a este contenedor. ¿Desea continuar?")) return;
                 }
             }
 
-            if (rechazo.cod_productor !== almacen) {
-                if (!window.confirm("El productor seleccionado no está asignado a este contenedor. ¿Desea continuar?")) return;
-            }
-
-            // Actualización de valores editados
             rechazo.serial_palet = valoresEditados?.pallet ?? rechazo.serial_palet;
             rechazo.cantidad = valoresEditados?.cajas ?? rechazo.cantidad;
 
-            // Creación del objeto a enviar
             const body = {
                 cod_productor: rechazo.cod_productor,
                 serial_palet: rechazo.serial_palet,
                 id_producto: rechazo.id_producto,
                 cantidad: rechazo.cantidad,
                 id_motivo_de_rechazo: rechazo.id_motivo_de_rechazo,
+                ...(nuevoIdContenedor && { id_contenedor: nuevoIdContenedor }),
             };
 
-
-            // Guardar cambios y actualizar la lista
             await actualizarRechazo(rechazo.id, body);
             setEditando(null);
-            listar();
+            await listar();
         } catch (error) {
             console.error("❌ Error al guardar la edición:", error);
             window.alert("⚠ Se produjo un error al guardar los cambios. Inténtalo de nuevo.");
@@ -339,7 +360,23 @@ const Rechazos = () => {
                                             ))}
                                         </datalist>
                                     </td>
-                                    <td className="text-custom-small text-center">{valoresEditados.contenedor || item?.Contenedor?.contenedor}</td>
+                                    <td>
+                                        <input
+                                            list={`contenedores-${item.id}`}
+                                            className="form-control custom-input text-custom-small text-center"
+                                            style={{ padding: "0", margin: "0", fontSize: "12px", width: "100%" }}
+                                            type="text"
+                                            defaultValue={item?.Contenedor?.contenedor}
+                                            onChange={(e) => handleChange(e, 'contenedor')}
+                                            placeholder="ABCD0000000"
+                                            maxLength={11}
+                                        />
+                                        <datalist id={`contenedores-${item.id}`}>
+                                            {contenedoresSemana.map((cont, key) => (
+                                                <option key={key} value={cont} />
+                                            ))}
+                                        </datalist>
+                                    </td>
                                     <td>
                                         <input
                                             list={`productos-${item.combo.id}`}

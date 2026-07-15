@@ -452,7 +452,8 @@ const endPoints = {
         pagination: (page, limit) => `${API}/api/${VERSION}/rechazo/paginar?page=${page}&limit=${limit}`,
         create: `${API}/api/${VERSION}/rechazo`,
         update: (id) => `${API}/api/${VERSION}/rechazo/${id}`,
-        delete: (id) => `${API}/api/${VERSION}/rechazo/${id}`
+        delete: (id) => `${API}/api/${VERSION}/rechazo/${id}`,
+        aprobar: (id) => `${API}/api/${VERSION}/rechazo/${id}/aprobar`,
     },
     motivoDeUso: {
         list: `${API}/api/${VERSION}/motivoDeUso`, //Listo

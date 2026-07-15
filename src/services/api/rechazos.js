@@ -55,10 +55,16 @@ const listarRechazos = async () => {
     }
 };
 
-export { agregarRechazo, 
-    eliminarRechazo, 
-    actualizarRechazo, 
-    buscarRechazo, 
+const aprobarRechazoApi = async (id, body) => {
+    const res = await axios.post(endPoints.rechazos.aprobar(id), body, config);
+    return res.data;
+};
+
+export { agregarRechazo,
+    eliminarRechazo,
+    actualizarRechazo,
+    buscarRechazo,
     paginarRechazos,
-    listarRechazos 
+    listarRechazos,
+    aprobarRechazoApi
 };
