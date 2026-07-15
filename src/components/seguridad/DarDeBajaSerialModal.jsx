@@ -56,9 +56,10 @@ export default function DarDeBajaSerialModal({ seriales, onClose, onSuccess }) {
               </div>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold">Motivo de baja <span className="text-danger">*</span></label>
+                <label htmlFor="motivo" className="form-label fw-semibold">Motivo de baja <span className="text-danger">*</span></label>
                 <select
                   className="form-select"
+                  id="motivo"
                   value={motivo}
                   onChange={(e) => setMotivo(e.target.value)}
                   required
@@ -72,9 +73,10 @@ export default function DarDeBajaSerialModal({ seriales, onClose, onSuccess }) {
               </div>
 
               <div className="mb-2">
-                <label className="form-label fw-semibold">Observacion</label>
+                <label htmlFor="observacion" className="form-label fw-semibold">Observacion</label>
                 <textarea
                   className="form-control"
+                  id="observacion"
                   rows={3}
                   maxLength={200}
                   placeholder="Descripcion adicional (opcional)"

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@hooks/useAuth";
 import { listarSeriales } from "@services/api/seguridad";
 import DarDeBajaSerialModal from "@components/seguridad/DarDeBajaSerialModal";
@@ -18,11 +18,15 @@ export default function BajaSeriales() {
 
   const [filtros, setFiltros] = useState({
     serial: "",
+    bag_pack: "",
+    s_pack: "",
+    m_pack: "",
+    l_pack: "",
     cons_almacen: "",
     cons_producto: "",
   });
 
-  const almacenes = almacenByUser || [];
+  const almacenes = useMemo(() => almacenByUser || [], [almacenByUser]);
 
   const listar = useCallback(async (page = 1) => {
     setLoading(true);
@@ -32,6 +36,10 @@ export default function BajaSeriales() {
         available: true,
         dado_de_baja: false,
         ...(filtros.serial ? { serial: filtros.serial } : {}),
+        ...(filtros.bag_pack ? { bag_pack: filtros.bag_pack } : {}),
+        ...(filtros.s_pack ? { s_pack: filtros.s_pack } : {}),
+        ...(filtros.m_pack ? { m_pack: filtros.m_pack } : {}),
+        ...(filtros.l_pack ? { l_pack: filtros.l_pack } : {}),
         ...(filtros.cons_almacen ? { cons_almacen: filtros.cons_almacen } : { cons_almacen: almacenes.map((a) => a.consecutivo) }),
         ...(filtros.cons_producto ? { cons_producto: filtros.cons_producto } : {}),
       };
@@ -95,10 +103,12 @@ export default function BajaSeriales() {
       <div className="card mb-3">
         <div className="card-body py-2">
           <form onSubmit={handleBuscar} className="row g-2 align-items-end">
+
             <div className="col-auto">
-              <label className="form-label form-label-sm mb-1">Almacen</label>
+              <label htmlFor="cons_almacen" className="form-label form-label-sm mb-1">Almacen</label>
               <select
                 className="form-select form-select-sm"
+                id="cons_almacen"
                 value={filtros.cons_almacen}
                 onChange={(e) => setFiltros((f) => ({ ...f, cons_almacen: e.target.value }))}
                 style={{ minWidth: "160px" }}
@@ -111,26 +121,87 @@ export default function BajaSeriales() {
                 ))}
               </select>
             </div>
+
+
             <div className="col-auto">
-              <label className="form-label form-label-sm mb-1">Serial</label>
+              <label htmlFor="cons_producto" className="form-label form-label-sm mb-1">Producto</label>
               <input
                 type="text"
-                className="form-control form-control-sm"
-                placeholder="Buscar serial..."
-                value={filtros.serial}
-                onChange={(e) => setFiltros((f) => ({ ...f, serial: e.target.value }))}
-              />
-            </div>
-            <div className="col-auto">
-              <label className="form-label form-label-sm mb-1">Producto</label>
-              <input
-                type="text"
+                id="cons_producto"
                 className="form-control form-control-sm"
                 placeholder="Codigo producto"
                 value={filtros.cons_producto}
                 onChange={(e) => setFiltros((f) => ({ ...f, cons_producto: e.target.value }))}
               />
             </div>
+
+            <div className="col-auto">
+              <label htmlFor="serial" className="form-label form-label-sm mb-1">Serial interno</label>
+              <input
+                type="text"
+                id="serial"
+                className="form-control form-control-sm"
+                placeholder="Buscar serial..."
+                value={filtros.serial}
+                onChange={(e) => setFiltros((f) => ({ ...f, serial: e.target.value }))}
+              />
+            </div>
+
+            <div className="col-auto">
+              <label htmlFor="bag_pack" className="form-label form-label-sm mb-1">Serial Externo</label>
+              <input
+                type="text"
+                id="bag_pack"
+                className="form-control form-control-sm"
+                placeholder="Buscar serial..."
+                value={filtros.bag_pack}
+                onChange={(e) => setFiltros((f) => ({ ...f, bag_pack: e.target.value }))}
+              />
+            </div>
+
+            {/**Arreglando */}
+            <div className="col-auto">
+              <label htmlFor="s_pack" className="form-label form-label-sm mb-1">S Pack
+              </label>
+              <input
+                type="text"
+                id="s_pack"
+                className="form-control form-control-sm"
+                placeholder=""
+                value={filtros.s_pack}
+                onChange={(e) => setFiltros((f) => ({ ...f, s_pack: e.target.value }))}
+              />
+            </div>
+
+            <div className="col-auto">
+              <label htmlFor="m_pack" className="form-label form-label-sm mb-1">M Pack
+              </label>
+              <input
+                type="text"
+                id="m_pack"
+                className="form-control form-control-sm"
+                placeholder=""
+                value={filtros.m_pack}
+                onChange={(e) => setFiltros((f) => ({ ...f, m_pack: e.target.value }))}
+              />
+            </div>
+
+            <div className="col-auto">
+              <label htmlFor="l_pack" className="form-label form-label-sm mb-1">L Pack
+              </label>
+              <input
+                type="text"
+                id="l_pack"
+                className="form-control form-control-sm"
+                placeholder=""
+                value={filtros.l_pack}
+                onChange={(e) => setFiltros((f) => ({ ...f, l_pack: e.target.value }))}
+              />
+            </div>
+
+            {/**Arreglando */}
+
+
             <div className="col-auto">
               <button type="submit" className="btn btn-outline-primary btn-sm">
                 Buscar
@@ -165,6 +236,9 @@ export default function BajaSeriales() {
                       <th>Producto</th>
                       <th>Almacen</th>
                       <th>Bag Pack</th>
+                      <th>S Pack</th>
+                      <th>M Pack</th>
+                      <th>L Pack</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -183,10 +257,13 @@ export default function BajaSeriales() {
                             onChange={() => toggleSerial(s.id)}
                           />
                         </td>
-                        <td className="fw-semibold">{s.serial}</td>
-                        <td>{s.producto?.name || s.cons_producto || "—"}</td>
-                        <td>{s.cons_almacen || "—"}</td>
-                        <td>{s.bag_pack || "—"}</td>
+                        <td className="fw-semibold text-center">{s.serial}</td>
+                        <td className="text-center">{s.producto?.name || s.cons_producto || "—"}</td>
+                        <td className="text-center">{s.cons_almacen || "—"}</td>
+                        <td className="text-center">{s.bag_pack || "—"}</td>
+                        <td className="text-center">{s.s_pack || "—"}</td>
+                        <td className="text-center">{s.m_pack || "—"}</td>
+                        <td className="text-center">{s.l_pack || "—"}</td>
                       </tr>
                     ))}
                   </tbody>
