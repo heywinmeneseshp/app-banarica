@@ -26,7 +26,7 @@ export default function AsignarSeriales({ contenedor, setContenedor }) {
     // Efecto para cargar datos iniciales
     useEffect(() => {
         listar();
-    }, [errores]);
+    }, []);
 
     // Función para obtener datos necesarios del servidor
     const listar = async () => {
@@ -206,14 +206,15 @@ export default function AsignarSeriales({ contenedor, setContenedor }) {
                                     <Col md={6} className="d-flex mb-3">
                                         <InputGroup>
                                             <InputGroup.Text>Semana</InputGroup.Text>
-                                            <Form.Select id="semana" name="semana" required>
+                                            <Form.Select
+                                                id="semana"
+                                                name="semana"
+                                                required
+                                                defaultValue={semanas.find(s => s.semana == semanaActual)?.consecutivo || ""}
+                                            >
                                                 <option value=""></option>
                                                 {semanas.map((item, index) => (
-                                                    <option
-                                                        key={index}
-                                                        value={item.consecutivo}
-                                                        selected={item?.semana == semanaActual}
-                                                    >
+                                                    <option key={index} value={item.consecutivo}>
                                                         {item?.consecutivo}
                                                     </option>
                                                 ))}

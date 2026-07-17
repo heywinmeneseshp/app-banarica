@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { FaUndoAlt } from "react-icons/fa";
+import { FaUndoAlt, FaExchangeAlt } from "react-icons/fa";
 
 import styles from "@styles/Seguridad.module.css";
 import Paginacion from "@components/Paginacion";
 import CorregirSerialModal from "@components/seguridad/CorregirSerialModal";
+import TransferirContModal from "@components/seguridad/TransferirContModal";
 import { corregirAsignacionSerial, listarSeriales } from "@services/api/seguridad";
 import { useAuth } from "@hooks/useAuth";
 import { buildTracecodeUrl } from "@utils/tracecode";
@@ -22,10 +23,19 @@ export default function ConsultaResumen({
     const [loading, setLoading] = useState(false);
     const [serialSeleccionado, setSerialSeleccionado] = useState(null);
     const [corrigiendo, setCorrigiendo] = useState(false);
+    const [selectedIds, setSelectedIds] = useState(new Set());
+    const [transferItems, setTransferItems] = useState(null);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     const user = getUser();
     const canCorrectSerials =
         user?.id_rol === "Super administrador" || configBotons.includes("disponibles_corregir_serial");
+    const canTransferSerials =
+        user?.id_rol === "Super administrador" || configBotons.includes("disponibles_transferir_serial");
+
+    useEffect(() => {
+        setSelectedIds(new Set());
+    }, [pagination]);
 
     useEffect(() => {
         const listar = async () => {
@@ -57,10 +67,32 @@ export default function ConsultaResumen({
         };
 
         listar();
-    }, [almacenByUser, data, pagination, limit, setResults]);
+    }, [almacenByUser, data, pagination, limit, setResults, refreshKey]);
+
+    const usadosEnTabla = tabla.filter((i) => i.available === false);
+    const allSelected =
+        usadosEnTabla.length > 0 && usadosEnTabla.every((i) => selectedIds.has(i.serial));
+
+    const toggleSelect = (serial) => {
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            next.has(serial) ? next.delete(serial) : next.add(serial);
+            return next;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        if (allSelected) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(usadosEnTabla.map((i) => i.serial)));
+        }
+    };
 
     const totalColumnas =
-        (configBotons.includes("disponibles_serial") ? 9 : 8) + (canCorrectSerials ? 1 : 0);
+        (configBotons.includes("disponibles_serial") ? 9 : 8) +
+        (canCorrectSerials ? 1 : 0) +
+        (canTransferSerials ? 2 : 0);
 
     const abrirCorreccion = (item) => {
         setSerialSeleccionado(item);
@@ -89,18 +121,7 @@ export default function ConsultaResumen({
                 observaciones: observaciones.trim()
             });
 
-            const res = await listarSeriales(pagination, limit, {
-                ...data,
-                cons_almacen:
-                    !data?.cons_almacen || data.cons_almacen.length === 0
-                        ? almacenByUser.map((item) => item.consecutivo)
-                        : data.cons_almacen,
-                serial: data?.serial || "",
-            });
-
-            setTabla(res?.data || []);
-            setTotal(res?.total || 0);
-            setResults(res?.total || 0);
+            setRefreshKey((prev) => prev + 1);
             cerrarCorreccion();
         } catch (error) {
             console.error("Error corrigiendo serial:", error);
@@ -109,11 +130,43 @@ export default function ConsultaResumen({
         }
     };
 
+    const onTransferDone = () => {
+        setTransferItems(null);
+        setSelectedIds(new Set());
+        setRefreshKey((prev) => prev + 1);
+    };
+
     return (
         <span className={styles.tabla_text}>
+            {canTransferSerials && selectedIds.size > 0 && (
+                <div className="mb-1">
+                    <button
+                        type="button"
+                        className="btn btn-sm btn-primary"
+                        onClick={() =>
+                            setTransferItems(tabla.filter((i) => selectedIds.has(i.serial)))
+                        }
+                    >
+                        <FaExchangeAlt className="me-1" />
+                        Transferir seleccionados ({selectedIds.size})
+                    </button>
+                </div>
+            )}
+
             <table className="table table-striped table-bordered table-sm mb-1">
                 <thead>
                     <tr>
+                        {canTransferSerials && (
+                            <th className="text-custom-small text-center" style={{ width: 32 }}>
+                                <input
+                                    type="checkbox"
+                                    checked={allSelected}
+                                    onChange={toggleSelectAll}
+                                    title="Seleccionar todos los usados"
+                                    disabled={usadosEnTabla.length === 0}
+                                />
+                            </th>
+                        )}
                         <th className="text-custom-small text-center">Alm</th>
                         <th className="text-custom-small text-center">Articulo</th>
                         {configBotons.includes("disponibles_serial") && (
@@ -126,6 +179,7 @@ export default function ConsultaResumen({
                         <th className="text-custom-small text-center">Estado</th>
                         <th className="text-custom-small text-center">Contenedor</th>
                         {canCorrectSerials && <th className="text-custom-small text-center">Corregir</th>}
+                        {canTransferSerials && <th className="text-custom-small text-center">Transferir</th>}
                     </tr>
                 </thead>
                 <tbody>
@@ -147,6 +201,17 @@ export default function ConsultaResumen({
 
                     {tabla.map((item, index) => (
                         <tr key={index}>
+                            {canTransferSerials && (
+                                <td className="text-custom-small text-center">
+                                    {item.available === false ? (
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.has(item.serial)}
+                                            onChange={() => toggleSelect(item.serial)}
+                                        />
+                                    ) : null}
+                                </td>
+                            )}
                             <td className="text-custom-small text-center">{item.cons_almacen}</td>
                             <td className="text-custom-small text-center">{item.producto.name}</td>
                             {configBotons.includes("disponibles_serial") && (
@@ -187,6 +252,22 @@ export default function ConsultaResumen({
                                     )}
                                 </td>
                             )}
+                            {canTransferSerials && (
+                                <td className="text-custom-small text-center">
+                                    {item.available === false ? (
+                                        <button
+                                            type="button"
+                                            className="btn btn-outline-primary btn-sm"
+                                            onClick={() => setTransferItems([item])}
+                                            title={`Transferir serial ${item.serial}`}
+                                        >
+                                            <FaExchangeAlt />
+                                        </button>
+                                    ) : (
+                                        <span className="text-muted">-</span>
+                                    )}
+                                </td>
+                            )}
                         </tr>
                     ))}
                 </tbody>
@@ -208,6 +289,14 @@ export default function ConsultaResumen({
                 onClose={cerrarCorreccion}
                 onConfirm={ejecutarCorreccion}
             />
+
+            {transferItems && (
+                <TransferirContModal
+                    seriales={transferItems}
+                    onClose={() => setTransferItems(null)}
+                    onDone={onTransferDone}
+                />
+            )}
         </span>
     );
 }

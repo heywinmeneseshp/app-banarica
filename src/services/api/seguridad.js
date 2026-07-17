@@ -31,14 +31,10 @@ const encontrarUnSerial = async (data) => {
 };
 
 const listarSeriales = async (offset, limit, body) => {
-    try {
-        let data = { data: body };
-        if (limit) data = { ...data, pagination: { offset: offset, limit: limit } };
-        const response = await axios.post(endPoints.seguridad.listarSeriales, data, buildConfig());
-        return response.data;
-    } catch (err) {
-        alert("Error al listar seriales");
-    }
+    let data = { data: body };
+    if (limit) data = { ...data, pagination: { offset: offset, limit: limit } };
+    const response = await axios.post(endPoints.seguridad.listarSeriales, data, buildConfig());
+    return response.data;
 };
 
 const listarUsuariosSeguridad = async (offset, limit, username) => {
@@ -243,6 +239,11 @@ const crearInspeccionVacio = async (body) => {
     }
 };
 
+const transferirContenedor = async (seriales, id_contenedor) => {
+    const response = await axios.post(endPoints.seguridad.transferirContenedor, { seriales, id_contenedor }, buildConfig());
+    return response.data;
+};
+
 const darDeBajaSerial = async (body) => {
     try {
         const response = await axios.post(endPoints.seguridad.darDeBajaSerial, body, buildConfig());
@@ -281,5 +282,6 @@ export {
     rechazarInspeccionLleno,
     crearInspeccionVacio,
     revertirSerialesContenedor,
-    darDeBajaSerial
+    darDeBajaSerial,
+    transferirContenedor
 };

@@ -360,7 +360,7 @@ export default function Dashboard() {
                                         const serial = seriales.find(item2 => itemConfig.consecutivo === item2.cons_producto);
                                         return (
                                             <td className="text-center d-none d-md-table-cell" key={key}>
-                                                {canViewSerialsBySchedule && serial?.revisado == false ? serial?.serial : ""}
+                                                {canViewSerialsBySchedule && serial?.revisado !== true ? serial?.serial : ""}
                                             </td>
                                         );
                                     })}

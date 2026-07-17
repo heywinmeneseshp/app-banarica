@@ -30,7 +30,7 @@ function VistaContenedor({ vistaCont, setVistaCont, correos, configProducts, can
                 let sinRevisar = userRole === "Super administrador"
                     ? vistaCont.serial_de_articulos
                     : vistaCont.serial_de_articulos.filter(
-                        (item) => item.revisado == false && configuredIds.includes(item.cons_producto)
+                        (item) => item.revisado !== true && configuredIds.includes(item.cons_producto)
                     );
                 sinRevisar = sinRevisar.filter((item) => configuredIds.includes(item.cons_producto));
                 setSerialesSinRevision(sinRevisar);

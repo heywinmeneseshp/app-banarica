@@ -717,22 +717,39 @@ export default function InspeccionVacio() {
     try {
       const verificationResults = await Promise.all(
         Array.from(serialMap.keys()).map(async (serial) => {
-          const response = await encontrarUnSerial({ serial, available: [true] });
+          const avail = await encontrarUnSerial({ serial, available: [true] });
+          if (avail?.[0]) {
+            return { serial, status: 'available', label: serialMap.get(serial) };
+          }
+          const existing = await encontrarUnSerial({ serial });
           return {
             serial,
-            exists: Boolean(response?.[0]),
+            status: existing?.[0] ? 'used' : 'missing',
             label: serialMap.get(serial)
           };
         })
       );
 
-      const missingItems = verificationResults.filter((item) => !item.exists);
-      if (missingItems.length > 0) {
+      const usedItems = verificationResults.filter((item) => item.status === 'used');
+      const missingItems = verificationResults.filter((item) => item.status === 'missing');
+
+      if (usedItems.length > 0 || missingItems.length > 0) {
+        const parts = [];
+        if (usedItems.length > 0) {
+          parts.push(
+            `${usedItems.length} serial(es) YA ESTÁN USADOS (asignados a otro contenedor):\n` +
+            usedItems.map((i) => `- ${i.label}: ${i.serial}`).join('\n')
+          );
+        }
+        if (missingItems.length > 0) {
+          parts.push(
+            `${missingItems.length} serial(es) NO EXISTEN en la base de datos:\n` +
+            missingItems.map((i) => `- ${i.label}: ${i.serial}`).join('\n')
+          );
+        }
         const proceed = await confirm({
-          title: 'Seriales no encontrados',
-          message: `No existen ${missingItems.length} serial(es):\n${missingItems
-            .map((item) => `- ${item.label}: ${item.serial}`)
-            .join("\n")}\n\n¿Deseas continuar?`,
+          title: 'Seriales con problemas',
+          message: parts.join('\n\n') + '\n\n¿Deseas continuar de todas formas?',
           confirmLabel: 'Continuar',
           cancelLabel: 'Cancelar',
           variant: 'warning'
