@@ -16,6 +16,12 @@ export default function TransferirContModal({ seriales, onClose, onDone }) {
     }, []);
 
     useEffect(() => {
+        const handleKey = (e) => { if (e.key === "Escape") onClose(); };
+        document.addEventListener("keydown", handleKey);
+        return () => document.removeEventListener("keydown", handleKey);
+    }, [onClose]);
+
+    useEffect(() => {
         if (!busqueda.trim()) {
             setOpciones([]);
             setSeleccionado(null);
@@ -64,14 +70,14 @@ export default function TransferirContModal({ seriales, onClose, onDone }) {
     };
 
     return (
-        <div
-            className="modal d-block"
-            role="dialog"
-            aria-modal="true"
-            style={{ background: "rgba(0,0,0,0.45)" }}
-            onClick={(e) => e.target === e.currentTarget && onClose()}
-            onKeyDown={(e) => e.key === "Escape" && onClose()}
-        >
+        <>
+            {/* Backdrop: aria-hidden so AT lo ignora; onClick cierra al pulsar fuera */}
+            <div
+                aria-hidden="true"
+                style={{ position: "fixed", inset: 0, zIndex: 1054, background: "rgba(0,0,0,0.45)" }}
+                onClick={onClose}
+            />
+            <div className="modal d-block" role="dialog" aria-modal="true" style={{ zIndex: 1055 }}>
             <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: 480 }}>
                 <div className="modal-content">
                     <div className="modal-header py-2">
@@ -153,5 +159,6 @@ export default function TransferirContModal({ seriales, onClose, onDone }) {
                 </div>
             </div>
         </div>
+        </>
     );
 }
