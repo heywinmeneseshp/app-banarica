@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FaExchangeAlt, FaReply } from "react-icons/fa";
 import axios from "axios";
 import endPoints from "@services/api";
 
@@ -40,6 +41,7 @@ export default function Disponibles() {
     const [results, setResults] = useState(0);
     const [configBotons, setConfigBotons] = useState([]);
     const [loadingProductos, setLoadingProductos] = useState(false);
+    const [consultaActions, setConsultaActions] = useState(null);
 
     const productosFiltrados = useMemo(() => {
         if (vista === "resumen") {
@@ -121,6 +123,7 @@ export default function Disponibles() {
         setLimit(10);
         setPagination(1);
         setResults(0);
+        setConsultaActions(null);
     };
 
     const onChangeLimit = (e) => {
@@ -321,44 +324,58 @@ export default function Disponibles() {
 
             <div className="line" />
 
-            <div className="row">
-                <div className="col-md-3 mb-3">
-                    <button
-                        type="button"
-                        className={`btn btn-sm w-100 ${vista === "resumen" ? "btn-primary" : "btn-outline-primary"}`}
-                        onClick={() => handleTableConsulta("resumen")}
-                    >
-                        Resumen
-                    </button>
-                </div>
+            <div className="d-flex align-items-center gap-2 mb-3 flex-wrap">
+                <button
+                    type="button"
+                    className={`btn btn-sm ${vista === "resumen" ? "btn-primary" : "btn-outline-primary"}`}
+                    onClick={() => handleTableConsulta("resumen")}
+                >
+                    Resumen
+                </button>
 
                 {configBotons.includes("disponibles_detallado") && (
-                    <div className="col-md-3 mb-3">
-                        <button
-                            type="button"
-                            className={`btn btn-sm w-100 ${vista === "detallado" ? "btn-primary" : "btn-outline-primary"}`}
-                            onClick={() => handleTableConsulta("detallado")}
-                        >
-                            Detallado
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        className={`btn btn-sm ${vista === "detallado" ? "btn-primary" : "btn-outline-primary"}`}
+                        onClick={() => handleTableConsulta("detallado")}
+                    >
+                        Detallado
+                    </button>
                 )}
 
-                <div className="col-md-3 mb-3" />
+                {consultaActions && (
+                    <>
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-primary"
+                            onClick={consultaActions.onTransfer}
+                            disabled={consultaActions.reverting}
+                        >
+                            <FaExchangeAlt className="me-1" />
+                            Transferir ({consultaActions.count})
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-warning"
+                            onClick={consultaActions.onRevert}
+                            disabled={consultaActions.reverting}
+                        >
+                            <FaReply className="me-1" />
+                            {consultaActions.reverting ? "Revirtiendo..." : `Revertir (${consultaActions.count})`}
+                        </button>
+                    </>
+                )}
 
-                <div className="col-md-3 mb-3 row d-flex justify-content-end">
-                    <div className="col-6 d-flex align-items-center">
-                        <input
-                            type="number"
-                            className="form-control form-control-sm"
-                            value={limit}
-                            min={1}
-                            onChange={onChangeLimit}
-                        />
-                    </div>
-                    <div className="col-6 d-flex align-items-center">
-                        <span>Resultados de {results}</span>
-                    </div>
+                <div className="ms-auto d-flex align-items-center gap-2">
+                    <input
+                        type="number"
+                        className="form-control form-control-sm"
+                        style={{ width: 70 }}
+                        value={limit}
+                        min={1}
+                        onChange={onChangeLimit}
+                    />
+                    <span className="text-nowrap">Resultados de {results}</span>
                 </div>
             </div>
 
@@ -379,6 +396,7 @@ export default function Disponibles() {
                     data={data}
                     setResults={setResults}
                     configBotons={configBotons}
+                    onActionsChange={setConsultaActions}
                 />
             )}
         </section>

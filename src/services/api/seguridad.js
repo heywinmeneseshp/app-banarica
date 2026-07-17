@@ -239,6 +239,11 @@ const crearInspeccionVacio = async (body) => {
     }
 };
 
+const revertirSerialsMasivo = async (seriales) => {
+    const response = await axios.post(endPoints.seguridad.revertirSerialsMasivo, { seriales }, buildConfig());
+    return response.data;
+};
+
 const transferirContenedor = async (seriales, id_contenedor) => {
     const response = await axios.post(endPoints.seguridad.transferirContenedor, { seriales, id_contenedor }, buildConfig());
     return response.data;
@@ -282,6 +287,7 @@ export {
     rechazarInspeccionLleno,
     crearInspeccionVacio,
     revertirSerialesContenedor,
+    revertirSerialsMasivo,
     darDeBajaSerial,
     transferirContenedor
 };

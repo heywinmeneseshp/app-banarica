@@ -9,6 +9,11 @@ export default function TransferirContModal({ seriales, onClose, onDone }) {
     const [buscando, setBuscando] = useState(false);
     const [guardando, setGuardando] = useState(false);
     const debounceRef = useRef(null);
+    const inputRef = useRef(null);
+
+    useEffect(() => {
+        inputRef.current?.focus();
+    }, []);
 
     useEffect(() => {
         if (!busqueda.trim()) {
@@ -61,8 +66,11 @@ export default function TransferirContModal({ seriales, onClose, onDone }) {
     return (
         <div
             className="modal d-block"
+            role="dialog"
+            aria-modal="true"
             style={{ background: "rgba(0,0,0,0.45)" }}
             onClick={(e) => e.target === e.currentTarget && onClose()}
+            onKeyDown={(e) => e.key === "Escape" && onClose()}
         >
             <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: 480 }}>
                 <div className="modal-content">
@@ -82,16 +90,17 @@ export default function TransferirContModal({ seriales, onClose, onDone }) {
                             ))}
                         </div>
 
-                        <label className="form-label fw-semibold text-custom-small mb-1">
+                        <label htmlFor="transferir-busqueda" className="form-label fw-semibold text-custom-small mb-1">
                             Buscar contenedor destino
                         </label>
                         <input
+                            id="transferir-busqueda"
+                            ref={inputRef}
                             type="text"
                             className="form-control form-control-sm mb-1"
                             placeholder="Ej: MNBU3967277"
                             value={busqueda}
                             onChange={e => { setBusqueda(e.target.value); setSeleccionado(null); }}
-                            autoFocus
                         />
 
                         {buscando && (

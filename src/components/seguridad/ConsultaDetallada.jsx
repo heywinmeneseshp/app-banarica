@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { GrUpdate } from "react-icons/gr";
 
 import styles from "@styles/Seguridad.module.css";
 import Paginacion from "@components/Paginacion";
@@ -18,7 +17,7 @@ export default function ConsultaDetallada({
     const [total, setTotal] = useState(0);
     const [tabla, setTabla] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [updatingKey, setUpdatingKey] = useState("");
+    const [syncing, setSyncing] = useState(false);
     const { almacenByUser } = useAuth();
 
     useEffect(() => {
@@ -52,6 +51,10 @@ export default function ConsultaDetallada({
                 setTotal(res?.total || 0);
                 setTabla(result);
                 setResults(res?.total || 0);
+
+                if (result.length > 0) {
+                    syncStock(result);
+                }
             } catch (error) {
                 console.error("Error al cargar detalle de disponibles:", error);
                 setTotal(0);
@@ -63,38 +66,39 @@ export default function ConsultaDetallada({
         };
 
         listar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [almacenByUser, data, limit, pagination, setResults]);
 
-    const ajustarInventario = async (cons_almacen, cons_producto, index) => {
+    const syncStock = async (filas) => {
+        setSyncing(true);
         try {
-            setUpdatingKey(`${cons_almacen}-${cons_producto}`);
+            await Promise.all(
+                filas.map(async (item) => {
+                    try {
+                        const res = await listarSeriales(1, 10, {
+                            cons_almacen: item.cons_almacen,
+                            cons_producto: item.cons_producto,
+                            available: true,
+                        });
+                        const cantidadReal = res?.total || 0;
+                        if (cantidadReal === item.cantidad) return;
 
-            const res = await listarSeriales(1, 10, {
-                cons_almacen,
-                cons_producto,
-                available: true
-            });
-            const cantidadReal = res?.total || 0;
+                        actualizarStockAlmacen(item.cons_almacen, item.cons_producto, { cantidad: cantidadReal })
+                            .catch(console.error);
 
-            await actualizarStockAlmacen(cons_almacen, cons_producto, { cantidad: cantidadReal });
-
-            setTabla((prevTabla) => {
-                const nuevaTabla = [...prevTabla];
-                if (nuevaTabla[index]) {
-                    nuevaTabla[index] = {
-                        ...nuevaTabla[index],
-                        cantidad: cantidadReal
-                    };
-                }
-                return nuevaTabla;
-            });
-
-            window.alert("Datos actualizados");
-        } catch (error) {
-            console.error("Error al ajustar inventario:", error);
-            window.alert("No fue posible actualizar el inventario");
+                        setTabla((prev) => {
+                            const next = [...prev];
+                            const idx = next.findIndex(
+                                (r) => r.cons_almacen === item.cons_almacen && r.cons_producto === item.cons_producto
+                            );
+                            if (idx !== -1) next[idx] = { ...next[idx], cantidad: cantidadReal };
+                            return next;
+                        });
+                    } catch { /* silent per-row errors */ }
+                })
+            );
         } finally {
-            setUpdatingKey("");
+            setSyncing(false);
         }
     };
 
@@ -107,14 +111,23 @@ export default function ConsultaDetallada({
                         <th className="text-custom-small text-center"></th>
                         <th className="text-custom-small text-center">Cod</th>
                         <th className="text-custom-small text-center">Articulo</th>
-                        <th className="text-custom-small text-center">Cantidad</th>
-                        <th className="text-custom-small text-center">Actualizar</th>
+                        <th className="text-custom-small text-center">
+                            Cantidad
+                            {syncing && (
+                                <span
+                                    className="spinner-border spinner-border-sm ms-1 text-secondary"
+                                    role="status"
+                                    title="Sincronizando conteos..."
+                                    style={{ width: "0.65rem", height: "0.65rem", borderWidth: "0.1em" }}
+                                />
+                            )}
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
                     {loading && (
                         <tr>
-                            <td colSpan={6} className="text-center">
+                            <td colSpan={5} className="text-center">
                                 Cargando resultados...
                             </td>
                         </tr>
@@ -122,7 +135,7 @@ export default function ConsultaDetallada({
 
                     {!loading && tabla.length === 0 && (
                         <tr>
-                            <td colSpan={6} className="text-center">
+                            <td colSpan={5} className="text-center">
                                 No hay resultados para los filtros seleccionados.
                             </td>
                         </tr>
@@ -138,32 +151,6 @@ export default function ConsultaDetallada({
                                 <span className={item.cantidad < 0 ? "text-danger fw-bold" : ""}>
                                     {item.cantidad}
                                 </span>
-                            </td>
-                            <td className="text-custom-small text-center">
-                                {updatingKey === `${item.cons_almacen}-${item.cons_producto}` ? (
-                                    <span className="text-muted">Actualizando...</span>
-                                ) : (
-                                    <GrUpdate
-                                        size={14}
-                                        title="Actualizar inventario"
-                                        onClick={() =>
-                                            ajustarInventario(item.cons_almacen, item.cons_producto, index)
-                                        }
-                                        style={{
-                                            color: "#0d6efd",
-                                            cursor: "pointer",
-                                            transition: "transform 0.15s ease, color 0.15s ease",
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.color = "#0b5ed7";
-                                            e.currentTarget.style.transform = "scale(1.15)";
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.color = "#0d6efd";
-                                            e.currentTarget.style.transform = "scale(1)";
-                                        }}
-                                    />
-                                )}
                             </td>
                         </tr>
                     ))}

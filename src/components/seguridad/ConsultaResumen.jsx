@@ -5,7 +5,7 @@ import styles from "@styles/Seguridad.module.css";
 import Paginacion from "@components/Paginacion";
 import CorregirSerialModal from "@components/seguridad/CorregirSerialModal";
 import TransferirContModal from "@components/seguridad/TransferirContModal";
-import { corregirAsignacionSerial, listarSeriales } from "@services/api/seguridad";
+import { corregirAsignacionSerial, listarSeriales, revertirSerialsMasivo } from "@services/api/seguridad";
 import { useAuth } from "@hooks/useAuth";
 import { buildTracecodeUrl } from "@utils/tracecode";
 
@@ -15,7 +15,8 @@ export default function ConsultaResumen({
     limit,
     pagination,
     setResults,
-    configBotons = []
+    configBotons = [],
+    onActionsChange
 }) {
     const { almacenByUser, getUser } = useAuth();
     const [tabla, setTabla] = useState([]);
@@ -25,6 +26,7 @@ export default function ConsultaResumen({
     const [corrigiendo, setCorrigiendo] = useState(false);
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [transferItems, setTransferItems] = useState(null);
+    const [reverting, setReverting] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
 
     const user = getUser();
@@ -35,13 +37,13 @@ export default function ConsultaResumen({
 
     useEffect(() => {
         setSelectedIds(new Set());
+        onActionsChange?.(null);
     }, [pagination]);
 
     useEffect(() => {
         const listar = async () => {
             try {
                 setLoading(true);
-
                 const almacenes = almacenByUser.map((item) => item.consecutivo);
                 const filtros = {
                     ...data,
@@ -51,7 +53,6 @@ export default function ConsultaResumen({
                             : data.cons_almacen,
                     serial: data?.serial || "",
                 };
-
                 const res = await listarSeriales(pagination, limit, filtros);
                 setTabla(res?.data || []);
                 setTotal(res?.total || 0);
@@ -65,7 +66,6 @@ export default function ConsultaResumen({
                 setLoading(false);
             }
         };
-
         listar();
     }, [almacenByUser, data, pagination, limit, setResults, refreshKey]);
 
@@ -94,9 +94,7 @@ export default function ConsultaResumen({
         (canCorrectSerials ? 1 : 0) +
         (canTransferSerials ? 2 : 0);
 
-    const abrirCorreccion = (item) => {
-        setSerialSeleccionado(item);
-    };
+    const abrirCorreccion = (item) => setSerialSeleccionado(item);
 
     const cerrarCorreccion = () => {
         setSerialSeleccionado(null);
@@ -104,15 +102,11 @@ export default function ConsultaResumen({
     };
 
     const ejecutarCorreccion = async ({ modoCorreccion, serialCorrecto, observaciones }) => {
-        if (!serialSeleccionado?.serial) {
-            return;
-        }
-
+        if (!serialSeleccionado?.serial) return;
         if (modoCorreccion === "reemplazar" && !serialCorrecto.trim()) {
             window.alert("Debes indicar el serial correcto para el reemplazo.");
             return;
         }
-
         try {
             setCorrigiendo(true);
             await corregirAsignacionSerial({
@@ -120,7 +114,6 @@ export default function ConsultaResumen({
                 serial_correcto: modoCorreccion === "reemplazar" ? serialCorrecto.trim().toUpperCase() : "",
                 observaciones: observaciones.trim()
             });
-
             setRefreshKey((prev) => prev + 1);
             cerrarCorreccion();
         } catch (error) {
@@ -136,23 +129,45 @@ export default function ConsultaResumen({
         setRefreshKey((prev) => prev + 1);
     };
 
+    const ejecutarRevertirMasivo = async () => {
+        const items = tabla.filter((i) => selectedIds.has(i.serial));
+        if (items.length === 0) return;
+        if (!window.confirm(`¿Revertir ${items.length} serial(es) al inventario disponible? Esta acción no se puede deshacer.`)) return;
+        setReverting(true);
+        try {
+            const res = await revertirSerialsMasivo(items.map((i) => i.serial));
+            window.alert(res.message || `${items.length} serial(es) revertidos al inventario.`);
+            setSelectedIds(new Set());
+            setRefreshKey((prev) => prev + 1);
+        } catch (e) {
+            const msg = e?.response?.data?.message
+                || e?.response?.data?.error
+                || e?.message
+                || "Error al revertir los seriales.";
+            window.alert(msg);
+        } finally {
+            setReverting(false);
+        }
+    };
+
+    // Notifica al padre los botones de acción masiva (se llama después de definir los handlers)
+    useEffect(() => {
+        if (!onActionsChange || !canTransferSerials) return;
+        if (selectedIds.size === 0) {
+            onActionsChange(null);
+            return;
+        }
+        onActionsChange({
+            count: selectedIds.size,
+            reverting,
+            onTransfer: () => setTransferItems(tabla.filter((i) => selectedIds.has(i.serial))),
+            onRevert: ejecutarRevertirMasivo,
+        });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedIds, tabla, reverting]);
+
     return (
         <span className={styles.tabla_text}>
-            {canTransferSerials && selectedIds.size > 0 && (
-                <div className="mb-1">
-                    <button
-                        type="button"
-                        className="btn btn-sm btn-primary"
-                        onClick={() =>
-                            setTransferItems(tabla.filter((i) => selectedIds.has(i.serial)))
-                        }
-                    >
-                        <FaExchangeAlt className="me-1" />
-                        Transferir seleccionados ({selectedIds.size})
-                    </button>
-                </div>
-            )}
-
             <table className="table table-striped table-bordered table-sm mb-1">
                 <thead>
                     <tr>
@@ -190,7 +205,6 @@ export default function ConsultaResumen({
                             </td>
                         </tr>
                     )}
-
                     {!loading && tabla.length === 0 && (
                         <tr>
                             <td colSpan={totalColumnas} className="text-center">
@@ -198,7 +212,6 @@ export default function ConsultaResumen({
                             </td>
                         </tr>
                     )}
-
                     {tabla.map((item, index) => (
                         <tr key={index}>
                             {canTransferSerials && (
@@ -241,7 +254,8 @@ export default function ConsultaResumen({
                                     {item.available === false ? (
                                         <button
                                             type="button"
-                                            className="btn btn-outline-warning btn-sm"
+                                            className="btn btn-link p-0 lh-1"
+                                            style={{ color: "#e6a817" }}
                                             onClick={() => abrirCorreccion(item)}
                                             title={`Corregir serial ${item.serial}`}
                                         >
@@ -257,7 +271,8 @@ export default function ConsultaResumen({
                                     {item.available === false ? (
                                         <button
                                             type="button"
-                                            className="btn btn-outline-primary btn-sm"
+                                            className="btn btn-link p-0 lh-1"
+                                            style={{ color: "#0d6efd" }}
                                             onClick={() => setTransferItems([item])}
                                             title={`Transferir serial ${item.serial}`}
                                         >
