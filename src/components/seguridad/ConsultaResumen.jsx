@@ -6,6 +6,7 @@ import Paginacion from "@components/Paginacion";
 import CorregirSerialModal from "@components/seguridad/CorregirSerialModal";
 import { corregirAsignacionSerial, listarSeriales } from "@services/api/seguridad";
 import { useAuth } from "@hooks/useAuth";
+import { buildTracecodeUrl } from "@utils/tracecode";
 
 export default function ConsultaResumen({
     data,
@@ -59,7 +60,7 @@ export default function ConsultaResumen({
     }, [almacenByUser, data, pagination, limit, setResults]);
 
     const totalColumnas =
-        (configBotons.includes("disponibles_serial") ? 8 : 7) + (canCorrectSerials ? 1 : 0);
+        (configBotons.includes("disponibles_serial") ? 9 : 8) + (canCorrectSerials ? 1 : 0);
 
     const abrirCorreccion = (item) => {
         setSerialSeleccionado(item);
@@ -123,6 +124,7 @@ export default function ConsultaResumen({
                         <th className="text-custom-small text-center">M Pack</th>
                         <th className="text-custom-small text-center">L Pack</th>
                         <th className="text-custom-small text-center">Estado</th>
+                        <th className="text-custom-small text-center">Contenedor</th>
                         {canCorrectSerials && <th className="text-custom-small text-center">Corregir</th>}
                     </tr>
                 </thead>
@@ -156,6 +158,18 @@ export default function ConsultaResumen({
                             <td className="text-custom-small text-center">{item.l_pack}</td>
                             <td className="text-custom-small text-center">
                                 {item.available === true ? "Disponible" : "Usado"}
+                            </td>
+                            <td className="text-custom-small text-center">
+                                {item.available === false && item.contenedor?.contenedor ? (
+                                    <a
+                                        href={buildTracecodeUrl({ id: item.contenedor.id, contenedor: item.contenedor.contenedor })}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-custom-small"
+                                    >
+                                        {item.contenedor.contenedor}
+                                    </a>
+                                ) : '-'}
                             </td>
                             {canCorrectSerials && (
                                 <td className="text-custom-small text-center">

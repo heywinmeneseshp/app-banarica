@@ -37,12 +37,8 @@ const buscarRechazo = async (consecutivo) => {
 };
 
 const paginarRechazos = async (Page, limit, body) => {
-    try {
-        const res = await axios.post(endPoints.rechazos.pagination(Page, limit) , body);
-        return res.data;
-    } catch (e) {
-        alert(`No se pueden paginar los Rechazos`);
-    }
+    const res = await axios.post(endPoints.rechazos.pagination(Page, limit), body);
+    return res.data;
 };
 
 
