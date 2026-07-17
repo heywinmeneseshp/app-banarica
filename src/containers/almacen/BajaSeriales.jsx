@@ -394,7 +394,7 @@ export default function BajaSeriales() {
                 {/* Filtros */}
                 <div className="row g-2 mb-3">
                     <div className="col-6 col-sm-4 col-md-3 col-xl-2">
-                        <label className="form-label mt-1 mb-1">Almacen</label>
+                        <label htmlFor="origen" className="form-label mt-1 mb-1">Almacen</label>
                         <select className="form-select form-select-sm" id="origen" name="origen" value={origenSeleccionado} onChange={onChangeBuscar} disabled={bool}>
                             <option value="">Todos mis almacenes</option>
                             {almacenByUser.map((a) => (
@@ -403,7 +403,7 @@ export default function BajaSeriales() {
                         </select>
                     </div>
                     <div className="col-6 col-sm-4 col-md-3 col-xl-2">
-                        <label className="form-label mt-1 mb-1">Articulo</label>
+                        <label htmlFor="producto" className="form-label mt-1 mb-1">Articulo</label>
                         <select className="form-select form-select-sm" id="producto" name="producto" disabled={bool} onChange={onChangeBuscar}>
                             <option value="">Todos</option>
                             {productos.map((p) => (
@@ -412,11 +412,11 @@ export default function BajaSeriales() {
                         </select>
                     </div>
                     <div className="col-6 col-sm-4 col-md-3 col-xl-2">
-                        <label className="form-label mt-1 mb-1">Fecha</label>
+                        <label htmlFor="fecha" className="form-label mt-1 mb-1">Fecha</label>
                         <input type="date" className="form-control form-control-sm" id="fecha" name="fecha" defaultValue={fechaActual} disabled={bool} />
                     </div>
                     <div className="col-6 col-sm-4 col-md-3 col-xl-2">
-                        <label className="form-label mt-1 mb-1">Semana</label>
+                        <label htmlFor="semana" className="form-label mt-1 mb-1">Semana</label>
                         <select className="form-select form-select-sm" id="semana" name="semana" required disabled={bool} defaultValue="">
                             <option value="" disabled>Seleccione</option>
                             {semanas.map((s) => (
@@ -426,24 +426,24 @@ export default function BajaSeriales() {
                     </div>
                     {mostrarSerial && (
                         <div className="col-6 col-sm-4 col-md-3 col-xl-2">
-                            <label className="form-label mt-1 mb-1">Serial Int</label>
+                            <label htmlFor="serial" className="form-label mt-1 mb-1">Serial Int</label>
                             <input type="text" className="form-control form-control-sm" id="serial" name="serial" onChange={onChangeBuscar} disabled={bool} />
                         </div>
                     )}
                     <div className="col-6 col-sm-4 col-md-3 col-xl-2">
-                        <label className="form-label mt-1 mb-1">Serial Ext</label>
+                        <label htmlFor="bag_pack" className="form-label mt-1 mb-1">Serial Ext</label>
                         <input type="text" className="form-control form-control-sm" id="bag_pack" name="bag_pack" onChange={onChangeBuscar} disabled={bool} />
                     </div>
                     <div className="col-6 col-sm-4 col-md-3 col-xl-2">
-                        <label className="form-label mt-1 mb-1">S Pack</label>
+                        <label htmlFor="s_pack" className="form-label mt-1 mb-1">S Pack</label>
                         <input type="text" className="form-control form-control-sm" id="s_pack" name="s_pack" onChange={onChangeBuscar} disabled={bool} />
                     </div>
                     <div className="col-6 col-sm-4 col-md-3 col-xl-2">
-                        <label className="form-label mt-1 mb-1">M Pack</label>
+                        <label htmlFor="m_pack" className="form-label mt-1 mb-1">M Pack</label>
                         <input type="text" className="form-control form-control-sm" id="m_pack" name="m_pack" onChange={onChangeBuscar} disabled={bool} />
                     </div>
                     <div className="col-6 col-sm-4 col-md-3 col-xl-2">
-                        <label className="form-label mt-1 mb-1">L Pack</label>
+                        <label htmlFor="l_pack" className="form-label mt-1 mb-1">L Pack</label>
                         <input type="text" className="form-control form-control-sm" id="l_pack" name="l_pack" onChange={onChangeBuscar} disabled={bool} />
                     </div>
                 </div>
@@ -458,8 +458,8 @@ export default function BajaSeriales() {
                             </h6>
                         </div>
                         <div className="col-12 col-sm-6 col-md-4 col-xl-3">
-                            <label className="form-label mt-1 mb-1">Motivo <span className="text-danger">*</span></label>
-                            <select className="form-select form-select-sm" value={motivo} onChange={(e) => setMotivo(e.target.value)} required disabled={bool}>
+                            <label htmlFor="baja-motivo" className="form-label mt-1 mb-1">Motivo <span className="text-danger">*</span></label>
+                            <select id="baja-motivo" className="form-select form-select-sm" value={motivo} onChange={(e) => setMotivo(e.target.value)} required disabled={bool}>
                                 <option value="">-- Seleccionar motivo --</option>
                                 {MOTIVOS.map((m) => (
                                     <option key={m} value={m}>{m}</option>
@@ -467,8 +467,9 @@ export default function BajaSeriales() {
                             </select>
                         </div>
                         <div className="col-12 col-sm-6 col-md-8 col-xl-9">
-                            <label className="form-label mt-1 mb-1">Observacion</label>
+                            <label htmlFor="baja-observacion" className="form-label mt-1 mb-1">Observacion</label>
                             <input
+                                id="baja-observacion"
                                 type="text"
                                 className="form-control form-control-sm"
                                 placeholder="Opcional"
@@ -484,8 +485,9 @@ export default function BajaSeriales() {
                 {/* Barra de control */}
                 <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2 mt-3">
                     <div className="d-flex align-items-center gap-2 flex-wrap">
-                        <label className="mb-0 small">Limite:</label>
+                        <label htmlFor="limite-baja" className="mb-0 small">Limite:</label>
                         <input
+                            id="limite-baja"
                             type="number"
                             className="form-control form-control-sm"
                             style={{ width: "65px" }}

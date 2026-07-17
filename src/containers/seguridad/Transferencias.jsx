@@ -595,7 +595,7 @@ export default function Transferencias() {
                 {/* Filtros */}
                 <div className="row g-2 mb-3">
                     <div className="col-6 col-sm-4 col-md-3 col-xl-2">
-                        <label className="form-label mt-1 mb-1">Origen</label>
+                        <label htmlFor="origen" className="form-label mt-1 mb-1">Origen</label>
                         <select className="form-select form-select-sm" id="origen" name="origen" value={origenSeleccionado} onChange={onChanageBuscar} disabled={bool}>
                             {almacenByUser.map((item, index) => (
                                 <option key={index} value={item.consecutivo}>{item.nombre}</option>
@@ -603,7 +603,7 @@ export default function Transferencias() {
                         </select>
                     </div>
                     <div className="col-6 col-sm-4 col-md-3 col-xl-2">
-                        <label className="form-label mt-1 mb-1">Destino</label>
+                        <label htmlFor="destino" className="form-label mt-1 mb-1">Destino</label>
                         <select className="form-select form-select-sm" id="destino" name="destino" value={destinoSeleccionado} onChange={handleDestinoChange} disabled={bool}>
                             {todosAlmacenes.map((item, index) => (
                                 <option key={index} value={item.consecutivo} disabled={item.consecutivo === origenSeleccionado}>{item.nombre}</option>
@@ -611,7 +611,7 @@ export default function Transferencias() {
                         </select>
                     </div>
                     <div className="col-6 col-sm-4 col-md-3 col-xl-2">
-                        <label className="form-label mt-1 mb-1">Articulo</label>
+                        <label htmlFor="producto" className="form-label mt-1 mb-1">Articulo</label>
                         <select className="form-select form-select-sm" id="producto" name="producto" disabled={bool} onChange={onChanageBuscar}>
                             <option value="">Todos</option>
                             {productos.map((item, index) => (
@@ -620,11 +620,11 @@ export default function Transferencias() {
                         </select>
                     </div>
                     <div className="col-6 col-sm-4 col-md-3 col-xl-2">
-                        <label className="form-label mt-1 mb-1">Fecha</label>
+                        <label htmlFor="fecha" className="form-label mt-1 mb-1">Fecha</label>
                         <input type="date" className="form-control form-control-sm" id="fecha" name="fecha" defaultValue={fechaActual} disabled={bool} />
                     </div>
                     <div className="col-6 col-sm-4 col-md-3 col-xl-2">
-                        <label className="form-label mt-1 mb-1">Semana</label>
+                        <label htmlFor="semana" className="form-label mt-1 mb-1">Semana</label>
                         <select className="form-select form-select-sm" id="semana" name="semana" required disabled={bool} defaultValue="">
                             <option value="" disabled>Seleccione</option>
                             {semanas.map((s) => (
@@ -634,24 +634,24 @@ export default function Transferencias() {
                     </div>
                     {mostrarSerial && (
                         <div className="col-6 col-sm-4 col-md-3 col-xl-2">
-                            <label className="form-label mt-1 mb-1">Serial Int</label>
+                            <label htmlFor="serial" className="form-label mt-1 mb-1">Serial Int</label>
                             <input type="text" className="form-control form-control-sm" id="serial" name="serial" onChange={onChanageBuscar} disabled={bool} />
                         </div>
                     )}
                     <div className="col-6 col-sm-4 col-md-3 col-xl-2">
-                        <label className="form-label mt-1 mb-1">Serial Ext</label>
+                        <label htmlFor="bag_pack" className="form-label mt-1 mb-1">Serial Ext</label>
                         <input type="text" className="form-control form-control-sm" id="bag_pack" name="bag_pack" onChange={onChanageBuscar} disabled={bool} />
                     </div>
                     <div className="col-6 col-sm-4 col-md-3 col-xl-2">
-                        <label className="form-label mt-1 mb-1">S Pack</label>
+                        <label htmlFor="s_pack" className="form-label mt-1 mb-1">S Pack</label>
                         <input type="text" className="form-control form-control-sm" id="s_pack" name="s_pack" onChange={onChanageBuscar} disabled={bool} />
                     </div>
                     <div className="col-6 col-sm-4 col-md-3 col-xl-2">
-                        <label className="form-label mt-1 mb-1">M Pack</label>
+                        <label htmlFor="m_pack" className="form-label mt-1 mb-1">M Pack</label>
                         <input type="text" className="form-control form-control-sm" id="m_pack" name="m_pack" onChange={onChanageBuscar} disabled={bool} />
                     </div>
                     <div className="col-6 col-sm-4 col-md-3 col-xl-2">
-                        <label className="form-label mt-1 mb-1">L Pack</label>
+                        <label htmlFor="l_pack" className="form-label mt-1 mb-1">L Pack</label>
                         <input type="text" className="form-control form-control-sm" id="l_pack" name="l_pack" onChange={onChanageBuscar} disabled={bool} />
                     </div>
                 </div>
@@ -689,8 +689,9 @@ export default function Transferencias() {
                 {/* Barra de control */}
                 <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2 mt-3">
                     <div className="d-flex align-items-center gap-2 flex-wrap">
-                        <label className="mb-0 small">Limite:</label>
+                        <label htmlFor="limite-transferencias" className="mb-0 small">Limite:</label>
                         <input
+                            id="limite-transferencias"
                             type="number"
                             className="form-control form-control-sm"
                             style={{ width: "65px" }}
