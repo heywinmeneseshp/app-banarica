@@ -47,6 +47,7 @@ export const COLUMN_OPTIONS = [
   { id: 'llegada_patio', label: 'Llegada Patio' },
   { id: 'retiro_patio', label: 'Retiro Patio' },
   { id: 'llegada_destino', label: 'Ingreso destino' },
+  { id: 'hora_revision_puerto', label: 'Revision puerto' },
   { id: 'cierre', label: 'Cierre' },
   { id: 'salida_destino', label: 'Salida destino' },
   { id: 'estado_listado', label: 'Estado listado' },

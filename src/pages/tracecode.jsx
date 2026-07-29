@@ -41,19 +41,29 @@ const formatDate = (value) => {
     }
   }
 
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value);
+  const date = toUtcDate(value);
+  if (!date) return String(value);
 
   return date.toLocaleDateString("es-CO", {
     timeZone: "America/Bogota"
   });
 };
 
+const toUtcDate = (value) => {
+  if (!value) return null;
+  const str = String(value).trim();
+  // Si no tiene indicador de zona horaria, MySQL devolvió hora local sin TZ → forzar UTC
+  const hasOffset = str.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(str);
+  const normalized = hasOffset ? str : str.replace(" ", "T") + "Z";
+  const d = new Date(normalized);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
 const formatDateTime = (value) => {
   if (!value) return "No registrado";
 
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value);
+  const date = toUtcDate(value);
+  if (!date) return String(value);
 
   return date.toLocaleString("es-CO", {
     timeZone: "America/Bogota"

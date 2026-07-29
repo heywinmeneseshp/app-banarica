@@ -116,6 +116,7 @@ export default function ProgramadorTable({
               {visibleColumns.llegada_patio && renderProgramadorHeader('llegada_patio', 'Llegada Patio', isEditable)}
               {visibleColumns.retiro_patio && renderProgramadorHeader('retiro_patio', 'Retiro Patio', isEditable)}
               {visibleColumns.llegada_destino && renderProgramadorHeader('llegada_destino', 'Ingreso destino', isEditable)}
+              {visibleColumns.hora_revision_puerto && renderProgramadorHeader('hora_revision_puerto', 'Revision puerto', false)}
               {visibleColumns.cierre && renderProgramadorHeader('cierre', 'Cierre', isEditable)}
               {visibleColumns.salida_destino && renderProgramadorHeader('salida_destino', 'Salida destino', isEditable)}
               {visibleColumns.movimiento && renderProgramadorHeader('movimiento', 'Movimiento', isEditable)}
@@ -386,6 +387,13 @@ export default function ProgramadorTable({
                     ) : (
                       <div className="py-2 px-1 text-center">{item.llegada_destino || ''}</div>
                     )}
+                  </td>}
+                  {visibleColumns.hora_revision_puerto && <td className="text-center align-middle p-0" style={cellStyle}>
+                    <div className="py-2 px-1 text-center text-nowrap">
+                      {item.hora_revision_puerto
+                        ? new Date(item.hora_revision_puerto).toLocaleString('es-CO', { timeZone: 'America/Bogota', dateStyle: 'short', timeStyle: 'short' })
+                        : ''}
+                    </div>
                   </td>}
                   {visibleColumns.cierre && <td className={`${accentClass2} text-center align-middle p-0`} style={cellStyle}>
                     {(rowEditable || rowTimeEditable) ? (

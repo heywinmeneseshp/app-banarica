@@ -6,6 +6,7 @@ import { enviarEmail } from "@services/api/email";
 import { useAuth } from "@hooks/useAuth";
 import Loader from "@components/shared/Loader";
 import { actualizarSerial } from "@services/api/seguridad";
+import { actualizarContenedor } from "@services/api/contenedores";
 
 
 function VistaContenedor({ vistaCont, setVistaCont, correos, configProducts, canViewSerials = true }) {
@@ -101,6 +102,16 @@ const handleMassApproveToggle = consecutivos => {
         });
     };
 
+    const obtenerGeo = () =>
+        new Promise((resolve) => {
+            if (!navigator.geolocation) { resolve(null); return; }
+            navigator.geolocation.getCurrentPosition(
+                (pos) => resolve({ latitud: pos.coords.latitude, longitud: pos.coords.longitude }),
+                () => resolve(null),
+                { timeout: 8000 }
+            );
+        });
+
     const handleConfirm = async () => {
         setLoading(true);
 
@@ -120,9 +131,18 @@ const handleMassApproveToggle = consecutivos => {
 
         const confirmedSerials = getConfirmedSerials();
 
+        const idContenedor = vistaCont?.Contenedor?.id;
+        const geo = await obtenerGeo();
+
         if (confirmedSerials.length === 0) {
             for (const item of serialesSinRevision) {
                 await actualizarSerial({ ...item, revisado: true });
+            }
+            if (idContenedor) {
+                await actualizarContenedor(idContenedor, {
+                    hora_revision_puerto: new Date().toISOString(),
+                    ...(geo && { latitud_revision_puerto: geo.latitud, longitud_revision_puerto: geo.longitud }),
+                });
             }
             setLoading(false);
             setVistaCont(null);
@@ -180,6 +200,12 @@ const handleMassApproveToggle = consecutivos => {
 
         for (const item of serialesSinRevision) {
             await actualizarSerial({ ...item, revisado: true });
+        }
+        if (idContenedor) {
+            await actualizarContenedor(idContenedor, {
+                hora_revision_puerto: new Date().toISOString(),
+                ...(geo && { latitud_revision_puerto: geo.latitud, longitud_revision_puerto: geo.longitud }),
+            });
         }
         setLoading(false);
         setVistaCont(null);
