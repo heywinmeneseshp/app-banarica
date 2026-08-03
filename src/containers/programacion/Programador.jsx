@@ -10,6 +10,8 @@ import useAlert from '@hooks/useAlert';
 import ProgramadorColumnModal from './ProgramadorColumnModal';
 import ProgramadorPendingSyncModal from './ProgramadorPendingSyncModal';
 import ProgramadorEvidenceModal from './ProgramadorEvidenceModal';
+import VerEvidenciasModal from './VerEvidenciasModal';
+import { listarEvidencias } from '@services/api/googleDrive';
 import ProgramadorSerialesModal from './ProgramadorSerialesModal';
 import ProgramadorFilters from './ProgramadorFilters';
 import ProgramadorTable from './ProgramadorTable';
@@ -77,6 +79,7 @@ export default function Programador() {
     isSuperAdmin,
     canActualizarPendientes,
     canEditarProgramador,
+    canVerCarpetaDrive,
     transportadoras,
     currentUsername,
   } = useProgramadorCatalogos({ setAlert });
@@ -598,8 +601,52 @@ export default function Programador() {
     cerrarModalEvidencia,
     abrirModalEvidencia,
     handleEvidenciaFilesChange,
+    handleEvidenciaCameraChange,
     subirEvidenciasProgramacion,
   } = useEvidencias({ evidenciasDriveFolderId, updateLocalRow, setAlert, setReloadKey });
+
+  const [showVerEvidencias, setShowVerEvidencias] = useState(false);
+  const [verEvidenciasLoading, setVerEvidenciasLoading] = useState(false);
+  const [verEvidenciasError, setVerEvidenciasError] = useState(null);
+  const [verEvidenciasFotos, setVerEvidenciasFotos] = useState([]);
+  const [verEvidenciasRow, setVerEvidenciasRow] = useState(null);
+
+  const abrirVerEvidencias = async (row) => {
+    setVerEvidenciasRow(row);
+    setShowVerEvidencias(true);
+    setVerEvidenciasError(null);
+    setVerEvidenciasFotos([]);
+
+    if (!row?.evidencia_carpeta_id) {
+      setVerEvidenciasError('No hay carpeta de evidencias registrada para esta programacion.');
+      return;
+    }
+
+    setVerEvidenciasLoading(true);
+    try {
+      const res = await listarEvidencias(row.evidencia_carpeta_id);
+      setVerEvidenciasFotos(res?.data || []);
+    } catch (error) {
+      setVerEvidenciasError(error.message || 'No fue posible cargar las fotos.');
+    } finally {
+      setVerEvidenciasLoading(false);
+    }
+  };
+
+  const cerrarVerEvidencias = () => {
+    setShowVerEvidencias(false);
+    setVerEvidenciasFotos([]);
+    setVerEvidenciasError(null);
+    setVerEvidenciasRow(null);
+  };
+
+  const irASubirDesdeVer = () => {
+    const row = verEvidenciasRow;
+    cerrarVerEvidencias();
+    if (row) {
+      abrirModalEvidencia(row);
+    }
+  };
 
   return (
     <>
@@ -666,6 +713,7 @@ export default function Programador() {
               handleEliminarProducto2={handleEliminarProducto2}
               abrirModalSeriales={abrirModalSeriales}
               abrirModalEvidencia={abrirModalEvidencia}
+              abrirVerEvidencias={abrirVerEvidencias}
               eliminar={eliminar}
               pagination={pagination}
               setPagination={setPagination}
@@ -708,10 +756,24 @@ export default function Programador() {
         uploadingEvidencia={uploadingEvidencia}
         onClose={cerrarModalEvidencia}
         onFilesChange={handleEvidenciaFilesChange}
+        onCameraFilesChange={handleEvidenciaCameraChange}
         onRemoveFile={(idx) => { const newFiles = [...evidenciaFiles]; newFiles.splice(idx, 1); setEvidenciaFiles(newFiles); }}
         onUpload={subirEvidenciasProgramacion}
         onReset={() => { setEvidenciaResultados(null); setEvidenciaFiles([]); }}
       />
+
+      {showVerEvidencias && (
+        <VerEvidenciasModal
+          show={showVerEvidencias}
+          loading={verEvidenciasLoading}
+          error={verEvidenciasError}
+          fotos={verEvidenciasFotos}
+          carpetaUrl={verEvidenciasRow?.evidencia_carpeta_url}
+          mostrarEnlaceDrive={canVerCarpetaDrive}
+          onClose={cerrarVerEvidencias}
+          onSubirMas={irASubirDesdeVer}
+        />
+      )}
 
       <ProgramadorSerialesModal
         show={showSerialesModal}

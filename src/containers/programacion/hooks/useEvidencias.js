@@ -60,6 +60,42 @@ export function useEvidencias({ evidenciasDriveFolderId, updateLocalRow, setAler
     setEvidenciaFiles(files);
   };
 
+  const handleEvidenciaCameraChange = (e) => {
+    const nuevos = Array.from(e.target.files || []);
+    if (!nuevos.length) return;
+
+    const combinados = [...evidenciaFiles, ...nuevos];
+
+    if (combinados.length > EVIDENCIA_MAX_FILES) {
+      setAlert({
+        active: true,
+        mensaje: `Solo puedes subir maximo ${EVIDENCIA_MAX_FILES} fotos por envio.`,
+        color: 'warning',
+        autoClose: true,
+      });
+      e.target.value = '';
+      return;
+    }
+
+    const invalidFile = nuevos.find((file) => (
+      !EVIDENCIA_ALLOWED_TYPES.includes(file.type) || file.size > EVIDENCIA_MAX_FILE_SIZE
+    ));
+
+    if (invalidFile) {
+      setAlert({
+        active: true,
+        mensaje: `El archivo ${invalidFile.name} no es valido. Usa JPG, PNG, GIF, WEBP o HEIC de maximo 5MB.`,
+        color: 'warning',
+        autoClose: true,
+      });
+      e.target.value = '';
+      return;
+    }
+
+    setEvidenciaFiles(combinados);
+    e.target.value = '';
+  };
+
   const subirEvidenciasProgramacion = async () => {
     if (!selectedProgramacion) return;
     if (!evidenciaFiles.length) {
@@ -81,8 +117,10 @@ export function useEvidencias({ evidenciasDriveFolderId, updateLocalRow, setAler
         || selectedProgramacion.contenedor
         || `programacion-${selectedProgramacion.id || selectedProgramacion.consecutivo || 'sin-id'}`;
 
+      const idFieldNames = { listado: 'listado_id', traslado: 'traslado_id' };
+      const idFieldName = idFieldNames[entityType] || 'programacion_id';
+
       const formData = new FormData();
-      const idFieldName = entityType === 'listado' ? 'listado_id' : 'programacion_id';
       formData.append(idFieldName, selectedProgramacion.id || selectedProgramacion.consecutivo || '');
       formData.append('semana', selectedProgramacion.semanaLabel || selectedProgramacion.semana || '');
       formData.append('fecha', selectedProgramacion.fecha || '');
@@ -93,11 +131,13 @@ export function useEvidencias({ evidenciasDriveFolderId, updateLocalRow, setAler
         'finca_destino',
         entityType === 'listado'
           ? (selectedProgramacion.almacen?.consecutivo || selectedProgramacion.almacen?.nombre || '')
-          : (selectedProgramacion.destino
-            || selectedProgramacion.destinoLabel
-            || selectedProgramacion.ruta?.ubicacion_2?.ubicacion
-            || selectedProgramacion.ubicacion2
-            || '')
+          : entityType === 'traslado'
+            ? (selectedProgramacion.destino || '')
+            : (selectedProgramacion.destino
+              || selectedProgramacion.destinoLabel
+              || selectedProgramacion.ruta?.ubicacion_2?.ubicacion
+              || selectedProgramacion.ubicacion2
+              || '')
       );
       formData.append('bl', selectedProgramacion.blLabel || selectedProgramacion.bl || '');
       formData.append('producto', selectedProgramacion.productoLabel || '');
@@ -153,6 +193,7 @@ export function useEvidencias({ evidenciasDriveFolderId, updateLocalRow, setAler
     cerrarModalEvidencia,
     abrirModalEvidencia,
     handleEvidenciaFilesChange,
+    handleEvidenciaCameraChange,
     subirEvidenciasProgramacion,
   };
 }

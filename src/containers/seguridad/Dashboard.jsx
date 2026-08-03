@@ -287,9 +287,15 @@ export default function Dashboard() {
                         <button
                             onClick={() => handleConfig()}
                             type="button"
-                            className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center"
+                            className="btn btn-link btn-sm text-decoration-none p-0"
+                            style={{
+                                width: 32, height: 32,
+                                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                                color: "#adb5bd",
+                            }}
+                            title="Configuracion"
                         >
-                            <FaCog />
+                            <FaCog size={17} />
                         </button>
                     </div>}
 

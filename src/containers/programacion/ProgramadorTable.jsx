@@ -45,6 +45,7 @@ export default function ProgramadorTable({
   handleEliminarProducto2,
   abrirModalSeriales,
   abrirModalEvidencia,
+  abrirVerEvidencias,
   eliminar,
   pagination,
   setPagination,
@@ -502,9 +503,9 @@ export default function ProgramadorTable({
                         variant="link"
                         size="sm"
                         className="text-decoration-none p-0"
-                        style={{ width: 26, height: 26, lineHeight: '24px', color: item.evidenciaSubida ? '#7e83889d' : '#319c5c' }}
-                        onClick={() => abrirModalEvidencia(item)}
-                        title={item.evidenciaSubida ? 'Evidencia cargada' : 'Subir evidencia fotografica'}
+                        style={{ width: 26, height: 26, lineHeight: '24px', color: item.evidenciaSubida ? '#319c5c' : '#f0ad4e' }}
+                        onClick={() => (item.evidenciaSubida ? abrirVerEvidencias(item) : abrirModalEvidencia(item))}
+                        title={item.evidenciaSubida ? 'Ver evidencia cargada' : 'Subir evidencia fotografica'}
                       >
                         <FaCamera size={12} />
                       </Button>

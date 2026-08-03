@@ -27,6 +27,69 @@ const ejecutarTraslado = async (data) => {
     return response.data;
 };
 
+const crearTrasladoPendiente = async (data) => {
+    try {
+        const response = await axios.post(endPoints.traslados.crearPendiente, data, config);
+        return response.data;
+    } catch (err) {
+        resolveApiError(err, "Error al registrar la transferencia pendiente");
+    }
+};
+
+const listarTrasladosPendientes = async (almacenes = [], tipo = "recibir") => {
+    try {
+        const res = await axios.get(endPoints.traslados.listarPendientes(almacenes.join(","), tipo));
+        return res.data;
+    } catch (err) {
+        resolveApiError(err, "Error al listar transferencias pendientes");
+    }
+};
+
+const contarTrasladosPendientes = async (almacenes = []) => {
+    try {
+        const res = await axios.get(endPoints.traslados.contarPendientes(almacenes.join(",")));
+        return res.data;
+    } catch (err) {
+        resolveApiError(err, "Error al contar transferencias pendientes");
+    }
+};
+
+const aceptarTraslado = async (id, usuario) => {
+    try {
+        const res = await axios.patch(endPoints.traslados.aceptar(id), { usuario }, config);
+        return res.data;
+    } catch (err) {
+        resolveApiError(err, "Error al aceptar la transferencia");
+    }
+};
+
+const rechazarTraslado = async (id, usuario, motivo) => {
+    try {
+        const res = await axios.patch(endPoints.traslados.rechazar(id), { usuario, motivo }, config);
+        return res.data;
+    } catch (err) {
+        resolveApiError(err, "Error al rechazar la transferencia");
+    }
+};
+
+const listarEvidenciasTraslado = async (id, usuario) => {
+    try {
+        const res = await axios.post(endPoints.traslados.listarEvidencias(id), { usuario }, config);
+        return res.data;
+    } catch (err) {
+        resolveApiError(err, "No fue posible cargar la evidencia de esta transferencia");
+    }
+};
+
+const listarArticulosTraslado = async (id, usuario) => {
+    try {
+        const res = await axios.post(endPoints.traslados.listarArticulos(id), { usuario }, config);
+        return res.data;
+    } catch (err) {
+        resolveApiError(err, "No fue posible cargar los articulos de esta transferencia");
+    }
+};
+
 const eliminarTraslado = async (consecutivo) => {
     const res = await axios.delete(endPoints.traslados.delete(consecutivo));
     return res.data;
@@ -81,4 +144,19 @@ const listarTraslados = async () => {
     }
 };
 
-export { agregarTraslado, ejecutarTraslado, eliminarTraslado, actualizarTraslado, buscarTraslado, filtrarTraslados, listarTraslados };
+export {
+    agregarTraslado,
+    ejecutarTraslado,
+    crearTrasladoPendiente,
+    listarTrasladosPendientes,
+    contarTrasladosPendientes,
+    aceptarTraslado,
+    rechazarTraslado,
+    listarEvidenciasTraslado,
+    listarArticulosTraslado,
+    eliminarTraslado,
+    actualizarTraslado,
+    buscarTraslado,
+    filtrarTraslados,
+    listarTraslados,
+};

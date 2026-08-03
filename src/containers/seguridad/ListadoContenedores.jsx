@@ -2,10 +2,7 @@ import Paginacion from '@components/shared/Tablas/Paginacion';
 import { actualizarListado, duplicarListado, paginarListado, contarUnicosListado } from '@services/api/listado';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Form, Col, Row, Button } from 'react-bootstrap';
-import { FaExternalLinkAlt, FaQrcode } from 'react-icons/fa';
-import Image from "next/image";
-import config from '@public/images/configuracion.png';
-import styles from '@styles/header.module.css';
+import { FaExternalLinkAlt, FaQrcode, FaCog } from 'react-icons/fa';
 import styles2 from "@components/shared/Formularios/Formularios.module.css";
 import InsumoConfig from '@components/shared/InsumoConfig';
 import ListadoConfig from '@components/shared/ListadoConfig';
@@ -22,6 +19,7 @@ import { actualizarContenedor } from '@services/api/contenedores';
 import { paginarCombos } from '@services/api/combos';
 import { listarTransportadoras } from '@services/api/transportadoras';
 import { useAuth } from '@hooks/useAuth';
+import { useBotonesUsuario } from '@hooks/useBotonesUsuario';
 import useFeedback from '@hooks/useFeedback';
 import * as XLSX from 'xlsx';
 import Transbordar from '@components/seguridad/Listado/Transbordar';
@@ -134,6 +132,7 @@ const useListadoState = () => {
 
 const ListadoContenedores = () => {
   const { getUser } = useAuth();
+  const { tieneBoton } = useBotonesUsuario();
   const { notify } = useFeedback();
   const formRef = useRef();
   const tablaRef = useRef();
@@ -175,6 +174,7 @@ const ListadoContenedores = () => {
     cerrarModalEvidencia,
     abrirModalEvidencia,
     handleEvidenciaFilesChange,
+    handleEvidenciaCameraChange,
     subirEvidenciasProgramacion: subirEvidenciasListado,
   } = useEvidencias({
     evidenciasDriveFolderId: evidenciasDriveFolderIdListado,
@@ -1121,15 +1121,19 @@ const ListadoContenedores = () => {
             <span>contenedores unicos</span>
           </span>
 
-          <div className="config-icon">
-            <Image
-              className={styles.imgConfig}
-              onClick={handleOpenConfig}
-              src={config}
-              alt="configuración"
-              style={{ width: '25px', height: '25px', cursor: 'pointer' }}
-            />
-          </div>
+          <button
+            type="button"
+            className="btn btn-link btn-sm text-decoration-none p-0"
+            style={{
+              width: 32, height: 32,
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              color: "#adb5bd",
+            }}
+            onClick={handleOpenConfig}
+            title="Configuracion"
+          >
+            <FaCog size={17} />
+          </button>
 
           <div className="d-flex align-items-center me-1">
             <span className="me-2 ms-2">Límite:</span>
@@ -1321,6 +1325,7 @@ const ListadoContenedores = () => {
           uploadingEvidencia={uploadingEvidencia}
           onClose={cerrarModalEvidencia}
           onFilesChange={handleEvidenciaFilesChange}
+          onCameraFilesChange={handleEvidenciaCameraChange}
           onRemoveFile={(idx) => { const newFiles = [...evidenciaFiles]; newFiles.splice(idx, 1); setEvidenciaFiles(newFiles); }}
           onUpload={subirEvidenciasListado}
           onReset={() => { setEvidenciaResultados(null); setEvidenciaFiles([]); }}
@@ -1333,6 +1338,7 @@ const ListadoContenedores = () => {
           error={verEvidenciasError}
           fotos={verEvidenciasFotos}
           carpetaUrl={verEvidenciasRow?.evidencia_carpeta_url}
+          mostrarEnlaceDrive={tieneBoton('evidencias_ver_carpeta_drive')}
           onClose={cerrarVerEvidencias}
           onSubirMas={irASubirDesdeVer}
         />

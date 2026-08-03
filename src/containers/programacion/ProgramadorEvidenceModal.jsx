@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Button, Modal } from 'react-bootstrap';
+import { FaCamera, FaImages } from 'react-icons/fa';
 
 function ProgramadorEvidenceModal({
   show,
@@ -9,10 +10,13 @@ function ProgramadorEvidenceModal({
   uploadingEvidencia,
   onClose,
   onFilesChange,
+  onCameraFilesChange,
   onRemoveFile,
   onUpload,
   onReset,
 }) {
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
   return (
     <Modal show={show} onHide={onClose} centered size="lg">
       <Modal.Header closeButton>
@@ -60,17 +64,48 @@ function ProgramadorEvidenceModal({
         ) : (
           <>
             <div className="mb-3">
-              <label className="form-label fw-bold" htmlFor="evidenciaFotos">Seleccionar fotos (máximo 20, 5MB cada una)</label>
+              <div className="fw-bold mb-1">Agregar fotos (máximo 20, 5MB cada una)</div>
+
               <input
-                id="evidenciaFotos"
+                ref={cameraInputRef}
                 type="file"
-                className="form-control"
                 accept="image/*"
-                onChange={onFilesChange}
-                multiple
+                capture="environment"
+                style={{ display: 'none' }}
+                onChange={onCameraFilesChange}
                 disabled={uploadingEvidencia}
               />
-              <small className="text-muted">
+              <input
+                ref={galleryInputRef}
+                id="evidenciaFotos"
+                type="file"
+                accept="image/*"
+                multiple
+                style={{ display: 'none' }}
+                onChange={onFilesChange}
+                disabled={uploadingEvidencia}
+              />
+
+              <div className="d-flex gap-2 flex-wrap">
+                <Button
+                  type="button"
+                  variant="outline-primary"
+                  onClick={() => cameraInputRef.current?.click()}
+                  disabled={uploadingEvidencia}
+                >
+                  <FaCamera className="me-1" /> Tomar foto
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline-secondary"
+                  onClick={() => galleryInputRef.current?.click()}
+                  disabled={uploadingEvidencia}
+                >
+                  <FaImages className="me-1" /> Elegir de galería
+                </Button>
+              </div>
+
+              <small className="text-muted d-block mt-2">
                 Formatos permitidos: JPG, PNG, GIF, WEBP, HEIC. Tamaño máximo: 5MB por archivo.
               </small>
             </div>

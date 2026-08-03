@@ -175,6 +175,13 @@ const endPoints = {
         pagination: (page, limit) => `${API}/api/${VERSION}/traslados/paginar?page=${page}&limit=${limit}`,
         create: `${API}/api/${VERSION}/traslados`,
         execute: `${API}/api/${VERSION}/traslados/ejecutar`,
+        crearPendiente: `${API}/api/${VERSION}/traslados/pendiente`,
+        listarPendientes: (almacenes, tipo) => `${API}/api/${VERSION}/traslados/pendientes/listar?almacenes=${encodeURIComponent(almacenes)}&tipo=${tipo}`,
+        contarPendientes: (almacenes) => `${API}/api/${VERSION}/traslados/pendientes/contar?almacenes=${encodeURIComponent(almacenes)}`,
+        aceptar: (id) => `${API}/api/${VERSION}/traslados/${id}/aceptar`,
+        rechazar: (id) => `${API}/api/${VERSION}/traslados/${id}/rechazar`,
+        listarEvidencias: (id) => `${API}/api/${VERSION}/traslados/${id}/evidencias/listar`,
+        listarArticulos: (id) => `${API}/api/${VERSION}/traslados/${id}/articulos/listar`,
         update: (id) => `${API}/api/${VERSION}/traslados/modificar/${id}`,
         delete: (id) => `${API}/api/${VERSION}/traslados/${id}`
     },
@@ -489,6 +496,7 @@ const endPoints = {
         subirEvidencias: `${API}/api/${VERSION}/googleDrive/subir-evidencias`,
         subirEvidenciaUnica: `${API}/api/${VERSION}/googleDrive/subir-evidencia`,
         listarEvidencias: (carpetaId) => `${API}/api/${VERSION}/googleDrive/listar-evidencias/${carpetaId}`,
+        imagen: (fileId) => `${API}/api/${VERSION}/googleDrive/imagen/${fileId}`,
         test: `${API}/api/${VERSION}/googleDrive/test-drive`,
     },
     registroTemperatura: {

@@ -98,6 +98,7 @@ const botones = [
     "programador_edicion",
     "programador_actualizar_pendientes",
     "programador_sellos_configuracion",
+    "evidencias_ver_carpeta_drive",
 ];
 
 const menuPrincipal = () => {
