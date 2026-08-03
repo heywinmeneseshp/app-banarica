@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { FaPlus, FaMinus } from 'react-icons/fa';
+import { FaPlus, FaMinus, FaCamera, FaImages, FaTimes } from 'react-icons/fa';
 import Loader from '@components/shared/Loader';
 
 import { filtrarSemanasRangoProgramador } from '@services/api/semanas';
@@ -13,10 +13,14 @@ import { encontrarUnSerial, usarSeriales } from '@services/api/seguridad';
 import { listarMotivoDeUso } from '@services/api/motivoDeUso';
 import { listarMotivoDeRechazo } from '@services/api/motivoDeRechazo';
 import { agregarRechazo } from '@services/api/rechazos';
+import { subirEvidencias } from '@services/api/googleDrive';
 import { filterActiveContainerRows, getLatestContainerRowByCode, getUniqueLatestContainerRowsByCode } from '@utils/contenedorEstado';
 
 const MOTIVO_LLENADO_CONTENEDOR = "Lleneado de contenedor";
 const SERIALES_A_VERIFICAR = ["kit", "termografo"];
+const EVIDENCIA_MAX_FILES = 20;
+const EVIDENCIA_MAX_FILE_SIZE = 5 * 1024 * 1024;
+const EVIDENCIA_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
 
 const JERARQUIA_CAMPOS = {
   semana: ['consignee', 'buque', 'destino', 'booking', 'contenedor'],
@@ -52,6 +56,11 @@ const FormularioDinamico = () => {
   const [selectedContenedor, setSelectedContenedor] = useState(null);
   const [sectionsProduct, setSectionsProduct] = useState([]);
   const [sectionsRechazo, setSectionsRechazo] = useState([]);
+  const [evidenciaFiles, setEvidenciaFiles] = useState([]);
+  const [uploadingEvidencia, setUploadingEvidencia] = useState(false);
+  const [evidenciaDriveFolderId, setEvidenciaDriveFolderId] = useState('');
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
 
   const { today, fechaInicial, fechaFinal } = useMemo(() => {
     const d = new Date();
@@ -69,12 +78,21 @@ const FormularioDinamico = () => {
 
   const init = useCallback(async () => {
     try {
-      const [moduloSemana, prods, motivos, alms] = await Promise.all([
+      const [moduloSemana, prods, motivos, alms, driveModuloListado] = await Promise.all([
         encontrarModulo("Semana", { syncWeeks: false }),
         listarCombos(),
         listarMotivoDeRechazo(),
-        listarAlmacenes()
+        listarAlmacenes(),
+        encontrarModulo('Google_drive_evidencias_listado').catch(() => [])
       ]);
+
+      try {
+        const driveDetalles = driveModuloListado?.[0]?.detalles;
+        if (driveDetalles) {
+          const driveConfig = JSON.parse(driveDetalles);
+          if (driveConfig?.carpetaID) setEvidenciaDriveFolderId(driveConfig.carpetaID);
+        }
+      } catch { /* carpeta Drive listado no configurada aun */ }
 
       const weeks = await filtrarSemanasRangoProgramador({
         anho_actual: moduloSemana[0]?.anho_actual,
@@ -201,6 +219,71 @@ const FormularioDinamico = () => {
     setSectionsRechazo((prev) =>
       prev.map((row) => (row.id === id ? { ...row, [field]: value } : row))
     );
+  };
+
+  const agregarEvidenciaFiles = (fileList) => {
+    const nuevos = Array.from(fileList || []);
+    if (!nuevos.length) return;
+
+    const combinados = [...evidenciaFiles, ...nuevos];
+
+    if (combinados.length > EVIDENCIA_MAX_FILES) {
+      window.alert(`Solo puedes subir maximo ${EVIDENCIA_MAX_FILES} fotos.`);
+      return;
+    }
+
+    const invalido = nuevos.find(
+      (file) => !EVIDENCIA_ALLOWED_TYPES.includes(file.type) || file.size > EVIDENCIA_MAX_FILE_SIZE
+    );
+
+    if (invalido) {
+      window.alert(`El archivo ${invalido.name} no es valido. Usa JPG, PNG, GIF o WEBP de maximo 5MB.`);
+      return;
+    }
+
+    setEvidenciaFiles(combinados);
+  };
+
+  const removerEvidenciaFile = (idx) => {
+    setEvidenciaFiles((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const subirEvidenciasLlenado = async () => {
+    if (!selectedContenedor) {
+      window.alert("Selecciona un contenedor antes de subir evidencias.");
+      return;
+    }
+
+    if (!evidenciaFiles.length) {
+      window.alert("Selecciona al menos una foto para subir.");
+      return;
+    }
+
+    if (!evidenciaDriveFolderId) {
+      window.alert("La carpeta de evidencias no esta configurada. Contacta a un administrador.");
+      return;
+    }
+
+    setUploadingEvidencia(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('listado_id', selectedContenedor.id);
+      formData.append('semana', filtros.semana || '');
+      formData.append('fecha', inputsRef.current.fecha?.value || today);
+      formData.append('item', selectedContenedor.Contenedor?.contenedor || `listado-${selectedContenedor.id}`);
+      formData.append('carpetaID', evidenciaDriveFolderId);
+      evidenciaFiles.forEach((file) => formData.append('fotos', file));
+
+      await subirEvidencias(formData);
+
+      window.alert(`Se subieron ${evidenciaFiles.length} fotos exitosamente.`);
+      setEvidenciaFiles([]);
+    } catch (error) {
+      window.alert(error.message || "No fue posible subir las evidencias.");
+    } finally {
+      setUploadingEvidencia(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -400,6 +483,88 @@ const FormularioDinamico = () => {
         </div>
 
         <div className="row my-3">
+          <div className="col-12">
+            <h5 className="mb-2">Evidencia Fotografica</h5>
+            {!selectedContenedor && (
+              <div className="alert alert-secondary py-2 mb-2">
+                Selecciona un contenedor existente para habilitar la carga de evidencias.
+              </div>
+            )}
+
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                agregarEvidenciaFiles(e.target.files);
+                e.target.value = '';
+              }}
+            />
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                agregarEvidenciaFiles(e.target.files);
+                e.target.value = '';
+              }}
+            />
+
+            <div className="d-flex gap-2 flex-wrap mb-2">
+              <button
+                type="button"
+                className="btn btn-outline-primary"
+                disabled={!selectedContenedor || uploadingEvidencia}
+                onClick={() => cameraInputRef.current?.click()}
+              >
+                <FaCamera className="me-1" /> Tomar foto
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                disabled={!selectedContenedor || uploadingEvidencia}
+                onClick={() => galleryInputRef.current?.click()}
+              >
+                <FaImages className="me-1" /> Elegir de galeria
+              </button>
+              <button
+                type="button"
+                className="btn btn-success"
+                disabled={!selectedContenedor || uploadingEvidencia || evidenciaFiles.length === 0}
+                onClick={subirEvidenciasLlenado}
+              >
+                {uploadingEvidencia ? 'Subiendo...' : `Subir evidencias (${evidenciaFiles.length})`}
+              </button>
+            </div>
+
+            {evidenciaFiles.length > 0 && (
+              <ul className="list-group list-group-flush mb-2">
+                {evidenciaFiles.map((file, idx) => (
+                  <li key={idx} className="list-group-item small d-flex justify-content-between align-items-center px-0">
+                    <span>
+                      {file.name}
+                      <span className="text-muted ms-2">({(file.size / 1024).toFixed(1)} KB)</span>
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-link text-danger p-0"
+                      onClick={() => removerEvidenciaFile(idx)}
+                      disabled={uploadingEvidencia}
+                    >
+                      <FaTimes />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        <div className="row my-3">
           <div className="col-md-6">
             <button
               type="button"
@@ -432,7 +597,7 @@ const FormularioDinamico = () => {
               >
                 <option value="">Productor</option>
                 {options.almacenByUser.map((item) => (
-                  <option key={getItemId(item)} value={getItemId(item)}>
+                  <option key={getItemId(item)} value={item.consecutivo}>
                     {item.consecutivo}
                   </option>
                 ))}

@@ -26,7 +26,7 @@ export const DEFAULT_EVIDENCIAS_DRIVE_FOLDER_ID = process.env.NEXT_PUBLIC_EVIDEN
 export const EVIDENCIAS_DRIVE_MODULE = 'Google_drive_evidencias';
 export const EVIDENCIA_MAX_FILES = 20;
 export const EVIDENCIA_MAX_FILE_SIZE = 5 * 1024 * 1024;
-export const EVIDENCIA_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+export const EVIDENCIA_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
 
 export const COLUMN_OPTIONS = [
   { id: 'semana', label: 'Sem' },

@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { FaCheckCircle, FaCog, FaExchangeAlt } from "react-icons/fa";
+import { FaCheckCircle, FaCog, FaExchangeAlt, FaEdit, FaSave } from "react-icons/fa";
 import { GrCircleInformation } from "react-icons/gr";
 import { Dropdown } from "react-bootstrap";
 
 import Paginacion from "@components/shared/Tablas/Paginacion";
 import CorregirInspeccionContenedorModal from "@components/seguridad/CorregirInspeccionContenedorModal";
 import { encontrarModulo } from "@services/api/configuracion";
-import { paginarInspecciones } from "@services/api/inspecciones";
+import { actualizarInspeccion, paginarInspecciones } from "@services/api/inspecciones";
 import { aprobarInspeccionLleno, corregirInspeccionContenedor, rechazarInspeccionLleno } from "@services/api/seguridad";
 import InsumoConfig from "@components/shared/InsumoConfig";
 import { useAuth } from "@hooks/useAuth";
@@ -26,6 +26,10 @@ export default function Inspeccionados() {
     const [pagination, setPagination] = useState(1);
     const [filtersVersion, setFiltersVersion] = useState(0);
     const [canCorrectContainer, setCanCorrectContainer] = useState(false);
+    const [canEditHoras, setCanEditHoras] = useState(false);
+    const [editando, setEditando] = useState(null);
+    const [valoresEditados, setValoresEditados] = useState({});
+    const [guardandoEdicion, setGuardandoEdicion] = useState(false);
     const [inspeccionSeleccionada, setInspeccionSeleccionada] = useState(null);
     const [corrigiendoContenedor, setCorrigiendoContenedor] = useState(false);
     const [aprobandoInspeccionId, setAprobandoInspeccionId] = useState(null);
@@ -88,11 +92,13 @@ export default function Inspeccionados() {
         const loadPermissions = async () => {
             if (user?.id_rol === "Super administrador") {
                 setCanCorrectContainer(true);
+                setCanEditHoras(true);
                 return;
             }
 
             if (!user?.username) {
                 setCanCorrectContainer(false);
+                setCanEditHoras(false);
                 return;
             }
 
@@ -102,9 +108,11 @@ export default function Inspeccionados() {
                 const detalles = detallesRaw ? JSON.parse(detallesRaw) : {};
                 const botones = Array.isArray(detalles?.botones) ? detalles.botones : [];
                 setCanCorrectContainer(botones.includes("inspeccionados_corregir_contenedor"));
+                setCanEditHoras(botones.includes("inspeccionados_editar_horas"));
             } catch (error) {
                 console.error("Error cargando permisos de correccion de contenedor:", error);
                 setCanCorrectContainer(false);
+                setCanEditHoras(false);
             }
         };
 
@@ -205,6 +213,67 @@ export default function Inspeccionados() {
         }
 
         return { label: "Pendiente", className: "bg-warning text-dark" };
+    };
+
+    const formatHoraInput = (hora) => {
+        if (!hora) return "";
+        return String(hora).slice(0, 5);
+    };
+
+    const formatDateInput = (dateString) => {
+        if (!dateString) return "";
+        const d = new Date(dateString);
+        if (!isNaN(d.getTime())) {
+            const dia = String(d.getUTCDate()).padStart(2, "0");
+            const mes = String(d.getUTCMonth() + 1).padStart(2, "0");
+            return `${d.getUTCFullYear()}-${mes}-${dia}`;
+        }
+        const match = String(dateString).match(/^(\d{4}-\d{2}-\d{2})/);
+        return match ? match[0] : "";
+    };
+
+    const abrirEdicion = (item) => {
+        const inspeccion = item?.Inspeccion || {};
+        setValoresEditados({
+            fecha_inspeccion: formatDateInput(inspeccion.fecha_inspeccion),
+            agente: inspeccion.agente || "",
+            hora_inicio: formatHoraInput(inspeccion.hora_inicio),
+            hora_fin: formatHoraInput(inspeccion.hora_fin),
+        });
+        setEditando(item?.Inspeccion?.id);
+    };
+
+    const cerrarEdicion = () => {
+        setEditando(null);
+        setValoresEditados({});
+    };
+
+    const handleChange = (e, field) => {
+        setValoresEditados({ ...valoresEditados, [field]: e.target.value });
+    };
+
+    const guardarEdicion = async () => {
+        const idInspeccion = editando;
+        if (!idInspeccion) {
+            return;
+        }
+
+        try {
+            setGuardandoEdicion(true);
+            await actualizarInspeccion(idInspeccion, {
+                fecha_inspeccion: valoresEditados.fecha_inspeccion,
+                agente: valoresEditados.agente,
+                hora_inicio: valoresEditados.hora_inicio,
+                hora_fin: valoresEditados.hora_fin,
+            });
+            cerrarEdicion();
+            await fetchSeriales();
+        } catch (error) {
+            console.error("Error actualizando inspeccion:", error);
+            window.alert("Error al guardar los cambios de la inspeccion.");
+        } finally {
+            setGuardandoEdicion(false);
+        }
     };
 
     const formatDateToDDMMYYYY = (dateString) => {
@@ -314,6 +383,7 @@ export default function Inspeccionados() {
                             <th className="text-center text-nowrap">Usuario</th>
                             {user?.id_rol === "Super administrador" && <th className="text-center text-nowrap">Accion</th>}
                             {canCorrectContainer && <th className="text-center text-nowrap">Corregir</th>}
+                            {canEditHoras && <th className="text-center text-nowrap">Editar</th>}
                             {user?.id_rol === "Super administrador" && <th className="text-center text-nowrap">Info</th>}
                         </tr>
                     </thead>
@@ -332,13 +402,61 @@ export default function Inspeccionados() {
                             return (
                                 <tr key={key}>
                                     <td className="text-center">{getWeekConsecutive(item) || "-"}</td>
-                                    <td className="text-center">{formatDateToDDMMYYYY(item?.Inspeccion?.fecha_inspeccion)}</td>
+                                    <td className="text-center">
+                                        {canEditHoras && editando === item?.Inspeccion?.id ? (
+                                            <input
+                                                type="date"
+                                                value={valoresEditados.fecha_inspeccion || ""}
+                                                onChange={(e) => handleChange(e, "fecha_inspeccion")}
+                                                className="form-control form-control-sm d-inline-block"
+                                                style={{ width: "135px" }}
+                                            />
+                                        ) : (
+                                            formatDateToDDMMYYYY(item?.Inspeccion?.fecha_inspeccion)
+                                        )}
+                                    </td>
                                     <td className="text-center">{item?.contenedor?.contenedor}</td>
                                     <td className="text-center">{item?.serial}</td>
                                     <td className="text-center">{item?.MotivoDeUso?.motivo_de_uso}</td>
-                                    <td className="text-center">{item?.Inspeccion?.agente}</td>
-                                    <td className="text-center">{item?.Inspeccion?.hora_inicio}</td>
-                                    <td className="text-center">{item?.Inspeccion?.hora_fin}</td>
+                                    <td className="text-center">
+                                        {canEditHoras && editando === item?.Inspeccion?.id ? (
+                                            <input
+                                                type="text"
+                                                value={valoresEditados.agente || ""}
+                                                onChange={(e) => handleChange(e, "agente")}
+                                                className="form-control form-control-sm d-inline-block"
+                                                style={{ width: "110px" }}
+                                            />
+                                        ) : (
+                                            item?.Inspeccion?.agente
+                                        )}
+                                    </td>
+                                    <td className="text-center">
+                                        {canEditHoras && editando === item?.Inspeccion?.id ? (
+                                            <input
+                                                type="time"
+                                                value={valoresEditados.hora_inicio || ""}
+                                                onChange={(e) => handleChange(e, "hora_inicio")}
+                                                className="form-control form-control-sm d-inline-block"
+                                                style={{ width: "100px" }}
+                                            />
+                                        ) : (
+                                            item?.Inspeccion?.hora_inicio
+                                        )}
+                                    </td>
+                                    <td className="text-center">
+                                        {canEditHoras && editando === item?.Inspeccion?.id ? (
+                                            <input
+                                                type="time"
+                                                value={valoresEditados.hora_fin || ""}
+                                                onChange={(e) => handleChange(e, "hora_fin")}
+                                                className="form-control form-control-sm d-inline-block"
+                                                style={{ width: "100px" }}
+                                            />
+                                        ) : (
+                                            item?.Inspeccion?.hora_fin
+                                        )}
+                                    </td>
                                     <td className="text-center">{`${item?.usuario?.nombre || ""} ${item?.usuario?.apellido || ""}`.trim()}</td>
                                     {user?.id_rol === "Super administrador" && (
                                         <td className="text-center">
@@ -394,6 +512,24 @@ export default function Inspeccionados() {
                                                 </button>
                                             ) : (
                                                 <span className="text-muted">-</span>
+                                            )}
+                                        </td>
+                                    )}
+                                    {canEditHoras && (
+                                        <td className="text-center">
+                                            {editando === item?.Inspeccion?.id ? (
+                                                <FaSave
+                                                    onClick={() => guardarEdicion(item)}
+                                                    title={guardandoEdicion ? "Guardando..." : "Guardar cambios"}
+                                                    style={{ cursor: guardandoEdicion ? "wait" : "pointer", color: "black", fontSize: "1.2rem", opacity: guardandoEdicion ? 0.5 : 1 }}
+                                                />
+                                            ) : (
+                                                <FaEdit
+                                                    onClick={() => abrirEdicion(item)}
+                                                    title="Editar fecha, agente y horas"
+                                                    disabled={!item?.Inspeccion?.id}
+                                                    style={{ cursor: "pointer", color: "#997a1c", fontSize: "1.2rem", opacity: item?.Inspeccion?.id ? 1 : 0.4 }}
+                                                />
                                             )}
                                         </td>
                                     )}

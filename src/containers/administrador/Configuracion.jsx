@@ -27,6 +27,7 @@ const DEFAULT_EMAIL_FORM = {
 };
 const DEFAULT_EVIDENCIAS_DRIVE_FOLDER_ID = process.env.NEXT_PUBLIC_EVIDENCIAS_DRIVE_FOLDER_ID;
 const EVIDENCIAS_DRIVE_MODULE = 'Google_drive_evidencias';
+const EVIDENCIAS_DRIVE_MODULE_LISTADO = 'Google_drive_evidencias_listado';
 
 const parseEvidenciasDriveConfig = (config = {}) => {
     if (!config?.detalles) {
@@ -90,6 +91,7 @@ export default function Configuracion({ setOpen }) {
     const [fechaInicioSemana1, setFechaInicioSemana1] = useState("");
     const [totalSemanasAnho, setTotalSemanasAnho] = useState("");
     const [evidenciasDriveFolderId, setEvidenciasDriveFolderId] = useState(DEFAULT_EVIDENCIAS_DRIVE_FOLDER_ID);
+    const [evidenciasDriveFolderIdListado, setEvidenciasDriveFolderIdListado] = useState(DEFAULT_EVIDENCIAS_DRIVE_FOLDER_ID);
     const [isRunningPasswordPolicy, setIsRunningPasswordPolicy] = useState(false);
     const [passwordPolicyResult, setPasswordPolicyResult] = useState(null);
     // Email config states
@@ -124,9 +126,10 @@ export default function Configuracion({ setOpen }) {
                     encontrarModulo("Correos_alerta"),
                     encontrarEmailConfig(),
                     encontrarModulo(EVIDENCIAS_DRIVE_MODULE),
+                    encontrarModulo(EVIDENCIAS_DRIVE_MODULE_LISTADO),
                 ]);
 
-                const [segResult, semResult, empResult, userResult, corrResult, emailResult, driveResult] =
+                const [segResult, semResult, empResult, userResult, corrResult, emailResult, driveResult, driveListadoResult] =
                     results;
 
                 let moduloSeguridad = {};
@@ -136,6 +139,7 @@ export default function Configuracion({ setOpen }) {
                 let moduloCorreos = {};
                 let emailConfigData = {};
                 let driveConfig = {};
+                let driveListadoConfig = {};
 
                 if (segResult.status === 'fulfilled') {
                     [moduloSeguridad = {}] = segResult.value || [];
@@ -179,9 +183,16 @@ export default function Configuracion({ setOpen }) {
                     console.warn('No se pudo cargar configuracion Drive:', driveResult.reason?.message);
                 }
 
+                if (driveListadoResult.status === 'fulfilled') {
+                    [driveListadoConfig = {}] = driveListadoResult.value || [];
+                } else {
+                    console.warn('No se pudo cargar configuracion Drive Listado:', driveListadoResult.reason?.message);
+                }
+
                 setSecurityCheck(Boolean(moduloSeguridad.habilitado));
                 setEmailConfigRaw(emailConfigData || {});
                 setEvidenciasDriveFolderId(parseEvidenciasDriveConfig(driveConfig).carpetaID);
+                setEvidenciasDriveFolderIdListado(parseEvidenciasDriveConfig(driveListadoConfig).carpetaID);
                 setSemana(moduloSemana || {});
                 setEmpresa(empresaData || {});
 
@@ -263,6 +274,14 @@ export default function Configuracion({ setOpen }) {
                 }),
             });
             if (!driveRes) throw new Error('Error al actualizar carpeta de evidencias');
+
+            const driveListadoRes = await actualizarModulo({
+                modulo: EVIDENCIAS_DRIVE_MODULE_LISTADO,
+                detalles: JSON.stringify({
+                    carpetaID: evidenciasDriveFolderIdListado.trim() || DEFAULT_EVIDENCIAS_DRIVE_FOLDER_ID,
+                }),
+            });
+            if (!driveListadoRes) throw new Error('Error al actualizar carpeta de evidencias Listado');
 
             const empRes = await actualizarEmpresa({
                 razonSocial,
@@ -540,7 +559,7 @@ export default function Configuracion({ setOpen }) {
                                     )}
                                 </div>
 
-                                <span>Carpeta evidencias Drive:</span>
+                                <span>Carpeta evidencias Drive (Programador):</span>
                                 <InputGroup size="sm">
                                     <Form.Control
                                         id="evidencias_drive_folder_id"
@@ -551,6 +570,18 @@ export default function Configuracion({ setOpen }) {
                                         placeholder="ID de carpeta de Google Drive"
                                         value={evidenciasDriveFolderId}
                                         onChange={(e) => setEvidenciasDriveFolderId(e.target.value)}
+                                    />
+                                </InputGroup>
+                                <span>Carpeta evidencias Drive (Listado Contenedores):</span>
+                                <InputGroup size="sm">
+                                    <Form.Control
+                                        id="evidencias_drive_folder_id_listado"
+                                        name="evidencias_drive_folder_id_listado"
+                                        type="text"
+                                        className={styles1.input_semana}
+                                        placeholder="ID de carpeta de Google Drive"
+                                        value={evidenciasDriveFolderIdListado}
+                                        onChange={(e) => setEvidenciasDriveFolderIdListado(e.target.value)}
                                     />
                                 </InputGroup>
                             </div>

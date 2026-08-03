@@ -65,13 +65,13 @@ function ProgramadorEvidenceModal({
                 id="evidenciaFotos"
                 type="file"
                 className="form-control"
-                accept="image/jpeg,image/png,image/gif,image/webp"
+                accept="image/*"
                 onChange={onFilesChange}
                 multiple
                 disabled={uploadingEvidencia}
               />
               <small className="text-muted">
-                Formatos permitidos: JPG, PNG, GIF, WEBP. Tamaño máximo: 5MB por archivo.
+                Formatos permitidos: JPG, PNG, GIF, WEBP, HEIC. Tamaño máximo: 5MB por archivo.
               </small>
             </div>
 

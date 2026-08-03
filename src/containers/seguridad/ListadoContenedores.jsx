@@ -11,6 +11,9 @@ import InsumoConfig from '@components/shared/InsumoConfig';
 import ListadoConfig from '@components/shared/ListadoConfig';
 import CrearQRCode from '@components/seguridad/CrearQRcode';
 import { encontrarModulo } from '@services/api/configuracion';
+import { useEvidencias } from '@containers/programacion/hooks/useEvidencias';
+import ProgramadorEvidenceModal from '@containers/programacion/ProgramadorEvidenceModal';
+import { BsCameraFill } from 'react-icons/bs';
 import { filtrarProductos } from '@services/api/productos';
 import { paginarEmbarques } from '@services/api/embarques';
 import { actualizarContenedor } from '@services/api/contenedores';
@@ -143,9 +146,41 @@ const ListadoContenedores = () => {
     fecha_inicial: '', fecha_final: ''
   });
   const [inlineMessage, setInlineMessage] = useState(null);
+  const [evidenciasDriveFolderIdListado, setEvidenciasDriveFolderIdListado] = useState('');
 
   const { state, updateState } = useListadoState();
   const debouncedFilters = useDebounce(filters, 500);
+
+  const updateLocalRowListado = useCallback((id, updater) => {
+    updateState((prev) => ({
+      ...prev,
+      tableData: prev.tableData.map((row) => (row.id === id ? updater(row) : row)),
+    }));
+  }, [updateState]);
+
+  const setAlertListado = useCallback(({ mensaje, color }) => {
+    setInlineMessage({ message: mensaje, variant: color });
+  }, [setInlineMessage]);
+
+  const {
+    showEvidenciaModal,
+    selectedProgramacion: selectedListadoEvidencia,
+    uploadingEvidencia,
+    evidenciaFiles,
+    evidenciaResultados,
+    setEvidenciaFiles,
+    setEvidenciaResultados,
+    cerrarModalEvidencia,
+    abrirModalEvidencia,
+    handleEvidenciaFilesChange,
+    subirEvidenciasProgramacion: subirEvidenciasListado,
+  } = useEvidencias({
+    evidenciasDriveFolderId: evidenciasDriveFolderIdListado,
+    updateLocalRow: updateLocalRowListado,
+    setAlert: setAlertListado,
+    setReloadKey: () => {},
+    entityType: 'listado',
+  });
   const [draftLimit, setDraftLimit] = useState(() => String(state.limit));
 
   // Memoized values
@@ -572,14 +607,23 @@ const ListadoContenedores = () => {
         return acc;
       }, {});
 
-      const [modulo, embarquesRes, productoRes, transportadorasRes, listadoList, uniqueRes] = await Promise.all([
+      const [modulo, embarquesRes, productoRes, transportadorasRes, listadoList, uniqueRes, driveListadoModulo] = await Promise.all([
         encontrarModulo(`Relación_listado_${user.username}`).catch(() => []),
         paginarEmbarques(1, 20, {}),
         paginarCombos(1, 20, "", {isBlock: false}),
         listarTransportadoras(),
         paginarListado(state.pagination, state.limit, filterBody),
         contarUnicosListado(filterBody).catch(() => ({ total: 0 })),
+        encontrarModulo('Google_drive_evidencias_listado').catch(() => []),
       ]);
+
+      try {
+        const driveDetalles = driveListadoModulo?.[0]?.detalles;
+        if (driveDetalles) {
+          const driveConfig = JSON.parse(driveDetalles);
+          if (driveConfig?.carpetaID) setEvidenciasDriveFolderIdListado(driveConfig.carpetaID);
+        }
+      } catch { /* carpeta Drive listado no configurada aún */ }
 
       // Configuración de insumos
       const rawDetalles = modulo?.[0]?.detalles;
@@ -908,6 +952,26 @@ const ListadoContenedores = () => {
         <td className="text-custom-small text-center">
           <button
             type="button"
+            style={{ all: 'unset', cursor: evidenciasDriveFolderIdListado ? 'pointer' : 'not-allowed' }}
+            title={
+              !evidenciasDriveFolderIdListado
+                ? 'Carpeta de evidencias no configurada. Ve a Configuraciones para agregarla.'
+                : row.evidencia_cargada
+                  ? 'Evidencia cargada'
+                  : 'Subir evidencia'
+            }
+            onClick={() => {
+              if (!evidenciasDriveFolderIdListado) return;
+              abrirModalEvidencia({ ...row, contenedorLabel: Contenedor?.contenedor || '', semanaLabel: row.Embarque?.semana?.consecutivo || '', blLabel: row.Embarque?.bl || '' });
+            }}
+          >
+            <BsCameraFill style={{ color: !evidenciasDriveFolderIdListado ? '#ccc' : row.evidencia_cargada ? '#7e838890' : '#319c5c', fontSize: 16 }} />
+          </button>
+        </td>
+
+        <td className="text-custom-small text-center">
+          <button
+            type="button"
             style={{ all: 'unset', cursor: 'pointer' }}
             onClick={() => openTracecode(Contenedor)}
             title={`Ver detalle de ${Contenedor?.contenedor || "contenedor"}`}
@@ -917,7 +981,7 @@ const ListadoContenedores = () => {
         </td>
       </tr>
     );
-  }, [state.configuracionTabla, state.isEditable, state.check, state.tableData, state.bol, state.configuracionInsumos, state.embarques, state.almacenes, state.productos, state.transportadoras, handleCellEdit, handleDatalist, onChangeCasilla, handleChecks, openTracecode, updateState]);
+  }, [state.configuracionTabla, state.isEditable, state.check, state.tableData, state.bol, state.configuracionInsumos, state.embarques, state.almacenes, state.productos, state.transportadoras, handleCellEdit, handleDatalist, onChangeCasilla, handleChecks, openTracecode, updateState, abrirModalEvidencia, evidenciasDriveFolderIdListado]);
 
   return (
     <>
@@ -1089,6 +1153,7 @@ const ListadoContenedores = () => {
               {renderHeader("Peso Bruto", true)}
               {renderHeader("Peso Neto", true)}
               {renderHeader("QR", true)}
+              <th className="text-custom-small text-center text-white bg-secondary">Evid.</th>
               <th className="text-custom-small text-center text-white bg-secondary">Detalle</th>
             </tr>
           </thead>
@@ -1191,6 +1256,20 @@ const ListadoContenedores = () => {
             id_lugar_de_llenado: null, id_producto: null, cajas_unidades: null,
             id_transportadora: null,
           }}
+        />
+      )}
+      {showEvidenciaModal && (
+        <ProgramadorEvidenceModal
+          show={showEvidenciaModal}
+          selectedProgramacion={selectedListadoEvidencia}
+          evidenceFiles={evidenciaFiles}
+          evidenceResults={evidenciaResultados}
+          uploadingEvidencia={uploadingEvidencia}
+          onClose={cerrarModalEvidencia}
+          onFilesChange={handleEvidenciaFilesChange}
+          onRemoveFile={(idx) => { const newFiles = [...evidenciaFiles]; newFiles.splice(idx, 1); setEvidenciaFiles(newFiles); }}
+          onUpload={subirEvidenciasListado}
+          onReset={() => { setEvidenciaResultados(null); setEvidenciaFiles([]); }}
         />
       )}
     </>

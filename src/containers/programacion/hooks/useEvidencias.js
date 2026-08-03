@@ -6,7 +6,7 @@ import {
   EVIDENCIA_ALLOWED_TYPES,
 } from '../programadorUtils';
 
-export function useEvidencias({ evidenciasDriveFolderId, updateLocalRow, setAlert, setReloadKey }) {
+export function useEvidencias({ evidenciasDriveFolderId, updateLocalRow, setAlert, setReloadKey, entityType = 'programacion' }) {
   const [showEvidenciaModal, setShowEvidenciaModal] = useState(false);
   const [selectedProgramacion, setSelectedProgramacion] = useState(null);
   const [uploadingEvidencia, setUploadingEvidencia] = useState(false);
@@ -82,7 +82,8 @@ export function useEvidencias({ evidenciasDriveFolderId, updateLocalRow, setAler
         || `programacion-${selectedProgramacion.id || selectedProgramacion.consecutivo || 'sin-id'}`;
 
       const formData = new FormData();
-      formData.append('programacion_id', selectedProgramacion.id || selectedProgramacion.consecutivo || '');
+      const idFieldName = entityType === 'listado' ? 'listado_id' : 'programacion_id';
+      formData.append(idFieldName, selectedProgramacion.id || selectedProgramacion.consecutivo || '');
       formData.append('semana', selectedProgramacion.semanaLabel || selectedProgramacion.semana || '');
       formData.append('fecha', selectedProgramacion.fecha || '');
       formData.append('item', itemEvidencia);
