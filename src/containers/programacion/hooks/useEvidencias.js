@@ -91,11 +91,13 @@ export function useEvidencias({ evidenciasDriveFolderId, updateLocalRow, setAler
       formData.append('contenedor', selectedProgramacion.contenedorLabel || selectedProgramacion.contenedor || '');
       formData.append(
         'finca_destino',
-        selectedProgramacion.destino
-          || selectedProgramacion.destinoLabel
-          || selectedProgramacion.ruta?.ubicacion_2?.ubicacion
-          || selectedProgramacion.ubicacion2
-          || ''
+        entityType === 'listado'
+          ? (selectedProgramacion.almacen?.consecutivo || selectedProgramacion.almacen?.nombre || '')
+          : (selectedProgramacion.destino
+            || selectedProgramacion.destinoLabel
+            || selectedProgramacion.ruta?.ubicacion_2?.ubicacion
+            || selectedProgramacion.ubicacion2
+            || '')
       );
       formData.append('bl', selectedProgramacion.blLabel || selectedProgramacion.bl || '');
       formData.append('producto', selectedProgramacion.productoLabel || '');

@@ -79,7 +79,7 @@ export default function Transbordados() {
 
         const res = await paginarTransbordo(1, 5000, filtrosExcel);
         const rows = (res?.data || []).map((item) => ({
-            "ID": item?.id,
+            "Semana": item?.contenedorNuevo?.Listados?.[0]?.Embarque?.semana?.consecutivo || "No registrado",
             "Contenedor origen": item?.contenedorViejo?.contenedor || "No registrado",
             "Contenedor nuevo": item?.contenedorNuevo?.contenedor || "No registrado",
             "Fecha transbordo": formatDate(item?.fecha_transbordo),
@@ -163,7 +163,7 @@ export default function Transbordados() {
             <Table className="mb-0" striped bordered hover size="sm">
                 <thead>
                     <tr>
-                        <th className="text-center align-middle">ID</th>
+                        <th className="text-center align-middle">Semana</th>
                         <th className="text-center align-middle">Contenedor origen</th>
                         <th className="text-center align-middle">Contenedor nuevo</th>
                         <th className="text-center align-middle">Fecha transbordo</th>
@@ -181,7 +181,7 @@ export default function Transbordados() {
                     ) : (
                         transbordos.map((item) => (
                             <tr key={item.id}>
-                                <td className="text-center align-middle">{item?.id}</td>
+                                <td className="text-center align-middle">{item?.contenedorNuevo?.Listados?.[0]?.Embarque?.semana?.consecutivo || "No registrado"}</td>
                                 <td className="text-center align-middle">{item?.contenedorViejo?.contenedor || "No registrado"}</td>
                                 <td className="text-center align-middle">{item?.contenedorNuevo?.contenedor || "No registrado"}</td>
                                 <td className="text-center align-middle">{formatDate(item?.fecha_transbordo)}</td>

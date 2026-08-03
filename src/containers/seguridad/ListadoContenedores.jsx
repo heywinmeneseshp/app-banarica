@@ -13,6 +13,8 @@ import CrearQRCode from '@components/seguridad/CrearQRcode';
 import { encontrarModulo } from '@services/api/configuracion';
 import { useEvidencias } from '@containers/programacion/hooks/useEvidencias';
 import ProgramadorEvidenceModal from '@containers/programacion/ProgramadorEvidenceModal';
+import VerEvidenciasModal from '@containers/programacion/VerEvidenciasModal';
+import { listarEvidencias } from '@services/api/googleDrive';
 import { BsCameraFill } from 'react-icons/bs';
 import { filtrarProductos } from '@services/api/productos';
 import { paginarEmbarques } from '@services/api/embarques';
@@ -181,6 +183,54 @@ const ListadoContenedores = () => {
     setReloadKey: () => {},
     entityType: 'listado',
   });
+
+  const [showVerEvidenciasModal, setShowVerEvidenciasModal] = useState(false);
+  const [verEvidenciasRow, setVerEvidenciasRow] = useState(null);
+  const [verEvidenciasLoading, setVerEvidenciasLoading] = useState(false);
+  const [verEvidenciasError, setVerEvidenciasError] = useState(null);
+  const [verEvidenciasFotos, setVerEvidenciasFotos] = useState([]);
+
+  const abrirVerEvidencias = useCallback(async (row) => {
+    setVerEvidenciasRow(row);
+    setShowVerEvidenciasModal(true);
+    setVerEvidenciasError(null);
+    setVerEvidenciasFotos([]);
+
+    if (!row?.evidencia_carpeta_id) {
+      setVerEvidenciasError('No hay carpeta de evidencias registrada para este contenedor.');
+      return;
+    }
+
+    setVerEvidenciasLoading(true);
+    try {
+      const res = await listarEvidencias(row.evidencia_carpeta_id);
+      setVerEvidenciasFotos(res?.data || []);
+    } catch (error) {
+      setVerEvidenciasError(error.message || 'No fue posible cargar las fotos.');
+    } finally {
+      setVerEvidenciasLoading(false);
+    }
+  }, []);
+
+  const cerrarVerEvidencias = useCallback(() => {
+    setShowVerEvidenciasModal(false);
+    setVerEvidenciasRow(null);
+    setVerEvidenciasFotos([]);
+    setVerEvidenciasError(null);
+  }, []);
+
+  const irASubirDesdeVer = useCallback(() => {
+    const row = verEvidenciasRow;
+    cerrarVerEvidencias();
+    if (row) {
+      abrirModalEvidencia({
+        ...row,
+        contenedorLabel: row.Contenedor?.contenedor || '',
+        semanaLabel: row.Embarque?.semana?.consecutivo || '',
+        blLabel: row.Embarque?.bl || '',
+      });
+    }
+  }, [verEvidenciasRow, cerrarVerEvidencias, abrirModalEvidencia]);
   const [draftLimit, setDraftLimit] = useState(() => String(state.limit));
 
   // Memoized values
@@ -952,20 +1002,24 @@ const ListadoContenedores = () => {
         <td className="text-custom-small text-center">
           <button
             type="button"
-            style={{ all: 'unset', cursor: evidenciasDriveFolderIdListado ? 'pointer' : 'not-allowed' }}
+            style={{ all: 'unset', cursor: (row.evidencia_cargada || evidenciasDriveFolderIdListado) ? 'pointer' : 'not-allowed' }}
             title={
-              !evidenciasDriveFolderIdListado
-                ? 'Carpeta de evidencias no configurada. Ve a Configuraciones para agregarla.'
-                : row.evidencia_cargada
-                  ? 'Evidencia cargada'
+              row.evidencia_cargada
+                ? 'Ver fotos cargadas'
+                : !evidenciasDriveFolderIdListado
+                  ? 'Carpeta de evidencias no configurada. Ve a Configuraciones para agregarla.'
                   : 'Subir evidencia'
             }
             onClick={() => {
+              if (row.evidencia_cargada) {
+                abrirVerEvidencias(row);
+                return;
+              }
               if (!evidenciasDriveFolderIdListado) return;
               abrirModalEvidencia({ ...row, contenedorLabel: Contenedor?.contenedor || '', semanaLabel: row.Embarque?.semana?.consecutivo || '', blLabel: row.Embarque?.bl || '' });
             }}
           >
-            <BsCameraFill style={{ color: !evidenciasDriveFolderIdListado ? '#ccc' : row.evidencia_cargada ? '#7e838890' : '#319c5c', fontSize: 16 }} />
+            <BsCameraFill style={{ color: row.evidencia_cargada ? '#319c5c' : !evidenciasDriveFolderIdListado ? '#ccc' : '#f0ad4e', fontSize: 16 }} />
           </button>
         </td>
 
@@ -981,7 +1035,7 @@ const ListadoContenedores = () => {
         </td>
       </tr>
     );
-  }, [state.configuracionTabla, state.isEditable, state.check, state.tableData, state.bol, state.configuracionInsumos, state.embarques, state.almacenes, state.productos, state.transportadoras, handleCellEdit, handleDatalist, onChangeCasilla, handleChecks, openTracecode, updateState, abrirModalEvidencia, evidenciasDriveFolderIdListado]);
+  }, [state.configuracionTabla, state.isEditable, state.check, state.tableData, state.bol, state.configuracionInsumos, state.embarques, state.almacenes, state.productos, state.transportadoras, handleCellEdit, handleDatalist, onChangeCasilla, handleChecks, openTracecode, updateState, abrirModalEvidencia, abrirVerEvidencias, evidenciasDriveFolderIdListado]);
 
   return (
     <>
@@ -1270,6 +1324,17 @@ const ListadoContenedores = () => {
           onRemoveFile={(idx) => { const newFiles = [...evidenciaFiles]; newFiles.splice(idx, 1); setEvidenciaFiles(newFiles); }}
           onUpload={subirEvidenciasListado}
           onReset={() => { setEvidenciaResultados(null); setEvidenciaFiles([]); }}
+        />
+      )}
+      {showVerEvidenciasModal && (
+        <VerEvidenciasModal
+          show={showVerEvidenciasModal}
+          loading={verEvidenciasLoading}
+          error={verEvidenciasError}
+          fotos={verEvidenciasFotos}
+          carpetaUrl={verEvidenciasRow?.evidencia_carpeta_url}
+          onClose={cerrarVerEvidencias}
+          onSubirMas={irASubirDesdeVer}
         />
       )}
     </>

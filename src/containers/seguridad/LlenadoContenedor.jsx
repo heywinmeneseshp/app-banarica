@@ -272,6 +272,7 @@ const FormularioDinamico = () => {
       formData.append('semana', filtros.semana || '');
       formData.append('fecha', inputsRef.current.fecha?.value || today);
       formData.append('item', selectedContenedor.Contenedor?.contenedor || `listado-${selectedContenedor.id}`);
+      formData.append('finca_destino', selectedContenedor.almacen?.consecutivo || selectedContenedor.almacen?.nombre || '');
       formData.append('carpetaID', evidenciaDriveFolderId);
       evidenciaFiles.forEach((file) => formData.append('fotos', file));
 
@@ -514,31 +515,37 @@ const FormularioDinamico = () => {
               }}
             />
 
-            <div className="d-flex gap-2 flex-wrap mb-2">
-              <button
-                type="button"
-                className="btn btn-outline-primary"
-                disabled={!selectedContenedor || uploadingEvidencia}
-                onClick={() => cameraInputRef.current?.click()}
-              >
-                <FaCamera className="me-1" /> Tomar foto
-              </button>
-              <button
-                type="button"
-                className="btn btn-outline-secondary"
-                disabled={!selectedContenedor || uploadingEvidencia}
-                onClick={() => galleryInputRef.current?.click()}
-              >
-                <FaImages className="me-1" /> Elegir de galeria
-              </button>
-              <button
-                type="button"
-                className="btn btn-success"
-                disabled={!selectedContenedor || uploadingEvidencia || evidenciaFiles.length === 0}
-                onClick={subirEvidenciasLlenado}
-              >
-                {uploadingEvidencia ? 'Subiendo...' : `Subir evidencias (${evidenciaFiles.length})`}
-              </button>
+            <div className="row g-2 mb-2">
+              <div className="col-md-4">
+                <button
+                  type="button"
+                  className="btn btn-outline-primary w-100"
+                  disabled={!selectedContenedor || uploadingEvidencia}
+                  onClick={() => cameraInputRef.current?.click()}
+                >
+                  <FaCamera className="me-1" /> Tomar foto
+                </button>
+              </div>
+              <div className="col-md-4">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary w-100"
+                  disabled={!selectedContenedor || uploadingEvidencia}
+                  onClick={() => galleryInputRef.current?.click()}
+                >
+                  <FaImages className="me-1" /> Elegir de galeria
+                </button>
+              </div>
+              <div className="col-md-4">
+                <button
+                  type="button"
+                  className="btn btn-success w-100"
+                  disabled={!selectedContenedor || uploadingEvidencia || evidenciaFiles.length === 0}
+                  onClick={subirEvidenciasLlenado}
+                >
+                  {uploadingEvidencia ? 'Subiendo...' : `Subir evidencias (${evidenciaFiles.length})`}
+                </button>
+              </div>
             </div>
 
             {evidenciaFiles.length > 0 && (
@@ -597,7 +604,7 @@ const FormularioDinamico = () => {
               >
                 <option value="">Productor</option>
                 {options.almacenByUser.map((item) => (
-                  <option key={getItemId(item)} value={item.consecutivo}>
+                  <option key={getItemId(item)} value={getItemId(item)}>
                     {item.consecutivo}
                   </option>
                 ))}

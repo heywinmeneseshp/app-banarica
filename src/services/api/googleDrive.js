@@ -51,6 +51,19 @@ const subirEvidenciaUnica = async (formData) => {
   }
 };
 
+const listarEvidencias = async (carpetaId) => {
+  try {
+    const response = await axios.get(
+      endPoints.googleDrive.listarEvidencias(carpetaId),
+      buildMultipartConfig()
+    );
+
+    return response.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error, 'No fue posible listar las evidencias.'));
+  }
+};
+
 const probarGoogleDrive = async () => {
   try {
     const response = await axios.get(endPoints.googleDrive.test, buildMultipartConfig());
@@ -64,4 +77,5 @@ export {
   probarGoogleDrive,
   subirEvidenciaUnica,
   subirEvidencias,
+  listarEvidencias,
 };

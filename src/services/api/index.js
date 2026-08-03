@@ -488,6 +488,7 @@ const endPoints = {
     googleDrive: {
         subirEvidencias: `${API}/api/${VERSION}/googleDrive/subir-evidencias`,
         subirEvidenciaUnica: `${API}/api/${VERSION}/googleDrive/subir-evidencia`,
+        listarEvidencias: (carpetaId) => `${API}/api/${VERSION}/googleDrive/listar-evidencias/${carpetaId}`,
         test: `${API}/api/${VERSION}/googleDrive/test-drive`,
     },
     registroTemperatura: {
