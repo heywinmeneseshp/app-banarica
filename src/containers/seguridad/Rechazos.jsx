@@ -1,8 +1,8 @@
 import Paginacion from '@components/shared/Tablas/Paginacion';
-import { actualizarRechazo, eliminarRechazo, paginarRechazos, aprobarRechazoApi } from '@services/api/rechazos';
+import { actualizarRechazo, eliminarRechazo, paginarRechazos, aprobarRechazoApi, agregarRechazo } from '@services/api/rechazos';
 import { useEffect, useRef, useState } from 'react';
 import { Form, Col, Row } from 'react-bootstrap';
-import { FaEdit } from 'react-icons/fa';
+import { FaEdit, FaPlus } from 'react-icons/fa';
 import { BsSendCheckFill } from "react-icons/bs";
 import { TiDelete } from "react-icons/ti";
 import { FaSave } from "react-icons/fa";
@@ -10,6 +10,7 @@ import { listarAlmacenes } from '@services/api/almacenes';
 import { filtrarContenedor } from '@services/api/contenedores';
 import { paginarSemanas } from '@services/api/semanas';
 import { paginarListado } from '@services/api/listado';
+import { listarMotivoDeRechazo } from '@services/api/motivoDeRechazo';
 
 
 
@@ -29,9 +30,29 @@ const Rechazos = () => {
     const [semana, setSemana] = useState([]);
     const [contenedoresSemana, setContenedoresSemana] = useState([]);
 
+    const [showCargarRechazo, setShowCargarRechazo] = useState(false);
+    const [motivosRechazo, setMotivosRechazo] = useState([]);
+    const [listadosSemanaNuevo, setListadosSemanaNuevo] = useState([]);
+    const [semanasNuevoRechazo, setSemanasNuevoRechazo] = useState([]);
+    const [guardandoRechazo, setGuardandoRechazo] = useState(false);
+    const [nuevoRechazo, setNuevoRechazo] = useState({
+        semana: '', contenedor: '', productor: '', producto: '', pallet: '', cajas: '', motivo: '', fecha: ''
+    });
+
+    // Derivados en el cliente a partir de los listados de la semana ya cargados (sin nuevas consultas)
+    const contenedoresSemanaNuevo = [...new Set(
+        listadosSemanaNuevo.map((item) => item?.Contenedor?.contenedor).filter(Boolean)
+    )];
+    const listadosContenedorNuevo = nuevoRechazo.contenedor
+        ? listadosSemanaNuevo.filter(
+            (item) => item?.Contenedor?.contenedor?.toUpperCase() === nuevoRechazo.contenedor.trim().toUpperCase()
+        )
+        : [];
+
     useEffect(() => {
         buscarSemana();
         listar();
+        listarMotivoDeRechazo().then(setMotivosRechazo).catch(() => setMotivosRechazo([]));
     }, []);
 
     const listar = async () => {
@@ -238,6 +259,99 @@ const Rechazos = () => {
         listar();
     };
 
+    const abrirCargarRechazo = () => {
+        setNuevoRechazo({
+            semana: '', contenedor: '', productor: '', producto: '', pallet: '', cajas: '', motivo: '',
+            fecha: new Date().toISOString().split('T')[0],
+        });
+        setListadosSemanaNuevo([]);
+        setSemanasNuevoRechazo([]);
+        setShowCargarRechazo(true);
+    };
+
+    const cerrarCargarRechazo = () => {
+        setShowCargarRechazo(false);
+    };
+
+    const handleChangeNuevoRechazo = (field, value) => {
+        setNuevoRechazo((prev) => ({ ...prev, [field]: value }));
+    };
+
+    // Al fijar la semana se cargan UNA sola vez todos sus listados (contenedor + producto + almacen).
+    // El campo Contenedor y su datalist filtran de esa misma carga, sin nuevas consultas.
+    const buscarSemanaNuevoRechazo = async (codigo) => {
+        handleChangeNuevoRechazo('semana', codigo);
+        handleChangeNuevoRechazo('contenedor', '');
+        handleChangeNuevoRechazo('producto', '');
+
+        try {
+            const semanasEncontradas = await paginarSemanas(codigo);
+            setSemanasNuevoRechazo(semanasEncontradas || []);
+        } catch (error) {
+            console.error("❌ Error al buscar semanas:", error);
+            setSemanasNuevoRechazo([]);
+        }
+
+        if (!codigo) {
+            setListadosSemanaNuevo([]);
+            return;
+        }
+        try {
+            const res = await paginarListado(1, 500, { semana: codigo, habilitado: true });
+            setListadosSemanaNuevo(res?.data || []);
+        } catch (error) {
+            console.error("❌ Error al buscar contenedores de la semana:", error);
+            setListadosSemanaNuevo([]);
+        }
+    };
+
+    const guardarNuevoRechazo = async () => {
+        try {
+            const { contenedor, productor, producto, pallet, cajas, motivo, fecha } = nuevoRechazo;
+
+            if (!contenedor || !productor || !producto || !cajas || !motivo || !fecha) {
+                return window.alert("⚠ Completa todos los campos obligatorios (Contenedor, Productor, Producto, Cajas, Motivo, Fecha).");
+            }
+
+            if (listadosContenedorNuevo.length === 0) {
+                return window.alert(`⚠ El contenedor "${contenedor}" no existe o no tiene productos asignados.`);
+            }
+
+            const almacen = almacenes.find((item) => item.nombre === productor);
+            if (!almacen) return window.alert(`⚠ El productor "${productor}" no existe.`);
+
+            const listadoProducto = listadosContenedorNuevo.find((item) => item?.combo?.nombre === producto);
+            if (!listadoProducto) return window.alert(`⚠ El producto "${producto}" no está asignado al contenedor "${contenedor}".`);
+
+            const motivoEncontrado = motivosRechazo.find((item) => item.motivo_rechazo === motivo);
+            if (!motivoEncontrado) return window.alert(`⚠ El motivo "${motivo}" no existe.`);
+
+            const idContenedor = listadoProducto?.Contenedor?.id || listadoProducto?.id_contenedor;
+            const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+
+            setGuardandoRechazo(true);
+
+            await agregarRechazo({
+                id_producto: listadoProducto.combo.id,
+                id_motivo_de_rechazo: motivoEncontrado.id,
+                cantidad: cajas,
+                serial_palet: pallet,
+                cod_productor: almacen.consecutivo,
+                id_contenedor: idContenedor,
+                id_usuario: usuario?.id,
+                fecha_rechazo: fecha,
+            });
+
+            setShowCargarRechazo(false);
+            await listar();
+        } catch (error) {
+            console.error("❌ Error al cargar el rechazo:", error);
+            window.alert(error?.response?.data?.message || "⚠ Se produjo un error al cargar el rechazo.");
+        } finally {
+            setGuardandoRechazo(false);
+        }
+    };
+
     const getListadoRelacionado = (rechazo) => {
         const listados = rechazo?.Contenedor?.Listados || [];
         return listados.find((item) => item?.id_producto === rechazo?.id_producto) || listados[0] || null;
@@ -260,7 +374,12 @@ const Rechazos = () => {
     return (
 
         <>
-            <h2 className="mb-2">{"Rechazos"}</h2>
+            <div className="d-flex justify-content-between align-items-center mb-2">
+                <h2 className="mb-0">{"Rechazos"}</h2>
+                <button type="button" className="btn btn-sm btn-primary" onClick={abrirCargarRechazo}>
+                    <FaPlus className="me-1" /> Cargar rechazo
+                </button>
+            </div>
             <div className="line"></div>
             {/* Filtros */}
             <Form ref={formRef} className="">
@@ -447,6 +566,148 @@ const Rechazos = () => {
                 </tbody>
             </table>
             <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
+
+            {showCargarRechazo && (
+                <>
+                    <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true">
+                        <div className="modal-dialog modal-dialog-centered" role="document">
+                            <div className="modal-content">
+                                <div className="modal-header py-2">
+                                    <h5 className="modal-title mb-0">Cargar rechazo</h5>
+                                    <button type="button" className="btn-close" onClick={cerrarCargarRechazo} aria-label="Cerrar"></button>
+                                </div>
+                                <div className="modal-body">
+                                    <Row className="g-2">
+                                        <Col md={6}>
+                                            <Form.Label className="mb-1 small">Semana</Form.Label>
+                                            <Form.Control
+                                                className="form-control-sm"
+                                                type="text"
+                                                list="nuevo-rechazo-semanas"
+                                                placeholder="Ingrese la semana"
+                                                value={nuevoRechazo.semana}
+                                                onChange={(e) => buscarSemanaNuevoRechazo(e.target.value)}
+                                            />
+                                            <datalist id="nuevo-rechazo-semanas">
+                                                {semanasNuevoRechazo.map((item) => (
+                                                    <option key={item.id} value={item.consecutivo} />
+                                                ))}
+                                            </datalist>
+                                        </Col>
+                                        <Col md={6}>
+                                            <Form.Label className="mb-1 small">Fecha rechazo</Form.Label>
+                                            <Form.Control
+                                                className="form-control-sm"
+                                                type="date"
+                                                value={nuevoRechazo.fecha}
+                                                onChange={(e) => handleChangeNuevoRechazo('fecha', e.target.value)}
+                                            />
+                                        </Col>
+                                        <Col md={6}>
+                                            <Form.Label className="mb-1 small">Contenedor</Form.Label>
+                                            <Form.Control
+                                                className="form-control-sm"
+                                                type="text"
+                                                list="nuevo-rechazo-contenedores"
+                                                placeholder="ABCD0000000"
+                                                maxLength={11}
+                                                value={nuevoRechazo.contenedor}
+                                                onChange={(e) => handleChangeNuevoRechazo('contenedor', e.target.value)}
+                                            />
+                                            {nuevoRechazo.contenedor.length >= 5 && (
+                                                <datalist id="nuevo-rechazo-contenedores">
+                                                    {contenedoresSemanaNuevo.map((cod, key) => (
+                                                        <option key={key} value={cod} />
+                                                    ))}
+                                                </datalist>
+                                            )}
+                                        </Col>
+                                        <Col md={6}>
+                                            <Form.Label className="mb-1 small">Productor</Form.Label>
+                                            <Form.Control
+                                                className="form-control-sm"
+                                                type="text"
+                                                list="nuevo-rechazo-almacenes"
+                                                value={nuevoRechazo.productor}
+                                                onChange={(e) => handleChangeNuevoRechazo('productor', e.target.value)}
+                                            />
+                                            <datalist id="nuevo-rechazo-almacenes">
+                                                {almacenes.map((item) => (
+                                                    <option key={item.id} value={item.nombre} />
+                                                ))}
+                                            </datalist>
+                                        </Col>
+                                        <Col md={6}>
+                                            <Form.Label className="mb-1 small">Producto</Form.Label>
+                                            <Form.Control
+                                                className="form-control-sm"
+                                                type="text"
+                                                list="nuevo-rechazo-productos"
+                                                disabled={listadosContenedorNuevo.length === 0}
+                                                value={nuevoRechazo.producto}
+                                                onChange={(e) => handleChangeNuevoRechazo('producto', e.target.value)}
+                                            />
+                                            <datalist id="nuevo-rechazo-productos">
+                                                {listadosContenedorNuevo.map((item, key) => (
+                                                    <option key={key} value={item?.combo?.nombre} />
+                                                ))}
+                                            </datalist>
+                                        </Col>
+                                        <Col md={6}>
+                                            <Form.Label className="mb-1 small">Pallet</Form.Label>
+                                            <Form.Control
+                                                className="form-control-sm"
+                                                type="text"
+                                                value={nuevoRechazo.pallet}
+                                                onChange={(e) => handleChangeNuevoRechazo('pallet', e.target.value)}
+                                            />
+                                        </Col>
+                                        <Col md={6}>
+                                            <Form.Label className="mb-1 small">Cajas</Form.Label>
+                                            <Form.Control
+                                                className="form-control-sm"
+                                                type="number"
+                                                min={1}
+                                                value={nuevoRechazo.cajas}
+                                                onChange={(e) => handleChangeNuevoRechazo('cajas', e.target.value)}
+                                            />
+                                        </Col>
+                                        <Col md={6}>
+                                            <Form.Label className="mb-1 small">Motivo</Form.Label>
+                                            <Form.Control
+                                                className="form-control-sm"
+                                                type="text"
+                                                list="nuevo-rechazo-motivos"
+                                                value={nuevoRechazo.motivo}
+                                                onChange={(e) => handleChangeNuevoRechazo('motivo', e.target.value)}
+                                            />
+                                            <datalist id="nuevo-rechazo-motivos">
+                                                {motivosRechazo.map((item) => (
+                                                    <option key={item.id} value={item.motivo_rechazo} />
+                                                ))}
+                                            </datalist>
+                                        </Col>
+                                    </Row>
+                                    {nuevoRechazo.contenedor && listadosContenedorNuevo.length === 0 && (
+                                        <div className="text-danger small mt-2">
+                                            No se encontro el contenedor o no tiene productos asignados.
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="modal-footer py-2">
+                                    <button type="button" className="btn btn-secondary btn-sm" onClick={cerrarCargarRechazo} disabled={guardandoRechazo}>
+                                        Cancelar
+                                    </button>
+                                    <button type="button" className="btn btn-primary btn-sm" onClick={guardarNuevoRechazo} disabled={guardandoRechazo}>
+                                        {guardandoRechazo ? "Guardando..." : "Guardar"}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="modal-backdrop fade show"></div>
+                </>
+            )}
         </>
     );
 };
