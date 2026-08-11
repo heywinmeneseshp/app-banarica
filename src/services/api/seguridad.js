@@ -46,13 +46,13 @@ const listarUsuariosSeguridad = async (offset, limit, username) => {
     }
 };
 
-const cargarSeriales = async (dataExcel, remision, pedido, semana, fecha, observaciones, username) => {
-    try {
-        const res = dataExcel.find((item) => item.cons_producto == null);
-        if (res?.cons_producto === null) {
-            return { message: "Existen articulos sin codigo ID.", bool: false };
-        }
+const cargarSeriales = async ({ data: dataExcel, remision, pedido, semana, fecha, observaciones, username, cons_movimiento }) => {
+    const res = dataExcel.find((item) => item.cons_producto == null);
+    if (res?.cons_producto === null) {
+        return { message: "Existen articulos sin codigo ID.", bool: false };
+    }
 
+    try {
         const response = await axios.post(endPoints.seguridad.CargarSeriales, {
             data: dataExcel,
             remision,
@@ -61,13 +61,23 @@ const cargarSeriales = async (dataExcel, remision, pedido, semana, fecha, observ
             fecha,
             observaciones,
             username,
+            ...(cons_movimiento && { cons_movimiento }),
         });
 
         return response.data;
     } catch (error) {
         const message = error?.response?.data?.message || "No fue posible cargar la recepcion.";
-        window.alert(JSON.stringify(message));
-        throw error;
+        throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+    }
+};
+
+const deshacerCargaSeriales = async (cons_movimiento) => {
+    try {
+        const response = await axios.post(endPoints.seguridad.DeshacerCargaSeriales, { cons_movimiento });
+        return response.data;
+    } catch (error) {
+        const message = error?.response?.data?.message || "No fue posible revertir la carga.";
+        throw new Error(typeof message === "string" ? message : JSON.stringify(message));
     }
 };
 
@@ -273,6 +283,7 @@ export {
     listarSeriales,
     listarUsuariosSeguridad,
     cargarSeriales,
+    deshacerCargaSeriales,
     actualizarSeriales,
     listarProductosSeguridad,
     exportarArticulosConSerial,

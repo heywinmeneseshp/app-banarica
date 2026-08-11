@@ -224,6 +224,7 @@ const endPoints = {
         ActualizarSeriales: `${API}/api/${VERSION}/seguridad/actualizar-seriales`,
         ActualizarSerial: `${API}/api/${VERSION}/seguridad/actualizar-serial`,
         CargarSeriales: `${API}/api/${VERSION}/seguridad/cargar-seriales`,
+        DeshacerCargaSeriales: `${API}/api/${VERSION}/seguridad/deshacer-carga-seriales`,
         encontrarSerial: `${API}/api/${VERSION}/seguridad/encontrar-serial`,
         inspeccionAntinarcoticos: `${API}/api/${VERSION}/seguridad/inspeccion-antinarcoticos`,
         aprobarInspeccionLleno: `${API}/api/${VERSION}/seguridad/aprobar-inspeccion-lleno`,
