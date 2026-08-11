@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import readXlsxFile from "read-excel-file";
 import { Form, Row, Col, ProgressBar } from "react-bootstrap";
-import { FaClipboardList, FaFileExcel, FaTable } from "react-icons/fa";
+import { FaClipboardList, FaExclamationTriangle, FaFileExcel, FaTable } from "react-icons/fa";
 
 import uDate from "@hooks/useDate";
 import { useAuth } from "@hooks/useAuth";
@@ -27,7 +27,7 @@ function chunkArray(array, size) {
     return chunks;
 }
 
-function validatePreviewRows(rows = []) {
+function validatePreviewRows(rows = [], productosMap = new Map()) {
     const serialCount = rows.reduce((acc, item) => {
         const serial = item?.serial?.trim?.() || "";
         if (serial) {
@@ -38,23 +38,30 @@ function validatePreviewRows(rows = []) {
 
     const rowIssues = rows.map((item, index) => {
         const issues = [];
+        const camposConError = new Set();
 
         if (!item?.cons_producto) {
             issues.push("Sin articulo");
+            camposConError.add("articulo");
+        } else if (productosMap.size > 0 && !productosMap.has(item.cons_producto)) {
+            issues.push("Articulo no reconocido");
+            camposConError.add("articulo");
         }
 
         if (!item?.serial || item.serial === "null") {
             issues.push("Sin serial");
-        }
-
-        if (item?.serial && serialCount[item.serial] > 1) {
+            camposConError.add("serial");
+        } else if (serialCount[item.serial] > 1) {
             issues.push("Serial repetido");
+            camposConError.add("serial");
         }
 
         return {
             index,
+            fila: index + 2, // +1 por encabezado, +1 por indice base 1: coincide con el numero de fila del Excel
             serial: item?.serial,
             issues,
+            camposConError,
         };
     });
 
@@ -62,10 +69,21 @@ function validatePreviewRows(rows = []) {
         .filter(([, count]) => count > 1)
         .map(([serial]) => serial);
 
+    const conteoPorTipo = rowIssues.reduce((acc, row) => {
+        row.issues.forEach((issue) => {
+            acc[issue] = (acc[issue] || 0) + 1;
+        });
+        return acc;
+    }, {});
+
+    const filasConError = rowIssues.filter((row) => row.issues.length > 0);
+
     return {
         duplicates,
         rowIssues,
-        hasErrors: rowIssues.some((row) => row.issues.length > 0),
+        conteoPorTipo,
+        filasConError,
+        hasErrors: filasConError.length > 0,
     };
 }
 
@@ -77,13 +95,14 @@ export default function Recepcion() {
     const [semanas, setSemanas] = useState([]);
     const [archivoBruto, setArchivoBruto] = useState([]);
     const [archivoExcel, setArchivoExcel] = useState([]);
-    const [tabla, setTabla] = useState([]);
     const [bool, setBool] = useState(false);
     const [subiendo, setSubiendo] = useState(false);
     const [limit, setLimit] = useState(5);
+    const [soloErrores, setSoloErrores] = useState(false);
     const [archivoNombre, setArchivoNombre] = useState("");
     const [progreso, setProgreso] = useState(null); // { loteActual, totalLotes, filasCargadas, totalFilas }
     const [resumenCarga, setResumenCarga] = useState(null); // { totalSeriales, consMovimiento }
+    const previsualizacionRef = useRef(null);
 
     const [formData, setFormData] = useState({
         almacen: "",
@@ -144,17 +163,27 @@ export default function Recepcion() {
         return new Map(productos.map((item) => [item.consecutivo, item.name]));
     }, [productos]);
 
-    const previewValidation = useMemo(() => validatePreviewRows(archivoExcel), [archivoExcel]);
+    const previewValidation = useMemo(
+        () => validatePreviewRows(archivoExcel, productosMap),
+        [archivoExcel, productosMap]
+    );
 
     const totalLotes = useMemo(
         () => Math.max(1, Math.ceil(archivoExcel.length / TAMANO_LOTE)),
         [archivoExcel.length]
     );
 
-    const recalcularPreview = (rows, nextFormData = formData, nextLimit = limit) => {
+    const filasParaMostrar = useMemo(() => {
+        const base = soloErrores
+            ? previewValidation.filasConError.map((row) => ({ item: archivoExcel[row.index], index: row.index }))
+            : archivoExcel.map((item, index) => ({ item, index }));
+
+        return base.slice(0, limit);
+    }, [archivoExcel, previewValidation, soloErrores, limit]);
+
+    const recalcularPreview = (rows, nextFormData = formData) => {
         if (!rows || rows.length === 0 || !nextFormData.almacen) {
             setArchivoExcel([]);
-            setTabla([]);
             return;
         }
 
@@ -165,7 +194,6 @@ export default function Recepcion() {
         );
 
         setArchivoExcel(transformedRows);
-        setTabla(transformedRows.slice(0, nextLimit));
     };
 
     const handleFormChange = (field, value) => {
@@ -173,7 +201,7 @@ export default function Recepcion() {
         setFormData(nextFormData);
 
         if (archivoBruto.length > 0 && (field === "almacen" || field === "articulo")) {
-            recalcularPreview(archivoBruto, nextFormData, limit);
+            recalcularPreview(archivoBruto, nextFormData);
         }
     };
 
@@ -188,7 +216,8 @@ export default function Recepcion() {
             setArchivoNombre(archivo.name);
             setArchivoBruto(rows);
             setLimit(5);
-            recalcularPreview(rows, formData, 5);
+            setSoloErrores(false);
+            recalcularPreview(rows, formData);
         } catch (error) {
             console.error("Error al leer archivo de recepcion:", error);
             setAlert({
@@ -215,7 +244,6 @@ export default function Recepcion() {
     const limitPaginacion = (e) => {
         const nextLimit = Math.max(0, parseInt(e.target.value, 10) || 0);
         setLimit(nextLimit);
-        setTabla(archivoExcel.slice(0, nextLimit));
     };
 
     const cargarDatos = async (e) => {
@@ -232,9 +260,12 @@ export default function Recepcion() {
         }
 
         if (previewValidation.hasErrors) {
+            setSoloErrores(true);
+            setLimit((prev) => Math.max(prev, 20));
+            previsualizacionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
             setAlert({
                 active: true,
-                mensaje: "Corrige las filas marcadas en la previsualizacion antes de cargar.",
+                mensaje: `Hay ${previewValidation.filasConError.length} fila(s) con errores en la previsualizacion. Corrigelas en el Excel antes de cargar (se muestran solo las filas con error).`,
                 color: "danger",
                 autoClose: false
             });
@@ -340,12 +371,12 @@ export default function Recepcion() {
 
     const nuevoMovimiento = () => {
         setArchivoExcel([]);
-        setTabla([]);
         setArchivoBruto([]);
         setArchivoNombre("");
         setBool(false);
         setSubiendo(false);
         setLimit(5);
+        setSoloErrores(false);
         setProgreso(null);
         setResumenCarga(null);
         setFormData({
@@ -535,7 +566,7 @@ export default function Recepcion() {
 
             <Alertas className="mt-3" alert={alert} handleClose={toogleAlert} />
 
-            <div className="card shadow-sm">
+            <div className="card shadow-sm" ref={previsualizacionRef}>
                 <div className="card-header bg-dark text-white py-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
                     <span className="fw-bold d-flex align-items-center gap-2"><FaTable /> 3. Previsualizacion</span>
                     <span className="text-white-50 small">
@@ -549,14 +580,32 @@ export default function Recepcion() {
                 </div>
                 <div className="card-body">
                     {previewValidation.hasErrors && (
-                        <div className="alert alert-warning py-2">
-                            {previewValidation.duplicates.length > 0 && (
-                                <div>
-                                    Seriales repetidos: {previewValidation.duplicates.join(", ")}
-                                </div>
-                            )}
-                            <div>
-                                Filas con observaciones: {previewValidation.rowIssues.filter((row) => row.issues.length > 0).length}
+                        <div className="alert alert-danger py-2">
+                            <div className="fw-bold d-flex align-items-center gap-2 mb-1">
+                                <FaExclamationTriangle />
+                                {previewValidation.filasConError.length} fila(s) con errores. No se puede cargar hasta corregirlas.
+                            </div>
+                            <ul className="mb-2 small">
+                                {Object.entries(previewValidation.conteoPorTipo).map(([tipo, cantidad]) => (
+                                    <li key={tipo}>{tipo}: {cantidad}</li>
+                                ))}
+                            </ul>
+                            <div className="small mb-2">
+                                Filas del Excel con error: {previewValidation.filasConError.slice(0, 20).map((row) => row.fila).join(", ")}
+                                {previewValidation.filasConError.length > 20 ? ` y ${previewValidation.filasConError.length - 20} mas...` : ""}
+                            </div>
+                            <div className="form-check form-switch">
+                                <input
+                                    className="form-check-input"
+                                    type="checkbox"
+                                    role="switch"
+                                    id="solo-errores"
+                                    checked={soloErrores}
+                                    onChange={(e) => setSoloErrores(e.target.checked)}
+                                />
+                                <label className="form-check-label small" htmlFor="solo-errores">
+                                    Mostrar solo filas con error
+                                </label>
                             </div>
                         </div>
                     )}
@@ -575,13 +624,18 @@ export default function Recepcion() {
                             value={limit}
                             disabled={archivoExcel.length === 0}
                         />
-                        <span className="small text-muted">de {archivoExcel.length} filas</span>
+                        <span className="small text-muted">
+                            de {soloErrores ? previewValidation.filasConError.length : archivoExcel.length} filas
+                            {soloErrores ? " con error" : ""}
+                        </span>
                     </div>
 
                     <div className="table-responsive">
                         <table className="table mb-0 table-striped table-hover table-sm">
                             <thead className="table-light">
                                 <tr>
+                                    <th scope="col" title="Numero de fila en el archivo Excel">Fila</th>
+                                    <th scope="col"></th>
                                     <th scope="col">Alm</th>
                                     <th scope="col">Articulo</th>
                                     <th scope="col">Serial</th>
@@ -592,20 +646,25 @@ export default function Recepcion() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {tabla.map((item, index) => {
+                                {filasParaMostrar.map(({ item, index }) => {
                                     const rowValidation = previewValidation.rowIssues[index];
                                     const hasRowError = rowValidation?.issues?.length > 0;
+                                    const errorArticulo = rowValidation?.camposConError?.has("articulo");
+                                    const errorSerial = rowValidation?.camposConError?.has("serial");
 
                                     return (
-                                    <tr key={`${item.serial}-${index}`} className={hasRowError ? "table-warning" : ""}>
-                                        <td>{item?.cons_almacen}</td>
+                                    <tr key={`${item?.serial}-${index}`} className={hasRowError ? "table-danger" : ""}>
+                                        <td className="text-muted small">{rowValidation?.fila}</td>
                                         <td>
-                                            {productosMap.get(item?.cons_producto) || item?.cons_producto}
                                             {hasRowError && (
-                                                <div className="text-danger small">{rowValidation.issues.join(", ")}</div>
+                                                <FaExclamationTriangle className="text-danger" title={rowValidation.issues.join(", ")} />
                                             )}
                                         </td>
-                                        <td>{item?.serial}</td>
+                                        <td>{item?.cons_almacen}</td>
+                                        <td className={errorArticulo ? "text-danger fw-bold" : ""}>
+                                            {productosMap.get(item?.cons_producto) || item?.cons_producto}
+                                        </td>
+                                        <td className={errorSerial ? "text-danger fw-bold" : ""}>{item?.serial}</td>
                                         <td>{item?.bag_pack}</td>
                                         <td>{item?.s_pack}</td>
                                         <td>{item?.m_pack}</td>
@@ -614,10 +673,12 @@ export default function Recepcion() {
                                     );
                                 })}
 
-                                {tabla.length === 0 && (
+                                {filasParaMostrar.length === 0 && (
                                     <tr>
-                                        <td colSpan={7} className="text-center text-muted py-4">
-                                            No hay datos para previsualizar. Sube un archivo Excel arriba.
+                                        <td colSpan={9} className="text-center text-muted py-4">
+                                            {archivoExcel.length === 0
+                                                ? "No hay datos para previsualizar. Sube un archivo Excel arriba."
+                                                : "No hay filas con error para mostrar."}
                                         </td>
                                     </tr>
                                 )}
