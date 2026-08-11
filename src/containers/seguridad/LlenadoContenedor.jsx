@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { FaPlus, FaMinus, FaCamera, FaImages, FaTimes } from 'react-icons/fa';
+import { FaPlus, FaMinus, FaCamera, FaImages, FaTimes, FaCog } from 'react-icons/fa';
 import Loader from '@components/shared/Loader';
 
 import { filtrarSemanasRangoProgramador } from '@services/api/semanas';
@@ -9,15 +9,16 @@ import { paginarEmbarques } from '@services/api/embarques';
 import { actualizarListado, duplicarListado, paginarListado } from '@services/api/listado';
 import { listarAlmacenes } from "@services/api/almacenes";
 import { listarCombos } from '@services/api/combos';
-import { encontrarUnSerial, usarSeriales } from '@services/api/seguridad';
+import { encontrarUnSerial, usarSeriales, crearInspeccionVacio } from '@services/api/seguridad';
 import { listarMotivoDeUso } from '@services/api/motivoDeUso';
 import { listarMotivoDeRechazo } from '@services/api/motivoDeRechazo';
 import { agregarRechazo } from '@services/api/rechazos';
 import { subirEvidencias } from '@services/api/googleDrive';
 import { filterActiveContainerRows, getLatestContainerRowByCode, getUniqueLatestContainerRowsByCode } from '@utils/contenedorEstado';
+import InsumoInspeccVacio from "@components/seguridad/InsumoInspeccVacio";
 
 const MOTIVO_LLENADO_CONTENEDOR = "Lleneado de contenedor";
-const SERIALES_A_VERIFICAR = ["kit", "termografo"];
+const MODULO_INSUMOS_LLENADO = "Insumos_llenado_contenedor";
 const EVIDENCIA_MAX_FILES = 20;
 const EVIDENCIA_MAX_FILE_SIZE = 5 * 1024 * 1024;
 const EVIDENCIA_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
@@ -32,6 +33,7 @@ const JERARQUIA_CAMPOS = {
 
 const getItemId = (item) => item?.id || item?.consecutivo;
 const normalizeCode = (value) => String(value || '').trim().toUpperCase();
+const capitalizarPrimeraLetra = (text) => (text ? text.charAt(0).toUpperCase() + text.slice(1).toLowerCase() : "");
 
 const buildEmptyRow = () => ({
   id: Date.now() + Math.random(),
@@ -59,8 +61,24 @@ const FormularioDinamico = () => {
   const [evidenciaFiles, setEvidenciaFiles] = useState([]);
   const [uploadingEvidencia, setUploadingEvidencia] = useState(false);
   const [evidenciaDriveFolderId, setEvidenciaDriveFolderId] = useState('');
+  const [openConfig, setOpenConfig] = useState(false);
+  const [insumosConfig, setInsumosConfig] = useState([]);
   const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
+
+  const parseDetalles = useCallback((detalles) => {
+    try {
+      const parsed = JSON.parse(detalles);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const serialFields = useMemo(
+    () => (Array.isArray(insumosConfig) ? insumosConfig : []),
+    [insumosConfig]
+  );
 
   const { today, fechaInicial, fechaFinal } = useMemo(() => {
     const d = new Date();
@@ -78,13 +96,17 @@ const FormularioDinamico = () => {
 
   const init = useCallback(async () => {
     try {
-      const [moduloSemana, prods, motivos, alms, driveModuloListado] = await Promise.all([
+      const [moduloSemana, prods, motivos, alms, driveModuloListado, moduloInsumos] = await Promise.all([
         encontrarModulo("Semana", { syncWeeks: false }),
         listarCombos(),
         listarMotivoDeRechazo(),
         listarAlmacenes(),
-        encontrarModulo('Google_drive_evidencias_listado').catch(() => [])
+        encontrarModulo('Google_drive_evidencias_listado').catch(() => []),
+        encontrarModulo(MODULO_INSUMOS_LLENADO).catch(() => [])
       ]);
+
+      const insumos = parseDetalles(moduloInsumos?.[0]?.detalles);
+      setInsumosConfig(insumos);
 
       try {
         const driveDetalles = driveModuloListado?.[0]?.detalles;
@@ -112,7 +134,7 @@ const FormularioDinamico = () => {
     } catch (error) {
       console.error("Error al cargar datos iniciales del llenado:", error);
     }
-  }, []);
+  }, [parseDetalles]);
 
   useEffect(() => {
     init();
@@ -170,7 +192,7 @@ const FormularioDinamico = () => {
     if (filtros.destino) filtered = filtered.filter((r) => r.Destino?.destino === filtros.destino);
 
     return {
-      consignees: [...new Set(filtered.map((r) => r.cliente?.cod).filter(Boolean))],
+      consignees: [...new Set(embarquesObjet.map((r) => r.cliente?.cod).filter(Boolean))],
       buques: [...new Set(filtered.map((r) => r.Buque?.buque).filter(Boolean))],
       destinos: [...new Set(filtered.map((r) => r.Destino?.destino).filter(Boolean))],
       bookings: [...new Set(filtered.map((item) => item.bl).filter(Boolean))]
@@ -298,8 +320,11 @@ const FormularioDinamico = () => {
         throw new Error("Agrega al menos una caja recibida o un rechazo antes de guardar");
       }
 
-      const serialesIngresados = SERIALES_A_VERIFICAR
-        .map((key) => ({ key, value: inputsRef.current[key]?.value?.trim() || '' }))
+      const serialesIngresados = serialFields
+        .map((item) => ({
+          key: capitalizarPrimeraLetra(item.name),
+          value: inputsRef.current[`serial_${item.consecutivo || item.id}`]?.value?.trim() || ''
+        }))
         .filter((item) => item.value);
 
       const serialesVerificados = await Promise.all(
@@ -337,14 +362,60 @@ const FormularioDinamico = () => {
         itemContenedor = getLatestContainerRowByCode(rows, contenedorIngresado);
       }
 
-      if (!id_embarque || !itemContenedor) {
+      if (!id_embarque) {
+        throw new Error("Booking no válido");
+      }
+
+      if (!itemContenedor && contenedorIngresado) {
+        const formatoValido = /^[A-Za-z]{4}\d{7}$/.test(contenedorIngresado);
+        if (!formatoValido) {
+          throw new Error("El contenedor debe tener el formato ABCD1234567 (4 letras y 7 numeros)");
+        }
+
+        const confirmarCreacion = window.confirm(
+          `El contenedor "${contenedorIngresado}" no existe. ¿Desea crearlo para continuar con el llenado?`
+        );
+        if (!confirmarCreacion) {
+          return;
+        }
+
+        const ahora = new Date();
+        const horaActual = [
+          String(ahora.getHours()).padStart(2, '0'),
+          String(ahora.getMinutes()).padStart(2, '0'),
+          String(ahora.getSeconds()).padStart(2, '0')
+        ].join(':');
+
+        const resCrear = await crearInspeccionVacio({
+          fecha: inputsRef.current.fecha?.value || today,
+          contenedor: contenedorIngresado,
+          observaciones: 'Contenedor creado desde el modulo de Llenado de Contenedores',
+          seriales: [],
+          semana: filtros.semana,
+          hora_inicio: horaActual,
+          hora_fin: horaActual,
+          agente:
+            [user?.nombre, user?.apellido].filter(Boolean).join(" ").trim()
+            || user?.username
+            || "Sistema",
+          zona: "Inspeccion vacio"
+        });
+
+        itemContenedor = resCrear?.data?.listado || null;
+
+        if (!itemContenedor) {
+          throw new Error("No fue posible crear el contenedor. Verifica la semana y vuelve a intentar.");
+        }
+      }
+
+      if (!itemContenedor) {
         throw new Error("Booking o contenedor no válido");
       }
 
       await Promise.all([
         ...sectionsProduct.map(async (sec, index) => {
-          const payload = {
-            fecha: inputsRef.current.fecha.value,
+const payload = {
+            fecha: inputsRef.current.fecha?.value || today,
             id_embarque,
             id_contenedor: itemContenedor.id_contenedor,
             id_lugar_de_llenado: sec.cod_productor,
@@ -369,7 +440,7 @@ const FormularioDinamico = () => {
             cod_productor: sec.cod_productor,
             id_contenedor: itemContenedor.id_contenedor,
             id_usuario: user.id,
-            fecha_rechazo: inputsRef.current.fecha.value
+            fecha_rechazo: inputsRef.current.fecha?.value || today
           })
         )
       ]);
@@ -380,7 +451,7 @@ const FormularioDinamico = () => {
 
         await usarSeriales(
           filtros.semana,
-          inputsRef.current.fecha.value,
+          inputsRef.current.fecha?.value || today,
           serialesVerificados.map((item) => item.value),
           itemContenedor.id_contenedor,
           user.id,
@@ -401,7 +472,24 @@ const FormularioDinamico = () => {
     <>
       <Loader loading={loading} />
       <form onSubmit={handleSubmit} className="container py-4">
-        <h2 className="text-center mb-4">Llenado de Contenedor</h2>
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          <h2 className="mb-0">Llenado de Contenedor</h2>
+          {(() => {
+            const usuarioConfig = typeof window !== "undefined"
+              ? JSON.parse(localStorage.getItem("usuario") || "{}")
+              : {};
+            return usuarioConfig?.id_rol === "Super administrador" && (
+              <button
+                type="button"
+                onClick={() => setOpenConfig(true)}
+                className="btn btn-link p-0"
+                aria-label="Configuracion"
+              >
+                <FaCog style={{ color: "rgba(0, 0, 0, 0.3)" }} size={20} />
+              </button>
+            );
+          })()}
+        </div>
 
         <div className="row">
           <div className="col-md-6 mb-3">
@@ -414,73 +502,112 @@ const FormularioDinamico = () => {
                   inputsRef.current.fecha = el;
                 }}
                 defaultValue={today}
+                required
               />
             </div>
           </div>
 
+          <div className="col-md-6 mb-3">
+            <div className="input-group">
+              <span className="input-group-text">Semana</span>
+              <input
+                type="text"
+                id="semana"
+                className="form-control"
+                list="l-semana"
+                ref={(el) => {
+                  inputsRef.current.semana = el;
+                }}
+                onChange={handleHierarchyChange}
+                required
+              />
+              <datalist id="l-semana">
+                {options.semanas.map((semana) => (
+                  <option key={semana} value={semana}>{semana}</option>
+                ))}
+              </datalist>
+            </div>
+          </div>
+
           {[
-            { label: "Semana", id: "semana", list: options.semanas },
-            { label: "Consignee", id: "consignee", list: datalists.consignees },
-            { label: "Buque", id: "buque", list: datalists.buques },
-            { label: "Destino", id: "destino", list: datalists.destinos },
-            { label: "Booking", id: "booking", list: datalists.bookings },
-            { label: "Contenedor", id: "contenedor", list: contenedores },
+            {
+              label: "Consignee", id: "consignee",
+              opciones: () => datalists.consignees.map((cod) => ({ value: cod, label: cod }))
+            },
+            {
+              label: "Buque", id: "buque",
+              opciones: () => datalists.buques.map((b) => ({ value: b, label: b }))
+            },
+            {
+              label: "Destino", id: "destino",
+              opciones: () => datalists.destinos.map((d) => ({ value: d, label: d }))
+            },
+            {
+              label: "Booking", id: "booking",
+              opciones: () => datalists.bookings.map((b) => ({ value: b, label: b }))
+            },
           ].map((field) => (
             <div className="col-md-6 mb-3" key={field.id}>
               <div className="input-group">
                 <span className="input-group-text">{field.label}</span>
-                <input
-                  type="text"
+                <select
                   id={field.id}
-                  className="form-control"
-                  list={`l-${field.id}`}
+                  className="form-select"
                   ref={(el) => {
                     inputsRef.current[field.id] = el;
                   }}
+                  value={filtros[field.id] || ''}
                   onChange={handleHierarchyChange}
                   required
-                />
-                <datalist id={`l-${field.id}`}>
-                  {field.id === 'contenedor'
-                    ? contenedores.map((option) => (
-                      <option
-                        key={`${field.id}-${option?.id}-${option?.id_contenedor}`}
-                        value={option?.Contenedor?.contenedor || ''}
-                      />
-                    ))
-                    : field.list.map((option, index) => (
-                      <option key={`${field.id}-${index}`} value={option} />
-                    ))}
-                </datalist>
+                >
+                  <option value="">Seleccione</option>
+                  {field.opciones().map((op, index) => (
+                    <option key={`${field.id}-${index}`} value={op.value}>{op.label}</option>
+                  ))}
+                </select>
               </div>
             </div>
           ))}
 
           <div className="col-md-6 mb-3">
             <div className="input-group">
-              <span className="input-group-text">Kit</span>
+              <span className="input-group-text">Contenedor</span>
               <input
                 type="text"
+                id="contenedor"
                 className="form-control"
+                list="l-contenedor"
                 ref={(el) => {
-                  inputsRef.current.kit = el;
+                  inputsRef.current.contenedor = el;
                 }}
+                onChange={handleHierarchyChange}
+                required
               />
+              <datalist id="l-contenedor">
+                {contenedores.map((option) => (
+                  <option
+                    key={`contenedor-${option?.id}-${option?.id_contenedor}`}
+                    value={option?.Contenedor?.contenedor || ''}
+                  />
+                ))}
+              </datalist>
             </div>
           </div>
 
-          <div className="col-md-6 mb-3">
-            <div className="input-group">
-              <span className="input-group-text">Termografo</span>
-              <input
-                type="text"
-                className="form-control"
-                ref={(el) => {
-                  inputsRef.current.termografo = el;
-                }}
-              />
+          {serialFields.map((field) => (
+            <div className="col-md-6 mb-3" key={field.id || field.consecutivo}>
+              <div className="input-group">
+                <span className="input-group-text">{capitalizarPrimeraLetra(field.name)}</span>
+                <input
+                  type="text"
+                  className="form-control"
+                  ref={(el) => {
+                    inputsRef.current[`serial_${field.consecutivo || field.id}`] = el;
+                  }}
+                />
+              </div>
             </div>
-          </div>
+          ))}
         </div>
 
         <div className="row my-3">
@@ -731,6 +858,15 @@ const FormularioDinamico = () => {
           {loading ? 'Guardando...' : 'Enviar Formulario'}
         </button>
       </form>
+      {openConfig && (
+        <InsumoInspeccVacio
+          setOpenConfig={(val) => {
+            setOpenConfig(val);
+            if (!val) init();
+          }}
+          modulo={MODULO_INSUMOS_LLENADO}
+        />
+      )}
     </>
   );
 };

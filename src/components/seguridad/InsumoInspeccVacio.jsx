@@ -5,7 +5,16 @@ import { filtrarProductos } from "@services/api/productos";
 import { actualizarModulo, encontrarModulo } from "@services/api/configuracion";
 import Loader from "@components/shared/Loader";
 
-export default function InsumoInspeccVacio({ setOpenConfig }) {
+const parseDetalles = (detalles) => {
+    try {
+        const parsed = JSON.parse(detalles);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+};
+
+export default function InsumoInspeccVacio({ setOpenConfig, modulo = "Insumos_inspeccion_vacio" }) {
     const formRef = useRef();
     const [articulos, setArticulos] = useState([]);
     const [inputs, setInputs] = useState([]);
@@ -19,16 +28,16 @@ export default function InsumoInspeccVacio({ setOpenConfig }) {
                 const body = { producto: { serial: true }, stock: { isBlock: false } };
                 const [productos, insumos] = await Promise.all([
                     filtrarProductos(body),
-                    encontrarModulo("Insumos_inspeccion_vacio")
+                    encontrarModulo(modulo)
                 ]);
                 setArticulos(productos || []);
-                setInputs(JSON.parse(insumos[0].detalles) || []);
+                setInputs(parseDetalles(insumos?.[0]?.detalles));
             } catch (error) {
                 console.error("Error al listar productos:", error);
             }
         };
         listar();
-    }, []);
+    }, [modulo]);
 
     const handleAdd = useCallback(() => {
         if (!articulo.trim()) return;
@@ -63,7 +72,7 @@ export default function InsumoInspeccVacio({ setOpenConfig }) {
         setLoading(true);
         try {
             const detalles = JSON.stringify(inputs);
-            await actualizarModulo({ modulo: "Insumos_inspeccion_vacio", detalles });
+            await actualizarModulo({ modulo, detalles });
             alert("Datos cargados con éxito");
             setOpenConfig(false);
         } catch (error) {

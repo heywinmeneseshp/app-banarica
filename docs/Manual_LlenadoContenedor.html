@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual de Uso - Modulo Llenado de Contenedor</title>
+<style>
+  :root {
+    --verde: #1a7a38;
+    --verde-oscuro: #0f5a26;
+    --verde-claro: #e8f5ec;
+    --ambar: #997a1c;
+    --rojo: #b02a2a;
+    --gris-texto: #333;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+    color: var(--gris-texto);
+    line-height: 1.55;
+    background: #fff;
+    padding: 32px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  header {
+    background: linear-gradient(135deg, var(--verde) 0%, var(--verde-oscuro) 100%);
+    color: #fff;
+    padding: 28px 32px;
+    border-radius: 10px;
+    margin-bottom: 28px;
+  }
+  header h1 { font-size: 26px; margin-bottom: 6px; }
+  header p { opacity: .92; font-size: 14px; }
+  header .version { display: inline-block; background: rgba(255,255,255,.18); border-radius: 20px; padding: 2px 12px; font-size: 12px; margin-top: 8px; }
+  h2 {
+    color: var(--verde);
+    font-size: 20px;
+    border-bottom: 2px solid var(--verde);
+    padding-bottom: 6px;
+    margin: 30px 0 14px;
+  }
+  h3 { font-size: 16px; margin: 18px 0 8px; color: var(--verde-oscuro); }
+  p { margin-bottom: 10px; }
+  ul, ol { margin: 0 0 12px 22px; }
+  li { margin-bottom: 6px; }
+  code, .tag {
+    background: var(--verde-claro);
+    border: 1px solid #cde7d3;
+    border-radius: 4px;
+    padding: 1px 7px;
+    font-family: Consolas, monospace;
+    font-size: 13px;
+    color: var(--verde-oscuro);
+  }
+  .caja {
+    border: 1px solid #d9e4dc;
+    border-left: 5px solid var(--verde);
+    background: #f7faf8;
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin: 12px 0;
+  }
+  .caja.warn { border-left-color: var(--ambar); background: #fdf9ef; }
+  .caja.error { border-left-color: var(--rojo); background: #fdf3f3; }
+  .caja.info { border-left-color: #2563eb; background: #f2f6fe; }
+  .caja b.titulo { display: block; margin-bottom: 6px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 18px;
+    font-size: 13.5px;
+  }
+  th, td { border: 1px solid #cfd8d2; padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--verde); color: #fff; }
+  tr:nth-child(even) td { background: #f4f8f5; }
+  .paso { display: flex; gap: 14px; margin-bottom: 16px; }
+  .paso .num {
+    flex: 0 0 34px; height: 34px; border-radius: 50%;
+    background: var(--verde); color: #fff; font-weight: bold;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .paso .txt { flex: 1; }
+  footer {
+    margin-top: 34px; padding-top: 12px;
+    border-top: 1px solid #d9e4dc;
+    font-size: 12px; color: #777; text-align: center;
+  }
+  @media print {
+    body { padding: 0; max-width: none; }
+    header { border-radius: 0; }
+    h2 { page-break-after: avoid; }
+    .caja, table, .paso { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Manual de Uso - Modulo Llenado de Contenedor</h1>
+  <p>Guia paso a paso para registrar el llenado de contenedores en la aplicacion de logistica.</p>
+  <span class="version">App: app-banarica &bull; Seccion: Seguridad / Llenado Contenedor</span>
+</header>
+
+<h2>1. Acceso al modulo</h2>
+<p>Ingrese a la aplicacion con su usuario y contrasena. En el menu principal vaya a <b>Seguridad</b> y abra la opcion <b>Llenado Contenedor</b> (ruta <code>/Seguridad/LlenadoContenedor</code>).</p>
+
+<h2>2. Datos del embarque, jornada y contenedor</h2>
+<p>La parte superior del formulario contiene los datos que ubican el contenedor dentro de la programacion de la semana.</p>
+
+<table>
+  <tr><th>Campo</th><th>Tipo</th><th>Como se usa</th></tr>
+  <tr><td><b>Fecha</b></td><td>Calendario (fecha)</td><td>Trae la fecha de hoy por defecto. Dejala o ajustala a la fecha real del llenado.</td></tr>
+  <tr><td><b>Semana</b></td><td>Texto con lista de sugerencias</td><td>Digite la semana y seleccionela de la lista desplegable (ej. <code>S28-2026</code>). Solo estan las semanas del rango programado.</td></tr>
+  <tr><td><b>Consignee</b></td><td>Lista (select)</td><td>Al elegir la semana, la lista muestra <b>todos los clientes con embarques en esa semana</b> (codigo del cliente). Seleccione uno.</td></tr>
+  <tr><td><b>Buque</b></td><td>Lista (select)</td><td>Se filtra automaticamente con los buques del cliente seleccionado.</td></tr>
+  <tr><td><b>Destino</b></td><td>Lista (select)</td><td>Se filtra por cliente y buque elegidos.</td></tr>
+  <tr><td><b>Booking</b></td><td>Lista (select)</td><td>Se filtra por los tres anteriores. Corresponde al BL del embarque y es exigido para guardar.</td></tr>
+  <tr><td><b>Contenedor</b></td><td>Texto con lista de sugerencias</td><td>Digite el codigo del contenedor (ej. <code>MSKU1234567</code>). Al escribir aparecen contenedores activos similares para seleccionar.</td></tr>
+</table>
+
+<div class="caja info">
+  <b class="titulo">La seleccion en cascada</b>
+  Los campos <b>Consignee, Buque, Destino y Booking</b> se van filtrando uno tras otro. Es obligatorio seleccionar de las listas para que el sistema encuentre el embarque correcto. Si cambia un campo anterior, los siguientes se reinician.
+</div>
+
+<h3>Contenedor que no existe</h3>
+<p>Si el contenedor digitado <b>no existe</b> en el sistema:</p>
+<ol>
+  <li>El sistema valida el formato: <b>4 letras seguidas de 7 numeros</b> (ej. <code>TEST1234567</code>).</li>
+  <li>Pregunta: <i>"El contenedor no existe. &iquest;Desea crearlo para continuar con el llenado?"</i></li>
+  <li>Si acepta, el contenedor se crea automaticamente (inspeccion de vacio) con la semana y hora actuales, y el formulario continua.</li>
+</ol>
+
+<h2>3. Seriales de verificacion (Kit, Termografo y otros)</h2>
+<p>Debajo de los datos del embarque aparecen los campos de <b>seriales</b> que se queman en cada llenado:</p>
+<ul>
+  <li>Por defecto son <b>Kit</b> y <b>Termografo</b>, pero son <b>configurables</b> (vea la seccion 7).</li>
+  <li>Digite el serial del articulo en cada campo. Solo se procesan los campos que tienen valor.</li>
+  <li>Antes de guardar, el sistema verifica que el serial exista y este disponible. Si no lo esta, pregunta si desea continuar igual.</li>
+  <li>Al enviar, los seriales quedan <b>asignados (usados) en ese contenedor</b> con el motivo <i>"Lleneado de contenedor"</i>, fecha de uso y descuento de stock.</li>
+</ul>
+
+<div class="caja warn">
+  <b class="titulo">Importante</b>
+  Al "quemar" un serial este deja de estar disponible. Asegurese de digitar el serial correcto del articulo fisico que se esta colocando en el contenedor.
+</div>
+
+<h2>4. Evidencia fotografica</h2>
+<p>Permite adjuntar fotos del llenado. Se habilita solo cuando se ha elegido un <b>contenedor existente</b> (para contenedores nuevos se recomienda completar primero el registro).</p>
+<ul>
+  <li><b>Tomar foto</b>: abre la camara del dispositivo y captura una foto.</li>
+  <li><b>Elegir de galeria</b>: selecciona una o varias fotos guardadas.</li>
+  <li><b>Subir evidencias (n)</b>: sube las fotos a la carpeta de Google Drive configurada. Muestra la cantidad de archivos cargados.</li>
+</ul>
+<table>
+  <tr><th>Regla</th><th>Valor</th></tr>
+  <tr><td>Maximo de fotos por envio</td><td>20</td></tr>
+  <tr><td>Tamanio maximo por foto</td><td>5 MB</td></tr>
+  <tr><td>Formatos permitidos</td><td>JPG, PNG, GIF, WEBP, HEIC, HEIF</td></tr>
+</table>
+
+<h2>5. Registro de cajas recibidas</h2>
+<p>Pulse el boton verde <b>+ Cajas Recibidas</b> para agregar una linea de producto:</p>
+<ol>
+  <li><b>Productor</b>: seleccione de la lista el lugar de llenado asignado a su usuario.</li>
+  <li><b>Producto</b>: seleccione el producto desde la lista.</li>
+  <li><b>Cant</b>: digite la cantidad de cajas.</li>
+</ol>
+<p>Puede agregar varias lineas con el mismo boton y eliminar cualquiera con el boton rojo <b>(-)</b>. La primera linea actualiza el listado del contenedor; las siguientes duplican la linea y se registran por separado.</p>
+
+<h2>6. Cajas rechazadas</h2>
+<p>Pulse el boton amarillo <b>+ Agregar Rechazo</b> para registrar cajas que fueron rechazadas:</p>
+<ol>
+  <li><b>Cod</b>: codigo del almacen donde se rechaza.</li>
+  <li><b>Pallet</b>: numero de pallet (opcional).</li>
+  <li><b>Producto</b>: producto rechazado.</li>
+  <li><b>Motivo</b>: motivo de rechazo desde la lista.</li>
+  <li><b>Cant</b>: cantidad de cajas rechazadas.</li>
+</ol>
+
+<h2>7. Enviar formulario (validaciones)</h2>
+<p>Pulse el boton verde <b>Enviar Formulario</b>. El sistema valida todo antes de guardar:</p>
+
+<table>
+  <tr><th>Validacion</th><th>Resultado</th></tr>
+  <tr><td>Sin cajas recibidas ni rechazos</td><td>Error: <i>"Agrega al menos una caja recibida o un rechazo antes de guardar"</i></td></tr>
+  <tr><td>Booking invalido o sin embarque</td><td>Error: <i>"Booking no valido"</i>. Verifique la cadena semana - cliente - buque - destino.</td></tr>
+  <tr><td>Contenedor sin formato valido</td><td>Error: <i>"El contenedor debe tener el formato ABCD1234567"</i></td></tr>
+  <tr><td>Serial que no existe o no disponible</td><td>Confirmacion: <i>"El serial '...' no existe. &iquest;Continuar?"</i></td></tr>
+  <tr><td>Todo correcto</td><td>Mensaje de exito <i>"&iexcl;Exito!"</i> y la pagina se recarga para un nuevo registro.</td></tr>
+</table>
+
+<h2>8. Configuracion avanzada (solo Super administrador)</h2>
+<p>Si su rol es <b>Super administrador</b>, al lado del titulo del formulario aparece un icono de <b>engranaje</b>.</p>
+<ol>
+  <li>Abra el engranaje: se muestra la ventana <i>"Asignar articulos de seguridad"</i>.</li>
+  <li>Escoja el articulo (productos con serial) en la lista, pulse <b>Agregar</b> y luego <b>Guardar</b>.</li>
+  <li>Los articulos guardados son los que aparecen como campos de serial en el formulario de llenado.</li>
+</ol>
+<div class="caja error">
+  <b class="titulo">Nota</b>
+  Si la configuracion queda vacia, no aparecen campos de serial en el formulario. Por eso, si se desea mantener Kit y Termografo, deben quedar guardados en la configuracion.
+</div>
+
+<h2>Resumen del flujo diario</h2>
+<div class="paso"><div class="num">1</div><div class="txt">Seleccione la <b>Fecha</b> y la <b>Semana</b>.</div></div>
+<div class="paso"><div class="num">2</div><div class="txt">Elija en cascada: <b>Consignee -&gt; Buque -&gt; Destino -&gt; Booking</b> (listas con los datos reales de la semana).</div></div>
+<div class="paso"><div class="num">3</div><div class="txt">Digite el <b>Contenedor</b>; si es nuevo, acepte la creacion automatica.</div></div>
+<div class="paso"><div class="num">4</div><div class="txt">Digite los <b>seriales</b> de Kit / Termografo (o los configurados).</div></div>
+<div class="paso"><div class="num">5</div><div class="txt">Tome o suba las <b>fotos de evidencia</b> (opcional).</div></div>
+<div class="paso"><div class="num">6</div><div class="txt">Agregue las <b>cajas recibidas</b> (productor, producto, cantidad) y los <b>rechazos</b> si aplica.</div></div>
+<div class="paso"><div class="num">7</div><div class="txt">Pulse <b>Enviar Formulario</b> y espere el mensaje de exito.</div></div>
+
+<footer>
+  Manual de uso - Modulo Llenado de Contenedor &bull; Documento generado para el equipo de logistica.
+</footer>
+
+</body>
+</html>
