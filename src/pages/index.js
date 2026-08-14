@@ -5,6 +5,7 @@ import Cookie from 'js-cookie';
 import { useAuth } from '@hooks/useAuth';
 import endPoints from '@services/api';
 import { encontrarModulo } from '@services/api/configuracion';
+import { clearSessionStorage } from '@utils/session';
 import Inicio from '@containers/inicio/Inicio';
 
 export default function Home() {
@@ -19,7 +20,7 @@ export default function Home() {
     const listar = async () => {
         const token = Cookie.get('token');
         if (!token) {
-            localStorage.clear();
+            clearSessionStorage();
             setUser(null);
             router.push('/login');
             return;

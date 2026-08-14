@@ -92,9 +92,9 @@ export default function ProgramadorTable({
         .programador-table tbody tr { transition: filter 0.1s; }
         .programador-table tbody tr.row-demo td { background-color: transparent !important; color: red !important; }
       `}</style>
-      <div className="table-responsive mt-4" style={{ overflowX: 'auto', maxHeight: '75vh', overflowY: 'auto' }}>
+      <div className="table-responsive mt-2" style={{ overflowX: 'auto', maxHeight: '75vh', overflowY: 'auto' }}>
         <table
-          className="table table-striped table-bordered table-sm mt-2 text-center align-middle mb-0 programador-table"
+          className="table table-striped table-bordered table-sm text-center align-middle mb-0 programador-table"
           style={{ minWidth: isEditable ? '2400px' : '1600px', tableLayout: 'auto', whiteSpace: 'nowrap', fontSize: '0.8rem' }}
         >
           <thead className="align-middle" style={{ whiteSpace: 'nowrap', fontSize: '0.8rem', position: 'sticky', top: 0, zIndex: 2, backgroundColor: '#fff' }}>

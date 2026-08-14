@@ -90,6 +90,7 @@ const botones = [
     "disponibles_corregir_serial",
     "inspeccionados_corregir_contenedor",
     "inspeccionados_editar_horas",
+    "inspeccionados_ver_graficos",
     "inspeccion_vacio_cargue_masivo",
     "contenedores_edicion",
     "dashboard_configuracion",

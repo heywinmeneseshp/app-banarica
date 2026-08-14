@@ -22,6 +22,8 @@ export const buildFilterBody = (formEl) => {
 };
 
 export const INSUMOS_PROGRAMADOR_MODULE_PREFIX = 'Relacion_programador_';
+export const DIAS_EDICION_HORAS_MODULE = 'Programador_dias_edicion_horas';
+export const DEFAULT_DIAS_EDICION_HORAS = 1;
 export const DEFAULT_EVIDENCIAS_DRIVE_FOLDER_ID = process.env.NEXT_PUBLIC_EVIDENCIAS_DRIVE_FOLDER_ID || '1ZnxhLTlN5WROcl-oozkSJXwjI87aG4bM';
 export const EVIDENCIAS_DRIVE_MODULE = 'Google_drive_evidencias';
 export const EVIDENCIA_MAX_FILES = 20;
@@ -93,6 +95,18 @@ export const parseEvidenciasDriveFolderId = (configRows) => {
   } catch (error) {
     console.warn('No se pudo leer la configuracion de evidencias en Drive:', error);
     return DEFAULT_EVIDENCIAS_DRIVE_FOLDER_ID;
+  }
+};
+
+export const parseDiasEdicionHoras = (configRows) => {
+  try {
+    const [config = {}] = configRows || [];
+    const parsed = JSON.parse(config?.detalles || '{}');
+    const dias = parseInt(parsed?.diasAtras, 10);
+    return Number.isFinite(dias) && dias >= 0 ? dias : DEFAULT_DIAS_EDICION_HORAS;
+  } catch (error) {
+    console.warn('No se pudo leer la configuracion de dias de edicion de horas:', error);
+    return DEFAULT_DIAS_EDICION_HORAS;
   }
 };
 

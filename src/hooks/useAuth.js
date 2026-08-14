@@ -10,6 +10,8 @@ import {
     setStoredTransporters,
     sortWarehousesByName,
     sortTransportersByName,
+    getToken,
+    persistToken,
 } from 'utils/session';
 
 const defaultAuthContext = {
@@ -46,6 +48,20 @@ function useProviderAuth() {
             if (stored) setUser(stored);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Renueva la sesion (sliding expiration) en cada respuesta exitosa de la API,
+    // para que la sesion no expire mientras el usuario sigue usando la aplicacion.
+    useEffect(() => {
+        const interceptorId = axios.interceptors.response.use((response) => {
+            const token = getToken();
+            if (token) {
+                persistToken(token);
+            }
+            return response;
+        });
+
+        return () => axios.interceptors.response.eject(interceptorId);
     }, []);
 
     const login = async (username, password) => {

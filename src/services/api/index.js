@@ -491,7 +491,14 @@ const endPoints = {
         pagination: (page, limit) => `${API}/api/${VERSION}/inspeccion/paginar?offset=${page}&limit=${limit}`,
         create: `${API}/api/${VERSION}/inspeccion`,
         update: (id) => `${API}/api/${VERSION}/inspeccion/${id}`,
-        delete: (id) => `${API}/api/${VERSION}/inspeccion/${id}`
+        delete: (id) => `${API}/api/${VERSION}/inspeccion/${id}`,
+        estadisticas: (groupBy, anio) => {
+            const params = new URLSearchParams();
+            if (groupBy?.length) params.set('groupBy', groupBy.join(','));
+            if (anio) params.set('anio', anio);
+            const query = params.toString();
+            return `${API}/api/${VERSION}/inspeccion/estadisticas${query ? `?${query}` : ''}`;
+        }
     },
     googleDrive: {
         subirEvidencias: `${API}/api/${VERSION}/googleDrive/subir-evidencias`,

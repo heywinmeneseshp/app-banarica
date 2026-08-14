@@ -78,27 +78,17 @@ const FILTER_FIELDS = [
   { id: "producto", label: "Producto", placeholder: "Ingrese el Producto" },
 ];
 
-// Hook personalizado para debounce
-const useDebounce = (value, delay) => {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => setDebouncedValue(value), delay);
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-
-  return debouncedValue;
-};
-
 // Hook personalizado para el estado del listado
-const useListadoState = () => {
+const useListadoState = (configKey) => {
   const [state, setState] = useState(() => ({
     tableData: [],
     pagination: 1,
     limit: parseInt(safeStorageGet('listadoLimit', '50'), 10) || 50,
     total: 0,
     configuracionInsumos: [],
-    configuracionTabla: safeStorageGetJson("ListadoConfig", CONFIG_TABLA_DEFAULT),
+    // Si el usuario aun no tiene configuracion propia, se migra la configuracion
+    // generica anterior (compartida entre usuarios) para no perder lo ya elegido.
+    configuracionTabla: safeStorageGetJson(configKey, null) ?? safeStorageGetJson("ListadoConfig", CONFIG_TABLA_DEFAULT),
     almacenes: safeStorageGetJson('almacenByUser', []),
     embarques: [],
     productos: [],
@@ -138,7 +128,10 @@ const ListadoContenedores = () => {
   const tablaRef = useRef();
   const messageTimeoutRef = useRef(null);
   const wasEditableRef = useRef(false);
+  const listarRequestIdRef = useRef(0);
   const user = getUser();
+  // La configuracion de columnas es por usuario dentro del mismo navegador.
+  const configuracionTablaKey = user?.username ? `ListadoConfig_${user.username}` : 'ListadoConfig';
 
   // Estados
   const [filters, setFilters] = useState({
@@ -149,14 +142,28 @@ const ListadoContenedores = () => {
   const [inlineMessage, setInlineMessage] = useState(null);
   const [evidenciasDriveFolderIdListado, setEvidenciasDriveFolderIdListado] = useState('');
 
-  const { state, updateState } = useListadoState();
-  const debouncedFilters = useDebounce(filters, 500);
+  const { state, updateState } = useListadoState(configuracionTablaKey);
+  // Los filtros de texto solo se aplican al presionar Enter o el boton "Buscar"
+  // (no mientras se escribe), para evitar disparar busquedas con texto incompleto.
+  const [appliedFilters, setAppliedFilters] = useState(filters);
 
-  const updateLocalRowListado = useCallback((id, updater) => {
-    updateState((prev) => ({
-      ...prev,
-      tableData: prev.tableData.map((row) => (row.id === id ? updater(row) : row)),
-    }));
+  // La evidencia es del contenedor (una sola carpeta de Drive), pero un contenedor
+  // puede tener varias lineas de Listado (una por producto). Al subir evidencia
+  // desde una linea, se marca en todas las lineas del mismo contenedor para que
+  // el icono quede en verde en todas, no solo en la que se uso para subir.
+  const updateLocalRowListadoEvidencia = useCallback((id, updater) => {
+    updateState((prev) => {
+      const filaOrigen = prev.tableData.find((row) => row.id === id);
+      const contenedorId = filaOrigen?.Contenedor?.id;
+      return {
+        ...prev,
+        tableData: prev.tableData.map((row) => (
+          row.id === id || (contenedorId && row?.Contenedor?.id === contenedorId)
+            ? updater(row)
+            : row
+        )),
+      };
+    });
   }, [updateState]);
 
   const setAlertListado = useCallback(({ mensaje, color }) => {
@@ -178,7 +185,7 @@ const ListadoContenedores = () => {
     subirEvidenciasProgramacion: subirEvidenciasListado,
   } = useEvidencias({
     evidenciasDriveFolderId: evidenciasDriveFolderIdListado,
-    updateLocalRow: updateLocalRowListado,
+    updateLocalRow: updateLocalRowListadoEvidencia,
     setAlert: setAlertListado,
     setReloadKey: () => {},
     entityType: 'listado',
@@ -242,6 +249,32 @@ const ListadoContenedores = () => {
   const updateFilters = useCallback((newFilters) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
   }, []);
+
+  const applyFilters = useCallback((nextFilters) => {
+    setAppliedFilters(nextFilters);
+    updateState({ pagination: 1 });
+  }, [updateState]);
+
+  const handleSearch = useCallback(() => {
+    applyFilters(filters);
+  }, [filters, applyFilters]);
+
+  const handleFilterKeyDown = useCallback((e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSearch();
+    }
+  }, [handleSearch]);
+
+  // Las fechas son una seleccion puntual (no se "escriben" letra por letra), asi
+  // que se aplican de inmediato al elegirlas, sin esperar Enter/boton Buscar.
+  const handleDateFilterChange = useCallback((field, value) => {
+    setFilters(prev => {
+      const next = { ...prev, [field]: value };
+      applyFilters(next);
+      return next;
+    });
+  }, [applyFilters]);
 
   const patchTableRow = useCallback((rowId, updater) => {
     updateState((prev) => ({
@@ -337,7 +370,27 @@ const ListadoContenedores = () => {
   const handleDatalist = useCallback(async (id, itemActualiza, linea) => {
     const inputElement = document.getElementById(id);
     const value = inputElement.value;
-    if (!value) return;
+
+    if (!value) {
+      // Solo transportadora se puede dejar vacia (vuelve a "N/A"); los demas campos son requeridos.
+      if (itemActualiza !== 'transportadora') return;
+
+      try {
+        await actualizarListado(linea, { id_transportadora: null });
+        patchTableRow(linea, (currentRow) => ({
+          ...currentRow,
+          Contenedor: {
+            ...currentRow.Contenedor,
+            carrusel: null
+          }
+        }));
+        inputElement.style.color = "";
+      } catch (error) {
+        console.error('Error al actualizar:', error);
+        showInlineMessage('Error al actualizar el registro');
+      }
+      return;
+    }
 
     const lookupData = {
       almacen: { data: state.almacenes, field: "id_lugar_de_llenado", key: "nombre" },
@@ -635,22 +688,26 @@ const ListadoContenedores = () => {
 
   // Función principal de carga de datos optimizada
   const listar = useCallback(async () => {
+    // Evita que una respuesta vieja (p. ej. de un filtro anterior que aun no
+    // terminaba de resolver) sobrescriba el resultado de una peticion mas
+    // reciente cuando llegan fuera de orden.
+    const requestId = ++listarRequestIdRef.current;
     updateState({ loading: true });
 
     try {
       const filterBody = Object.entries({
-        contenedor: debouncedFilters.contenedor,
-        booking: debouncedFilters.booking,
-        bl: debouncedFilters.BoL,
-        destino: debouncedFilters.destino,
-        naviera: debouncedFilters.naviera,
-        cliente: debouncedFilters.cliente,
-        semana: debouncedFilters.semana,
-        buque: debouncedFilters.buque,
-        fecha_inicial: debouncedFilters.fecha_inicial,
-        fecha_final: debouncedFilters.fecha_final,
-        llenado: debouncedFilters.llenado,
-        producto: debouncedFilters.producto,
+        contenedor: appliedFilters.contenedor,
+        booking: appliedFilters.booking,
+        bl: appliedFilters.BoL,
+        destino: appliedFilters.destino,
+        naviera: appliedFilters.naviera,
+        cliente: appliedFilters.cliente,
+        semana: appliedFilters.semana,
+        buque: appliedFilters.buque,
+        fecha_inicial: appliedFilters.fecha_inicial,
+        fecha_final: appliedFilters.fecha_final,
+        llenado: appliedFilters.llenado,
+        producto: appliedFilters.producto,
         habilitado: true
       }).reduce((acc, [key, value]) => {
         if (value) acc[key] = value;
@@ -701,6 +758,8 @@ const ListadoContenedores = () => {
         ).filter(Boolean);
       }
 
+      if (requestId !== listarRequestIdRef.current) return; // hay una peticion mas reciente en curso
+
       const visibleRows = filterActiveContainerRows(listadoList.data);
 
       updateState({
@@ -718,6 +777,8 @@ const ListadoContenedores = () => {
 
       aplicarColor(visibleRows);
     } catch (error) {
+      if (requestId !== listarRequestIdRef.current) return; // hay una peticion mas reciente en curso
+
       console.error('Error al cargar datos:', {
         message: error?.message,
         status: error?.response?.status,
@@ -733,22 +794,20 @@ const ListadoContenedores = () => {
     user.username,
     aplicarColor,
     updateState,
-    debouncedFilters,
+    appliedFilters,
     notify
   ]);
 
-  // Handler optimizado para cambios en filtros
+  // Handler optimizado para cambios en filtros (solo actualiza el texto en pantalla;
+  // la busqueda se dispara con Enter o el boton "Buscar", ver handleSearch).
   const handleFilterChange = useCallback((field, value) => {
     updateFilters({ [field]: value });
-    if (state.pagination !== 1) {
-      updateState({ pagination: 1 });
-    }
-  }, [state.pagination, updateFilters, updateState]);
+  }, [updateFilters]);
 
   // Efectos optimizados
   useEffect(() => {
     listar();
-  }, [state.pagination, state.limit, debouncedFilters, state.openTransbordar, state.openMasivo, state.openActualizarMasivo, listar]);
+  }, [state.pagination, state.limit, appliedFilters, state.openTransbordar, state.openMasivo, state.openActualizarMasivo, listar]);
 
   useEffect(() => {
     if (wasEditableRef.current && !state.isEditable) {
@@ -1059,6 +1118,8 @@ const ListadoContenedores = () => {
                   type="text"
                   value={filters[id]}
                   onChange={(e) => handleFilterChange(id, e.target.value)}
+                  onKeyDown={handleFilterKeyDown}
+                  onBlur={handleSearch}
                   placeholder={placeholder}
                 />
               </Form.Group>
@@ -1072,7 +1133,7 @@ const ListadoContenedores = () => {
                 className='form-control-sm'
                 type="date"
                 value={filters.fecha_inicial}
-                onChange={(e) => handleFilterChange('fecha_inicial', e.target.value)}
+                onChange={(e) => handleDateFilterChange('fecha_inicial', e.target.value)}
               />
             </Form.Group>
           </Col>
@@ -1084,9 +1145,20 @@ const ListadoContenedores = () => {
                 className='form-control-sm'
                 type="date"
                 value={filters.fecha_final}
-                onChange={(e) => handleFilterChange('fecha_final', e.target.value)}
+                onChange={(e) => handleDateFilterChange('fecha_final', e.target.value)}
               />
             </Form.Group>
+          </Col>
+
+          <Col>
+            <button
+              type='button'
+              onClick={handleSearch}
+              className={`btn mt-30px w-100 btn-sm btn-primary`}
+              disabled={state.loading}
+            >
+              {state.loading ? 'Buscando...' : 'Buscar'}
+            </button>
           </Col>
 
           <Col>
@@ -1238,6 +1310,7 @@ const ListadoContenedores = () => {
       {state.openConfigTabla && (
         <ListadoConfig
           handleConfig={handleConfig}
+          storageKey={configuracionTablaKey}
           modulo_confi={"Tabla_listado"}
         />
       )}

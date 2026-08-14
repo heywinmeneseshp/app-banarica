@@ -104,42 +104,64 @@ const Rechazos = () => {
         try {
             const { Contenedor, id_producto, cod_productor, almacene } = rechazo;
             const { Listados, contenedor } = Contenedor;
-            const existeProductoRechazado = Listados.some(item => item.combo.id === id_producto);
-            const existeProductorRechazado = Listados.some(item => item.almacen.consecutivo === cod_productor);
+            const nombreProductorOriginal = almacene?.nombre || cod_productor;
 
-            if (!existeProductorRechazado) {
-                const ok = window.confirm(`⚠ El productor "${almacene.nombre}" no está asignado al contenedor "${contenedor}". ¿Desea continuar?`);
-                if (!ok) return;
-            }
+            const existeProductoRechazado = Listados.some(item => item.combo.id === id_producto);
             if (!existeProductoRechazado) {
                 return window.alert(`⚠ El producto "${rechazo.combo.nombre}" no está asignado al contenedor "${contenedor}".`);
             }
 
-            // Seleccionar el productor responsable
-            let almacenCod = null;
-            let message = "🔹 Ingresa el código del productor responsable del rechazo del producto. Opciones disponibles:";
-            while (!almacenCod) {
-                let almacenesFiltrados = Listados.filter(item => item.combo.id === id_producto).map(item => item.almacen);
-                const almacenExist = almacenesFiltrados.find(item => item.consecutivo == almacene.consecutivo);
-                almacenesFiltrados = almacenExist == null ? almacenesFiltrados : [almacenExist];
-                if (almacenesFiltrados.length > 1) {
-                    const opciones = almacenesFiltrados.map(el => `${el.consecutivo} ${el.nombre}`).join(", ");
+            // Productores del contenedor que si tienen este producto: son las unicas
+            // fuentes validas de inventario para descontar las cajas del rechazo.
+            const candidatos = Listados
+                .filter(item => item.combo.id === id_producto)
+                .map(item => item.almacen);
+
+            if (candidatos.length === 0) {
+                return window.alert(`⚠ Ningún productor del contenedor "${contenedor}" tiene este producto asignado. No es posible aprobar el rechazo.`);
+            }
+
+            let codProductorDescuento = null;
+            const candidatoOriginal = candidatos.find(item => item.consecutivo === cod_productor);
+
+            if (candidatoOriginal) {
+                // El productor del rechazo si tiene el producto en el contenedor: se descuenta de el mismo.
+                codProductorDescuento = candidatoOriginal.consecutivo;
+            } else if (candidatos.length === 1) {
+                const unico = candidatos[0];
+                const ok = window.confirm(
+                    `⚠ El productor "${nombreProductorOriginal}" no tiene este producto en el contenedor "${contenedor}". `
+                    + `Se conservará "${nombreProductorOriginal}" como productor del rechazo, pero las cajas se descontarán `
+                    + `del inventario de "${unico.nombre}" (${unico.consecutivo}). ¿Deseas continuar?`
+                );
+                if (!ok) return;
+                codProductorDescuento = unico.consecutivo;
+            } else {
+                let message = `🔹 El productor "${nombreProductorOriginal}" no tiene este producto en el contenedor. Elige de cuál productor se descuentan las cajas. Opciones disponibles:`;
+                while (!codProductorDescuento) {
+                    const opciones = candidatos.map(el => `${el.consecutivo} ${el.nombre}`).join(", ");
                     const inputUsuario = window.prompt(`${message} ${opciones}`);
                     if (!inputUsuario) return;
-                    almacenCod = almacenesFiltrados.find(item => item.consecutivo === inputUsuario)?.consecutivo;
-                } else {
-                    almacenCod = almacenesFiltrados[0]?.consecutivo || cod_productor;
-                }
-                if (!almacenCod) {
-                    message = "⚠ El código ingresado no es válido. Inténtalo de nuevo:";
+                    codProductorDescuento = candidatos.find(item => item.consecutivo === inputUsuario)?.consecutivo;
+                    if (!codProductorDescuento) message = "⚠ El código ingresado no es válido. Inténtalo de nuevo:";
                 }
             }
 
-            if (!window.confirm("¿Estás seguro de aprobar el rechazo?")) return;
+            const nombreProductorDescuento = candidatos.find(item => item.consecutivo === codProductorDescuento)?.nombre || codProductorDescuento;
+            const mensajeConfirmacion = codProductorDescuento === cod_productor
+                ? "¿Estás seguro de aprobar el rechazo?"
+                : `¿Estás seguro de aprobar el rechazo? El productor registrado se mantendrá como "${nombreProductorOriginal}"; `
+                    + `las cajas se descontarán del inventario de "${nombreProductorDescuento}".`;
+            if (!window.confirm(mensajeConfirmacion)) return;
 
             // El backend lee las cajas actuales con SELECT FOR UPDATE para evitar
-            // descuentos incorrectos cuando se aprueban múltiples rechazos del mismo contenedor
-            await aprobarRechazoApi(rechazo.id, { cod_productor: almacenCod });
+            // descuentos incorrectos cuando se aprueban múltiples rechazos del mismo contenedor.
+            // cod_productor se conserva sin modificar; cod_productor_descuento indica de
+            // donde se descuenta el inventario cuando difiere del productor original.
+            await aprobarRechazoApi(rechazo.id, {
+                cod_productor,
+                cod_productor_descuento: codProductorDescuento,
+            });
             await listar();
         } catch (error) {
             console.error("❌ Error al aprobar rechazo:", error);
@@ -189,6 +211,13 @@ const Rechazos = () => {
                 rechazo.cod_productor = ibm.consecutivo;
             }
 
+            // Validación de motivo
+            if (valoresEditados?.motivo) {
+                const motivoEncontrado = motivosRechazo.find(item => item.motivo_rechazo === valoresEditados.motivo);
+                if (!motivoEncontrado) return window.alert(`⚠ Error: el motivo "${valoresEditados.motivo}" no existe.`);
+                rechazo.id_motivo_de_rechazo = motivoEncontrado.id;
+            }
+
             // Validación de producto (solo si no cambió el contenedor)
             if (valoresEditados?.producto && !nuevoIdContenedor) {
                 const producto = Listados.find(item => item.combo.nombre === valoresEditados.producto);
@@ -206,25 +235,17 @@ const Rechazos = () => {
                     return window.alert(`⚠ El producto "${rechazo.combo.nombre}" no está asignado al contenedor "${contenedorActual}".`);
                 }
 
-                // Selección del código de almacén
-                let almacen = null;
-                let message = "🔹 Ingresa el código del productor responsable del rechazo del producto. Opciones disponibles:";
-                while (!almacen) {
-                    const almacenesFiltrados = Listados.filter(item => item.combo.id === rechazo.id_producto).map(item => item.almacen);
-                    if (almacenesFiltrados.length > 1) {
-                        const opciones = almacenesFiltrados.map(el => `${el.consecutivo} ${el.nombre}`).join(", ");
-                        const inputUsuario = window.prompt(`${message} ${opciones}`);
-                        if (!inputUsuario) return;
-                        almacen = almacenesFiltrados.find(item => item.consecutivo === inputUsuario)?.consecutivo;
-                        rechazo.cod_productor = almacen;
-                    } else {
-                        almacen = almacenesFiltrados[0]?.consecutivo || rechazo.cod_productor;
-                    }
-                    if (!almacen) message = "⚠ El código ingresado no es válido. Inténtalo de nuevo:";
-                }
-
-                if (rechazo.cod_productor !== almacen) {
-                    if (!window.confirm("El productor seleccionado no está asignado a este contenedor. ¿Desea continuar?")) return;
+                // Guardar no requiere que el productor tenga el producto en el contenedor
+                // (a diferencia de aprobar, guardar no descuenta inventario). Solo se avisa.
+                const tieneProductorElProducto = Listados.some(
+                    item => item.combo.id === rechazo.id_producto && item.almacen.consecutivo === rechazo.cod_productor
+                );
+                if (!tieneProductorElProducto) {
+                    const ok = window.confirm(
+                        `⚠ El productor actual no tiene este producto en el contenedor "${contenedorActual}". `
+                        + `¿Deseas guardarlo así de todas formas?`
+                    );
+                    if (!ok) return;
                 }
             }
 
@@ -522,10 +543,20 @@ const Rechazos = () => {
                                         style={{ padding: "0", margin: "0", fontSize: "12px" }}
                                         type="text" value={valoresEditados.cajas || item?.cantidad} onChange={(e) => handleChange(e, 'cajas')} />
                                     </td>
-                                    <td><input
-                                        className="form-control custom-input text-custom-small text-center"
-                                        style={{ padding: "0", margin: "0", fontSize: "12px" }}
-                                        type="text" value={valoresEditados.motivo || item?.MotivoDeRechazo?.motivo_rechazo} onChange={(e) => handleChange(e, 'motivo')} />
+                                    <td>
+                                        <input
+                                            list={`motivos-${item.id}`}
+                                            className="form-control custom-input text-custom-small text-center"
+                                            style={{ padding: "0", margin: "0", fontSize: "12px" }}
+                                            type="text"
+                                            value={valoresEditados.motivo !== undefined ? valoresEditados.motivo : (item?.MotivoDeRechazo?.motivo_rechazo || '')}
+                                            onChange={(e) => handleChange(e, 'motivo')}
+                                        />
+                                        <datalist id={`motivos-${item.id}`}>
+                                            {motivosRechazo.map((element) => (
+                                                <option key={element.id} value={element.motivo_rechazo} />
+                                            ))}
+                                        </datalist>
                                     </td>
                                     <td style={{}}>
                                         <div style={{ display: "flex", justifyContent: "space-evenly", alignItems: "center", margin: "auto", width: "100px", height: "100%" }}>

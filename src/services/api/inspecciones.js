@@ -28,11 +28,17 @@ const eliminarInspeccion = async (id) => {
     return res.data;
 };
 
+const estadisticasInspecciones = async (groupBy = ['anio'], anio) => {
+    const res = await axios.get(endPoints.inspecciones.estadisticas(groupBy, anio));
+    return res.data;
+};
+
 
 export {
     listarInspecciones,
     crearInspeccion,
     actualizarInspeccion,
     paginarInspecciones,
-    eliminarInspeccion
+    eliminarInspeccion,
+    estadisticasInspecciones
 };

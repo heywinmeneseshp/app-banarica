@@ -21,7 +21,7 @@ const AVAILABLE_FIELDS = [
   "QR"
 ];
 
-function ListadoConfig({ handleConfig }) {
+function ListadoConfig({ handleConfig, storageKey = "ListadoConfig" }) {
   const formRef = useRef();
 
   const [dataList, setDataList] = useState(AVAILABLE_FIELDS);
@@ -30,8 +30,11 @@ function ListadoConfig({ handleConfig }) {
   const inputRef = useRef(null);
 
   useEffect(() => {
-
-    let tagsList = localStorage.getItem("ListadoConfig") || `[ "Fecha", "Sem", "BoL",
+    // Si el usuario aun no tiene configuracion propia, se migra la configuracion
+    // generica anterior (compartida entre usuarios) para no perder lo ya elegido.
+    let tagsList = localStorage.getItem(storageKey)
+      || localStorage.getItem("ListadoConfig")
+      || `[ "Fecha", "Sem", "BoL",
       "Naviera", "Destino", "Llenado", "Contenedor", "Insumos de segurdad", "Producto",
       "Cajas", "Peso Neto"]`;
     tagsList = JSON.parse(tagsList);
@@ -39,12 +42,12 @@ function ListadoConfig({ handleConfig }) {
     setTags(tagsList.sort());
     setDataList(newDataList.sort());
 
-  }, []);
+  }, [storageKey]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const json = JSON.stringify(tags.sort());
-    localStorage.setItem("ListadoConfig", json);
+    localStorage.setItem(storageKey, json);
     handleConfig();
   };
 

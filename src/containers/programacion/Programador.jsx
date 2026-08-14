@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { getStoredUser } from 'utils/session';
 import Alertas from '@components/shared/Alertas';
 import FormulariosProgramacion from '@components/shared/Formularios/FormularioProgramacion';
 import CargueMasivo from '@components/seguridad/Listado/CargueMasivo';
@@ -53,17 +54,26 @@ export default function Programador() {
   const { alert, setAlert, toogleAlert } = useAlert();
   const formRef = useRef(null);
 
+  // La configuracion de columnas es por usuario dentro del mismo navegador.
+  const columnStorageKey = useMemo(() => {
+    const username = getStoredUser()?.username;
+    return username ? `${COLUMN_STORAGE_KEY}_${username}` : COLUMN_STORAGE_KEY;
+  }, []);
+
   // Load saved column config from localStorage
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const savedConfig = window.localStorage.getItem(COLUMN_STORAGE_KEY);
+    // Si el usuario aun no tiene configuracion propia, se migra la configuracion
+    // generica anterior (compartida entre usuarios) para no perder lo ya elegido.
+    const savedConfig = window.localStorage.getItem(columnStorageKey)
+      || window.localStorage.getItem(COLUMN_STORAGE_KEY);
     if (!savedConfig) return;
     try {
       setVisibleColumns({ ...DEFAULT_VISIBLE_COLUMNS, ...JSON.parse(savedConfig) });
     } catch {
       setVisibleColumns(DEFAULT_VISIBLE_COLUMNS);
     }
-  }, []);
+  }, [columnStorageKey]);
 
   const {
     catalogsReady,
@@ -82,6 +92,8 @@ export default function Programador() {
     canVerCarpetaDrive,
     transportadoras,
     currentUsername,
+    diasEdicionHoras,
+    setDiasEdicionHoras,
   } = useProgramadorCatalogos({ setAlert });
 
   // Pagination fetch — runs on page/filter change after catalogs are ready
@@ -280,12 +292,12 @@ export default function Programador() {
     if (!row?.fecha) return false;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    const limite = new Date(today);
+    limite.setDate(limite.getDate() - diasEdicionHoras);
     const rowDate = new Date(row.fecha);
     rowDate.setHours(0, 0, 0, 0);
-    return rowDate >= yesterday;
-  }, [canEditarProgramador, isEditable, isSuperAdmin]);
+    return rowDate >= limite;
+  }, [canEditarProgramador, isEditable, isSuperAdmin, diasEdicionHoras]);
 
   // Local row mutation helpers
   const updateLocalRow = useCallback((id, updater) => {
@@ -564,7 +576,7 @@ export default function Programador() {
   const saveColumnConfig = (nextConfig) => {
     setVisibleColumns(nextConfig);
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(COLUMN_STORAGE_KEY, JSON.stringify(nextConfig));
+      window.localStorage.setItem(columnStorageKey, JSON.stringify(nextConfig));
     }
   };
 
@@ -677,6 +689,8 @@ export default function Programador() {
                 isSuperAdmin={isSuperAdmin}
                 isEditable={isEditable}
                 setIsEditable={setIsEditable}
+                diasEdicionHoras={diasEdicionHoras}
+                setDiasEdicionHoras={setDiasEdicionHoras}
                 descargarExcel={descargarExcel}
                 syncingListado={syncingListado}
                 loading={loading}

@@ -14,9 +14,12 @@ import {
   INSUMOS_PROGRAMADOR_MODULE_PREFIX,
   EVIDENCIAS_DRIVE_MODULE,
   DEFAULT_EVIDENCIAS_DRIVE_FOLDER_ID,
+  DIAS_EDICION_HORAS_MODULE,
+  DEFAULT_DIAS_EDICION_HORAS,
   parseVehiculosSinCombustible,
   parseEvidenciasDriveFolderId,
   parseInsumosConfig,
+  parseDiasEdicionHoras,
 } from '../programadorUtils';
 
 export function useProgramadorCatalogos({ setAlert }) {
@@ -30,6 +33,7 @@ export function useProgramadorCatalogos({ setAlert }) {
   const [vehiculosSinCombustible, setVehiculosSinCombustible] = useState([]);
   const [configuracionInsumos, setConfiguracionInsumos] = useState([]);
   const [evidenciasDriveFolderId, setEvidenciasDriveFolderId] = useState(DEFAULT_EVIDENCIAS_DRIVE_FOLDER_ID);
+  const [diasEdicionHoras, setDiasEdicionHoras] = useState(DEFAULT_DIAS_EDICION_HORAS);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [canActualizarPendientes, setCanActualizarPendientes] = useState(false);
   const [canEditarProgramador, setCanEditarProgramador] = useState(false);
@@ -60,6 +64,7 @@ export function useProgramadorCatalogos({ setAlert }) {
           encontrarModulo('Programador_combustible'),
           encontrarModulo(EVIDENCIAS_DRIVE_MODULE).catch(() => []),
           encontrarModulo(`${INSUMOS_PROGRAMADOR_MODULE_PREFIX}${usuario?.username || ''}`).catch(() => []),
+          encontrarModulo(DIAS_EDICION_HORAS_MODULE).catch(() => []),
         ];
 
         if (!superAdmin && usuario?.username) {
@@ -69,7 +74,7 @@ export function useProgramadorCatalogos({ setAlert }) {
         const [
           newUbicaciones, newConductores, newVehiculos, newEmbarques,
           newCombos, newTiposMovimiento, configProgramador, driveConfig,
-          insumosConfig, userConfig,
+          insumosConfig, diasEdicionHorasConfig, userConfig,
         ] = await Promise.all(requests);
 
         const insumosConsecutivos = parseInsumosConfig(insumosConfig);
@@ -101,6 +106,7 @@ export function useProgramadorCatalogos({ setAlert }) {
         );
         setVehiculosSinCombustible(parseVehiculosSinCombustible(configProgramador));
         setEvidenciasDriveFolderId(parseEvidenciasDriveFolderId(driveConfig));
+        setDiasEdicionHoras(parseDiasEdicionHoras(diasEdicionHorasConfig));
 
         if (superAdmin) {
           setCanActualizarPendientes(true);
@@ -151,5 +157,7 @@ export function useProgramadorCatalogos({ setAlert }) {
     canVerCarpetaDrive,
     transportadoras,
     currentUsername,
+    diasEdicionHoras,
+    setDiasEdicionHoras,
   };
 }

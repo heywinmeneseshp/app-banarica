@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { FaCheckCircle, FaCog, FaExchangeAlt, FaEdit, FaSave } from "react-icons/fa";
+import { FaCheckCircle, FaChartBar, FaCog, FaExchangeAlt, FaEdit, FaSave, FaTable } from "react-icons/fa";
 import { GrCircleInformation } from "react-icons/gr";
 import { Dropdown } from "react-bootstrap";
 
@@ -9,6 +9,7 @@ import { encontrarModulo } from "@services/api/configuracion";
 import { actualizarInspeccion, paginarInspecciones } from "@services/api/inspecciones";
 import { aprobarInspeccionLleno, corregirInspeccionContenedor, rechazarInspeccionLleno } from "@services/api/seguridad";
 import InsumoConfig from "@components/shared/InsumoConfig";
+import InspeccionesGraficos from "./InspeccionesGraficos";
 import { useAuth } from "@hooks/useAuth";
 
 const isEmptyInspectionZone = (zone) =>
@@ -27,6 +28,8 @@ export default function Inspeccionados() {
     const [filtersVersion, setFiltersVersion] = useState(0);
     const [canCorrectContainer, setCanCorrectContainer] = useState(false);
     const [canEditHoras, setCanEditHoras] = useState(false);
+    const [canVerGraficos, setCanVerGraficos] = useState(false);
+    const [vista, setVista] = useState("tabla"); // "tabla" | "grafico"
     const [editando, setEditando] = useState(null);
     const [valoresEditados, setValoresEditados] = useState({});
     const [guardandoEdicion, setGuardandoEdicion] = useState(false);
@@ -93,12 +96,14 @@ export default function Inspeccionados() {
             if (user?.id_rol === "Super administrador") {
                 setCanCorrectContainer(true);
                 setCanEditHoras(true);
+                setCanVerGraficos(true);
                 return;
             }
 
             if (!user?.username) {
                 setCanCorrectContainer(false);
                 setCanEditHoras(false);
+                setCanVerGraficos(false);
                 return;
             }
 
@@ -109,15 +114,25 @@ export default function Inspeccionados() {
                 const botones = Array.isArray(detalles?.botones) ? detalles.botones : [];
                 setCanCorrectContainer(botones.includes("inspeccionados_corregir_contenedor"));
                 setCanEditHoras(botones.includes("inspeccionados_editar_horas"));
+                setCanVerGraficos(botones.includes("inspeccionados_ver_graficos"));
             } catch (error) {
                 console.error("Error cargando permisos de correccion de contenedor:", error);
                 setCanCorrectContainer(false);
                 setCanEditHoras(false);
+                setCanVerGraficos(false);
             }
         };
 
         loadPermissions();
     }, [user?.id_rol, user?.username]);
+
+    // Si el usuario pierde el permiso de graficos (o nunca lo tuvo), no se queda
+    // atascado en esa vista.
+    useEffect(() => {
+        if (!canVerGraficos && vista === "grafico") {
+            setVista("tabla");
+        }
+    }, [canVerGraficos, vista]);
 
     const handleFilter = () => {
         setPagination(1);
@@ -289,8 +304,30 @@ export default function Inspeccionados() {
             <div className="container-fluid px-0">
                 <div className="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-2 mb-3">
                     <h2 className="mb-0">Unidades Inspeccionadas</h2>
+                    {canVerGraficos && (
+                        <div className="btn-group btn-group-sm" role="group" aria-label="Cambiar vista">
+                            <button
+                                type="button"
+                                onClick={() => setVista("tabla")}
+                                className={`btn ${vista === "tabla" ? "btn-primary" : "btn-outline-primary"} d-inline-flex align-items-center gap-1`}
+                            >
+                                <FaTable /> Tabla
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setVista("grafico")}
+                                className={`btn ${vista === "grafico" ? "btn-primary" : "btn-outline-primary"} d-inline-flex align-items-center gap-1`}
+                            >
+                                <FaChartBar /> Gráfico
+                            </button>
+                        </div>
+                    )}
                 </div>
 
+                {vista === "grafico" && canVerGraficos ? (
+                    <InspeccionesGraficos />
+                ) : (
+                <>
                 <form ref={formRef} className="row mt-3 g-2 align-items-center">
                     <div className={`col-12 ${user?.id_rol === "Super administrador" ? "col-md-2" : "col-md-3"}`}>
                         <div className="input-group flex-nowrap">
@@ -558,6 +595,8 @@ export default function Inspeccionados() {
                     onClose={cerrarCorreccionContenedor}
                     onConfirm={ejecutarCorreccionContenedor}
                 />
+                </>
+                )}
             </div>
         </>
     );
