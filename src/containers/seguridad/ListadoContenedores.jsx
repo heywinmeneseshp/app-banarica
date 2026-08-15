@@ -103,6 +103,7 @@ const useListadoState = (configKey) => {
     openMasivo: false,
     openActualizarMasivo: false,
     isEditable: false,
+    soloEliminados: false,
     openQR: false,
     loading: false,
     uniqueCount: 0
@@ -532,10 +533,35 @@ const ListadoContenedores = () => {
       'Error al eliminar las líneas seleccionadas'
     );
 
+  const restaurarLinea = () =>
+    ejecutarOperacionLote(
+      async (items) => {
+        await Promise.all(items.map(item =>
+          actualizarListado(item.id, { habilitado: true })
+        ));
+        updateState({
+          check: new Array(state.check.length).fill(false),
+          checkAll: false
+        });
+      },
+      'Error al restaurar las líneas seleccionadas'
+    );
+
   // Handlers simples optimizados
   const toggleEdit = useCallback(() => {
     updateState({ isEditable: !state.isEditable });
   }, [state.isEditable, updateState]);
+
+  const toggleSoloEliminados = useCallback(() => {
+    updateState((prev) => ({
+      ...prev,
+      soloEliminados: !prev.soloEliminados,
+      isEditable: false,
+      pagination: 1,
+      check: [],
+      checkAll: false,
+    }));
+  }, [updateState]);
 
   const handleConfig = useCallback(() => {
     updateState({
@@ -708,11 +734,13 @@ const ListadoContenedores = () => {
         fecha_final: appliedFilters.fecha_final,
         llenado: appliedFilters.llenado,
         producto: appliedFilters.producto,
-        habilitado: true
       }).reduce((acc, [key, value]) => {
         if (value) acc[key] = value;
         return acc;
       }, {});
+      // "habilitado" es explicito (true/false son ambos valores validos, no se puede
+      // filtrar con el reduce anterior que descarta valores "falsy" como false).
+      filterBody.habilitado = !state.soloEliminados;
 
       const [modulo, embarquesRes, productoRes, transportadorasRes, listadoList, uniqueRes, driveListadoModulo] = await Promise.all([
         encontrarModulo(`Relación_listado_${user.username}`).catch(() => []),
@@ -760,7 +788,11 @@ const ListadoContenedores = () => {
 
       if (requestId !== listarRequestIdRef.current) return; // hay una peticion mas reciente en curso
 
-      const visibleRows = filterActiveContainerRows(listadoList.data);
+      // En la vista de eliminados se muestran tal cual vengan (no se aplica el filtro
+      // de "contenedor activo", que es para ocultar devueltos/deshabilitados del uso normal).
+      const visibleRows = state.soloEliminados
+        ? (listadoList.data || [])
+        : filterActiveContainerRows(listadoList.data);
 
       updateState({
         tableData: visibleRows,
@@ -791,6 +823,7 @@ const ListadoContenedores = () => {
   }, [
     state.pagination,
     state.limit,
+    state.soloEliminados,
     user.username,
     aplicarColor,
     updateState,
@@ -1150,107 +1183,138 @@ const ListadoContenedores = () => {
             </Form.Group>
           </Col>
 
-          <Col>
-            <button
-              type='button'
-              onClick={handleSearch}
-              className={`btn mt-30px w-100 btn-sm btn-primary`}
-              disabled={state.loading}
-            >
-              {state.loading ? 'Buscando...' : 'Buscar'}
-            </button>
-          </Col>
-
-          <Col>
-            <button
-              type='button'
-              onClick={handleExport}
-              className={`btn mt-30px w-100 btn-sm btn-success`}
-              disabled={state.loading}
-            >
-              {state.loading ? 'Cargando...' : 'Descargar excel'}
-            </button>
-          </Col>
         </Row>
       </Form>
 
       {/* Botones de Control */}
-      <Row className="mb-2 mt-4">
-        <Col md={3} className="d-flex justify-content-start">
-          <button
-            className={`btn btn-sm m-1 ${state.isEditable ? 'btn-warning' : 'btn-success'}`}
-            onClick={toggleEdit}
-          >
-            {state.isEditable ? 'Bloquear Edición' : 'Permitir Edición'}
-          </button>
-        </Col>
+      <div className="card bg-light border mt-4 mb-2">
+        <div className="card-body py-3">
+          {!state.soloEliminados && (
+            <Row xs={1} sm={2} md={4} lg={6} className="g-2">
+              <Col>
+                <button onClick={handleActualizarMasivo} className="btn btn-sm btn-primary w-100">
+                  Actualizar masivo
+                </button>
+              </Col>
+              <Col>
+                <button onClick={handleCargueMasivo} className="btn btn-sm btn-primary w-100">
+                  Cargue masivo
+                </button>
+              </Col>
+              <Col>
+                <button onClick={duplicarLinea} className="btn btn-sm btn-warning w-100">
+                  Duplicar línea
+                </button>
+              </Col>
+              <Col>
+                <button onClick={eliminarLinea} className="btn btn-sm btn-danger w-100">
+                  Eliminar línea
+                </button>
+              </Col>
+              <Col>
+                <button onClick={handleTransbordar} className="btn btn-sm btn-info w-100">
+                  Transbordar
+                </button>
+              </Col>
+              <Col>
+                <button
+                  type="button"
+                  onClick={handleExport}
+                  className="btn btn-sm btn-success w-100"
+                  disabled={state.loading}
+                >
+                  {state.loading ? 'Cargando...' : 'Descargar excel'}
+                </button>
+              </Col>
+            </Row>
+          )}
 
-        <Col className="d-flex justify-content-end">
-          <span className="text-sm d-flex align-items-center gap-1 mx-2">
-            <span>Mostrando {state.tableData.length} de {state.total}</span>
-            <span className="text-muted">·</span>
-            <span className="fw-semibold text-primary">{state.uniqueCount}</span>
-            <span>contenedores unicos</span>
-          </span>
+          <div className={`d-flex flex-wrap align-items-center justify-content-between gap-2 ${state.soloEliminados ? '' : 'mt-3 pt-3 border-top'}`}>
+            <div className="d-flex flex-wrap align-items-center gap-2">
+              {!state.soloEliminados && (
+                <button
+                  className={`btn btn-sm ${state.isEditable ? 'btn-warning' : 'btn-success'}`}
+                  onClick={toggleEdit}
+                >
+                  {state.isEditable ? 'Bloquear Edición' : 'Permitir Edición'}
+                </button>
+              )}
 
-          <button
-            type="button"
-            className="btn btn-link btn-sm text-decoration-none p-0"
-            style={{
-              width: 32, height: 32,
-              display: "inline-flex", alignItems: "center", justifyContent: "center",
-              color: "#adb5bd",
-            }}
-            onClick={handleOpenConfig}
-            title="Configuracion"
-          >
-            <FaCog size={17} />
-          </button>
+              {tieneBoton('contenedores_edicion') && (
+                <button
+                  className={`btn btn-sm ${state.soloEliminados ? 'btn-danger' : 'btn-outline-danger'}`}
+                  onClick={toggleSoloEliminados}
+                  title={state.soloEliminados ? 'Volver al listado activo' : 'Ver lineas eliminadas y restaurarlas'}
+                >
+                  {state.soloEliminados ? 'Ver activos' : 'Ver eliminados'}
+                </button>
+              )}
 
-          <div className="d-flex align-items-center me-1">
-            <span className="me-2 ms-2">Límite:</span>
-            <Form.Control
-              type="number"
-              className="form-control-sm"
-              value={draftLimit}
-              style={{ maxWidth: "60px" }}
-              onChange={(e) => setDraftLimit(e.target.value)}
-              onBlur={commitLimitChange}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  commitLimitChange();
-                }
-              }}
-              min={1}
-              max={200}
-            />
+              {state.soloEliminados && (
+                <button onClick={restaurarLinea} className="btn btn-sm btn-success">
+                  Restaurar línea
+                </button>
+              )}
+            </div>
+
+            <div className="d-flex flex-wrap align-items-center gap-3">
+              <span className="text-sm d-flex align-items-center gap-1">
+                <span>Mostrando {state.tableData.length} de {state.total}</span>
+                <span className="text-muted">·</span>
+                <span className="fw-semibold text-primary">{state.uniqueCount}</span>
+                <span>contenedores unicos</span>
+              </span>
+
+              <button
+                type="button"
+                className="btn btn-link btn-sm text-decoration-none p-0"
+                style={{
+                  width: 32, height: 32,
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  color: "#adb5bd",
+                }}
+                onClick={handleOpenConfig}
+                title="Configuracion"
+              >
+                <FaCog size={17} />
+              </button>
+
+              <div className="d-flex align-items-center gap-2">
+                <span>Límite:</span>
+                <Form.Control
+                  type="number"
+                  className="form-control-sm"
+                  value={draftLimit}
+                  style={{ maxWidth: "60px" }}
+                  onChange={(e) => setDraftLimit(e.target.value)}
+                  onBlur={commitLimitChange}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      commitLimitChange();
+                    }
+                  }}
+                  min={1}
+                  max={200}
+                />
+              </div>
+            </div>
           </div>
+        </div>
+      </div>
 
-
-
-          <button onClick={handleActualizarMasivo} className="btn btn-sm m-1 btn-primary">
-            Actualizar masivo
-          </button>
-
-          <button onClick={handleCargueMasivo} className="btn btn-sm m-1 btn-primary">
-            Cargue masivo
-          </button>
-          <button onClick={duplicarLinea} className="btn btn-sm m-1 btn-warning">
-            Duplicar línea
-          </button>
-          <button onClick={eliminarLinea} className="btn btn-sm m-1 btn-danger">
-            Eliminar línea
-          </button>
-          <button onClick={handleTransbordar} className="btn btn-sm m-1 btn-info">
-            Transbordar
-          </button>
-        </Col>
-      </Row>
+      {state.soloEliminados && (
+        <div className="alert alert-secondary py-2 mb-2">
+          Mostrando solo líneas <strong>eliminadas</strong>. Selecciona las que quieras y usa &quot;Restaurar línea&quot; para devolverlas al listado.
+        </div>
+      )}
 
       {/* Tabla COMPLETA */}
       <div className="table-responsive">
-        <table ref={tablaRef} className="table table-striped table-bordered table-sm mt-2 text-center align-middle">
+        <table
+          ref={tablaRef}
+          className={`table table-striped table-bordered table-sm mt-2 text-center align-middle${state.soloEliminados ? ' table-dark' : ''}`}
+        >
           <thead className="align-middle">
             <tr>
               <th className="text-custom-small text-center">
