@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from 'react-bootstrap';
-import { FaCamera, FaPlus, FaTrashAlt } from 'react-icons/fa';
+import { FaCamera, FaHistory, FaPlus, FaTrashAlt } from 'react-icons/fa';
 import Paginacion from '@components/shared/Tablas/Paginacion';
 import {
   normalizeValue,
@@ -46,6 +46,7 @@ export default function ProgramadorTable({
   abrirModalSeriales,
   abrirModalEvidencia,
   abrirVerEvidencias,
+  abrirHistorial,
   eliminar,
   pagination,
   setPagination,
@@ -127,6 +128,7 @@ export default function ProgramadorTable({
               {visibleColumns.estado_listado && renderProgramadorHeader('estado_listado', 'Estado', isEditable)}
               {visibleColumns.agregar_serial && renderProgramadorHeader('agregar_serial', '', isEditable)}
               {visibleColumns.evidencia && renderProgramadorHeader('evidencia', 'Evid.', isEditable)}
+              {visibleColumns.historial && renderProgramadorHeader('historial', '', isEditable)}
               {visibleColumns.eliminar && renderProgramadorHeader('eliminar', '', isEditable)}
             </tr>
           </thead>
@@ -509,6 +511,19 @@ export default function ProgramadorTable({
                       >
                         <FaCamera size={12} />
                       </Button>
+                    </td>
+                  )}
+                  {visibleColumns.historial && (
+                    <td className="text-center align-middle p-0" style={cellStyle}>
+                      <button
+                        type="button"
+                        className="btn btn-link btn-sm text-decoration-none p-0"
+                        style={{ width: 26, height: 26, lineHeight: '24px', color: '#0d6efd' }}
+                        title="Ver historial de cambios"
+                        onClick={() => abrirHistorial(item.id)}
+                      >
+                        <FaHistory size={12} />
+                      </button>
                     </td>
                   )}
                   {visibleColumns.eliminar && (

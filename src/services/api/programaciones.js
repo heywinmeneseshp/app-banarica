@@ -85,6 +85,24 @@ const actualizarMasivoProgramaciones = async (rows) => {
   }
 };
 
+const historialProgramacion = async (id) => {
+  try {
+    const res = await axios.get(endPoints.programaciones.historial(id), authConfig());
+    return res.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error, 'Error al consultar el historial'));
+  }
+};
+
+const paginarHistorialProgramaciones = async (page, limit, body) => {
+  try {
+    const res = await axios.post(endPoints.programaciones.historialPaginar(page, limit), body, authConfig());
+    return res.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error, 'Error al paginar el historial'));
+  }
+};
+
 export {
   agregarProgramaciones,
   eliminarProgramaciones,
@@ -93,4 +111,6 @@ export {
   buscarProgramaciones,
   listarProgramaciones,
   paginarProgramaciones,
+  historialProgramacion,
+  paginarHistorialProgramaciones,
 };

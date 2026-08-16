@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, Modal, Form } from 'react-bootstrap';
-import { FaInfoCircle, FaCog } from 'react-icons/fa';
+import { FaInfoCircle, FaCog, FaHistory } from 'react-icons/fa';
 import { actualizarModulo } from '@services/api/configuracion';
 import { getTransportadoraLabel, DIAS_EDICION_HORAS_MODULE } from './programadorUtils';
 
@@ -42,6 +42,7 @@ export default function ProgramadorFilters({
   rowsShown,
   pageLimit,
   setPageLimit,
+  onVerHistorialGeneral,
 }) {
   const [movimientoOpen, setMovimientoOpen] = useState(false);
   const [draftLimit, setDraftLimit] = useState(pageLimit ?? 25);
@@ -267,6 +268,16 @@ export default function ProgramadorFilters({
               Configurar insumos
             </Button>
           )}
+
+          <Button
+            type="button"
+            onClick={onVerHistorialGeneral}
+            variant="outline-primary"
+            size="sm"
+            className="d-inline-flex align-items-center gap-1"
+          >
+            <FaHistory /> Historial
+          </Button>
         </div>
 
         <div className="d-flex flex-wrap align-items-center gap-2">

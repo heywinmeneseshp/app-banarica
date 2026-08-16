@@ -1,5 +1,11 @@
 import axios from "axios";
 import endPoints from "@services/api/index";
+import { getToken } from "utils/session";
+
+const authConfig = () => {
+    const token = getToken();
+    return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+};
 
 const crearListado = async (body) => {
     const res = await axios.post(endPoints.listado.create, body);
@@ -45,6 +51,16 @@ const eliminarListado = async (id) => {
     return res.data;
 };
 
+const historialListado = async (id) => {
+    const res = await axios.get(endPoints.listado.historial(id), authConfig());
+    return res.data;
+};
+
+const paginarHistorialListado = async (page, limit, body) => {
+    const res = await axios.post(endPoints.listado.historialPaginar(page, limit), body, authConfig());
+    return res.data;
+};
+
 
 export {
     crearListado,
@@ -54,5 +70,7 @@ export {
     paginarListado,
     contarUnicosListado,
     encontrarListado,
-    eliminarListado
+    eliminarListado,
+    historialListado,
+    paginarHistorialListado
 };

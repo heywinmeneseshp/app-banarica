@@ -16,6 +16,7 @@ import { listarEvidencias } from '@services/api/googleDrive';
 import ProgramadorSerialesModal from './ProgramadorSerialesModal';
 import ProgramadorFilters from './ProgramadorFilters';
 import ProgramadorTable from './ProgramadorTable';
+import ProgramadorHistorialModal from './ProgramadorHistorialModal';
 import { useProgramadorCatalogos } from './hooks/useProgramadorCatalogos';
 import { useListadoSync } from './hooks/useListadoSync';
 import { useProgramadorImport } from './hooks/useProgramadorImport';
@@ -48,6 +49,8 @@ export default function Programador() {
   const [showSerialesModal, setShowSerialesModal] = useState(false);
   const [selectedSerialProgramacion, setSelectedSerialProgramacion] = useState(null);
   const [showInsumoConfig, setShowInsumoConfig] = useState(false);
+  const [historialProgramacionId, setHistorialProgramacionId] = useState(null);
+  const [showHistorialGeneral, setShowHistorialGeneral] = useState(false);
   const [transportadoraFiltro, setTransportadoraFiltro] = useState('');
   const [pageLimit, setPageLimit] = useState(PAGE_LIMIT);
 
@@ -704,6 +707,7 @@ export default function Programador() {
                 rowsShown={itemList.length}
                 pageLimit={pageLimit}
                 setPageLimit={setPageLimit}
+                onVerHistorialGeneral={() => setShowHistorialGeneral(true)}
               />
 
             <ProgramadorTable
@@ -728,6 +732,7 @@ export default function Programador() {
               abrirModalSeriales={abrirModalSeriales}
               abrirModalEvidencia={abrirModalEvidencia}
               abrirVerEvidencias={abrirVerEvidencias}
+              abrirHistorial={(id) => setHistorialProgramacionId(id)}
               eliminar={eliminar}
               pagination={pagination}
               setPagination={setPagination}
@@ -736,6 +741,18 @@ export default function Programador() {
           </div>
         </div>
       </div>
+
+      <ProgramadorHistorialModal
+        show={Boolean(historialProgramacionId)}
+        onClose={() => setHistorialProgramacionId(null)}
+        programacionId={historialProgramacionId}
+      />
+
+      <ProgramadorHistorialModal
+        show={showHistorialGeneral}
+        onClose={() => setShowHistorialGeneral(false)}
+        programacionId={null}
+      />
 
       <ProgramadorColumnModal
         show={showColumnConfig}

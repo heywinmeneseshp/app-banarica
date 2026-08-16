@@ -59,6 +59,7 @@ export const COLUMN_OPTIONS = [
   { id: 'serial', label: 'Serial' },
   { id: 'agregar_serial', label: 'Agregar serial' },
   { id: 'evidencia', label: 'Evidencia' },
+  { id: 'historial', label: 'Historial' },
   { id: 'eliminar', label: 'Eliminar' },
 ];
 

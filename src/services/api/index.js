@@ -309,6 +309,8 @@ const endPoints = {
         update: (id) => `${API}/api/${VERSION}/programaciones/${id}`,
         delete: (id) => `${API}/api/${VERSION}/programaciones/${id}`,
         bulkUpdate: `${API}/api/${VERSION}/programaciones/actualizar-masivo`,
+        historial: (id) => `${API}/api/${VERSION}/programaciones/${id}/historial`,
+        historialPaginar: (page, limit) => `${API}/api/${VERSION}/programaciones/historial/paginar?page=${page}&limit=${limit}`,
     },
     programacionSeriales: {
         list: `${API}/api/${VERSION}/programacion-seriales`,
@@ -401,6 +403,8 @@ const endPoints = {
         update: (id) => `${API}/api/${VERSION}/listado/${id}`,
         updateMasivo: `${API}/api/${VERSION}/listado/actualizar-masivo`,
         delete: (id) => `${API}/api/${VERSION}/listado/${id}`,
+        historial: (id) => `${API}/api/${VERSION}/listado/${id}/historial`,
+        historialPaginar: (page, limit) => `${API}/api/${VERSION}/listado/historial/paginar?page=${page}&limit=${limit}`,
     },
     Navieras: {
         list: `${API}/api/${VERSION}/naviera`,

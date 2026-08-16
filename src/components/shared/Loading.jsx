@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from '../styles/Loading.module.css';
+import styles from '@styles/Loading.module.css';
 import Spinner from 'react-bootstrap/Spinner';
 
 

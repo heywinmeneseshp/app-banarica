@@ -1,8 +1,9 @@
 import Paginacion from '@components/shared/Tablas/Paginacion';
+import ListadoHistorialModal from './ListadoHistorialModal';
 import { actualizarListado, duplicarListado, paginarListado, contarUnicosListado } from '@services/api/listado';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { Form, Col, Row, Button } from 'react-bootstrap';
-import { FaExternalLinkAlt, FaQrcode, FaCog } from 'react-icons/fa';
+import { Form, Col, Row, Button, Spinner } from 'react-bootstrap';
+import { FaExternalLinkAlt, FaQrcode, FaCog, FaHistory } from 'react-icons/fa';
 import styles2 from "@components/shared/Formularios/Formularios.module.css";
 import InsumoConfig from '@components/shared/InsumoConfig';
 import ListadoConfig from '@components/shared/ListadoConfig';
@@ -240,6 +241,8 @@ const ListadoContenedores = () => {
     }
   }, [verEvidenciasRow, cerrarVerEvidencias, abrirModalEvidencia]);
   const [draftLimit, setDraftLimit] = useState(() => String(state.limit));
+  const [historialListadoId, setHistorialListadoId] = useState(null);
+  const [showHistorialGeneral, setShowHistorialGeneral] = useState(false);
 
   // Memoized values
   const selectedItems = useMemo(() =>
@@ -301,6 +304,22 @@ const ListadoContenedores = () => {
   useEffect(() => {
     setDraftLimit(String(state.limit));
   }, [state.limit]);
+
+  // Semana actual del sistema, para pedir confirmacion extra al eliminar/restaurar
+  // contenedores de una semana distinta a la actual o a la ultima con datos.
+  const [semanaActualConsecutivo, setSemanaActualConsecutivo] = useState('');
+
+  useEffect(() => {
+    encontrarModulo("Semana", { syncWeeks: false })
+      .then((res) => {
+        const config = res?.[0];
+        if (config?.semana_actual && config?.anho_actual) {
+          const semanaConCero = String(config.semana_actual).padStart(2, '0');
+          setSemanaActualConsecutivo(`S${semanaConCero}-${config.anho_actual}`);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => () => {
     if (messageTimeoutRef.current) {
@@ -519,8 +538,44 @@ const ListadoContenedores = () => {
       'Error al duplicar las líneas seleccionadas'
     );
 
-  const eliminarLinea = () =>
-    ejecutarOperacionLote(
+  // Ultima semana con datos registrados en TODO el sistema (no solo lo que este
+  // filtrado/visible en pantalla, que podia ser una sola semana antigua y hacer
+  // que esa misma semana pareciera "la ultima con datos" incorrectamente).
+  const obtenerUltimaSemanaConDatos = async () => {
+    try {
+      const res = await paginarListado(1, 1, { habilitado: true });
+      return res?.data?.[0]?.Embarque?.semana?.consecutivo || '';
+    } catch {
+      return '';
+    }
+  };
+
+  // Si alguna de las lineas seleccionadas es de una semana distinta a la actual y
+  // a la ultima con datos registrados, se pide escribir "eliminar" como confirmacion
+  // extra antes de eliminar o restaurar (para evitar tocar semanas antiguas por error).
+  const confirmarSiSemanaDistinta = async (items) => {
+    const ultimaConDatos = await obtenerUltimaSemanaConDatos();
+    const semanasPermitidas = new Set([semanaActualConsecutivo, ultimaConDatos].filter(Boolean));
+
+    const haySemanaDistinta = semanasPermitidas.size > 0 && items.some((item) => {
+      const consecutivo = item?.Embarque?.semana?.consecutivo;
+      return consecutivo && !semanasPermitidas.has(consecutivo);
+    });
+
+    if (!haySemanaDistinta) return true;
+
+    const respuesta = window.prompt(
+      'Estas a punto de modificar contenedores de una semana distinta a la actual o a la ultima con datos registrados. '
+      + 'Escribe "eliminar" para confirmar que deseas continuar:'
+    );
+
+    return String(respuesta || '').trim().toLowerCase() === 'eliminar';
+  };
+
+  const eliminarLinea = async () => {
+    if (!(await confirmarSiSemanaDistinta(selectedItems))) return;
+
+    return ejecutarOperacionLote(
       async (items) => {
         await Promise.all(items.map(item =>
           actualizarListado(item.id, { habilitado: false })
@@ -532,9 +587,12 @@ const ListadoContenedores = () => {
       },
       'Error al eliminar las líneas seleccionadas'
     );
+  };
 
-  const restaurarLinea = () =>
-    ejecutarOperacionLote(
+  const restaurarLinea = async () => {
+    if (!(await confirmarSiSemanaDistinta(selectedItems))) return;
+
+    return ejecutarOperacionLote(
       async (items) => {
         await Promise.all(items.map(item =>
           actualizarListado(item.id, { habilitado: true })
@@ -546,6 +604,7 @@ const ListadoContenedores = () => {
       },
       'Error al restaurar las líneas seleccionadas'
     );
+  };
 
   // Handlers simples optimizados
   const toggleEdit = useCallback(() => {
@@ -800,7 +859,10 @@ const ListadoContenedores = () => {
         uniqueCount: uniqueRes?.total ?? 0,
         configuracionInsumos: insumosConfig,
         embarques: embarquesRes.data,
-        productos: productoRes.data,
+        // paginarCombos atrapa sus propios errores y resuelve con undefined en vez de
+        // rechazar la promesa (no lanza), asi que hay que protegerse aqui para que un
+        // fallo de ese endpoint no tumbe toda la carga del listado.
+        productos: productoRes?.data || [],
         transportadoras: Array.isArray(transportadorasRes) ? transportadorasRes : [],
         check: new Array(visibleRows.length).fill(false),
         checkAll: false,
@@ -1036,17 +1098,23 @@ const ListadoContenedores = () => {
 
         {state.configuracionTabla.includes("Producto") && (
           <td className="text-custom-small text-center">
-            <input
-              list="productos"
-              id={`${row.id}-producto`}
-              defaultValue={combo?.nombre}
-              disabled={!state.isEditable}
-              onBlur={() => handleDatalist(`${row.id}-producto`, 'producto', row.id)}
-              className="form-control custom-input text-center"
-            />
-            <datalist id="productos">
-              {state.productos.map((item, i) => <option key={i} value={item.nombre} />)}
-            </datalist>
+            {state.soloEliminados ? (
+              combo?.nombre
+            ) : (
+              <>
+                <input
+                  list="productos"
+                  id={`${row.id}-producto`}
+                  defaultValue={combo?.nombre}
+                  disabled={!state.isEditable}
+                  onBlur={() => handleDatalist(`${row.id}-producto`, 'producto', row.id)}
+                  className="form-control custom-input text-center"
+                />
+                <datalist id="productos">
+                  {state.productos.map((item, i) => <option key={i} value={item.nombre} />)}
+                </datalist>
+              </>
+            )}
           </td>
         )}
 
@@ -1059,8 +1127,8 @@ const ListadoContenedores = () => {
                 step="1"
                 defaultValue={cajas}
                 onBlur={(e) => handleCellEdit(row, "cajas_unidades", e)}
-                className="form-control custom-input text-center"
-                style={{ width: "70px", padding: 0 }}
+                className={`form-control custom-input text-center ${existeRechazo}`}
+                style={{ width: "70px", padding: 0, color: existeRechazo ? "#dc3545" : undefined }}
               />
             ) : (
               cajas
@@ -1125,9 +1193,20 @@ const ListadoContenedores = () => {
             <FaExternalLinkAlt />
           </button>
         </td>
+
+        <td className="text-custom-small text-center">
+          <button
+            type="button"
+            style={{ all: 'unset', cursor: 'pointer', color: '#0d6efd' }}
+            onClick={() => setHistorialListadoId(row.id)}
+            title="Ver historial de cambios"
+          >
+            <FaHistory />
+          </button>
+        </td>
       </tr>
     );
-  }, [state.configuracionTabla, state.isEditable, state.check, state.tableData, state.bol, state.configuracionInsumos, state.embarques, state.almacenes, state.productos, state.transportadoras, handleCellEdit, handleDatalist, onChangeCasilla, handleChecks, openTracecode, updateState, abrirModalEvidencia, abrirVerEvidencias, evidenciasDriveFolderIdListado]);
+  }, [state.configuracionTabla, state.isEditable, state.soloEliminados, state.check, state.tableData, state.bol, state.configuracionInsumos, state.embarques, state.almacenes, state.productos, state.transportadoras, handleCellEdit, handleDatalist, onChangeCasilla, handleChecks, openTracecode, updateState, abrirModalEvidencia, abrirVerEvidencias, evidenciasDriveFolderIdListado]);
 
   return (
     <>
@@ -1250,6 +1329,15 @@ const ListadoContenedores = () => {
                 </button>
               )}
 
+              {tieneBoton('contenedores_edicion') && (
+                <button
+                  className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                  onClick={() => setShowHistorialGeneral(true)}
+                >
+                  <FaHistory /> Historial
+                </button>
+              )}
+
               {state.soloEliminados && (
                 <button onClick={restaurarLinea} className="btn btn-sm btn-success">
                   Restaurar línea
@@ -1311,9 +1399,20 @@ const ListadoContenedores = () => {
 
       {/* Tabla COMPLETA */}
       <div className="table-responsive">
+        {state.soloEliminados && (
+          <style>{`
+            .tabla-eliminados > :not(caption) > * > * {
+              background-color: #6c757d !important;
+              color: #ffffff !important;
+            }
+            .tabla-eliminados.table-striped > tbody > tr:nth-of-type(odd) > * {
+              background-color: #767f87 !important;
+            }
+          `}</style>
+        )}
         <table
           ref={tablaRef}
-          className={`table table-striped table-bordered table-sm mt-2 text-center align-middle${state.soloEliminados ? ' table-dark' : ''}`}
+          className={`table table-striped table-bordered table-sm mt-2 text-center align-middle${state.soloEliminados ? ' tabla-eliminados' : ''}`}
         >
           <thead className="align-middle">
             <tr>
@@ -1349,10 +1448,20 @@ const ListadoContenedores = () => {
               {renderHeader("QR", true)}
               <th className="text-custom-small text-center text-white bg-secondary">Evid.</th>
               <th className="text-custom-small text-center text-white bg-secondary">Detalle</th>
+              <th className="text-custom-small text-center text-white bg-secondary">Historial</th>
             </tr>
           </thead>
           <tbody className="align-middle">
-            {state.tableData.map(renderTableRow)}
+            {state.loading ? (
+              <tr>
+                <td colSpan={100} className="text-center py-5">
+                  <Spinner animation="border" variant={state.soloEliminados ? 'dark' : 'primary'} />
+                  <div className={`mt-2 ${state.soloEliminados ? 'text-dark' : 'text-muted'}`}>Cargando...</div>
+                </td>
+              </tr>
+            ) : (
+              state.tableData.map(renderTableRow)
+            )}
           </tbody>
         </table>
       </div>
@@ -1432,6 +1541,7 @@ const ListadoContenedores = () => {
           setOpenMasivo={(open) => updateState({ openMasivo: open })}
           titulo={"Cargar contenedores"}
           endPointCargueMasivo={endPoints.listado.create + "/masivo"}
+          authRequired
           encabezados={{
             fecha: null, bl: null, contenedor: null,
             id_lugar_de_llenado: null, id_producto: null, cajas_unidades: null,
@@ -1445,6 +1555,7 @@ const ListadoContenedores = () => {
           setOpenMasivo={(open) => updateState({ openActualizarMasivo: open })}
           titulo={"Actualizar contenedores"}
           endPointCargueMasivo={endPoints.listado.updateMasivo}
+          authRequired
           supportPartialResolution
           encabezados={{
             fecha: null, bl: null, contenedor: null,
@@ -1480,6 +1591,18 @@ const ListadoContenedores = () => {
           onSubirMas={irASubirDesdeVer}
         />
       )}
+
+      <ListadoHistorialModal
+        show={Boolean(historialListadoId)}
+        onClose={() => setHistorialListadoId(null)}
+        listadoId={historialListadoId}
+      />
+
+      <ListadoHistorialModal
+        show={showHistorialGeneral}
+        onClose={() => setShowHistorialGeneral(false)}
+        listadoId={null}
+      />
     </>
   );
 };
