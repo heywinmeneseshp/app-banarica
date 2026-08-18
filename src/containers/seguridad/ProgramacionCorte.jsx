@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
 import { FaTrash, FaFileExcel, FaCog, FaPlus, FaChevronDown, FaChevronRight, FaArrowLeft } from 'react-icons/fa';
-import { Button, Collapse, Form, Modal } from 'react-bootstrap';
+import { Button, Col, Collapse, Form, Modal, Row } from 'react-bootstrap';
 import Loader from '@components/shared/Loader';
 import styles2 from '@components/shared/Formularios/Formularios.module.css';
 import excel from '@hooks/useExcel';
@@ -66,6 +66,9 @@ const ProgramacionCorte = () => {
   const [semanas, setSemanas] = useState([]);
   const [semana, setSemana] = useState('');
   const [semanaFiltro, setSemanaFiltro] = useState('');
+  const [bookingFiltro, setBookingFiltro] = useState('');
+  const [almacenFiltro, setAlmacenFiltro] = useState('');
+  const [productoFiltro, setProductoFiltro] = useState('');
   const [openModal, setOpenModal] = useState(false);
   const [archivo, setArchivo] = useState(null);
   const [datosExcel, setDatosExcel] = useState([]);
@@ -79,6 +82,10 @@ const ProgramacionCorte = () => {
   const [draftProcesos, setDraftProcesos] = useState([]);
   const [guardandoConfig, setGuardandoConfig] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [detalleFila, setDetalleFila] = useState(null);
+  const [detalleComparativa, setDetalleComparativa] = useState(null);
+  const [detalleLoading, setDetalleLoading] = useState(false);
+  const [detalleError, setDetalleError] = useState(null);
 
   const cargarLista = async () => {
     setLoading(true);
@@ -130,12 +137,35 @@ const ProgramacionCorte = () => {
   );
 
   const filasFiltradas = useMemo(() => {
-    if (!semanaFiltro.trim()) return filas;
-    return filas.filter(
-      (fila) => String(fila.Embarque?.semana?.consecutivo || '').toLowerCase()
-        === String(semanaFiltro).trim().toLowerCase()
-    );
-  }, [filas, semanaFiltro]);
+    const semanaTexto = semanaFiltro.trim().toLowerCase();
+    const bookingTexto = bookingFiltro.trim().toLowerCase();
+    const almacenTexto = almacenFiltro.trim().toLowerCase();
+    const productoTexto = productoFiltro.trim().toLowerCase();
+
+    return filas.filter((fila) => {
+      if (semanaTexto && String(fila.Embarque?.semana?.consecutivo || '').toLowerCase() !== semanaTexto) {
+        return false;
+      }
+      if (bookingTexto && !String(fila.booking || '').toLowerCase().includes(bookingTexto)) {
+        return false;
+      }
+      if (almacenTexto
+        && !String(fila.almacen?.nombre || '').toLowerCase().includes(almacenTexto)
+        && !String(fila.finca || '').toLowerCase().includes(almacenTexto)
+      ) {
+        return false;
+      }
+      if (productoTexto) {
+        const productos = comparativa?.filas?.find(
+          (c) => c.booking === fila.booking && c.finca === fila.finca && c.fecha === fila.fecha
+        )?.productos || [];
+        if (!productos.some((p) => String(p.producto || '').toLowerCase().includes(productoTexto))) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [filas, semanaFiltro, bookingFiltro, almacenFiltro, productoFiltro, comparativa]);
 
   useEffect(() => {
     let cancelado = false;
@@ -329,6 +359,41 @@ const ProgramacionCorte = () => {
     }
   };
 
+  // Trae la comparativa de la semana de esa fila puntual (no depende del filtro
+  // de semana activo en pantalla, para que el detalle funcione aunque se este
+  // viendo "todas las semanas").
+  const verDetalleFila = async (fila) => {
+    const consecutivoSemana = fila.Embarque?.semana?.consecutivo;
+    setDetalleFila(fila);
+    setDetalleComparativa(null);
+    setDetalleError(null);
+
+    if (!consecutivoSemana) {
+      setDetalleError('Esta fila no tiene una semana asociada; no se puede calcular el detalle.');
+      return;
+    }
+
+    setDetalleLoading(true);
+    try {
+      const res = await comparativaProgramacionCorte(consecutivoSemana);
+      const match = res?.filas?.find(
+        (c) => c.booking === fila.booking && c.finca === fila.finca && c.fecha === fila.fecha
+      ) || null;
+      setDetalleComparativa(match);
+    } catch (error) {
+      console.error('Error al cargar el detalle de la fila:', error);
+      setDetalleError('No fue posible cargar el detalle de esta fila.');
+    } finally {
+      setDetalleLoading(false);
+    }
+  };
+
+  const cerrarDetalleFila = () => {
+    setDetalleFila(null);
+    setDetalleComparativa(null);
+    setDetalleError(null);
+  };
+
   return (
     <>
       <Loader loading={loading} />
@@ -359,27 +424,74 @@ const ProgramacionCorte = () => {
       </div>
       <div className="line"></div>
 
-      <div className="d-flex flex-wrap gap-2 align-items-center mt-3">
-        <label htmlFor="programacion-corte-filtro" className="fw-bold text-nowrap mb-0">Filtrar por semana:</label>
-        <input
-          id="programacion-corte-filtro"
-          type="text"
-          className="form-control"
-          style={{ maxWidth: 200 }}
-          list="programacion-corte-semanas-filtro"
-          placeholder="Todas las semanas"
-          value={semanaFiltro}
-          onChange={(e) => setSemanaFiltro(e.target.value)}
-        />
-        <datalist id="programacion-corte-semanas-filtro">
-          {semanas.map((s) => (
-            <option key={s.id} value={s.consecutivo} />
-          ))}
-        </datalist>
-        <Button variant="success" size="sm" onClick={() => setOpenModal(true)}>
-          <FaFileExcel className="me-1" /> Cargar Excel
-        </Button>
-      </div>
+      <Form className="mt-3">
+        <Row xs={1} sm={2} md={4} lg={5} className="align-items-end">
+          <Col>
+            <Form.Group className="mb-0">
+              <Form.Label className="mt-1 mb-1">Semana</Form.Label>
+              <Form.Control
+                className="form-control-sm"
+                type="text"
+                list="programacion-corte-semanas-filtro"
+                placeholder="Todas las semanas"
+                value={semanaFiltro}
+                onChange={(e) => setSemanaFiltro(e.target.value)}
+              />
+              <datalist id="programacion-corte-semanas-filtro">
+                {semanas.map((s) => (
+                  <option key={s.id} value={s.consecutivo} />
+                ))}
+              </datalist>
+            </Form.Group>
+          </Col>
+
+          <Col>
+            <Form.Group className="mb-0">
+              <Form.Label className="mt-1 mb-1">Booking</Form.Label>
+              <Form.Control
+                className="form-control-sm"
+                type="text"
+                placeholder="Todos"
+                value={bookingFiltro}
+                onChange={(e) => setBookingFiltro(e.target.value)}
+              />
+            </Form.Group>
+          </Col>
+
+          <Col>
+            <Form.Group className="mb-0">
+              <Form.Label className="mt-1 mb-1">Lugar de llenado</Form.Label>
+              <Form.Control
+                className="form-control-sm"
+                type="text"
+                placeholder="Todos"
+                value={almacenFiltro}
+                onChange={(e) => setAlmacenFiltro(e.target.value)}
+              />
+            </Form.Group>
+          </Col>
+
+          <Col>
+            <Form.Group className="mb-0">
+              <Form.Label className="mt-1 mb-1">Producto</Form.Label>
+              <Form.Control
+                className="form-control-sm"
+                type="text"
+                placeholder="Todos"
+                title="Requiere seleccionar una semana valida (usa los datos de la comparativa)"
+                value={productoFiltro}
+                onChange={(e) => setProductoFiltro(e.target.value)}
+              />
+            </Form.Group>
+          </Col>
+
+          <Col>
+            <Button variant="success" size="sm" className="w-100" onClick={() => setOpenModal(true)}>
+              <FaFileExcel className="me-1" /> Cargar Excel
+            </Button>
+          </Col>
+        </Row>
+      </Form>
 
       <div className="card mt-3">
         <button
@@ -418,7 +530,12 @@ const ProgramacionCorte = () => {
                 </tr>
               )}
               {filasFiltradas.map((fila) => (
-                <tr key={fila.id}>
+                <tr
+                  key={fila.id}
+                  onClick={() => verDetalleFila(fila)}
+                  style={{ cursor: 'pointer' }}
+                  title="Ver detalle de productos, cajas y diferencia vs Listado"
+                >
                   <td className="text-custom-small text-center">{fila.Embarque?.semana?.consecutivo || '-'}</td>
                   <td className="text-custom-small text-center text-nowrap">{fila.fecha}</td>
                   <td className="text-custom-small text-center">{fila.booking}</td>
@@ -431,7 +548,10 @@ const ProgramacionCorte = () => {
                     <button
                       type="button"
                       className="btn btn-sm btn-outline-danger border-0"
-                      onClick={() => eliminarFila(fila.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        eliminarFila(fila.id);
+                      }}
                     >
                       <FaTrash />
                     </button>
@@ -709,6 +829,61 @@ const ProgramacionCorte = () => {
           <Button variant="primary" onClick={guardarConfig} disabled={guardandoConfig}>
             {guardandoConfig ? 'Guardando...' : 'Guardar'}
           </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal show={Boolean(detalleFila)} onHide={cerrarDetalleFila} centered size="lg">
+        <Modal.Header closeButton className="bg-dark text-white">
+          <Modal.Title className="h6 mb-0">
+            Detalle {detalleFila?.fecha} - Booking {detalleFila?.booking}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {detalleLoading ? (
+            <div className="text-center text-muted py-4">Cargando detalle...</div>
+          ) : detalleError ? (
+            <div className="alert alert-danger py-2 mb-0">{detalleError}</div>
+          ) : (
+            <>
+              <div className="d-flex flex-wrap gap-3 mb-3">
+                <span>Lugar de llenado: <b>{detalleFila?.finca}</b></span>
+                <span>Cajas programacion: <b>{detalleFila?.cajas}</b></span>
+                <span>Cajas listado: <b>{detalleComparativa?.cajasListado ?? 0}</b></span>
+                <span>Diferencia: <b>{detalleComparativa?.diferencia ?? (detalleFila?.cajas ?? 0)}</b></span>
+                {detalleComparativa?.estado && (
+                  <span className={`badge bg-${BADGE_ESTADO[detalleComparativa.estado] || 'secondary'} align-self-center`}>
+                    {LABEL_ESTADO[detalleComparativa.estado] || detalleComparativa.estado}
+                  </span>
+                )}
+              </div>
+
+              {!detalleComparativa || detalleComparativa.productos.length === 0 ? (
+                <div className="text-muted">No hay cajas registradas en el Listado para esta fecha/booking/lugar de llenado.</div>
+              ) : (
+                <div className="table-responsive">
+                  <table className="table table-sm table-bordered text-center align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th className="text-white bg-secondary">Producto</th>
+                        <th className="text-white bg-secondary">Cajas listado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detalleComparativa.productos.map((p) => (
+                        <tr key={p.producto}>
+                          <td>{p.producto}</td>
+                          <td>{p.cajas}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" size="sm" onClick={cerrarDetalleFila}>Cerrar</Button>
         </Modal.Footer>
       </Modal>
     </>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext, createContext } from 'react';
 import axios from 'axios';
 import endPoints from '@services/api';
 import { useRouter } from 'next/router';
-import { loginWithCredentials } from '@services/api/auth';
+import { loginWithCredentials, setAuthorizationHeader } from '@services/api/auth';
 import {
     getStoredUser,
     setStoredUser,
@@ -41,8 +41,16 @@ function useProviderAuth() {
     const [isLoggingIn, setIsLoggingIn] = useState(false);
     const router = useRouter();
 
-    // Initialize from localStorage after hydration to avoid SSR mismatch
+    // Initialize from localStorage after hydration to avoid SSR mismatch.
+    // Antes esto solo pasaba en pages/index.js, asi que cualquier otra pagina
+    // cargada directamente (recarga, link directo) se quedaba sin el header
+    // Authorization en memoria: la sesion se veia activa (cookie/usuario) pero
+    // toda peticion protegida con passport (guardar, eliminar, etc.) fallaba
+    // con 401 aunque listar/filtrar (rutas publicas) siguiera funcionando.
     useEffect(() => {
+        const token = getToken();
+        if (token) setAuthorizationHeader(token);
+
         if (!user) {
             const stored = getStoredUser();
             if (stored) setUser(stored);

@@ -289,6 +289,13 @@ const ListadoContenedores = () => {
     }));
   }, [updateState]);
 
+  // El backend (boom) manda el detalle en response.data.message; sin esto solo
+  // se ve un generico "Error al actualizar el registro" y no hay forma de saber
+  // por que fallo sin abrir las herramientas de desarrollador.
+  const getErrorMessage = useCallback((error, fallback) => (
+    error?.response?.data?.message || error?.message || fallback
+  ), []);
+
   const showInlineMessage = useCallback((message, variant = 'warning') => {
     if (messageTimeoutRef.current) {
       clearTimeout(messageTimeoutRef.current);
@@ -383,9 +390,9 @@ const ListadoContenedores = () => {
       e.target.style.color = "";
     } catch (error) {
       console.error('Error al actualizar:', error);
-      showInlineMessage('Error al actualizar el registro');
+      showInlineMessage(getErrorMessage(error, 'Error al actualizar el registro'));
     }
-  }, [patchTableRow, showInlineMessage]);
+  }, [patchTableRow, showInlineMessage, getErrorMessage]);
 
   const handleDatalist = useCallback(async (id, itemActualiza, linea) => {
     const inputElement = document.getElementById(id);
@@ -407,7 +414,7 @@ const ListadoContenedores = () => {
         inputElement.style.color = "";
       } catch (error) {
         console.error('Error al actualizar:', error);
-        showInlineMessage('Error al actualizar el registro');
+        showInlineMessage(getErrorMessage(error, 'Error al actualizar el registro'));
       }
       return;
     }
@@ -506,9 +513,9 @@ const ListadoContenedores = () => {
       inputElement.style.color = "";
     } catch (error) {
       console.error('Error al actualizar:', error);
-      showInlineMessage('Error al actualizar el registro');
+      showInlineMessage(getErrorMessage(error, 'Error al actualizar el registro'));
     }
-  }, [patchTableRow, showInlineMessage, state.almacenes, state.embarques, state.productos, state.transportadoras]);
+  }, [patchTableRow, showInlineMessage, getErrorMessage, state.almacenes, state.embarques, state.productos, state.transportadoras]);
 
   const onChangeCasilla = useCallback(async (id, field) => {
     const inputElement = document.getElementById(id);

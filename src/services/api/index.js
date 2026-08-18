@@ -474,6 +474,7 @@ const endPoints = {
         update: (id) => `${API}/api/${VERSION}/rechazo/${id}`,
         delete: (id) => `${API}/api/${VERSION}/rechazo/${id}`,
         aprobar: (id) => `${API}/api/${VERSION}/rechazo/${id}/aprobar`,
+        restaurar: (id) => `${API}/api/${VERSION}/rechazo/${id}/restaurar`,
     },
     motivoDeUso: {
         list: `${API}/api/${VERSION}/motivoDeUso`, //Listo

@@ -1,8 +1,8 @@
 import Paginacion from '@components/shared/Tablas/Paginacion';
-import { actualizarRechazo, eliminarRechazo, paginarRechazos, aprobarRechazoApi, agregarRechazo } from '@services/api/rechazos';
+import { actualizarRechazo, eliminarRechazo, paginarRechazos, aprobarRechazoApi, agregarRechazo, restaurarRechazoApi } from '@services/api/rechazos';
 import { useEffect, useRef, useState } from 'react';
 import { Form, Col, Row } from 'react-bootstrap';
-import { FaEdit, FaPlus } from 'react-icons/fa';
+import { FaEdit, FaPlus, FaTrashRestore } from 'react-icons/fa';
 import { BsSendCheckFill } from "react-icons/bs";
 import { TiDelete } from "react-icons/ti";
 import { FaSave } from "react-icons/fa";
@@ -11,12 +11,16 @@ import { filtrarContenedor } from '@services/api/contenedores';
 import { paginarSemanas } from '@services/api/semanas';
 import { paginarListado } from '@services/api/listado';
 import { listarMotivoDeRechazo } from '@services/api/motivoDeRechazo';
+import { encontrarModulo } from '@services/api/configuracion';
+import { useAuth } from '@hooks/useAuth';
 
 
 
 
 
 const Rechazos = () => {
+    const { getUser } = useAuth();
+    const isSuperAdmin = getUser()?.id_rol === 'Super administrador';
 
     const formRef = useRef();
     const tablaRef = useRef();
@@ -35,6 +39,11 @@ const Rechazos = () => {
     const [listadosSemanaNuevo, setListadosSemanaNuevo] = useState([]);
     const [semanasNuevoRechazo, setSemanasNuevoRechazo] = useState([]);
     const [guardandoRechazo, setGuardandoRechazo] = useState(false);
+    const [soloEliminados, setSoloEliminados] = useState(false);
+    // Semanas en las que el backend permite eliminar/restaurar rechazos: la
+    // actual y la ultima con datos registrados. Se calculan aqui para no
+    // mostrar el icono en filas donde la accion siempre fallaria.
+    const [semanasPermitidasEliminar, setSemanasPermitidasEliminar] = useState(new Set());
     const [nuevoRechazo, setNuevoRechazo] = useState({
         semana: '', contenedor: '', productor: '', producto: '', pallet: '', cajas: '', motivo: '', fecha: ''
     });
@@ -53,7 +62,46 @@ const Rechazos = () => {
         buscarSemana();
         listar();
         listarMotivoDeRechazo().then(setMotivosRechazo).catch(() => setMotivosRechazo([]));
+        cargarSemanasPermitidasEliminar();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    useEffect(() => {
+        listar();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [soloEliminados]);
+
+    const toggleSoloEliminados = () => {
+        setEditando(null);
+        setSoloEliminados((prev) => !prev);
+    };
+
+    // Misma regla que aplica el backend: solo se puede eliminar/restaurar un
+    // rechazo de la semana actual o de la ultima semana con datos registrados.
+    const cargarSemanasPermitidasEliminar = async () => {
+        try {
+            const [configSemana, ultimoListado] = await Promise.all([
+                encontrarModulo('Semana', { syncWeeks: false }).catch(() => []),
+                paginarListado(1, 1, { habilitado: true }).catch(() => null),
+            ]);
+
+            const semanaActual = configSemana?.[0]?.semana_actual !== undefined
+                ? `S${String(configSemana[0].semana_actual).padStart(2, '0')}-${configSemana[0].anho_actual}`
+                : null;
+            const ultimaConDatos = ultimoListado?.data?.[0]?.Embarque?.semana?.consecutivo || null;
+
+            setSemanasPermitidasEliminar(new Set([semanaActual, ultimaConDatos].filter(Boolean)));
+        } catch (error) {
+            console.error("❌ Error al calcular las semanas permitidas para eliminar:", error);
+            setSemanasPermitidasEliminar(new Set());
+        }
+    };
+
+    const puedeEliminarORestaurar = (rechazo) => {
+        if (semanasPermitidasEliminar.size === 0) return true; // si no se pudo calcular, no bloquear en el front (el backend igual valida)
+        const semanaRechazo = getListadoRelacionado(rechazo)?.Embarque?.semana?.consecutivo;
+        return !semanaRechazo || semanasPermitidasEliminar.has(semanaRechazo);
+    };
 
     const listar = async () => {
         try {
@@ -63,6 +111,7 @@ const Rechazos = () => {
                 productor: formData.get("productor") || "",
                 contenedor: formData.get("contenedor") || "",
                 producto: formData.get("producto") || "",
+                eliminado: soloEliminados,
             };
 
 
@@ -266,7 +315,7 @@ const Rechazos = () => {
             await listar();
         } catch (error) {
             console.error("❌ Error al guardar la edición:", error);
-            window.alert("⚠ Se produjo un error al guardar los cambios. Inténtalo de nuevo.");
+            window.alert(error?.response?.data?.message || "⚠ Se produjo un error al guardar los cambios. Inténtalo de nuevo.");
         }
     };
 
@@ -275,9 +324,33 @@ const Rechazos = () => {
     };
 
     const eliminarRechazoHandler = async (rechazo) => {
-        if (!window.confirm("¿Estás seguro de eliminar el rechazo?")) return;
-        await eliminarRechazo(rechazo.id);
-        listar();
+        const mensaje = rechazo?.habilitado
+            ? `¿Estás seguro de eliminar el rechazo? Ya estaba aprobado: se devolverán ${rechazo.cantidad} cajas al inventario del productor.`
+            : "¿Estás seguro de eliminar el rechazo?";
+        if (!window.confirm(mensaje)) return;
+        try {
+            await eliminarRechazo(rechazo.id);
+            await listar();
+            await cargarSemanasPermitidasEliminar();
+        } catch (error) {
+            console.error("❌ Error al eliminar el rechazo:", error);
+            window.alert(error?.response?.data?.message || "Error al eliminar el rechazo.");
+        }
+    };
+
+    const restaurarRechazoHandler = async (rechazo) => {
+        const mensaje = rechazo?.habilitado
+            ? `¿Restaurar este rechazo? Estaba aprobado: se volverán a descontar ${rechazo.cantidad} cajas del inventario del productor.`
+            : "¿Restaurar este rechazo?";
+        if (!window.confirm(mensaje)) return;
+        try {
+            await restaurarRechazoApi(rechazo.id);
+            await listar();
+            await cargarSemanasPermitidasEliminar();
+        } catch (error) {
+            console.error("❌ Error al restaurar el rechazo:", error);
+            window.alert(error?.response?.data?.message || "Error al restaurar el rechazo.");
+        }
     };
 
     const abrirCargarRechazo = () => {
@@ -397,9 +470,22 @@ const Rechazos = () => {
         <>
             <div className="d-flex justify-content-between align-items-center mb-2">
                 <h2 className="mb-0">{"Rechazos"}</h2>
-                <button type="button" className="btn btn-sm btn-primary" onClick={abrirCargarRechazo}>
-                    <FaPlus className="me-1" /> Cargar rechazo
-                </button>
+                <div className="d-flex gap-2">
+                    {isSuperAdmin && (
+                        <button
+                            type="button"
+                            className={`btn btn-sm ${soloEliminados ? 'btn-danger' : 'btn-outline-danger'}`}
+                            onClick={toggleSoloEliminados}
+                        >
+                            {soloEliminados ? 'Ver activos' : 'Ver eliminados'}
+                        </button>
+                    )}
+                    {!soloEliminados && (
+                        <button type="button" className="btn btn-sm btn-primary" onClick={abrirCargarRechazo}>
+                            <FaPlus className="me-1" /> Cargar rechazo
+                        </button>
+                    )}
+                </div>
             </div>
             <div className="line"></div>
             {/* Filtros */}
@@ -577,14 +663,29 @@ const Rechazos = () => {
                                     <td className="text-custom-small text-center">{item?.MotivoDeRechazo?.motivo_rechazo}</td>
                                     <td className="text-custom-small text-center" style={{ height: "100%" }}>
                                         <div style={{ display: "flex", justifyContent: "space-evenly", alignItems: "center", width: "100%", height: "100%" }}>
+                                            {soloEliminados ? (
+                                                puedeEliminarORestaurar(item) && (
+                                                    <FaTrashRestore
+                                                        onClick={() => restaurarRechazoHandler(item)}
+                                                        title={item?.habilitado ? "Restaurar (vuelve a descontar las cajas)" : "Restaurar"}
+                                                        style={{ cursor: "pointer", color: "#579164", fontSize: "1.2rem" }}
+                                                    />
+                                                )
+                                            ) : (
+                                                <>
+                                                    <FaEdit onClick={() => editarRechazo(item)} style={{ cursor: "pointer", color: "#997a1c", fontSize: "1.2rem" }} />
 
-                                            <FaEdit onClick={() => editarRechazo(item)} style={{ cursor: "pointer", color: "#997a1c", fontSize: "1.2rem" }} />
-
-                                            {!item?.habilitado && (
-                                                <BsSendCheckFill onClick={() => aprobarRechazo(item)} style={{ cursor: "pointer", color: "#579164", fontSize: "1.2rem" }} />
-                                            )}
-                                            {!item?.habilitado && (
-                                                <TiDelete onClick={() => eliminarRechazoHandler(item)} style={{ cursor: "pointer", color: "#91484f", fontSize: "1.4rem" }} />
+                                                    {!item?.habilitado && (
+                                                        <BsSendCheckFill onClick={() => aprobarRechazo(item)} style={{ cursor: "pointer", color: "#579164", fontSize: "1.2rem" }} />
+                                                    )}
+                                                    {isSuperAdmin && puedeEliminarORestaurar(item) && (
+                                                        <TiDelete
+                                                            onClick={() => eliminarRechazoHandler(item)}
+                                                            title={item?.habilitado ? "Eliminar (devuelve las cajas al inventario)" : "Eliminar"}
+                                                            style={{ cursor: "pointer", color: "#91484f", fontSize: "1.4rem" }}
+                                                        />
+                                                    )}
+                                                </>
                                             )}
                                         </div>
                                     </td>

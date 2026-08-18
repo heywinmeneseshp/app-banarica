@@ -56,11 +56,17 @@ const aprobarRechazoApi = async (id, body) => {
     return res.data;
 };
 
+const restaurarRechazoApi = async (id) => {
+    const res = await axios.post(endPoints.rechazos.restaurar(id), {}, config);
+    return res.data;
+};
+
 export { agregarRechazo,
     eliminarRechazo,
     actualizarRechazo,
     buscarRechazo,
     paginarRechazos,
     listarRechazos,
-    aprobarRechazoApi
+    aprobarRechazoApi,
+    restaurarRechazoApi
 };
