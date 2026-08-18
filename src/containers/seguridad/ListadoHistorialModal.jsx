@@ -10,9 +10,19 @@ const ACCION_BADGE = {
 };
 
 const CAMPOS_A_MOSTRAR = [
-  'fecha', 'id_lugar_de_llenado', 'id_producto', 'cajas_unidades',
+  'fecha', 'contenedor_codigo', 'id_lugar_de_llenado', 'id_producto', 'cajas_unidades',
   'transbordado', 'habilitado',
 ];
+
+const ETIQUETA_CAMPO = {
+  fecha: 'Fecha',
+  contenedor_codigo: 'Contenedor',
+  id_lugar_de_llenado: 'Lugar de llenado (id)',
+  id_producto: 'Producto (id)',
+  cajas_unidades: 'Cajas',
+  transbordado: 'Transbordado',
+  habilitado: 'Habilitado',
+};
 
 function formatFechaHora(iso) {
   if (!iso) return '';
@@ -42,7 +52,7 @@ function DiferenciasCampos({ antes, despues }) {
       <tbody>
         {campos.map((campo) => (
           <tr key={campo}>
-            <td className="fw-semibold">{campo}</td>
+            <td className="fw-semibold">{ETIQUETA_CAMPO[campo] || campo}</td>
             <td className="text-danger">{antes ? String(antes[campo] ?? '—') : '—'}</td>
             <td className="text-success">{despues ? String(despues[campo] ?? '—') : '—'}</td>
           </tr>

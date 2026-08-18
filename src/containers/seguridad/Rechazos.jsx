@@ -1,8 +1,8 @@
 import Paginacion from '@components/shared/Tablas/Paginacion';
 import { actualizarRechazo, eliminarRechazo, paginarRechazos, aprobarRechazoApi, agregarRechazo, restaurarRechazoApi } from '@services/api/rechazos';
 import { useEffect, useRef, useState } from 'react';
-import { Form, Col, Row } from 'react-bootstrap';
-import { FaEdit, FaPlus, FaTrashRestore } from 'react-icons/fa';
+import { Form, Col, Row, Modal, Button } from 'react-bootstrap';
+import { FaEdit, FaPlus, FaTrashRestore, FaInfoCircle } from 'react-icons/fa';
 import { BsSendCheckFill } from "react-icons/bs";
 import { TiDelete } from "react-icons/ti";
 import { FaSave } from "react-icons/fa";
@@ -44,6 +44,7 @@ const Rechazos = () => {
     // actual y la ultima con datos registrados. Se calculan aqui para no
     // mostrar el icono en filas donde la accion siempre fallaria.
     const [semanasPermitidasEliminar, setSemanasPermitidasEliminar] = useState(new Set());
+    const [showAyudaRechazos, setShowAyudaRechazos] = useState(false);
     const [nuevoRechazo, setNuevoRechazo] = useState({
         semana: '', contenedor: '', productor: '', producto: '', pallet: '', cajas: '', motivo: '', fecha: ''
     });
@@ -469,7 +470,18 @@ const Rechazos = () => {
 
         <>
             <div className="d-flex justify-content-between align-items-center mb-2">
-                <h2 className="mb-0">{"Rechazos"}</h2>
+                <h2 className="mb-0 d-flex align-items-center gap-2">
+                    {"Rechazos"}
+                    <button
+                        type="button"
+                        className="btn btn-link btn-sm text-decoration-none p-0 text-secondary"
+                        style={{ lineHeight: 1 }}
+                        onClick={() => setShowAyudaRechazos(true)}
+                        title="Ver detalle de las acciones del módulo"
+                    >
+                        <FaInfoCircle size={17} />
+                    </button>
+                </h2>
                 <div className="d-flex gap-2">
                     {isSuperAdmin && (
                         <button
@@ -840,6 +852,47 @@ const Rechazos = () => {
                     <div className="modal-backdrop fade show"></div>
                 </>
             )}
+
+            <Modal show={showAyudaRechazos} onHide={() => setShowAyudaRechazos(false)} centered>
+                <Modal.Header closeButton className="bg-dark text-white">
+                    <Modal.Title className="h6 mb-0">Acciones del módulo de Rechazos</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <ul className="mb-0 ps-3">
+                        <li className="mb-2">
+                            <strong>Cargar rechazo:</strong> registra un rechazo pendiente, sin afectar el inventario
+                            todavía. Queda a la espera de ser aprobado.
+                        </li>
+                        <li className="mb-2">
+                            <strong>Editar</strong> (lápiz): permite corregir contenedor, productor, producto, pallet,
+                            cajas o motivo. Si el rechazo <strong>ya fue aprobado</strong> y cambias la cantidad de
+                            cajas, el inventario se ajusta automáticamente por la diferencia. No se puede cambiar el
+                            productor de un rechazo ya aprobado.
+                        </li>
+                        <li className="mb-2">
+                            <strong>Aprobar</strong> (✔ verde, solo en rechazos pendientes): descuenta las cajas del
+                            inventario del productor. Si el productor original no tiene el producto en el contenedor,
+                            te deja elegir de cuál productor del contenedor se descuentan.
+                        </li>
+                        <li className="mb-2">
+                            <strong>Eliminar</strong> (solo <strong>Super administrador</strong>): si el rechazo ya
+                            estaba aprobado, al eliminarlo se <strong>devuelven las cajas descontadas</strong> al
+                            inventario. Solo se puede eliminar un rechazo de la <strong>semana actual</strong> o de la
+                            <strong> última semana con datos registrados</strong>; por eso el ícono no aparece en filas
+                            de semanas más antiguas.
+                        </li>
+                        <li className="mb-0">
+                            <strong>Ver eliminados / Restaurar</strong> (solo Super administrador): muestra los
+                            rechazos eliminados. Al restaurar uno que estaba aprobado, se{' '}
+                            <strong>vuelven a descontar las cajas</strong> del inventario. Aplica la misma restricción
+                            de semana que eliminar.
+                        </li>
+                    </ul>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" size="sm" onClick={() => setShowAyudaRechazos(false)}>Entendido</Button>
+                </Modal.Footer>
+            </Modal>
         </>
     );
 };
