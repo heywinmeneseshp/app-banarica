@@ -253,6 +253,12 @@ const endPoints = {
         encontrarEmail: `${API}/api/${VERSION}/confi/email`,
         actualizarEmail: `${API}/api/${VERSION}/confi/email`,
     },
+    programacionCorte: {
+        list: `${API}/api/${VERSION}/programacion-corte`,
+        cargar: `${API}/api/${VERSION}/programacion-corte/cargar`,
+        delete: (id) => `${API}/api/${VERSION}/programacion-corte/${id}`,
+        comparativa: (semana) => `${API}/api/${VERSION}/programacion-corte/comparativa?semana=${encodeURIComponent(semana)}`,
+    },
     //TRANSPOTER
     ubicaciones: {
         list: `${API}/api/${VERSION}/ubicaciones`,

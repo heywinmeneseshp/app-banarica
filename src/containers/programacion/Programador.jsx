@@ -14,6 +14,7 @@ import ProgramadorEvidenceModal from './ProgramadorEvidenceModal';
 import VerEvidenciasModal from './VerEvidenciasModal';
 import { listarEvidencias } from '@services/api/googleDrive';
 import ProgramadorSerialesModal from './ProgramadorSerialesModal';
+import ListadoDiferenciasModal from './ListadoDiferenciasModal';
 import ProgramadorFilters from './ProgramadorFilters';
 import ProgramadorTable from './ProgramadorTable';
 import ProgramadorHistorialModal from './ProgramadorHistorialModal';
@@ -588,7 +589,7 @@ export default function Programador() {
   };
 
   // Feature hooks
-  const { syncingListado, pendingListadoSync, setPendingListadoSync, sincronizarListadoPendiente, descargarNoEncontradosListado, confirmarListadoCoincidencias } = useListadoSync({ setAlert, markProgramacionesEstadoListado });
+  const { syncingListado, pendingListadoSync, setPendingListadoSync, sincronizarListadoPendiente, descargarNoEncontradosListado, confirmarListadoCoincidencias, diferenciasListado, setDiferenciasListado, continuarSincronizacion } = useListadoSync({ setAlert, markProgramacionesEstadoListado });
 
   const { importing, updatingMass, processProgramacionRows, descargarExcel } = useProgramadorImport({
     vehiculosSinCombustible,
@@ -779,6 +780,14 @@ export default function Programador() {
         syncingListado={syncingListado}
       />
 
+      <ListadoDiferenciasModal
+        show={Boolean(diferenciasListado)}
+        diferenciasListado={diferenciasListado}
+        syncingListado={syncingListado}
+        onClose={() => setDiferenciasListado(null)}
+        onContinue={continuarSincronizacion}
+      />
+
       <ProgramadorEvidenceModal
         show={showEvidenciaModal}
         selectedProgramacion={selectedProgramacion}
@@ -823,6 +832,15 @@ export default function Programador() {
           onOpenMassCreate={() => setMasivoMode('create')}
           onOpenMassUpdate={() => setMasivoMode('update')}
           massActionLoading={importing || updatingMass}
+          catalogosIniciales={{
+            ubicaciones,
+            conductores,
+            vehiculos,
+            transportadoras,
+            tiposMovimiento,
+            combos,
+            vehiculosSinCombustible,
+          }}
         />
       )}
 

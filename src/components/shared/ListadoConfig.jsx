@@ -17,8 +17,7 @@ const AVAILABLE_FIELDS = [
   "Cajas",
   "Pallets",
   "Peso Bruto",
-  "Peso Neto",
-  "QR"
+  "Peso Neto"
 ];
 
 function ListadoConfig({ handleConfig, storageKey = "ListadoConfig" }) {

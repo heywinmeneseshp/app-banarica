@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import { useCallback, useState } from 'react';
 import { paginarProgramaciones } from '@services/api/programaciones';
-import { actualizarListadoMasivo } from '@services/api/listado';
+import { paginarListado, actualizarListadoMasivo } from '@services/api/listado';
 import { listarAlmacenes } from '@services/api/almacenes';
 import { vincularContenedoresProgramacionSeriales } from '@services/api/programacionSeriales';
 import { normalizeValue, ESTADO_LISTADO_PENDIENTE, ESTADO_LISTADO_ACTUALIZADO } from '../programadorUtils';
@@ -9,6 +9,7 @@ import { normalizeValue, ESTADO_LISTADO_PENDIENTE, ESTADO_LISTADO_ACTUALIZADO } 
 export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
   const [syncingListado, setSyncingListado] = useState(false);
   const [pendingListadoSync, setPendingListadoSync] = useState(null);
+  const [diferenciasListado, setDiferenciasListado] = useState(null);
 
   const findAlmacenFromUbicacion = useCallback((ubicacionDestino, almacenesList = []) => {
     const cod = normalizeValue(ubicacionDestino?.cod);
@@ -172,6 +173,181 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
     await vincularContenedoresProgramacionSeriales(rows);
   }, []);
 
+  const fetchListadoRowsPorFecha = useCallback(async (fecha) => {
+    const all = [];
+    const limit = 500;
+    let offset = 1;
+    let hayMasPaginas = true;
+
+    while (hayMasPaginas) {
+      const res = await paginarListado(offset, limit, {
+        fecha_inicial: fecha,
+        fecha_final: fecha,
+        includeSeriales: false,
+      });
+      const data = Array.isArray(res?.data) ? res.data : [];
+      all.push(...data);
+
+      hayMasPaginas = data.length >= limit && all.length < Number(res?.total || 0);
+      offset += 1;
+    }
+
+    return all;
+  }, []);
+
+  const normalizarListadoRow = useCallback((row = {}) => {
+    const embarque = row?.Embarque || {};
+    return {
+      id: row?.id ?? null,
+      fecha: String(row?.fecha || '').trim(),
+      contenedor: String(row?.Contenedor?.contenedor || row?.contenedor || '').trim(),
+      bl: String(embarque?.bl || embarque?.booking || '').trim(),
+      id_embarque: row?.id_embarque ?? null,
+      id_lugar_de_llenado: row?.id_lugar_de_llenado ?? null,
+      id_producto: row?.id_producto ?? null,
+      cajas_unidades: row?.cajas_unidades ?? null,
+    };
+  }, []);
+
+  const computarDiferenciasPorDia = useCallback(async (payloadRows = []) => {
+    const fechas = [...new Set(payloadRows
+      .map((item) => String(item?.fecha || '').trim())
+      .filter(Boolean))];
+
+    const listadoPorFecha = {};
+    await Promise.all(fechas.map(async (fecha) => {
+      listadoPorFecha[fecha] = (await fetchListadoRowsPorFecha(fecha)).map(normalizarListadoRow);
+    }));
+
+    const porDia = [];
+    const totales = {
+      programacion: payloadRows.length,
+      coincidencias: 0,
+      cajasDifieren: 0,
+      soloProgramacion: 0,
+      soloListado: 0,
+    };
+
+    for (const fecha of fechas) {
+      const filasDia = payloadRows.filter((item) => String(item?.fecha || '').trim() === fecha);
+      const listadoDia = listadoPorFecha[fecha] || [];
+
+      const pool = new Map();
+      listadoDia.forEach((row) => {
+        const key = normalizeValue(row.contenedor);
+        if (!pool.has(key)) {
+          pool.set(key, []);
+        }
+        pool.get(key).push(row);
+      });
+
+      const usados = new Set();
+      const soloProgramacionContenedores = new Set();
+      let coincidencias = 0;
+      let cajasDifieren = 0;
+
+      filasDia.forEach((item) => {
+        const candidates = pool.get(normalizeValue(item.contenedor)) || [];
+        if (!candidates.length) {
+          soloProgramacionContenedores.add(normalizeValue(item.contenedor));
+          return;
+        }
+
+        const expectedAlmacen = item.id_lugar_de_llenado != null && item.id_lugar_de_llenado !== ''
+          ? Number(item.id_lugar_de_llenado)
+          : null;
+        const expectedProducto = item.id_producto != null && item.id_producto !== ''
+          ? Number(item.id_producto)
+          : null;
+
+        const match = candidates.find((row) => (
+          !usados.has(String(row.id))
+          && (expectedAlmacen == null || Number(row.id_lugar_de_llenado) === expectedAlmacen)
+          && (expectedProducto == null || Number(row.id_producto) === expectedProducto)
+        )) || candidates.find((row) => !usados.has(String(row.id))) || null;
+
+        if (!match) {
+          soloProgramacionContenedores.add(normalizeValue(item.contenedor));
+          return;
+        }
+
+        usados.add(String(match.id));
+        coincidencias += 1;
+
+        const progCajas = Number(item.cajas_unidades);
+        const listadoCajas = Number(match.cajas_unidades);
+        if (Number.isFinite(progCajas) && Number.isFinite(listadoCajas) && progCajas !== listadoCajas) {
+          cajasDifieren += 1;
+        }
+      });
+
+      const soloListadoContenedores = new Set(
+        listadoDia
+          .filter((row) => !usados.has(String(row.id)))
+          .map((row) => normalizeValue(row.contenedor))
+      );
+
+      porDia.push({
+        fecha,
+        programacion: filasDia.length,
+        coincidencias,
+        cajasDifieren,
+        soloProgramacion: [...soloProgramacionContenedores],
+        soloListado: [...soloListadoContenedores],
+      });
+
+      totales.coincidencias += coincidencias;
+      totales.cajasDifieren += cajasDifieren;
+      totales.soloProgramacion += soloProgramacionContenedores.size;
+      totales.soloListado += soloListadoContenedores.size;
+    }
+
+    return { porDia, totales };
+  }, [fetchListadoRowsPorFecha, normalizarListadoRow]);
+
+  const ejecutarSincronizacion = useCallback(async (payloadRows = [], skippedRows = []) => {
+    if (skippedRows.length) {
+      setPendingListadoSync({
+        payloadRows,
+        processableCount: payloadRows.length,
+        missingCount: skippedRows.length,
+        missingRows: skippedRows,
+        processedProgramacionIds: getProcessedProgramacionIdsFromListadoResult(payloadRows, {
+          partial: true,
+          missingRows: skippedRows,
+        }),
+      });
+      return;
+    }
+
+    let response = await actualizarListadoMasivo({ rows: toListadoSyncPayload(payloadRows) });
+    let result = response?.data || response;
+
+    if (result?.requiresConfirmation) {
+      setPendingListadoSync({
+        payloadRows,
+        processableCount: result.processableCount || 0,
+        missingCount: result.missingCount || 0,
+        missingRows: result.missingRows || [],
+        processedProgramacionIds: getProcessedProgramacionIdsFromListadoResult(payloadRows, result),
+      });
+      return;
+    }
+
+    const processedIds = getProcessedProgramacionIdsFromListadoResult(payloadRows, result);
+    await markProgramacionesEstadoListado(processedIds, ESTADO_LISTADO_ACTUALIZADO);
+    await vincularSerialesPendientesDeListado(payloadRows, processedIds);
+
+    setAlert({
+      active: true,
+      mensaje: result?.partial
+        ? `${result?.message || 'Actualizacion parcial completada'}. Coincidencias: ${result?.total || 0}. Sin coincidencia: ${result?.missingCount || 0}.`
+        : result?.message || 'Listado actualizado desde Programador.',
+      color: result?.partial ? 'warning' : 'success',
+      autoClose: true,
+    });
+  }, [getProcessedProgramacionIdsFromListadoResult, markProgramacionesEstadoListado, setAlert, toListadoSyncPayload, vincularSerialesPendientesDeListado]);
+
   const sincronizarListadoPendiente = useCallback(async () => {
     try {
       setSyncingListado(true);
@@ -203,46 +379,18 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
         return;
       }
 
-      if (skippedRows.length) {
-        setPendingListadoSync({
-          payloadRows,
-          processableCount: payloadRows.length,
-          missingCount: skippedRows.length,
-          missingRows: skippedRows,
-          processedProgramacionIds: getProcessedProgramacionIdsFromListadoResult(payloadRows, {
-            partial: true,
-            missingRows: skippedRows,
-          }),
-        });
+      const { porDia, totales } = await computarDiferenciasPorDia(payloadRows);
+      const hayDiferencias = totales.soloProgramacion > 0
+        || totales.soloListado > 0
+        || totales.cajasDifieren > 0
+        || skippedRows.length > 0;
+
+      if (hayDiferencias) {
+        setDiferenciasListado({ payloadRows, skippedRows, porDia, totales });
         return;
       }
 
-      let response = await actualizarListadoMasivo({ rows: toListadoSyncPayload(payloadRows) });
-      let result = response?.data || response;
-
-      if (result?.requiresConfirmation) {
-        setPendingListadoSync({
-          payloadRows,
-          processableCount: result.processableCount || 0,
-          missingCount: result.missingCount || 0,
-          missingRows: result.missingRows || [],
-          processedProgramacionIds: getProcessedProgramacionIdsFromListadoResult(payloadRows, result),
-        });
-        return;
-      }
-
-      const processedIds = getProcessedProgramacionIdsFromListadoResult(payloadRows, result);
-      await markProgramacionesEstadoListado(processedIds, ESTADO_LISTADO_ACTUALIZADO);
-      await vincularSerialesPendientesDeListado(payloadRows, processedIds);
-
-      setAlert({
-        active: true,
-        mensaje: result?.partial
-          ? `${result?.message || 'Actualizacion parcial completada'}. Coincidencias: ${result?.total || 0}. Sin coincidencia: ${result?.missingCount || 0}.`
-          : result?.message || 'Listado actualizado desde Programador.',
-        color: result?.partial ? 'warning' : 'success',
-        autoClose: true,
-      });
+      await ejecutarSincronizacion(payloadRows, skippedRows);
     } catch (error) {
       setAlert({
         active: true,
@@ -253,7 +401,30 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
     } finally {
       setSyncingListado(false);
     }
-  }, [buildListadoUpdateRowsFromProgramaciones, getProcessedProgramacionIdsFromListadoResult, markProgramacionesEstadoListado, setAlert, toListadoSyncPayload, vincularSerialesPendientesDeListado]);
+  }, [buildListadoUpdateRowsFromProgramaciones, computarDiferenciasPorDia, ejecutarSincronizacion, setAlert]);
+
+  const continuarSincronizacion = useCallback(async () => {
+    const datos = diferenciasListado;
+    setDiferenciasListado(null);
+
+    if (!datos?.payloadRows?.length) {
+      return;
+    }
+
+    try {
+      setSyncingListado(true);
+      await ejecutarSincronizacion(datos.payloadRows, datos.skippedRows || []);
+    } catch (error) {
+      setAlert({
+        active: true,
+        mensaje: error.message || 'No fue posible actualizar el listado desde Programador.',
+        color: 'danger',
+        autoClose: true,
+      });
+    } finally {
+      setSyncingListado(false);
+    }
+  }, [diferenciasListado, ejecutarSincronizacion, setAlert]);
 
   const descargarNoEncontradosListado = useCallback(() => {
     if (!pendingListadoSync?.missingRows?.length) {
@@ -324,5 +495,8 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
     sincronizarListadoPendiente,
     descargarNoEncontradosListado,
     confirmarListadoCoincidencias,
+    diferenciasListado,
+    setDiferenciasListado,
+    continuarSincronizacion,
   };
 }

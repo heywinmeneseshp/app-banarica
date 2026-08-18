@@ -2,12 +2,12 @@ import Paginacion from '@components/shared/Tablas/Paginacion';
 import ListadoHistorialModal from './ListadoHistorialModal';
 import { actualizarListado, duplicarListado, paginarListado, contarUnicosListado } from '@services/api/listado';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/router';
 import { Form, Col, Row, Button, Spinner } from 'react-bootstrap';
-import { FaExternalLinkAlt, FaQrcode, FaCog, FaHistory } from 'react-icons/fa';
+import { FaExternalLinkAlt, FaCog, FaHistory, FaFileExcel } from 'react-icons/fa';
 import styles2 from "@components/shared/Formularios/Formularios.module.css";
 import InsumoConfig from '@components/shared/InsumoConfig';
 import ListadoConfig from '@components/shared/ListadoConfig';
-import CrearQRCode from '@components/seguridad/CrearQRcode';
 import { encontrarModulo } from '@services/api/configuracion';
 import { useEvidencias } from '@containers/programacion/hooks/useEvidencias';
 import ProgramadorEvidenceModal from '@containers/programacion/ProgramadorEvidenceModal';
@@ -42,7 +42,7 @@ const VALIDACIONES = {
   cajas: /^\d+$/
 };
 
-const CONFIG_TABLA_DEFAULT = ["Fecha", "Sem", "BoL", "Naviera", "Destino", "Llenado", "Contenedor", "Insumos de segurdad", "Producto", "Cajas", "Peso Neto", "QR"];
+const CONFIG_TABLA_DEFAULT = ["Fecha", "Sem", "BoL", "Naviera", "Destino", "Llenado", "Contenedor", "Insumos de segurdad", "Producto", "Cajas", "Peso Neto"];
 
 const getTransportadoraLabel = (row) =>
   row?.Contenedor?.carrusel?.transportadora?.razon_social
@@ -105,7 +105,6 @@ const useListadoState = (configKey) => {
     openActualizarMasivo: false,
     isEditable: false,
     soloEliminados: false,
-    openQR: false,
     loading: false,
     uniqueCount: 0
   }));
@@ -124,6 +123,7 @@ const useListadoState = (configKey) => {
 
 const ListadoContenedores = () => {
   const { getUser } = useAuth();
+  const router = useRouter();
   const { tieneBoton } = useBotonesUsuario();
   const { notify } = useFeedback();
   const formRef = useRef();
@@ -1148,17 +1148,6 @@ const ListadoContenedores = () => {
           <td className="text-custom-small text-center">{pesoNeto}</td>
         )}
 
-        {state.configuracionTabla.includes("QR") && (
-          <td className="text-custom-small text-center">
-            <button
-              style={{ all: 'unset', cursor: 'pointer' }}
-              onClick={() => updateState({ openQR: Contenedor })}
-            >
-              <FaQrcode />
-            </button>
-          </td>
-        )}
-
         <td className="text-custom-small text-center">
           <button
             type="button"
@@ -1206,7 +1195,7 @@ const ListadoContenedores = () => {
         </td>
       </tr>
     );
-  }, [state.configuracionTabla, state.isEditable, state.soloEliminados, state.check, state.tableData, state.bol, state.configuracionInsumos, state.embarques, state.almacenes, state.productos, state.transportadoras, handleCellEdit, handleDatalist, onChangeCasilla, handleChecks, openTracecode, updateState, abrirModalEvidencia, abrirVerEvidencias, evidenciasDriveFolderIdListado]);
+  }, [state.configuracionTabla, state.isEditable, state.soloEliminados, state.check, state.tableData, state.bol, state.configuracionInsumos, state.embarques, state.almacenes, state.productos, state.transportadoras, handleCellEdit, handleDatalist, onChangeCasilla, handleChecks, openTracecode, abrirModalEvidencia, abrirVerEvidencias, evidenciasDriveFolderIdListado]);
 
   return (
     <>
@@ -1338,6 +1327,15 @@ const ListadoContenedores = () => {
                 </button>
               )}
 
+              {tieneBoton('contenedores_edicion') && (
+                <button
+                  className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                  onClick={() => router.push('/Seguridad/ProgramacionCorte')}
+                >
+                  <FaFileExcel /> Programacion
+                </button>
+              )}
+
               {state.soloEliminados && (
                 <button onClick={restaurarLinea} className="btn btn-sm btn-success">
                   Restaurar línea
@@ -1445,10 +1443,9 @@ const ListadoContenedores = () => {
               {renderHeader("Pallets", true)}
               {renderHeader("Peso Bruto", true)}
               {renderHeader("Peso Neto", true)}
-              {renderHeader("QR", true)}
               <th className="text-custom-small text-center text-white bg-secondary">Evid.</th>
               <th className="text-custom-small text-center text-white bg-secondary">Detalle</th>
-              <th className="text-custom-small text-center text-white bg-secondary">Historial</th>
+              <th className="text-custom-small text-center text-white bg-secondary">Hist.</th>
             </tr>
           </thead>
           <tbody className="align-middle">
@@ -1527,13 +1524,6 @@ const ListadoContenedores = () => {
 
       {state.openTransbordar && (
         <Transbordar setOpen={(open) => updateState({ openTransbordar: open })} />
-      )}
-
-      {state.openQR && (
-        <CrearQRCode
-          setOpenQR={(open) => updateState({ openQR: open })}
-          contenedor={state.openQR}
-        />
       )}
 
       {state.openMasivo && (

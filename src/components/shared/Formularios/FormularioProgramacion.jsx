@@ -43,6 +43,10 @@ export default function FormulariosProgramacion({
   onOpenMassCreate,
   onOpenMassUpdate,
   massActionLoading = false,
+  // Catalogos que la pantalla que abre este modal ya pudo haber cargado (p.ej.
+  // Programador.jsx via useProgramadorCatalogos). Si se pasan, se usan tal cual
+  // en vez de volver a pedirlos al backend, para que el modal abra mas rapido.
+  catalogosIniciales = null,
 }) {
   const [listaUbicaciones, setListaUbicaciones] = useState([]);
   const [listaConductores, setListaConductores] = useState([]);
@@ -88,19 +92,43 @@ export default function FormulariosProgramacion({
 
   const cargarCatalogos = useCallback(async () => {
     const usuario = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("usuario") || "{}") : {};
+
+    // La semana no depende de ningun otro catalogo (ubicaciones, conductores,
+    // vehiculos, etc.), asi que se resuelve en su propio hilo en vez de esperar
+    // a que TODOS los demas terminen: si alguno de ellos es lento (p.ej. una
+    // flota grande de vehiculos), el selector de semana ya no queda bloqueado.
+    const semanasPromise = encontrarModulo("Semana", { syncWeeks: false })
+      .then((configSemanaRes) => filtrarSemanasRangoProgramador({
+        anho_actual: configSemanaRes?.[0]?.anho_actual,
+        semana_actual: configSemanaRes?.[0]?.semana_actual,
+        semana_previa: configSemanaRes?.[0]?.semana_previa,
+        semana_siguiente: configSemanaRes?.[0]?.semana_siguiente,
+        total_semanas_anho: configSemanaRes?.[0]?.total_semanas_anho,
+      }))
+      .catch((error) => {
+        console.warn("No se pudo filtrar el rango de semanas del programador:", error);
+        return [];
+      });
+    semanasPromise.then((semanas) => setListaSemanas(semanas || []));
+
+    // Los catalogos que la pantalla que abre este modal ya tenia cargados se
+    // reutilizan (sin pedirlos de nuevo). Solo se piden los que no llegaron
+    // precargados: esto es lo que hace que "Nuevo movimiento" abra rapido
+    // cuando se abre desde el Programador.
+    const tieneVehiculosSinCombustiblePrecargado = Array.isArray(catalogosIniciales?.vehiculosSinCombustible);
+
     const catalogResults = await Promise.allSettled([
-      listarUbicaciones(),
-      listarConductores(),
-      listarVehiculo(),
+      catalogosIniciales?.ubicaciones ? Promise.resolve(catalogosIniciales.ubicaciones) : listarUbicaciones(),
+      catalogosIniciales?.conductores ? Promise.resolve(catalogosIniciales.conductores) : listarConductores(),
+      catalogosIniciales?.vehiculos ? Promise.resolve(catalogosIniciales.vehiculos) : listarVehiculo(),
       listarcategoriaVehiculos(),
-      listarTransportadoras(),
+      catalogosIniciales?.transportadoras ? Promise.resolve(catalogosIniciales.transportadoras) : listarTransportadoras(),
       listarNavieras(),
       listarDestinos(),
       listarBuques(),
-      listartipoMovimientoVehiculos(),
-      listarCombos(),
-      encontrarModulo("Programador_combustible"),
-      encontrarModulo("Semana", { syncWeeks: false }),
+      catalogosIniciales?.tiposMovimiento ? Promise.resolve(catalogosIniciales.tiposMovimiento) : listartipoMovimientoVehiculos(),
+      catalogosIniciales?.combos ? Promise.resolve(catalogosIniciales.combos) : listarCombos(),
+      tieneVehiculosSinCombustiblePrecargado ? Promise.resolve([]) : encontrarModulo("Programador_combustible"),
       usuario?.id_rol === "Super administrador" || !usuario?.username ? Promise.resolve([]) : encontrarModulo(usuario.username),
     ]);
 
@@ -119,33 +147,23 @@ export default function FormulariosProgramacion({
     const tiposMovimiento = getCatalogValue(8, []);
     const combos = getCatalogValue(9, []);
     const configProgramador = getCatalogValue(10, []);
-    const configSemanaRes = getCatalogValue(11, []);
-    const userConfig = getCatalogValue(12, []);
+    const userConfig = getCatalogValue(11, []);
 
     setListaUbicaciones(ubicaciones || []);
-    setListaConductores(conductores.sort((a, b) => String(a.conductor).localeCompare(String(b.conductor))) || []);
-    setListaVehiculos(vehiculos.sort((a, b) => String(a.placa).localeCompare(String(b.placa))) || []);
+    setListaConductores([...conductores].sort((a, b) => String(a.conductor).localeCompare(String(b.conductor))) || []);
+    setListaVehiculos([...vehiculos].sort((a, b) => String(a.placa).localeCompare(String(b.placa))) || []);
     setListaCategoriasVehiculo(categoriasVehiculo || []);
     setListaTransportadoras(transportadoras || []);
     setListaNavieras(navieras || []);
     setListaDestinos(destinos || []);
     setListaBuques(buques || []);
     setListaTiposMovimiento((tiposMovimiento || []).filter((item) => item?.activo !== false));
-    let semanasFiltradas = [];
-    try {
-      semanasFiltradas = await filtrarSemanasRangoProgramador({
-        anho_actual: configSemanaRes?.[0]?.anho_actual,
-        semana_actual: configSemanaRes?.[0]?.semana_actual,
-        semana_previa: configSemanaRes?.[0]?.semana_previa,
-        semana_siguiente: configSemanaRes?.[0]?.semana_siguiente,
-        total_semanas_anho: configSemanaRes?.[0]?.total_semanas_anho,
-      });
-    } catch (error) {
-      console.warn("No se pudo filtrar el rango de semanas del programador:", error);
-    }
-    setListaSemanas(semanasFiltradas || []);
     setListaCombos(combos || []);
-    setVehiculosSinCombustible(parseVehiculosSinCombustible(configProgramador));
+    setVehiculosSinCombustible(
+      tieneVehiculosSinCombustiblePrecargado
+        ? catalogosIniciales.vehiculosSinCombustible
+        : parseVehiculosSinCombustible(configProgramador)
+    );
     if (usuario?.id_rol === "Super administrador") {
       setCanQuickCreateProgramador(true);
     } else {
@@ -157,6 +175,10 @@ export default function FormulariosProgramacion({
         setCanQuickCreateProgramador(false);
       }
     }
+    // catalogosIniciales se lee como snapshot inicial: el padre puede pasar un
+    // objeto literal nuevo en cada render y no queremos que eso dispare un
+    // refetch cada vez.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

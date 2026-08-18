@@ -17,6 +17,7 @@ import ContenedoresDevueltos from "@containers/seguridad/ContenedoresDevueltos";
 import Transbordados from "@containers/seguridad/Transbordados";
 import TransbordarContenedor from "@containers/seguridad/TransbordarContenedor";
 import ValidarSellosProgramador from "@containers/seguridad/ValidarSellosProgramador";
+import ProgramacionCorte from "@containers/seguridad/ProgramacionCorte";
 
 const CartasAntinarcoticos = dynamic(() => import("@containers/seguridad/CartasAntinarcoticos"), { ssr: false });
 //Components
@@ -45,6 +46,7 @@ export default function Seguridad() {
             {(router?.query.item == "Transbordados") && <Transbordados/>}
             {(router?.query.item == "CartasAntinarcoticos") && <CartasAntinarcoticos/>}
             {(router?.query.item == "ValidarSellosProgramador") && <ValidarSellosProgramador/>}
+            {(router?.query.item == "ProgramacionCorte") && <ProgramacionCorte/>}
         </div>
     );
 }
