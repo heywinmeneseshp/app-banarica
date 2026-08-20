@@ -252,6 +252,8 @@ const endPoints = {
         actualizarEmpresa: `${API}/api/${VERSION}/empresa/1`,
         encontrarEmail: `${API}/api/${VERSION}/confi/email`,
         actualizarEmail: `${API}/api/${VERSION}/confi/email`,
+        exportarDb: `${API}/api/${VERSION}/confi/exportar-db`,
+        importarDb: `${API}/api/${VERSION}/confi/importar-db`,
     },
     programacionCorte: {
         list: `${API}/api/${VERSION}/programacion-corte`,

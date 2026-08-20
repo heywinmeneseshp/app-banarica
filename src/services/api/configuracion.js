@@ -69,6 +69,39 @@ const actualizarEmailConfig = async (body) => {
 };
 
 
+// Descarga el JSON completo y lo entrega como archivo (el navegador no puede
+// "guardar" la respuesta de axios directamente, hay que armar el blob).
+const exportarBaseDatos = async () => {
+    const res = await axios.get(endPoints.confi.exportarDb, { ...getAuthConfig(), responseType: 'blob' });
+
+    const disposition = res.headers?.['content-disposition'] || '';
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    const filename = match?.[1] || `backup-banarica-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
+
+    const url = window.URL.createObjectURL(res.data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+};
+
+// confirmacion debe ser EXACTAMENTE "IMPORTAR BASE DE DATOS" (validado tambien
+// en el backend) para evitar restaurar la base de datos por error de un clic.
+const importarBaseDatos = async (archivo, confirmacion) => {
+    const formData = new FormData();
+    formData.append('archivo', archivo);
+    formData.append('confirmacion', confirmacion);
+
+    const res = await axios.post(endPoints.confi.importarDb, formData, {
+        ...getAuthConfig(),
+        headers: { ...getAuthConfig().headers, 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
+};
+
 export {
 encontrarModulo,
 listarModulos,
@@ -76,5 +109,7 @@ actualizarModulo,
 encontrarEmpresa,
 actualizarEmpresa,
 encontrarEmailConfig,
-actualizarEmailConfig
+actualizarEmailConfig,
+exportarBaseDatos,
+importarBaseDatos
 };
