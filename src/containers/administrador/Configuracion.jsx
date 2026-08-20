@@ -6,7 +6,9 @@ import {
     encontrarEmpresa,
     encontrarModulo,
     encontrarEmailConfig,
-    actualizarEmailConfig
+    actualizarEmailConfig,
+    exportarBaseDatos,
+    importarBaseDatos
 } from '@services/api/configuracion';
 import { runPasswordPolicy } from '@services/api/auth';
 // Bootstrap
@@ -96,6 +98,9 @@ export default function Configuracion({ setOpen }) {
     const [evidenciasDriveFolderIdTraslados, setEvidenciasDriveFolderIdTraslados] = useState(DEFAULT_EVIDENCIAS_DRIVE_FOLDER_ID);
     const [isRunningPasswordPolicy, setIsRunningPasswordPolicy] = useState(false);
     const [passwordPolicyResult, setPasswordPolicyResult] = useState(null);
+    const [isExportingDb, setIsExportingDb] = useState(false);
+    const [isImportingDb, setIsImportingDb] = useState(false);
+    const dbFileInputRef = useRef();
     // Email config states
     const [emailConfigRaw, setEmailConfigRaw] = useState({});
     const [emailFormData, setEmailFormData] = useState(DEFAULT_EMAIL_FORM);
@@ -379,6 +384,60 @@ export default function Configuracion({ setOpen }) {
         }
     };
 
+    const handleExportarDb = async () => {
+        setIsExportingDb(true);
+        try {
+            await exportarBaseDatos();
+            setAlert('Exportacion descargada correctamente', 'success');
+        } catch (error) {
+            setAlert(
+                error?.response?.data?.message || 'No fue posible exportar la base de datos',
+                'danger',
+            );
+        } finally {
+            setIsExportingDb(false);
+        }
+    };
+
+    const FRASE_CONFIRMACION_IMPORTAR = 'IMPORTAR BASE DE DATOS';
+
+    const handleImportarDbFileChange = async (e) => {
+        const archivo = e.target.files?.[0];
+        e.target.value = '';
+        if (!archivo) return;
+
+        const primeraConfirmacion = window.confirm(
+            'Esto va a BORRAR y REEMPLAZAR el contenido actual de la base de datos con el del archivo seleccionado. '
+            + 'Esta accion no se puede deshacer. ¿Deseas continuar?'
+        );
+        if (!primeraConfirmacion) return;
+
+        const escrito = window.prompt(
+            `Para confirmar, escribe exactamente: ${FRASE_CONFIRMACION_IMPORTAR}`
+        );
+        if (escrito !== FRASE_CONFIRMACION_IMPORTAR) {
+            setAlert('Importacion cancelada: el texto no coincidio.', 'warning');
+            return;
+        }
+
+        setIsImportingDb(true);
+        try {
+            const res = await importarBaseDatos(archivo, escrito);
+            const totalFilas = (res?.tablas || []).reduce((acc, t) => acc + (t.filas || 0), 0);
+            setAlert(
+                `Base de datos restaurada: ${res?.tablas?.length || 0} tablas, ${totalFilas} filas en total.`,
+                'success',
+            );
+        } catch (error) {
+            setAlert(
+                error?.response?.data?.message || 'No fue posible importar la base de datos',
+                'danger',
+            );
+        } finally {
+            setIsImportingDb(false);
+        }
+    };
+
     const isSuperAdmin = usuario?.id_rol === "Super administrador";
 
     return (
@@ -576,6 +635,39 @@ export default function Configuracion({ setOpen }) {
                                             <span>Bloqueados: {passwordPolicyResult.blocked || 0}</span>
                                         </div>
                                     )}
+                                </div>
+
+                                <span>Base de datos:</span>
+                                <div className="d-flex flex-column gap-2 align-items-start border rounded p-2">
+                                    <div className="d-flex gap-2">
+                                        <button
+                                            type="button"
+                                            className="btn btn-outline-primary btn-sm"
+                                            disabled={isExportingDb}
+                                            onClick={handleExportarDb}
+                                        >
+                                            {isExportingDb ? 'Exportando...' : 'Exportar base de datos'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="btn btn-outline-danger btn-sm"
+                                            disabled={isImportingDb}
+                                            onClick={() => dbFileInputRef.current?.click()}
+                                        >
+                                            {isImportingDb ? 'Importando...' : 'Importar base de datos'}
+                                        </button>
+                                        <input
+                                            ref={dbFileInputRef}
+                                            type="file"
+                                            accept="application/json"
+                                            className="d-none"
+                                            onChange={handleImportarDbFileChange}
+                                        />
+                                    </div>
+                                    <small className="text-danger">
+                                        Importar reemplaza el contenido actual de la base de datos con el del
+                                        archivo. Esta accion no se puede deshacer.
+                                    </small>
                                 </div>
 
                                 <span>Carpeta evidencias Drive (Programador):</span>
