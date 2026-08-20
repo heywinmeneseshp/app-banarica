@@ -12,7 +12,7 @@ import { encontrarModulo, actualizarModulo } from '@services/api/configuracion';
 import { listarAlmacenes } from '@services/api/almacenes';
 import { useAuth } from '@hooks/useAuth';
 
-const COLUMNAS_ESPERADAS = ['Fecha', 'Booking', 'Proceso de Empaque', 'Finca', 'Cajas'];
+const COLUMNAS_ESPERADAS = ['Fecha', 'Booking', 'Proceso de Empaque', 'Finca', 'Producto', 'Cajas'];
 const PROCESOS_OPCIONES = ['Finca', 'Local', 'Puerto', 'Contenedor Local'];
 
 const normalizarFecha = (valor) => {
@@ -38,6 +38,7 @@ const mapColumna = (nombre) => {
   if (limpio === 'booking') return 'booking';
   if (limpio === 'proceso de empaque') return 'proceso_empaque';
   if (limpio === 'finca') return 'finca';
+  if (limpio === 'producto' || limpio === 'combo') return 'combo';
   if (limpio === 'cajas') return 'cajas';
   return null;
 };
@@ -155,17 +156,12 @@ const ProgramacionCorte = () => {
       ) {
         return false;
       }
-      if (productoTexto) {
-        const productos = comparativa?.filas?.find(
-          (c) => c.booking === fila.booking && c.finca === fila.finca && c.fecha === fila.fecha
-        )?.productos || [];
-        if (!productos.some((p) => String(p.producto || '').toLowerCase().includes(productoTexto))) {
-          return false;
-        }
+      if (productoTexto && !String(fila.combo?.nombre || '').toLowerCase().includes(productoTexto)) {
+        return false;
       }
       return true;
     });
-  }, [filas, semanaFiltro, bookingFiltro, almacenFiltro, productoFiltro, comparativa]);
+  }, [filas, semanaFiltro, bookingFiltro, almacenFiltro, productoFiltro]);
 
   useEffect(() => {
     let cancelado = false;
@@ -250,7 +246,7 @@ const ProgramacionCorte = () => {
 
   const descargarPlantilla = () => {
     excel(
-      [{ Fecha: '', Booking: '', 'Proceso de Empaque': '', Finca: '', Cajas: '' }],
+      [{ Fecha: '', Booking: '', 'Proceso de Empaque': '', Finca: '', Producto: '', Cajas: '' }],
       'Plantilla',
       'Cargue Masivo de Programacion de Corte'
     );
@@ -273,7 +269,7 @@ const ProgramacionCorte = () => {
 
         const claves = crudas.length > 0 ? Object.keys(crudas[0]) : [];
         const indiceColumnas = claves.map(mapColumna);
-        const faltantes = ['fecha', 'booking', 'proceso_empaque', 'finca', 'cajas']
+        const faltantes = ['fecha', 'booking', 'proceso_empaque', 'finca', 'combo', 'cajas']
           .filter((clave) => !indiceColumnas.includes(clave));
         if (faltantes.length > 0) {
           window.alert(`El archivo debe tener las columnas: ${COLUMNAS_ESPERADAS.join(', ')}`);
@@ -292,6 +288,7 @@ const ProgramacionCorte = () => {
             booking: String(obtener('booking') ?? '').trim(),
             proceso_empaque: String(obtener('proceso_empaque') ?? '').trim(),
             finca: String(obtener('finca') ?? '').trim(),
+            combo: String(obtener('combo') ?? '').trim(),
             cajas: Number(obtener('cajas'))
           };
         });
@@ -376,8 +373,9 @@ const ProgramacionCorte = () => {
     setDetalleLoading(true);
     try {
       const res = await comparativaProgramacionCorte(consecutivoSemana);
+      const producto = String(fila.combo?.nombre || 'Sin producto').trim();
       const match = res?.filas?.find(
-        (c) => c.booking === fila.booking && c.finca === fila.finca && c.fecha === fila.fecha
+        (c) => c.booking === fila.booking && c.finca === fila.finca && c.fecha === fila.fecha && c.producto === producto
       ) || null;
       setDetalleComparativa(match);
     } catch (error) {
@@ -515,6 +513,7 @@ const ProgramacionCorte = () => {
                 <th className="text-custom-small text-center text-white bg-secondary">Booking</th>
                 <th className="text-custom-small text-center text-white bg-secondary">Proceso de Empaque</th>
                 <th className="text-custom-small text-center text-white bg-secondary">Finca</th>
+                <th className="text-custom-small text-center text-white bg-secondary">Producto</th>
                 <th className="text-custom-small text-center text-white bg-secondary">Cajas</th>
                 <th className="text-custom-small text-center text-white bg-secondary">Embarque</th>
                 <th className="text-custom-small text-center text-white bg-secondary">Almacen</th>
@@ -524,7 +523,7 @@ const ProgramacionCorte = () => {
             <tbody className="align-middle">
               {filasFiltradas.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="text-custom-small text-center text-muted">
+                  <td colSpan={10} className="text-custom-small text-center text-muted">
                     Aun no hay programacion para mostrar. Use el boton &quot;Cargar Excel&quot;.
                   </td>
                 </tr>
@@ -541,6 +540,7 @@ const ProgramacionCorte = () => {
                   <td className="text-custom-small text-center">{fila.booking}</td>
                   <td className="text-custom-small text-center">{fila.proceso_empaque}</td>
                   <td className="text-custom-small text-center">{fila.finca}</td>
+                  <td className="text-custom-small text-center">{fila.combo?.nombre || '-'}</td>
                   <td className="text-custom-small text-center">{fila.cajas}</td>
                   <td className="text-custom-small text-center">{fila.Embarque?.bl || fila.id_embarque}</td>
                   <td className="text-custom-small text-center">{fila.almacen?.nombre || fila.id_almacen}</td>
@@ -588,19 +588,20 @@ const ProgramacionCorte = () => {
                     <th className="text-custom-small text-center text-white bg-secondary">Fecha</th>
                     <th className="text-custom-small text-center text-white bg-secondary">Booking</th>
                     <th className="text-custom-small text-center text-white bg-secondary">Lugar de llenado</th>
+                    <th className="text-custom-small text-center text-white bg-secondary">Producto</th>
                     <th className="text-custom-small text-center text-white bg-secondary">Cajas programacion</th>
                     <th className="text-custom-small text-center text-white bg-secondary">Cajas listado</th>
                     <th className="text-custom-small text-center text-white bg-secondary">Diferencia</th>
                     <th className="text-custom-small text-center text-white bg-secondary">Estado</th>
-                    <th className="text-custom-small text-center text-white bg-secondary">Productos (listado)</th>
                   </tr>
                 </thead>
                 <tbody className="align-middle">
                   {comparativa.filas.map((fila, idx) => (
-                    <tr key={`${fila.fecha}-${fila.booking}-${fila.finca}-${idx}`}>
+                    <tr key={`${fila.fecha}-${fila.booking}-${fila.finca}-${fila.producto}-${idx}`}>
                       <td className="text-custom-small text-center text-nowrap">{fila.fecha}</td>
                       <td className="text-custom-small text-center">{fila.booking}</td>
                       <td className="text-custom-small text-center">{fila.finca}</td>
+                      <td className="text-custom-small text-center">{fila.producto}</td>
                       <td className="text-custom-small text-center">{fila.cajasProgramacion}</td>
                       <td className="text-custom-small text-center">{fila.cajasListado}</td>
                       <td className="text-custom-small text-center">{fila.diferencia}</td>
@@ -608,17 +609,6 @@ const ProgramacionCorte = () => {
                         <span className={`badge bg-${BADGE_ESTADO[fila.estado] || 'secondary'}`}>
                           {LABEL_ESTADO[fila.estado] || fila.estado}
                         </span>
-                      </td>
-                      <td className="text-custom-small text-center">
-                        {fila.productos.length === 0 ? (
-                          <span className="text-muted">-</span>
-                        ) : (
-                          fila.productos.map((p) => (
-                            <span key={p.producto} className="badge bg-light text-dark border me-1">
-                              {p.producto}: {p.cajas}
-                            </span>
-                          ))
-                        )}
                       </td>
                     </tr>
                   ))}
@@ -847,6 +837,7 @@ const ProgramacionCorte = () => {
             <>
               <div className="d-flex flex-wrap gap-3 mb-3">
                 <span>Lugar de llenado: <b>{detalleFila?.finca}</b></span>
+                <span>Producto: <b>{detalleFila?.combo?.nombre || 'Sin producto'}</b></span>
                 <span>Cajas programacion: <b>{detalleFila?.cajas}</b></span>
                 <span>Cajas listado: <b>{detalleComparativa?.cajasListado ?? 0}</b></span>
                 <span>Diferencia: <b>{detalleComparativa?.diferencia ?? (detalleFila?.cajas ?? 0)}</b></span>
@@ -857,27 +848,8 @@ const ProgramacionCorte = () => {
                 )}
               </div>
 
-              {!detalleComparativa || detalleComparativa.productos.length === 0 ? (
-                <div className="text-muted">No hay cajas registradas en el Listado para esta fecha/booking/lugar de llenado.</div>
-              ) : (
-                <div className="table-responsive">
-                  <table className="table table-sm table-bordered text-center align-middle mb-0">
-                    <thead>
-                      <tr>
-                        <th className="text-white bg-secondary">Producto</th>
-                        <th className="text-white bg-secondary">Cajas listado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {detalleComparativa.productos.map((p) => (
-                        <tr key={p.producto}>
-                          <td>{p.producto}</td>
-                          <td>{p.cajas}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+              {!detalleComparativa && (
+                <div className="text-muted">No hay cajas registradas en el Listado para esta fecha/booking/lugar de llenado/producto.</div>
               )}
             </>
           )}
