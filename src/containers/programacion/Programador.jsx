@@ -18,6 +18,7 @@ import ListadoDiferenciasModal from './ListadoDiferenciasModal';
 import ProgramadorFilters from './ProgramadorFilters';
 import ProgramadorTable from './ProgramadorTable';
 import ProgramadorHistorialModal from './ProgramadorHistorialModal';
+import ProgramadorSugeridoTransporte from './ProgramadorSugeridoTransporte';
 import { useProgramadorCatalogos } from './hooks/useProgramadorCatalogos';
 import { useListadoSync } from './hooks/useListadoSync';
 import { useProgramadorImport } from './hooks/useProgramadorImport';
@@ -337,15 +338,27 @@ export default function Programador() {
   const handleCellEdit = async (id, field, value, { preserveEstado = false } = {}) => {
     const isEstadoField = field === 'estado_listado';
     try {
-      updateLocalRow(id, (row) => ({
-        ...row,
-        [field]: value,
-        ...(preserveEstado || isEstadoField ? {} : { estado_listado: ESTADO_LISTADO_PENDIENTE }),
+      const currentRow = itemList.find((r) => r.id === id);
+      // El estado_listado es por grupo (mismo contenedor+fecha): si esta
+      // linea queda pendiente o actualizada, sus hermanas deben verse igual
+      // de inmediato, sin esperar a un refresh (asi lo aplica el backend).
+      const nextEstado = preserveEstado
+        ? currentRow?.estado_listado
+        : (isEstadoField ? value : ESTADO_LISTADO_PENDIENTE);
+
+      setItemsList((prev) => prev.map((row) => {
+        if (row.id === id) {
+          return { ...row, [field]: value, ...(nextEstado ? { estado_listado: nextEstado } : {}) };
+        }
+        if (nextEstado && currentRow && row.contenedor === currentRow.contenedor && row.fecha === currentRow.fecha) {
+          return { ...row, estado_listado: nextEstado };
+        }
+        return row;
       }));
+
       const apiPayload = { [field]: value };
-      if (preserveEstado && !isEstadoField) {
-        const currentRow = itemList.find((r) => r.id === id);
-        if (currentRow?.estado_listado) apiPayload.estado_listado = currentRow.estado_listado;
+      if (preserveEstado && !isEstadoField && currentRow?.estado_listado) {
+        apiPayload.estado_listado = currentRow.estado_listado;
       }
       await actualizarProgramaciones(id, apiPayload);
     } catch (error) {
@@ -673,8 +686,18 @@ export default function Programador() {
         style={{ width: '95vw', maxWidth: '95vw', marginLeft: 'calc(50% - 47.5vw)', marginRight: 'calc(50% - 47.5vw)' }}
       >
         <div className="card shadow-sm mb-4">
-          <div className="card-header bg-dark text-white">
+          <div className="card-header bg-dark text-white d-flex justify-content-between align-items-center">
             <h5 className="mb-0">Programador</h5>
+            <ProgramadorSugeridoTransporte
+              ubicaciones={ubicaciones}
+              vehiculos={vehiculos}
+              combos={combos}
+              tiposMovimiento={tiposMovimiento}
+              transportadoras={transportadoras}
+              isSuperAdmin={isSuperAdmin}
+              setAlert={setAlert}
+              onEnviado={() => setReloadKey((prev) => prev + 1)}
+            />
           </div>
 
           <div className="card-body">

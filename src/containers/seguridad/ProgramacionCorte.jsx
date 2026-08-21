@@ -12,7 +12,7 @@ import { encontrarModulo, actualizarModulo } from '@services/api/configuracion';
 import { listarAlmacenes } from '@services/api/almacenes';
 import { useAuth } from '@hooks/useAuth';
 
-const COLUMNAS_ESPERADAS = ['Fecha', 'Booking', 'Proceso de Empaque', 'Finca', 'Producto', 'Cajas'];
+const COLUMNAS_ESPERADAS = ['Fecha', 'Booking', 'Transportadora', 'Proceso de Empaque', 'Finca', 'Producto', 'Cajas'];
 const PROCESOS_OPCIONES = ['Finca', 'Local', 'Puerto', 'Contenedor Local'];
 
 const normalizarFecha = (valor) => {
@@ -39,6 +39,7 @@ const mapColumna = (nombre) => {
   const limpio = String(nombre || '').trim().toLowerCase();
   if (limpio === 'fecha') return 'fecha';
   if (limpio === 'booking') return 'booking';
+  if (limpio === 'transportadora') return 'transportadora';
   if (limpio === 'proceso de empaque') return 'proceso_empaque';
   if (limpio === 'finca') return 'finca';
   if (limpio === 'producto' || limpio === 'combo') return 'combo';
@@ -166,6 +167,34 @@ const ProgramacionCorte = () => {
     });
   }, [filas, semanaFiltro, bookingFiltro, almacenFiltro, productoFiltro]);
 
+  // La comparativa se trae completa para la semana; se le aplican aca los
+  // mismos filtros (booking, lugar de llenado, producto) que a la
+  // "Programacion cargada" de arriba, para que ambas tablas muestren lo mismo.
+  const comparativaFilasFiltradas = useMemo(() => {
+    if (!comparativa?.filas) return [];
+    const bookingTexto = bookingFiltro.trim().toLowerCase();
+    const almacenTexto = almacenFiltro.trim().toLowerCase();
+    const productoTexto = productoFiltro.trim().toLowerCase();
+
+    return comparativa.filas.filter((fila) => {
+      if (bookingTexto && !String(fila.booking || '').toLowerCase().includes(bookingTexto)) {
+        return false;
+      }
+      if (almacenTexto && !String(fila.finca || '').toLowerCase().includes(almacenTexto)) {
+        return false;
+      }
+      if (productoTexto && !String(fila.producto || '').toLowerCase().includes(productoTexto)) {
+        return false;
+      }
+      return true;
+    });
+  }, [comparativa, bookingFiltro, almacenFiltro, productoFiltro]);
+
+  const comparativaTotales = useMemo(() => comparativaFilasFiltradas.reduce((acc, fila) => ({
+    totalProgramacion: acc.totalProgramacion + Number(fila.cajasProgramacion || 0),
+    totalListado: acc.totalListado + Number(fila.cajasListado || 0),
+  }), { totalProgramacion: 0, totalListado: 0 }), [comparativaFilasFiltradas]);
+
   useEffect(() => {
     let cancelado = false;
     const cargarComparativa = async () => {
@@ -249,7 +278,7 @@ const ProgramacionCorte = () => {
 
   const descargarPlantilla = () => {
     excel(
-      [{ Fecha: '', Booking: '', 'Proceso de Empaque': '', Finca: '', Producto: '', Cajas: '' }],
+      [{ Fecha: '', Booking: '', Transportadora: '', 'Proceso de Empaque': '', Finca: '', Producto: '', Cajas: '' }],
       'Plantilla',
       'Cargue Masivo de Programacion de Corte'
     );
@@ -272,7 +301,7 @@ const ProgramacionCorte = () => {
 
         const claves = crudas.length > 0 ? Object.keys(crudas[0]) : [];
         const indiceColumnas = claves.map(mapColumna);
-        const faltantes = ['fecha', 'booking', 'proceso_empaque', 'finca', 'combo', 'cajas']
+        const faltantes = ['fecha', 'booking', 'transportadora', 'proceso_empaque', 'finca', 'combo', 'cajas']
           .filter((clave) => !indiceColumnas.includes(clave));
         if (faltantes.length > 0) {
           window.alert(`El archivo debe tener las columnas: ${COLUMNAS_ESPERADAS.join(', ')}`);
@@ -289,6 +318,7 @@ const ProgramacionCorte = () => {
           return {
             fecha: normalizarFecha(obtener('fecha')),
             booking: String(obtener('booking') ?? '').trim(),
+            transportadora: String(obtener('transportadora') ?? '').trim(),
             proceso_empaque: String(obtener('proceso_empaque') ?? '').trim(),
             finca: String(obtener('finca') ?? '').trim(),
             combo: String(obtener('combo') ?? '').trim(),
@@ -514,6 +544,7 @@ const ProgramacionCorte = () => {
                 <th className="text-custom-small text-center text-white bg-secondary">Semana</th>
                 <th className="text-custom-small text-center text-white bg-secondary">Fecha</th>
                 <th className="text-custom-small text-center text-white bg-secondary">Booking</th>
+                <th className="text-custom-small text-center text-white bg-secondary">Transportadora</th>
                 <th className="text-custom-small text-center text-white bg-secondary">Proceso de Empaque</th>
                 <th className="text-custom-small text-center text-white bg-secondary">Finca</th>
                 <th className="text-custom-small text-center text-white bg-secondary">Producto</th>
@@ -526,7 +557,7 @@ const ProgramacionCorte = () => {
             <tbody className="align-middle">
               {filasFiltradas.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="text-custom-small text-center text-muted">
+                  <td colSpan={11} className="text-custom-small text-center text-muted">
                     Aun no hay programacion para mostrar. Use el boton &quot;Cargar Excel&quot;.
                   </td>
                 </tr>
@@ -541,6 +572,7 @@ const ProgramacionCorte = () => {
                   <td className="text-custom-small text-center">{fila.Embarque?.semana?.consecutivo || '-'}</td>
                   <td className="text-custom-small text-center text-nowrap">{fila.fecha}</td>
                   <td className="text-custom-small text-center">{fila.booking}</td>
+                  <td className="text-custom-small text-center">{fila.transportadora}</td>
                   <td className="text-custom-small text-center">{fila.proceso_empaque}</td>
                   <td className="text-custom-small text-center">{fila.finca}</td>
                   <td className="text-custom-small text-center">{fila.combo?.nombre || '-'}</td>
@@ -577,12 +609,14 @@ const ProgramacionCorte = () => {
           <div className="p-3 text-muted">Seleccione una semana para comparar cajas por dia, booking y lugar de llenado.</div>
         ) : !comparativa || comparativa.filas.length === 0 ? (
           <div className="p-3 text-muted">Sin datos para comparar en esta semana.</div>
+        ) : comparativaFilasFiltradas.length === 0 ? (
+          <div className="p-3 text-muted">Ninguna fila de la comparativa coincide con los filtros actuales.</div>
         ) : (
           <>
             <div className="card-body py-2 d-flex flex-wrap gap-3">
-              <span>Cajas programacion: <b>{comparativa.totalProgramacion}</b></span>
-              <span>Cajas listado: <b>{comparativa.totalListado}</b></span>
-              <span>Diferencia: <b>{comparativa.totalProgramacion - comparativa.totalListado}</b></span>
+              <span>Cajas programacion: <b>{comparativaTotales.totalProgramacion}</b></span>
+              <span>Cajas listado: <b>{comparativaTotales.totalListado}</b></span>
+              <span>Diferencia: <b>{comparativaTotales.totalProgramacion - comparativaTotales.totalListado}</b></span>
             </div>
             <div className="table-responsive">
               <table className="table table-striped table-bordered table-sm mt-2 text-center align-middle mb-0">
@@ -590,6 +624,7 @@ const ProgramacionCorte = () => {
                   <tr>
                     <th className="text-custom-small text-center text-white bg-secondary">Fecha</th>
                     <th className="text-custom-small text-center text-white bg-secondary">Booking</th>
+                    <th className="text-custom-small text-center text-white bg-secondary">Proceso de empaque</th>
                     <th className="text-custom-small text-center text-white bg-secondary">Lugar de llenado</th>
                     <th className="text-custom-small text-center text-white bg-secondary">Producto</th>
                     <th className="text-custom-small text-center text-white bg-secondary">Cajas programacion</th>
@@ -599,10 +634,11 @@ const ProgramacionCorte = () => {
                   </tr>
                 </thead>
                 <tbody className="align-middle">
-                  {comparativa.filas.map((fila, idx) => (
+                  {comparativaFilasFiltradas.map((fila, idx) => (
                     <tr key={`${fila.fecha}-${fila.booking}-${fila.finca}-${fila.producto}-${idx}`}>
                       <td className="text-custom-small text-center text-nowrap">{fila.fecha}</td>
                       <td className="text-custom-small text-center">{fila.booking}</td>
+                      <td className="text-custom-small text-center">{fila.procesoEmpaque}</td>
                       <td className="text-custom-small text-center">{fila.finca}</td>
                       <td className="text-custom-small text-center">{fila.producto}</td>
                       <td className="text-custom-small text-center">{fila.cajasProgramacion}</td>
