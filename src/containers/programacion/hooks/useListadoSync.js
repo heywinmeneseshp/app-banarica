@@ -206,6 +206,17 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
     return all;
   }, []);
 
+  // Trae TODAS las lineas de Programador de una fecha, sin importar su
+  // estado_listado (pendiente o ya actualizado). Se usa solo para el
+  // emparejamiento contra Listado: si el comparativo solo mirara las lineas
+  // pendientes, cualquier linea de Listado cuya contraparte ya estuviera
+  // sincronizada no encontraria con que emparejar y se marcaria como
+  // "sobrante" (y se deshabilitaria), borrando datos que ya estaban bien.
+  const fetchProgramacionRowsPorFecha = useCallback(async (fecha) => {
+    const res = await paginarProgramaciones('', '', { fecha, fechaFin: fecha });
+    return Array.isArray(res?.data) ? res.data : [];
+  }, []);
+
   const normalizarListadoRow = useCallback((row = {}) => {
     const embarque = row?.Embarque || {};
     return {
@@ -220,14 +231,21 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
     };
   }, []);
 
-  const computarDiferenciasPorDia = useCallback(async (payloadRows = []) => {
+  const computarDiferenciasPorDia = useCallback(async (payloadRows = [], almacenesList = []) => {
     const fechas = [...new Set(payloadRows
       .map((item) => String(item?.fecha || '').trim())
       .filter(Boolean))];
 
     const listadoPorFecha = {};
+    const programacionCompletaPorFecha = {};
     await Promise.all(fechas.map(async (fecha) => {
       listadoPorFecha[fecha] = (await fetchListadoRowsPorFecha(fecha)).map(normalizarListadoRow);
+
+      // TODAS las lineas de Programador de esa fecha (pendientes o no), para
+      // el emparejamiento — ver comentario en fetchProgramacionRowsPorFecha.
+      const todasLasProgramaciones = await fetchProgramacionRowsPorFecha(fecha);
+      const { rows: filasCompletas } = buildListadoUpdateRowsFromProgramaciones(todasLasProgramaciones, almacenesList);
+      programacionCompletaPorFecha[fecha] = filasCompletas;
     }));
 
     const porDia = [];
@@ -242,6 +260,13 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
 
     for (const fecha of fechas) {
       const filasDia = payloadRows.filter((item) => String(item?.fecha || '').trim() === fecha);
+      // El emparejamiento usa TODAS las lineas de Programador de ese dia
+      // (filasDiaCompletas), no solo las pendientes (filasDia): si solo se
+      // miraran las pendientes, una linea de Listado ya sincronizada con una
+      // linea de Programador que ya estaba "actualizado" no encontraria con
+      // que emparejar y se marcaria como sobrante — deshabilitandola por
+      // error aunque siguiera vigente en Programador.
+      const filasDiaCompletas = programacionCompletaPorFecha[fecha] || [];
       const listadoDia = listadoPorFecha[fecha] || [];
 
       const pool = new Map();
@@ -258,7 +283,7 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
       let coincidencias = 0;
       let cajasDifieren = 0;
 
-      filasDia.forEach((item) => {
+      filasDiaCompletas.forEach((item) => {
         const candidates = pool.get(normalizeValue(item.contenedor)) || [];
         if (!candidates.length) {
           soloProgramacionContenedores.add(normalizeValue(item.contenedor));
@@ -314,7 +339,7 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
     }
 
     return { porDia, totales, soloListadoRows };
-  }, [fetchListadoRowsPorFecha, normalizarListadoRow]);
+  }, [fetchListadoRowsPorFecha, normalizarListadoRow, fetchProgramacionRowsPorFecha, buildListadoUpdateRowsFromProgramaciones]);
 
   // Lineas de Listado que ya no tienen ninguna linea de Programador
   // correspondiente (p.ej. porque se elimino en Programador): se
@@ -401,7 +426,7 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
         return;
       }
 
-      const { porDia, totales, soloListadoRows } = await computarDiferenciasPorDia(payloadRows);
+      const { porDia, totales, soloListadoRows } = await computarDiferenciasPorDia(payloadRows, almacenesList || []);
       const hayDiferencias = totales.soloProgramacion > 0
         || totales.soloListado > 0
         || totales.cajasDifieren > 0
