@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from 'react-bootstrap';
 import { FaCamera, FaHistory, FaPlus, FaTrashAlt } from 'react-icons/fa';
 import Paginacion from '@components/shared/Tablas/Paginacion';
+import useContenedorRowNumbers from '@hooks/useContenedorRowNumbers';
 import {
   normalizeValue,
   READONLY_PROGRAMADOR_COLUMNS,
@@ -52,6 +53,13 @@ export default function ProgramadorTable({
   setPagination,
   total,
 }) {
+  const rowNumbers = useContenedorRowNumbers(
+    rows,
+    (item) => item?.contenedor || item?.contenedorLabel || '',
+    pagination,
+    PAGE_LIMIT
+  );
+
   const [expandedRows, setExpandedRows] = useState(new Set());
   const toggleExpand = (id) => setExpandedRows((prev) => {
     const next = new Set(prev);
@@ -100,6 +108,7 @@ export default function ProgramadorTable({
         >
           <thead className="align-middle" style={{ whiteSpace: 'nowrap', fontSize: '0.8rem', position: 'sticky', top: 0, zIndex: 2, backgroundColor: '#fff' }}>
             <tr>
+              {renderProgramadorHeader('numero', 'N°', isEditable)}
               {visibleColumns.semana && renderProgramadorHeader('semana', 'Sem', isEditable)}
               {visibleColumns.fecha && renderProgramadorHeader('fecha', 'Fecha', isEditable)}
               {visibleColumns.origen && renderProgramadorHeader('origen', 'Origen', isEditable)}
@@ -135,7 +144,7 @@ export default function ProgramadorTable({
           <tbody>
             {(() => {
               const contenedorColorMap = buildContenedorColorMap(rows);
-              return rows.map((item) => {
+              return rows.map((item, rowIndex) => {
               const rowEditable = canEditRow(item);
               const rowTimeEditable = !rowEditable && canEditTimeColumns(item);
               const rowPending = normalizeValue(item?.estado_listado) !== ESTADO_LISTADO_ACTUALIZADO;
@@ -161,6 +170,9 @@ export default function ProgramadorTable({
                     minHeight: 36,
                   }}
                 >
+                  <td className="text-center align-middle p-0" style={cellStyle}>
+                    <div className="py-2 px-1 text-center">{rowNumbers[rowIndex]}</div>
+                  </td>
                   {visibleColumns.semana && <td className="text-center align-middle p-0" style={cellStyle}>
                     <div className="py-2 px-1 text-center">{item.semanaLabel}</div>
                   </td>}

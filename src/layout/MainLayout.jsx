@@ -24,6 +24,13 @@ export default function MainLayout({ children }) {
   const lastHandledActivityRef = useRef(0);
   const [showInactivityWarning, setShowInactivityWarning] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState(WARNING_WINDOW_MS / 1000);
+  // Antes {children} se renderizaba siempre, incluso sin sesion: la pagina
+  // protegida alcanzaba a montarse y disparar sus propios fetch (que fallaban
+  // con 401 y mostraban toasts de error tipo "Error al listar almacenes")
+  // antes de que el useEffect de abajo redirigiera a /login. Con esto no se
+  // renderiza el contenido protegido hasta confirmar que hay sesion.
+  const [sessionChecked, setSessionChecked] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
 
   const isPublicRoute = PUBLIC_ROUTES.has(router.pathname);
 
@@ -129,15 +136,22 @@ export default function MainLayout({ children }) {
     if (isPublicRoute) {
       clearInactivityTimers();
       setShowInactivityWarning(false);
+      setSessionChecked(true);
+      setHasSession(false);
       return undefined;
     }
 
     const token = getToken();
 
     if (!token) {
+      setSessionChecked(true);
+      setHasSession(false);
       router.replace('/login');
       return undefined;
     }
+
+    setSessionChecked(true);
+    setHasSession(true);
 
     const initializeLastActivity = getLastActivityAt() || Date.now();
     scheduleInactivityTimers(initializeLastActivity);
@@ -209,7 +223,11 @@ export default function MainLayout({ children }) {
         </div>
       )}
 
-      {children}
+      {/* En rutas protegidas, no renderizar la pagina hasta confirmar que hay
+          sesion: si no, el contenido llega a montarse y disparar sus propios
+          fetch (que fallan con 401) antes de que la redireccion a /login
+          surta efecto. */}
+      {(isPublicRoute || (sessionChecked && hasSession)) && children}
     </>
   );
 }

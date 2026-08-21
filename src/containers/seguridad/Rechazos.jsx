@@ -560,6 +560,7 @@ const Rechazos = () => {
             <table ref={tablaRef} className="table table-striped table-bordered table-sm mt-3">
                 <thead>
                     <tr>
+                        <th>N°</th>
                         <th>Semana</th>
                         <th className='table-success'>Fecha Llenado</th>
                         <th  className="table-danger">Fecha Rechazo</th>
@@ -577,6 +578,7 @@ const Rechazos = () => {
                         const listadoRelacionado = getListadoRelacionado(item);
                         return (
                         <tr key={key}>
+                            <td className="text-custom-small text-center">{(pagination - 1) * limit + key + 1}</td>
                             {editando === item.id ? (
                                 <>
                                     <td className="text-custom-small text-center">

@@ -409,6 +409,7 @@ export default function Inspeccionados() {
                 <table ref={tableRef} className="table table-striped table-bordered table-sm align-middle mb-0">
                     <thead className="table-light">
                         <tr>
+                            <th scope="col" className="text-center text-nowrap">N°</th>
                             <th scope="col" className="text-center text-nowrap">Semana</th>
                             <th scope="col" className="text-center text-nowrap">Fecha Inspccion</th>
                             <th className="text-center text-nowrap">Contenedor</th>
@@ -438,6 +439,7 @@ export default function Inspeccionados() {
                             const traceUrl = `${baseUrl}/tracecode?token=${token}`;
                             return (
                                 <tr key={key}>
+                                    <td className="text-center">{(pagination - 1) * limit + key + 1}</td>
                                     <td className="text-center">{getWeekConsecutive(item) || "-"}</td>
                                     <td className="text-center">
                                         {canEditHoras && editando === item?.Inspeccion?.id ? (

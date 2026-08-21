@@ -14,7 +14,7 @@ import { runPasswordPolicy } from '@services/api/auth';
 // Bootstrap
 import { Container, Form, InputGroup } from 'react-bootstrap';
 import { useAuth } from "@hooks/useAuth";
-import useAlert from '@hooks/useAlert';
+import useFeedback from '@hooks/useFeedback';
 // CSS
 import styles from '@styles/NuevoCombo.module.css';
 import styles1 from '@styles/Config.module.css';
@@ -73,7 +73,8 @@ const normalizarFechaInput = (value) => {
 export default function Configuracion({ setOpen }) {
     const formRef = useRef();
     const { user } = useAuth();
-    const { setAlert } = useAlert();
+    const { notify } = useFeedback();
+    const setAlert = (mensaje, variant = 'info') => notify(mensaje, { variant });
     const [securityCheck, setSecurityCheck] = useState(false);
     const [semana, setSemana] = useState({});
     const [empresa, setEmpresa] = useState({});
@@ -423,9 +424,8 @@ export default function Configuracion({ setOpen }) {
         setIsImportingDb(true);
         try {
             const res = await importarBaseDatos(archivo, escrito);
-            const totalFilas = (res?.tablas || []).reduce((acc, t) => acc + (t.filas || 0), 0);
             setAlert(
-                `Base de datos restaurada: ${res?.tablas?.length || 0} tablas, ${totalFilas} filas en total.`,
+                `Base de datos restaurada correctamente (${res?.sentenciasEjecutadas || 0} sentencias ejecutadas).`,
                 'success',
             );
         } catch (error) {
@@ -638,7 +638,7 @@ export default function Configuracion({ setOpen }) {
                                 </div>
 
                                 <span>Base de datos:</span>
-                                <div className="d-flex flex-column gap-2 align-items-start border rounded p-2">
+                                <div className="d-flex flex-column gap-2 align-items-start">
                                     <div className="d-flex gap-2">
                                         <button
                                             type="button"
@@ -659,7 +659,7 @@ export default function Configuracion({ setOpen }) {
                                         <input
                                             ref={dbFileInputRef}
                                             type="file"
-                                            accept="application/json"
+                                            accept=".sql,application/sql,text/plain"
                                             className="d-none"
                                             onChange={handleImportarDbFileChange}
                                         />

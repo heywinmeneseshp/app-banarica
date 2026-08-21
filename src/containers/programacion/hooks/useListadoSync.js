@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import { useCallback, useState } from 'react';
 import { paginarProgramaciones } from '@services/api/programaciones';
-import { paginarListado, actualizarListadoMasivo } from '@services/api/listado';
+import { paginarListado, actualizarListadoMasivo, actualizarListado } from '@services/api/listado';
 import { listarAlmacenes } from '@services/api/almacenes';
 import { vincularContenedoresProgramacionSeriales } from '@services/api/programacionSeriales';
 import { normalizeValue, ESTADO_LISTADO_PENDIENTE, ESTADO_LISTADO_ACTUALIZADO } from '../programadorUtils';
@@ -60,7 +60,14 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
 
           const transportadoraId = item?.vehiculo?.transportadoraId || item?.vehiculo?.transportadora?.id || null;
 
-          const key = `${fecha}__${contenedor}__${bl}__${almacenDestino.id}__${productoId || 'sin-producto'}`;
+          // El tipo de movimiento va en la clave: si dos filas de Programador
+          // del mismo contenedor/fecha/destino/producto son movimientos
+          // distintos (p.ej. "Cargue" y "Entrega"), son dos hechos distintos y
+          // deben sincronizarse como dos actualizaciones de Listado separadas,
+          // no fusionarse en una sola (antes eso dejaba a una de las dos filas
+          // sin marcar como sincronizada).
+          const movimientoKey = normalizeValue(item?.movimiento) || 'sin-movimiento';
+          const key = `${fecha}__${contenedor}__${bl}__${almacenDestino.id}__${productoId || 'sin-producto'}__${movimientoKey}`;
           const existing = groupedRows.get(key) || {
             fecha,
             contenedor,
@@ -184,6 +191,10 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
         fecha_inicial: fecha,
         fecha_final: fecha,
         includeSeriales: false,
+        // Sin esto, el backend trae tambien las lineas deshabilitadas
+        // (borradas logicamente) y las mezcla en el emparejamiento con las
+        // activas, dando coincidencias/duplicados incorrectos.
+        habilitado: true,
       });
       const data = Array.isArray(res?.data) ? res.data : [];
       all.push(...data);
@@ -220,6 +231,7 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
     }));
 
     const porDia = [];
+    const soloListadoRows = [];
     const totales = {
       programacion: payloadRows.length,
       coincidencias: 0,
@@ -281,11 +293,8 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
         }
       });
 
-      const soloListadoContenedores = new Set(
-        listadoDia
-          .filter((row) => !usados.has(String(row.id)))
-          .map((row) => normalizeValue(row.contenedor))
-      );
+      const soloListadoRowsDia = listadoDia.filter((row) => !usados.has(String(row.id)));
+      const soloListadoContenedores = new Set(soloListadoRowsDia.map((row) => normalizeValue(row.contenedor)));
 
       porDia.push({
         fecha,
@@ -296,16 +305,28 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
         soloListado: [...soloListadoContenedores],
       });
 
+      soloListadoRows.push(...soloListadoRowsDia);
+
       totales.coincidencias += coincidencias;
       totales.cajasDifieren += cajasDifieren;
       totales.soloProgramacion += soloProgramacionContenedores.size;
       totales.soloListado += soloListadoContenedores.size;
     }
 
-    return { porDia, totales };
+    return { porDia, totales, soloListadoRows };
   }, [fetchListadoRowsPorFecha, normalizarListadoRow]);
 
-  const ejecutarSincronizacion = useCallback(async (payloadRows = [], skippedRows = []) => {
+  // Lineas de Listado que ya no tienen ninguna linea de Programador
+  // correspondiente (p.ej. porque se elimino en Programador): se
+  // deshabilitan para que Listado quede igual a Programador, igual que ya
+  // pasa con las coincidencias.
+  const deshabilitarSobrantesListado = useCallback(async (soloListadoRows = []) => {
+    const ids = [...new Set(soloListadoRows.map((row) => row?.id).filter(Boolean))];
+    if (!ids.length) return;
+    await Promise.all(ids.map((id) => actualizarListado(id, { habilitado: false })));
+  }, []);
+
+  const ejecutarSincronizacion = useCallback(async (payloadRows = [], skippedRows = [], soloListadoRows = []) => {
     if (skippedRows.length) {
       setPendingListadoSync({
         payloadRows,
@@ -337,6 +358,7 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
     const processedIds = getProcessedProgramacionIdsFromListadoResult(payloadRows, result);
     await markProgramacionesEstadoListado(processedIds, ESTADO_LISTADO_ACTUALIZADO);
     await vincularSerialesPendientesDeListado(payloadRows, processedIds);
+    await deshabilitarSobrantesListado(soloListadoRows);
 
     setAlert({
       active: true,
@@ -346,7 +368,7 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
       color: result?.partial ? 'warning' : 'success',
       autoClose: true,
     });
-  }, [getProcessedProgramacionIdsFromListadoResult, markProgramacionesEstadoListado, setAlert, toListadoSyncPayload, vincularSerialesPendientesDeListado]);
+  }, [deshabilitarSobrantesListado, getProcessedProgramacionIdsFromListadoResult, markProgramacionesEstadoListado, setAlert, toListadoSyncPayload, vincularSerialesPendientesDeListado]);
 
   const sincronizarListadoPendiente = useCallback(async () => {
     try {
@@ -379,18 +401,18 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
         return;
       }
 
-      const { porDia, totales } = await computarDiferenciasPorDia(payloadRows);
+      const { porDia, totales, soloListadoRows } = await computarDiferenciasPorDia(payloadRows);
       const hayDiferencias = totales.soloProgramacion > 0
         || totales.soloListado > 0
         || totales.cajasDifieren > 0
         || skippedRows.length > 0;
 
       if (hayDiferencias) {
-        setDiferenciasListado({ payloadRows, skippedRows, porDia, totales });
+        setDiferenciasListado({ payloadRows, skippedRows, porDia, totales, soloListadoRows });
         return;
       }
 
-      await ejecutarSincronizacion(payloadRows, skippedRows);
+      await ejecutarSincronizacion(payloadRows, skippedRows, soloListadoRows);
     } catch (error) {
       setAlert({
         active: true,
@@ -413,7 +435,7 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
 
     try {
       setSyncingListado(true);
-      await ejecutarSincronizacion(datos.payloadRows, datos.skippedRows || []);
+      await ejecutarSincronizacion(datos.payloadRows, datos.skippedRows || [], datos.soloListadoRows || []);
     } catch (error) {
       setAlert({
         active: true,

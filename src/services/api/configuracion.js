@@ -69,23 +69,44 @@ const actualizarEmailConfig = async (body) => {
 };
 
 
-// Descarga el JSON completo y lo entrega como archivo (el navegador no puede
+// Descarga el .sql completo y lo entrega como archivo (el navegador no puede
 // "guardar" la respuesta de axios directamente, hay que armar el blob).
 const exportarBaseDatos = async () => {
-    const res = await axios.get(endPoints.confi.exportarDb, { ...getAuthConfig(), responseType: 'blob' });
+    try {
+        const res = await axios.get(endPoints.confi.exportarDb, {
+            ...getAuthConfig(),
+            responseType: 'blob',
+            timeout: 5 * 60 * 1000, // el export completo puede tardar bastante
+        });
 
-    const disposition = res.headers?.['content-disposition'] || '';
-    const match = disposition.match(/filename="?([^"]+)"?/);
-    const filename = match?.[1] || `backup-banarica-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
+        const disposition = res.headers?.['content-disposition'] || '';
+        const match = disposition.match(/filename="?([^"]+)"?/);
+        const filename = match?.[1] || `backup-banarica-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.sql`;
 
-    const url = window.URL.createObjectURL(res.data);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
+        const url = window.URL.createObjectURL(res.data);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        // Con responseType 'blob', axios entrega el error como Blob (no como
+        // JSON) aunque el backend haya mandado un {message: '...'} normal.
+        // Sin esto, el mensaje real del error nunca se ve.
+        if (error?.response?.data instanceof Blob) {
+            try {
+                const texto = await error.response.data.text();
+                const parsed = JSON.parse(texto);
+                error.response.data = parsed;
+            } catch {
+                // el cuerpo del error no era JSON (p.ej. una pagina de error
+                // de un proxy/timeout); se deja el error tal cual.
+            }
+        }
+        throw error;
+    }
 };
 
 // confirmacion debe ser EXACTAMENTE "IMPORTAR BASE DE DATOS" (validado tambien

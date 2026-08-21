@@ -123,7 +123,6 @@ export default function Dashboard() {
         () => canOperatorViewSerialsBySchedule(bloqueo, isSuperAdmin),
         [bloqueo, isSuperAdmin]
     );
-
     useEffect(() => {
         const fetchConfiguracion = async () => {
             try {
@@ -337,6 +336,7 @@ export default function Dashboard() {
                 <table ref={tableRef} className="table table-striped table-bordered table-sm align-middle mb-0">
                     <thead className="table-light">
                         <tr>
+                            <th scope="col" className="text-center text-nowrap">N°</th>
                             <th scope="col" className="text-center text-nowrap">Fecha</th>
                             <th className="text-center text-nowrap">Contenedor</th>
                             {configuracion.map((item, key) => {
@@ -360,6 +360,7 @@ export default function Dashboard() {
                             const seriales = item?.serial_de_articulos || [];
                             return (
                                 <tr key={key}>
+                                    <td className="text-center">{(offset - 1) * 25 + key + 1}</td>
                                     <th className="text-center text-nowrap">{fecha}</th>
                                     <td className="text-center">{item?.Contenedor?.contenedor}</td>
                                     {configuracion.map((itemConfig, key) => {

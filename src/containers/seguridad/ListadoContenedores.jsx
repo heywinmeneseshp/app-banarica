@@ -18,6 +18,7 @@ import { filtrarProductos } from '@services/api/productos';
 import { paginarEmbarques } from '@services/api/embarques';
 import { actualizarContenedor } from '@services/api/contenedores';
 import { paginarCombos } from '@services/api/combos';
+import useContenedorRowNumbers from '@hooks/useContenedorRowNumbers';
 import { listarTransportadoras } from '@services/api/transportadoras';
 import { useAuth } from '@hooks/useAuth';
 import { useBotonesUsuario } from '@hooks/useBotonesUsuario';
@@ -938,6 +939,13 @@ const ListadoContenedores = () => {
 
 
   // Renderizado de filas COMPLETO
+  const rowNumbers = useContenedorRowNumbers(
+    state.tableData,
+    (row) => row?.Contenedor?.contenedor || row?.Contenedor?.id || '',
+    state.pagination,
+    state.limit
+  );
+
   const renderTableRow = useCallback((row, index) => {
     const { serial_de_articulos: seriales, cajas_unidades: cajas, combo, Contenedor, Embarque, almacen, fecha } = row;
     const pallets = Math.ceil(cajas / combo?.cajas_por_palet || 1);
@@ -952,6 +960,7 @@ const ListadoContenedores = () => {
 
     return (
       <tr key={row.id} className="align-middle">
+        <td className="text-custom-small text-center">{rowNumbers[index]}</td>
         <td className="text-custom-small text-center">
           <input
             className="form-check-input"
@@ -1202,7 +1211,7 @@ const ListadoContenedores = () => {
         </td>
       </tr>
     );
-  }, [state.configuracionTabla, state.isEditable, state.soloEliminados, state.check, state.tableData, state.bol, state.configuracionInsumos, state.embarques, state.almacenes, state.productos, state.transportadoras, handleCellEdit, handleDatalist, onChangeCasilla, handleChecks, openTracecode, abrirModalEvidencia, abrirVerEvidencias, evidenciasDriveFolderIdListado]);
+  }, [state.configuracionTabla, state.isEditable, state.soloEliminados, state.check, state.tableData, state.bol, state.configuracionInsumos, state.embarques, state.almacenes, state.productos, state.transportadoras, handleCellEdit, handleDatalist, onChangeCasilla, handleChecks, openTracecode, abrirModalEvidencia, abrirVerEvidencias, evidenciasDriveFolderIdListado, rowNumbers]);
 
   return (
     <>
@@ -1421,6 +1430,7 @@ const ListadoContenedores = () => {
         >
           <thead className="align-middle">
             <tr>
+              <th className="text-custom-small text-center text-white bg-secondary">N°</th>
               <th className="text-custom-small text-center">
                 <input
                   className="form-check-input"

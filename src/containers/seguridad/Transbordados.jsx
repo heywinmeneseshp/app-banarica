@@ -163,6 +163,7 @@ export default function Transbordados() {
             <Table className="mb-0" striped bordered hover size="sm">
                 <thead>
                     <tr>
+                        <th className="text-center align-middle">N°</th>
                         <th className="text-center align-middle">Semana</th>
                         <th className="text-center align-middle">Contenedor origen</th>
                         <th className="text-center align-middle">Contenedor nuevo</th>
@@ -174,13 +175,14 @@ export default function Transbordados() {
                 <tbody>
                     {transbordos.length === 0 ? (
                         <tr>
-                            <td colSpan={6} className="text-center">
+                            <td colSpan={7} className="text-center">
                                 No hay transbordos para los filtros seleccionados.
                             </td>
                         </tr>
                     ) : (
-                        transbordos.map((item) => (
+                        transbordos.map((item, key) => (
                             <tr key={item.id}>
+                                <td className="text-center align-middle">{(pagination - 1) * limit + key + 1}</td>
                                 <td className="text-center align-middle">{item?.contenedorNuevo?.Listados?.[0]?.Embarque?.semana?.consecutivo || "No registrado"}</td>
                                 <td className="text-center align-middle">{item?.contenedorViejo?.contenedor || "No registrado"}</td>
                                 <td className="text-center align-middle">{item?.contenedorNuevo?.contenedor || "No registrado"}</td>

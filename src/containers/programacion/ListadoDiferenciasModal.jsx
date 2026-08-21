@@ -44,8 +44,9 @@ function ListadoDiferenciasModal({ diferenciasListado, show, syncingListado, onC
       <Modal.Body>
         <div className="small text-muted mb-3">
           Se detectaron diferencias entre lo programado y el Listado para las fechas con movimientos
-          pendientes. Revisa el resumen antes de sincronizar; solo se actualizarán las líneas con
-          coincidencia.
+          pendientes. Revisa el resumen antes de sincronizar: las líneas con coincidencia se actualizan,
+          y las líneas que quedaron <strong>solo en Listado</strong> (p. ej. por una línea eliminada en
+          Programador) se deshabilitarán para que Listado quede igual a Programador.
         </div>
 
         <div className="d-flex flex-wrap gap-2 mb-3">

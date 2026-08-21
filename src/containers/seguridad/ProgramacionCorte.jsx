@@ -18,9 +18,12 @@ const PROCESOS_OPCIONES = ['Finca', 'Local', 'Puerto', 'Contenedor Local'];
 const normalizarFecha = (valor) => {
   if (valor === null || valor === undefined || valor === '') return '';
   if (typeof valor === 'number' && valor > 20000) {
+    // Un serial de Excel es solo un conteo de dias (sin hora ni zona), asi que
+    // esta cuenta ya da medianoche UTC del dia correcto sin importar la zona
+    // horaria de quien sube el archivo. Sumarle el getTimezoneOffset() local
+    // (como se hacia antes) desplazaba la fecha segun la maquina del usuario.
     const fecha = new Date(Math.round((valor - 25569) * 86400 * 1000));
-    const utc = new Date(fecha.getTime() + fecha.getTimezoneOffset() * 60000);
-    return utc.toISOString().slice(0, 10);
+    return fecha.toISOString().slice(0, 10);
   }
   const texto = String(valor).trim();
   if (/^\d{4}-\d{2}-\d{2}/.test(texto)) return texto.slice(0, 10);
