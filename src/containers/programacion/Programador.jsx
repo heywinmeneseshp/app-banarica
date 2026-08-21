@@ -281,6 +281,9 @@ export default function Programador() {
           estadoListadoLabel: normalizeValue(item?.estado_listado) === ESTADO_LISTADO_ACTUALIZADO
             ? 'Actualizado'
             : 'Pendiente',
+          // Nombre del catalogo via movimiento_id para mostrar en pantalla,
+          // sin tocar el texto "quemado" que ya trae item.movimiento.
+          movimientoLabel: item?.tipoMovimiento?.movimiento || item?.movimiento || '',
         };
       });
   }, [combos, embarqueMap, itemList]);
@@ -399,25 +402,47 @@ export default function Programador() {
     return created?.data?.id || created?.id || '';
   };
 
-  const handleLookupEdit = async (row, field, value) => {
+  const handleLookupEdit = async (row, field, value, options = {}) => {
     try {
       if (field === 'vehiculo_id') {
         const vehiculo = vehiculos.find((item) => String(item.id) === String(value));
         if (!vehiculo) return;
-        updateLocalRow(row.id, (current) => ({ ...current, vehiculo_id: vehiculo.id, vehiculo: { ...(current.vehiculo || {}), id: vehiculo.id, placa: vehiculo.placa } }));
-        await actualizarProgramaciones(row.id, { vehiculo_id: vehiculo.id });
+        updateLocalRow(row.id, (current) => ({
+          ...current,
+          vehiculo_id: vehiculo.id,
+          vehiculo: { ...(current.vehiculo || {}), id: vehiculo.id, placa: vehiculo.placa },
+          ...(options.preserveEstado ? {} : { estado_listado: ESTADO_LISTADO_PENDIENTE }),
+        }));
+        const apiPayload = { vehiculo_id: vehiculo.id };
+        if (options.preserveEstado) {
+          const currentRow = itemList.find((r) => r.id === row.id);
+          if (currentRow?.estado_listado) apiPayload.estado_listado = currentRow.estado_listado;
+        }
+        await actualizarProgramaciones(row.id, apiPayload);
         return;
       }
       if (field === 'conductor_id') {
         const conductor = conductores.find((item) => String(item.id) === String(value));
         if (!conductor) return;
-        updateLocalRow(row.id, (current) => ({ ...current, conductor_id: conductor.id, conductor: { ...(current.conductor || {}), id: conductor.id, conductor: conductor.conductor } }));
-        await actualizarProgramaciones(row.id, { conductor_id: conductor.id });
+        updateLocalRow(row.id, (current) => ({
+          ...current,
+          conductor_id: conductor.id,
+          conductor: { ...(current.conductor || {}), id: conductor.id, conductor: conductor.conductor },
+          ...(options.preserveEstado ? {} : { estado_listado: ESTADO_LISTADO_PENDIENTE }),
+        }));
+        const apiPayload = { conductor_id: conductor.id };
+        if (options.preserveEstado) {
+          const currentRow = itemList.find((r) => r.id === row.id);
+          if (currentRow?.estado_listado) apiPayload.estado_listado = currentRow.estado_listado;
+        }
+        await actualizarProgramaciones(row.id, apiPayload);
         return;
       }
       if (field === 'movimiento') {
-        updateLocalRow(row.id, (current) => ({ ...current, movimiento: value }));
-        await actualizarProgramaciones(row.id, { movimiento: value });
+        const tipo = tiposMovimiento.find((item) => String(item.id) === String(value));
+        if (!tipo) return;
+        updateLocalRow(row.id, (current) => ({ ...current, movimiento: tipo.movimiento, movimiento_id: tipo.id }));
+        await actualizarProgramaciones(row.id, { movimiento_id: tipo.id });
         return;
       }
       if (field === 'ruta') {
@@ -440,7 +465,7 @@ export default function Programador() {
     }
   };
 
-  const handleLookupTextEdit = async (row, field, value) => {
+  const handleLookupTextEdit = async (row, field, value, options = {}) => {
     const text = String(value || '').trim();
     if (!text && field === 'bl') {
       await applyProgramacionChanges(row, { bl: '', id_pagador_flete: '' });
@@ -451,13 +476,13 @@ export default function Programador() {
       if (field === 'vehiculo') {
         const vehiculo = vehiculos.find((item) => normalizeValue(item?.placa) === normalizeValue(text));
         if (!vehiculo) throw new Error(`El vehiculo "${text}" no existe.`);
-        await handleLookupEdit(row, 'vehiculo_id', vehiculo.id);
+        await handleLookupEdit(row, 'vehiculo_id', vehiculo.id, options);
         return;
       }
       if (field === 'conductor') {
         const conductor = conductores.find((item) => normalizeValue(item?.conductor) === normalizeValue(text));
         if (!conductor) throw new Error(`El conductor "${text}" no existe.`);
-        await handleLookupEdit(row, 'conductor_id', conductor.id);
+        await handleLookupEdit(row, 'conductor_id', conductor.id, options);
         return;
       }
       if (field === 'bl') {
@@ -525,7 +550,7 @@ export default function Programador() {
       if (field === 'movimiento') {
         const movimiento = findTipoMovimiento(text);
         if (!movimiento) throw new Error(`El movimiento "${text}" no existe.`);
-        await handleLookupEdit(row, 'movimiento', movimiento.movimiento);
+        await handleLookupEdit(row, 'movimiento', movimiento.id);
         return;
       }
       if (field === 'origen' || field === 'destino') {

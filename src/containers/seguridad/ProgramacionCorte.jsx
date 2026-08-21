@@ -6,11 +6,12 @@ import { Button, Col, Collapse, Form, Modal, Row } from 'react-bootstrap';
 import Loader from '@components/shared/Loader';
 import styles2 from '@components/shared/Formularios/Formularios.module.css';
 import excel from '@hooks/useExcel';
-import { listarProgramacionCorte, cargarProgramacionCorte, eliminarProgramacionCorte, comparativaProgramacionCorte } from '@services/api/programacionCorte';
+import { listarProgramacionCorte, cargarProgramacionCorte, eliminarProgramacionCorte, comparativaProgramacionCorte, listadoRelacionadoProgramacionCorte } from '@services/api/programacionCorte';
 import { listarSemanas } from '@services/api/semanas';
 import { encontrarModulo, actualizarModulo } from '@services/api/configuracion';
 import { listarAlmacenes } from '@services/api/almacenes';
 import { useAuth } from '@hooks/useAuth';
+import ListadoContenedores from '@containers/seguridad/ListadoContenedores';
 
 const COLUMNAS_ESPERADAS = ['Fecha', 'Booking', 'Transportadora', 'Proceso de Empaque', 'Finca', 'Producto', 'Cajas'];
 const PROCESOS_OPCIONES = ['Finca', 'Local', 'Puerto', 'Contenedor Local'];
@@ -91,6 +92,22 @@ const ProgramacionCorte = () => {
   const [detalleComparativa, setDetalleComparativa] = useState(null);
   const [detalleLoading, setDetalleLoading] = useState(false);
   const [detalleError, setDetalleError] = useState(null);
+  const [detalleListado, setDetalleListado] = useState(null);
+  const [detalleListadoLoading, setDetalleListadoLoading] = useState(false);
+  const [listadoRelacionadoFiltros, setListadoRelacionadoFiltros] = useState(null);
+
+  // Abre el Listado de Contenedores real (mismas columnas, misma edicion)
+  // dentro de un modal, ya filtrado a la fecha/booking/lugar de
+  // llenado/producto de esta fila de la comparativa.
+  const abrirListadoRelacionado = (fila) => {
+    setListadoRelacionadoFiltros({
+      booking: fila.booking,
+      llenado: fila.finca,
+      producto: fila.producto,
+      fecha_inicial: fila.fecha,
+      fecha_final: fila.fecha,
+    });
+  };
 
   const cargarLista = async () => {
     setLoading(true);
@@ -397,6 +414,13 @@ const ProgramacionCorte = () => {
     setDetalleFila(fila);
     setDetalleComparativa(null);
     setDetalleError(null);
+    setDetalleListado(null);
+
+    setDetalleListadoLoading(true);
+    listadoRelacionadoProgramacionCorte(fila.id)
+      .then((res) => setDetalleListado(res))
+      .catch((error) => console.error('Error al cargar las lineas de Listado relacionadas:', error))
+      .finally(() => setDetalleListadoLoading(false));
 
     if (!consecutivoSemana) {
       setDetalleError('Esta fila no tiene una semana asociada; no se puede calcular el detalle.');
@@ -421,6 +445,7 @@ const ProgramacionCorte = () => {
 
   const cerrarDetalleFila = () => {
     setDetalleFila(null);
+    setDetalleListado(null);
     setDetalleComparativa(null);
     setDetalleError(null);
   };
@@ -635,7 +660,12 @@ const ProgramacionCorte = () => {
                 </thead>
                 <tbody className="align-middle">
                   {comparativaFilasFiltradas.map((fila, idx) => (
-                    <tr key={`${fila.fecha}-${fila.booking}-${fila.finca}-${fila.producto}-${idx}`}>
+                    <tr
+                      key={`${fila.fecha}-${fila.booking}-${fila.finca}-${fila.producto}-${idx}`}
+                      onClick={() => abrirListadoRelacionado(fila)}
+                      style={{ cursor: 'pointer' }}
+                      title="Ver estas lineas en el Listado de Contenedores"
+                    >
                       <td className="text-custom-small text-center text-nowrap">{fila.fecha}</td>
                       <td className="text-custom-small text-center">{fila.booking}</td>
                       <td className="text-custom-small text-center">{fila.procesoEmpaque}</td>
@@ -862,7 +892,7 @@ const ProgramacionCorte = () => {
       </Modal>
 
       <Modal show={Boolean(detalleFila)} onHide={cerrarDetalleFila} centered size="lg">
-        <Modal.Header closeButton className="bg-dark text-white">
+        <Modal.Header closeButton closeVariant="white" className="bg-dark text-white">
           <Modal.Title className="h6 mb-0">
             Detalle {detalleFila?.fecha} - Booking {detalleFila?.booking}
           </Modal.Title>
@@ -890,12 +920,68 @@ const ProgramacionCorte = () => {
               {!detalleComparativa && (
                 <div className="text-muted">No hay cajas registradas en el Listado para esta fecha/booking/lugar de llenado/producto.</div>
               )}
+
+              <hr />
+              <div className="fw-bold mb-2">Lineas relacionadas en Listado de Contenedores</div>
+              {detalleListadoLoading ? (
+                <div className="text-center text-muted py-2">Cargando lineas...</div>
+              ) : !detalleListado?.lineas?.length ? (
+                <div className="text-muted small">No se encontraron lineas de Listado para esta fecha/booking/lugar de llenado/producto.</div>
+              ) : (
+                <div className="table-responsive">
+                  <table className="table table-sm table-bordered text-center align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th className="text-custom-small text-white bg-secondary">Contenedor</th>
+                        <th className="text-custom-small text-white bg-secondary">Lugar de llenado</th>
+                        <th className="text-custom-small text-white bg-secondary">Producto</th>
+                        <th className="text-custom-small text-white bg-secondary">Cajas</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detalleListado.lineas.map((linea) => (
+                        <tr key={linea.id}>
+                          <td className="text-custom-small">{linea.contenedor || '-'}</td>
+                          <td className="text-custom-small">{linea.almacen}</td>
+                          <td className="text-custom-small">{linea.producto}</td>
+                          <td className="text-custom-small">{linea.cajas_unidades}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </>
           )}
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" size="sm" onClick={cerrarDetalleFila}>Cerrar</Button>
         </Modal.Footer>
+      </Modal>
+
+      <style>{`.listado-relacionado-modal .modal-dialog { max-width: 95vw; width: 95vw; }`}</style>
+      <Modal
+        show={Boolean(listadoRelacionadoFiltros)}
+        onHide={() => {
+          setListadoRelacionadoFiltros(null);
+          // Puede haber editado cajas/producto/etc. dentro del Listado —
+          // refrescar la comparativa para que se vea el cambio sin tener que
+          // recargar la pagina entera.
+          setRefreshKey((prev) => prev + 1);
+        }}
+        centered
+        size="xl"
+        fullscreen="lg-down"
+        dialogClassName="listado-relacionado-modal"
+      >
+        <Modal.Header closeButton closeVariant="white" className="bg-dark text-white">
+          <Modal.Title className="h6 mb-0">Listado de Contenedores relacionado</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="p-4" style={{ maxHeight: '85vh', overflowY: 'auto' }}>
+          {listadoRelacionadoFiltros && (
+            <ListadoContenedores initialFilters={listadoRelacionadoFiltros} embebido />
+          )}
+        </Modal.Body>
       </Modal>
     </>
   );

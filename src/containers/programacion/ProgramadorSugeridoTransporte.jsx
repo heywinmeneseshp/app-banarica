@@ -72,7 +72,7 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
       } catch {
         relaciones = [];
       }
-      setDraftMovimientos(relaciones.filter((r) => r && r.proceso && r.movimiento));
+      setDraftMovimientos(relaciones.filter((r) => r && r.proceso && r.movimiento_id));
     } catch (error) {
       console.error('Error al cargar configuracion de movimientos:', error);
       setAlert({ active: true, mensaje: 'No fue posible cargar la configuracion.', color: 'danger', autoClose: true });
@@ -80,14 +80,14 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
   };
 
   const guardarConfig = async () => {
-    const limpios = draftMovimientos.filter((r) => r?.proceso && r?.movimiento);
+    const limpios = draftMovimientos.filter((r) => r?.proceso && r?.movimiento_id);
     const unicos = [];
     const vistos = new Set();
     for (const r of limpios) {
       const clave = String(r.proceso).trim().toLowerCase();
       if (vistos.has(clave)) continue;
       vistos.add(clave);
-      unicos.push({ proceso: String(r.proceso).trim(), movimiento: String(r.movimiento).trim() });
+      unicos.push({ proceso: String(r.proceso).trim(), movimiento_id: r.movimiento_id });
     }
 
     setGuardandoConfig(true);
@@ -187,11 +187,13 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
       const procesoAAlmacen = new Map(
         procesosAlmacen.filter((p) => p?.proceso && p?.almacen).map((p) => [normalizarComparacion(p.proceso), String(p.almacen).trim()])
       );
-      const procesoAMovimiento = new Map(
-        procesosMovimiento.filter((p) => p?.proceso && p?.movimiento).map((p) => [normalizarComparacion(p.proceso), String(p.movimiento).trim()])
+      // movimiento_id es la fuente autoritativa (relacion real, no depende
+      // de que el texto siga coincidiendo con el catalogo).
+      const procesoAMovimientoId = new Map(
+        procesosMovimiento.filter((p) => p?.proceso && p?.movimiento_id).map((p) => [normalizarComparacion(p.proceso), p.movimiento_id])
       );
-      const requiereContenedorPorMovimiento = new Map(
-        (tiposMovimiento || []).map((m) => [normalizarComparacion(m.movimiento), Boolean(m.requiere_contenedor)])
+      const movimientoPorId = new Map(
+        (tiposMovimiento || []).map((m) => [String(m.id), m])
       );
       const ubicacionPorNombre = new Map(
         (ubicaciones || []).map((u) => [normalizarComparacion(u.ubicacion), u])
@@ -201,8 +203,10 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
       filasSemana.forEach((fila) => {
         const procesoKey = normalizarComparacion(fila.proceso_empaque);
         const finca = procesoAAlmacen.get(procesoKey) || String(fila.finca || '').trim();
-        const movimiento = procesoAMovimiento.get(procesoKey) || '';
-        const requiereContenedor = requiereContenedorPorMovimiento.get(normalizarComparacion(movimiento)) || false;
+        const movimientoId = procesoAMovimientoId.get(procesoKey) || '';
+        const tipoMovimiento = movimientoPorId.get(String(movimientoId));
+        const movimiento = tipoMovimiento?.movimiento || '';
+        const requiereContenedor = Boolean(tipoMovimiento?.requiere_contenedor);
         // Con contenedor: la finca es el destino (el origen lo elige el
         // usuario). Sin contenedor: la finca es el origen (el destino lo
         // elige el usuario).
@@ -220,6 +224,7 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
           fecha: fila.fecha,
           booking: fila.booking,
           movimiento,
+          movimientoId,
           requiereContenedor,
           contenedor: requiereContenedor ? DEMO_CONTENEDOR : '',
           origen: requiereContenedor ? '' : finca,
@@ -265,15 +270,15 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
   // que trajo del mapeo de proceso de empaque). Si el nuevo movimiento no lo
   // requiere, el contenedor deja de tener sentido y se limpia; si si lo
   // requiere y estaba vacio, se precarga el demo por defecto.
-  const cambiarMovimientoFila = (id, nuevoMovimiento) => {
-    const requiereContenedor = Boolean(
-      (tiposMovimiento || []).find((m) => normalizarComparacion(m.movimiento) === normalizarComparacion(nuevoMovimiento))?.requiere_contenedor
-    );
+  const cambiarMovimientoFila = (id, nuevoMovimientoId) => {
+    const tipo = (tiposMovimiento || []).find((m) => String(m.id) === String(nuevoMovimientoId));
+    const requiereContenedor = Boolean(tipo?.requiere_contenedor);
     setSugeridoBorrador((prev) => prev.map((fila) => {
       if (fila.id !== id) return fila;
       return {
         ...fila,
-        movimiento: nuevoMovimiento,
+        movimientoId: nuevoMovimientoId,
+        movimiento: tipo?.movimiento || '',
         requiereContenedor,
         contenedor: requiereContenedor ? (fila.contenedor || DEMO_CONTENEDOR) : '',
       };
@@ -319,7 +324,7 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
   };
 
   const enviarFila = async (fila) => {
-    if (!fila.movimiento) {
+    if (!fila.movimientoId) {
       window.alert('Este proceso de empaque no tiene un movimiento configurado (boton "Configurar movimientos").');
       return;
     }
@@ -351,7 +356,7 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
       }
 
       const creado = await agregarProgramaciones({
-        movimiento: fila.movimiento,
+        movimiento_id: fila.movimientoId,
         fecha: fila.fecha,
         bl: fila.booking,
         contenedor: fila.contenedor || '',
@@ -435,16 +440,16 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
               </div>
               <div className="col-5">
                 <Form.Select
-                  value={item.movimiento}
+                  value={item.movimiento_id || ''}
                   onChange={(e) => {
                     const nuevo = [...draftMovimientos];
-                    nuevo[idx] = { ...nuevo[idx], movimiento: e.target.value };
+                    nuevo[idx] = { ...nuevo[idx], movimiento_id: e.target.value };
                     setDraftMovimientos(nuevo);
                   }}
                 >
                   <option value="">Movimiento...</option>
                   {(tiposMovimiento || []).map((m) => (
-                    <option key={m.id} value={m.movimiento}>{m.movimiento}</option>
+                    <option key={m.id} value={m.id}>{m.movimiento}</option>
                   ))}
                 </Form.Select>
               </div>
@@ -463,7 +468,7 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
             <Button
               variant="outline-success"
               size="sm"
-              onClick={() => setDraftMovimientos([...draftMovimientos, { proceso: '', movimiento: '' }])}
+              onClick={() => setDraftMovimientos([...draftMovimientos, { proceso: '', movimiento_id: '' }])}
             >
               <FaPlus className="me-1" /> Agregar relacion
             </Button>
@@ -584,13 +589,13 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
                       <td style={{ ...CELL_STYLE, minWidth: '110px' }}>
                         <Form.Select
                           size="sm"
-                          className={`${COMPACT_INPUT_CLASS} ${!fila.movimiento ? 'border-danger' : ''}`}
-                          value={fila.movimiento || ''}
+                          className={`${COMPACT_INPUT_CLASS} ${!fila.movimientoId ? 'border-danger' : ''}`}
+                          value={fila.movimientoId || ''}
                           onChange={(e) => cambiarMovimientoFila(fila.id, e.target.value)}
                         >
                           <option value="">Sin mapear...</option>
                           {(tiposMovimiento || []).map((m) => (
-                            <option key={m.id} value={m.movimiento}>{m.movimiento}</option>
+                            <option key={m.id} value={m.id}>{m.movimiento}</option>
                           ))}
                         </Form.Select>
                       </td>

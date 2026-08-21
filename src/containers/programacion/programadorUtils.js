@@ -11,10 +11,11 @@ export const buildFilterBody = (formEl) => {
     ubicacion2: formData.get('destino') || '',
     semana: formData.get('semana') || '',
     bl: formData.get('bl') || '',
+    contenedor: formData.get('contenedor') || '',
     vehiculo: formData.get('vehiculo') || '',
     conductor: formData.get('conductor') || '',
     fecha: formData.get('fecha') || '',
-    movimiento: formData.getAll('movimiento'),
+    movimiento_id: formData.getAll('movimiento_id'),
   };
   const fechaFin = formData.get('fecha_fin');
   if (fechaFin) body.fechaFin = fechaFin;
@@ -203,7 +204,7 @@ export const formatTimeCell = (value) => {
 export const compactCellStyle = {
   whiteSpace: 'nowrap',
   width: '1%',
-  padding: '0.3rem 0.4rem',
+  padding: '0.15rem 0.4rem',
   fontSize: '0.8rem',
   verticalAlign: 'middle',
 };

@@ -260,6 +260,7 @@ const endPoints = {
         cargar: `${API}/api/${VERSION}/programacion-corte/cargar`,
         delete: (id) => `${API}/api/${VERSION}/programacion-corte/${id}`,
         comparativa: (semana) => `${API}/api/${VERSION}/programacion-corte/comparativa?semana=${encodeURIComponent(semana)}`,
+        listadoRelacionado: (id) => `${API}/api/${VERSION}/programacion-corte/${id}/listado-relacionado`,
     },
     //TRANSPOTER
     ubicaciones: {

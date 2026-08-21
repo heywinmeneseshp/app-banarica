@@ -81,7 +81,7 @@ const FILTER_FIELDS = [
 ];
 
 // Hook personalizado para el estado del listado
-const useListadoState = (configKey) => {
+const useListadoState = (configKey, excluirColumnas = []) => {
   const [state, setState] = useState(() => ({
     tableData: [],
     pagination: 1,
@@ -90,7 +90,13 @@ const useListadoState = (configKey) => {
     configuracionInsumos: [],
     // Si el usuario aun no tiene configuracion propia, se migra la configuracion
     // generica anterior (compartida entre usuarios) para no perder lo ya elegido.
-    configuracionTabla: safeStorageGetJson(configKey, null) ?? safeStorageGetJson("ListadoConfig", CONFIG_TABLA_DEFAULT),
+    // excluirColumnas se usa solo cuando esta tabla se embebe en otra pantalla
+    // (ej. modal desde Programacion de Corte) y no debe tocar/leer la
+    // configuracion personal de columnas del usuario en localStorage.
+    configuracionTabla: (excluirColumnas.length > 0
+      ? CONFIG_TABLA_DEFAULT
+      : (safeStorageGetJson(configKey, null) ?? safeStorageGetJson("ListadoConfig", CONFIG_TABLA_DEFAULT))
+    ).filter((col) => !excluirColumnas.includes(col)),
     almacenes: safeStorageGetJson('almacenByUser', []),
     embarques: [],
     productos: [],
@@ -122,7 +128,16 @@ const useListadoState = (configKey) => {
   return { state, updateState };
 };
 
-const ListadoContenedores = () => {
+// Columnas que Programacion de Corte pide ocultar cuando embebe esta tabla
+// en su modal "Listado relacionado" — no aplican al uso normal de la
+// pantalla, donde el usuario sigue eligiendo sus columnas como siempre.
+const COLUMNAS_OCULTAS_EMBEBIDO = ['Transportadora', 'Insumos de segurdad'];
+
+const ListadoContenedores = ({ initialFilters = null, embebido = false } = {}) => {
+  const columnasOcultas = useMemo(
+    () => (embebido ? COLUMNAS_OCULTAS_EMBEBIDO : []),
+    [embebido]
+  );
   const { getUser } = useAuth();
   const router = useRouter();
   const { tieneBoton } = useBotonesUsuario();
@@ -137,15 +152,20 @@ const ListadoContenedores = () => {
   const configuracionTablaKey = user?.username ? `ListadoConfig_${user.username}` : 'ListadoConfig';
 
   // Estados
+  // initialFilters permite abrir esta pantalla ya filtrada (ej. embebida en
+  // un modal desde Programacion de Corte, mostrando solo las lineas de un
+  // dia/booking/lugar de llenado/producto puntual) sin tocar el resto del
+  // comportamiento — sigue siendo la misma tabla, con la misma edicion.
   const [filters, setFilters] = useState({
     semana: '', cliente: '', booking: '', BoL: '', naviera: '',
     destino: '', buque: '', llenado: '', contenedor: '', producto: '',
-    fecha_inicial: '', fecha_final: ''
+    fecha_inicial: '', fecha_final: '',
+    ...(initialFilters || {}),
   });
   const [inlineMessage, setInlineMessage] = useState(null);
   const [evidenciasDriveFolderIdListado, setEvidenciasDriveFolderIdListado] = useState('');
 
-  const { state, updateState } = useListadoState(configuracionTablaKey);
+  const { state, updateState } = useListadoState(configuracionTablaKey, columnasOcultas);
   // Los filtros de texto solo se aplican al presionar Enter o el boton "Buscar"
   // (no mientras se escribe), para evitar disparar busquedas con texto incompleto.
   const [appliedFilters, setAppliedFilters] = useState(filters);
@@ -1164,29 +1184,31 @@ const ListadoContenedores = () => {
           <td className="text-custom-small text-center">{pesoNeto}</td>
         )}
 
-        <td className="text-custom-small text-center">
-          <button
-            type="button"
-            style={{ all: 'unset', cursor: (row.evidencia_cargada || evidenciasDriveFolderIdListado) ? 'pointer' : 'not-allowed' }}
-            title={
-              row.evidencia_cargada
-                ? 'Ver fotos cargadas'
-                : !evidenciasDriveFolderIdListado
-                  ? 'Carpeta de evidencias no configurada. Ve a Configuraciones para agregarla.'
-                  : 'Subir evidencia'
-            }
-            onClick={() => {
-              if (row.evidencia_cargada) {
-                abrirVerEvidencias(row);
-                return;
+        {!embebido && (
+          <td className="text-custom-small text-center">
+            <button
+              type="button"
+              style={{ all: 'unset', cursor: (row.evidencia_cargada || evidenciasDriveFolderIdListado) ? 'pointer' : 'not-allowed' }}
+              title={
+                row.evidencia_cargada
+                  ? 'Ver fotos cargadas'
+                  : !evidenciasDriveFolderIdListado
+                    ? 'Carpeta de evidencias no configurada. Ve a Configuraciones para agregarla.'
+                    : 'Subir evidencia'
               }
-              if (!evidenciasDriveFolderIdListado) return;
-              abrirModalEvidencia({ ...row, contenedorLabel: Contenedor?.contenedor || '', semanaLabel: row.Embarque?.semana?.consecutivo || '', blLabel: row.Embarque?.bl || '' });
-            }}
-          >
-            <BsCameraFill style={{ color: row.evidencia_cargada ? '#319c5c' : !evidenciasDriveFolderIdListado ? '#ccc' : '#f0ad4e', fontSize: 16 }} />
-          </button>
-        </td>
+              onClick={() => {
+                if (row.evidencia_cargada) {
+                  abrirVerEvidencias(row);
+                  return;
+                }
+                if (!evidenciasDriveFolderIdListado) return;
+                abrirModalEvidencia({ ...row, contenedorLabel: Contenedor?.contenedor || '', semanaLabel: row.Embarque?.semana?.consecutivo || '', blLabel: row.Embarque?.bl || '' });
+              }}
+            >
+              <BsCameraFill style={{ color: row.evidencia_cargada ? '#319c5c' : !evidenciasDriveFolderIdListado ? '#ccc' : '#f0ad4e', fontSize: 16 }} />
+            </button>
+          </td>
+        )}
 
         <td className="text-custom-small text-center">
           <button
@@ -1199,19 +1221,21 @@ const ListadoContenedores = () => {
           </button>
         </td>
 
-        <td className="text-custom-small text-center">
-          <button
-            type="button"
-            style={{ all: 'unset', cursor: 'pointer', color: '#0d6efd' }}
-            onClick={() => setHistorialListadoId(row.id)}
-            title="Ver historial de cambios"
-          >
-            <FaHistory />
-          </button>
-        </td>
+        {!embebido && (
+          <td className="text-custom-small text-center">
+            <button
+              type="button"
+              style={{ all: 'unset', cursor: 'pointer', color: '#0d6efd' }}
+              onClick={() => setHistorialListadoId(row.id)}
+              title="Ver historial de cambios"
+            >
+              <FaHistory />
+            </button>
+          </td>
+        )}
       </tr>
     );
-  }, [state.configuracionTabla, state.isEditable, state.soloEliminados, state.check, state.tableData, state.bol, state.configuracionInsumos, state.embarques, state.almacenes, state.productos, state.transportadoras, handleCellEdit, handleDatalist, onChangeCasilla, handleChecks, openTracecode, abrirModalEvidencia, abrirVerEvidencias, evidenciasDriveFolderIdListado, rowNumbers]);
+  }, [embebido, state.configuracionTabla, state.isEditable, state.soloEliminados, state.check, state.tableData, state.bol, state.configuracionInsumos, state.embarques, state.almacenes, state.productos, state.transportadoras, handleCellEdit, handleDatalist, onChangeCasilla, handleChecks, openTracecode, abrirModalEvidencia, abrirVerEvidencias, evidenciasDriveFolderIdListado, rowNumbers]);
 
   return (
     <>
@@ -1460,9 +1484,9 @@ const ListadoContenedores = () => {
               {renderHeader("Pallets", true)}
               {renderHeader("Peso Bruto", true)}
               {renderHeader("Peso Neto", true)}
-              <th className="text-custom-small text-center text-white bg-secondary">Evid.</th>
+              {!embebido && <th className="text-custom-small text-center text-white bg-secondary">Evid.</th>}
               <th className="text-custom-small text-center text-white bg-secondary">Detalle</th>
-              <th className="text-custom-small text-center text-white bg-secondary">Hist.</th>
+              {!embebido && <th className="text-custom-small text-center text-white bg-secondary">Hist.</th>}
             </tr>
           </thead>
           <tbody className="align-middle">

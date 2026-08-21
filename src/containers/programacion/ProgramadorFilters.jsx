@@ -117,7 +117,7 @@ export default function ProgramadorFilters({
   const movimientoLabel = selectedMovimientos.length === 0
     ? 'Todos'
     : selectedMovimientos.length === 1
-      ? selectedMovimientos[0]
+      ? (movimientoOptions.find((item) => String(item.id) === selectedMovimientos[0])?.movimiento || selectedMovimientos[0])
       : `${selectedMovimientos.length} seleccionados`;
 
   return (
@@ -165,6 +165,11 @@ export default function ProgramadorFilters({
         </div>
 
         <div className="col-12 col-md-6 col-lg-2">
+          <label htmlFor="contenedor" className="form-label mb-1">Contenedor</label>
+          <input id="contenedor" name="contenedor" type="text" placeholder="DUMY0000001" onChange={onFilterDebounced} className="form-control form-control-sm" />
+        </div>
+
+        <div className="col-12 col-md-6 col-lg-2">
           <label htmlFor="conductor" className="form-label mb-1">Conductor</label>
           <input id="conductor" name="conductor" type="text" list="conductorItems" onChange={onFilterDebounced} className="form-control form-control-sm" />
           <datalist id="conductorItems">
@@ -204,10 +209,10 @@ export default function ProgramadorFilters({
                 <input
                   className="form-check-input"
                   type="checkbox"
-                  name="movimiento"
+                  name="movimiento_id"
                   id={`mov-${item.id || item.movimiento}`}
-                  value={item.movimiento}
-                  checked={selectedMovimientos.includes(item.movimiento)}
+                  value={item.id}
+                  checked={selectedMovimientos.includes(String(item.id))}
                   onChange={handleMovimientoChange}
                 />
                 <label className="form-check-label small" htmlFor={`mov-${item.id || item.movimiento}`}>
@@ -364,9 +369,10 @@ export default function ProgramadorFilters({
             </li>
             <li className="mb-2">
               Las columnas de horas (Ingreso origen, Salida origen, Llegada Patio, Retiro Patio, Ingreso destino,
-              Cierre, Salida destino) solo se pueden editar si la fecha de la fila esta dentro de los
+              Cierre, Salida destino), el <strong>Vehículo</strong> y el <strong>Conductor</strong> solo se pueden
+              editar si la fecha de la fila esta dentro de los
               <strong> últimos {diasEdicionHoras} día{diasEdicionHoras === 1 ? '' : 's'}</strong> (incluyendo hoy).
-              Filas con fecha más antigua no permiten editar esas horas, aunque tengas permiso de edición.
+              Filas con fecha más antigua no permiten editar esos campos, aunque tengas permiso de edición.
               {isSuperAdmin && ' Este numero de dias se puede ajustar con el boton de configuracion (engranaje).'}
             </li>
             <li className="mb-0">
@@ -383,13 +389,13 @@ export default function ProgramadorFilters({
       {isSuperAdmin && (
         <Modal show={showConfigEdicion} onHide={() => setShowConfigEdicion(false)} centered>
           <Modal.Header closeButton className="bg-dark text-white">
-            <Modal.Title className="h6 mb-0">Configurar edición de columnas de horas</Modal.Title>
+            <Modal.Title className="h6 mb-0">Configurar edición de horas, vehículo y conductor</Modal.Title>
           </Modal.Header>
           <Modal.Body>
             <p className="text-muted small mb-3">
               Define hasta cuántos días atrás (contando desde hoy) se pueden seguir editando las columnas de
               horas (Ingreso origen, Salida origen, Llegada Patio, Retiro Patio, Ingreso destino, Cierre,
-              Salida destino). Con 0, solo se permite editar horas de filas con fecha de hoy.
+              Salida destino), el Vehículo y el Conductor. Con 0, solo se permite editar filas con fecha de hoy.
             </p>
             <Form.Group>
               <Form.Label className="fw-semibold small">Días atrás permitidos</Form.Label>

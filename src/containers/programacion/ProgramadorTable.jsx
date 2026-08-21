@@ -167,14 +167,14 @@ export default function ProgramadorTable({
                   style={{
                     ...(item.groupStart && !hasMultipleProducts ? { borderTop: '2px solid #356854' } : {}),
                     ...(hasMultipleProducts ? { borderTop: '2px solid #6c757d', borderBottom: '2px solid #6c757d' } : {}),
-                    minHeight: 36,
+                    minHeight: 28,
                   }}
                 >
                   <td className="text-center align-middle p-0" style={cellStyle}>
-                    <div className="py-2 px-1 text-center">{rowNumbers[rowIndex]}</div>
+                    <div className="py-1 px-1 text-center">{rowNumbers[rowIndex]}</div>
                   </td>
                   {visibleColumns.semana && <td className="text-center align-middle p-0" style={cellStyle}>
-                    <div className="py-2 px-1 text-center">{item.semanaLabel}</div>
+                    <div className="py-1 px-1 text-center">{item.semanaLabel}</div>
                   </td>}
                   {visibleColumns.fecha && <td className="text-center align-middle p-0" style={cellStyle}>
                     {rowEditable ? (
@@ -185,7 +185,7 @@ export default function ProgramadorTable({
                         onBlur={(e) => handleCellEdit(item.id, 'fecha', e.target.value)}
                       />
                     ) : (
-                      <div className="py-2 px-1 text-center">{item.fecha}</div>
+                      <div className="py-1 px-1 text-center">{item.fecha}</div>
                     )}
                   </td>}
                   {visibleColumns.origen && <td className={`${accentClass} text-center align-middle p-0`} style={cellStyle}>
@@ -197,7 +197,7 @@ export default function ProgramadorTable({
                         onBlur={(e) => handleLookupTextEdit(item, 'origen', e.target.value)}
                       />
                     ) : (
-                      <div className="py-2 px-1 text-center">{item.origen}</div>
+                      <div className="py-1 px-1 text-center">{item.origen}</div>
                     )}
                   </td>}
                   {visibleColumns.destino && <td className={`${accentClass2} text-center align-middle p-0`} style={cellStyle}>
@@ -209,7 +209,7 @@ export default function ProgramadorTable({
                         onBlur={(e) => handleLookupTextEdit(item, 'destino', e.target.value)}
                       />
                     ) : (
-                      <div className="py-2 px-1 text-center">{item.destino}</div>
+                      <div className="py-1 px-1 text-center">{item.destino}</div>
                     )}
                   </td>}
                   {visibleColumns.productos && (() => {
@@ -231,7 +231,7 @@ export default function ProgramadorTable({
                               onBlur={(e) => handleLookupTextEdit(item, 'producto', e.target.value)}
                             />
                           ) : (
-                            <span className="py-2" style={{ fontSize: '0.75rem', color: '#000' }}>{item.productoLabel || ''}</span>
+                            <span className="py-1" style={{ fontSize: '0.75rem', color: '#000' }}>{item.productoLabel || ''}</span>
                           )}
                           {rowEditable && (
                             <button
@@ -295,7 +295,7 @@ export default function ProgramadorTable({
                             onBlur={(e) => handleLookupTextEdit(item, 'cantidad', e.target.value)}
                           />
                         ) : (
-                          <div className="py-2 px-1 text-center" style={{ fontSize: '0.75rem', color: '#000' }}>{item.cantidadProductosLabel || ''}</div>
+                          <div className="py-1 px-1 text-center" style={{ fontSize: '0.75rem', color: '#000' }}>{item.cantidadProductosLabel || ''}</div>
                         )}
                         {showSecond && (
                           <div className="border-top pt-1 mt-1 px-1">
@@ -319,13 +319,13 @@ export default function ProgramadorTable({
                     );
                   })()}
                   {visibleColumns.linea && <td className="text-center align-middle p-0" style={cellStyle}>
-                    <div className="py-2 px-1 text-center">{item.lineaLabel || ''}</div>
+                    <div className="py-1 px-1 text-center">{item.lineaLabel || ''}</div>
                   </td>}
                   {visibleColumns.destino_embarque && <td className="text-center align-middle p-0" style={cellStyle}>
-                    <div className="py-2 px-1 text-center">{item.embarqueDestinoLabel || ''}</div>
+                    <div className="py-1 px-1 text-center">{item.embarqueDestinoLabel || ''}</div>
                   </td>}
                   {visibleColumns.buque && <td className="text-center align-middle p-0" style={cellStyle}>
-                    <div className="py-2 px-1 text-center">{item.buqueLabel || ''}</div>
+                    <div className="py-1 px-1 text-center">{item.buqueLabel || ''}</div>
                   </td>}
                   {visibleColumns.bl && <td className="text-center align-middle p-0" style={cellStyle}>
                     {rowEditable ? (
@@ -336,89 +336,89 @@ export default function ProgramadorTable({
                         onBlur={(e) => handleLookupTextEdit(item, 'bl', e.target.value)}
                       />
                     ) : (
-                      <div className="py-2 px-1 text-center">{item.blLabel || ''}</div>
+                      <div className="py-1 px-1 text-center">{item.blLabel || ''}</div>
                     )}
                   </td>}
                   {visibleColumns.vehiculo && <td className="text-center align-middle p-0" style={cellStyle}>
-                    {rowEditable ? (
+                    {(rowEditable || rowTimeEditable) ? (
                       <input
                         list="vehiculo-options"
                         defaultValue={item.vehiculoLabel || ''}
                         className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                        onBlur={(e) => handleLookupTextEdit(item, 'vehiculo', e.target.value)}
+                        onBlur={(e) => handleLookupTextEdit(item, 'vehiculo', e.target.value, rowTimeEditable ? { preserveEstado: true } : {})}
                       />
                     ) : (
-                      <div className="py-2 px-1 text-center">{item.vehiculoLabel}</div>
+                      <div className="py-1 px-1 text-center">{item.vehiculoLabel}</div>
                     )}
                   </td>}
                   {visibleColumns.transportadora && (
                     <td className="text-center align-middle p-0" style={cellStyle}>
-                      <div className="py-2 px-1 text-center">{item.transportadoraLabel || ''}</div>
+                      <div className="py-1 px-1 text-center">{item.transportadoraLabel || ''}</div>
                     </td>
                   )}
                   {visibleColumns.conductor && <td className="text-center align-middle p-0" style={cellStyle}>
-                    {rowEditable ? (
+                    {(rowEditable || rowTimeEditable) ? (
                       <input
                         list="conductor-options"
                         defaultValue={item.conductorLabel || ''}
                         className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                        onBlur={(e) => handleLookupTextEdit(item, 'conductor', e.target.value)}
+                        onBlur={(e) => handleLookupTextEdit(item, 'conductor', e.target.value, rowTimeEditable ? { preserveEstado: true } : {})}
                       />
                     ) : (
-                      <div className="py-2 px-1 text-center">{item.conductorLabel}</div>
+                      <div className="py-1 px-1 text-center">{item.conductorLabel}</div>
                     )}
                   </td>}
                   {visibleColumns.llegada_origen && <td className={`${accentClass} text-center align-middle p-0`} style={cellStyle}>
                     {(rowEditable || rowTimeEditable) ? (
                       <input type="time" defaultValue={item.llegada_origen || ''} className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1" onBlur={(e) => handleCellEdit(item.id, 'llegada_origen', e.target.value, rowTimeEditable ? { preserveEstado: true } : {})} />
                     ) : (
-                      <div className="py-2 px-1 text-center">{item.llegada_origen || ''}</div>
+                      <div className="py-1 px-1 text-center">{item.llegada_origen || ''}</div>
                     )}
                   </td>}
                   {visibleColumns.salida_origen && <td className={`${accentClass} text-center align-middle p-0`} style={cellStyle}>
                     {(rowEditable || rowTimeEditable) ? (
                       <input type="time" defaultValue={item.salida_origen || ''} className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1" onBlur={(e) => handleCellEdit(item.id, 'salida_origen', e.target.value, rowTimeEditable ? { preserveEstado: true } : {})} />
                     ) : (
-                      <div className="py-2 px-1 text-center">{item.salida_origen || ''}</div>
+                      <div className="py-1 px-1 text-center">{item.salida_origen || ''}</div>
                     )}
                   </td>}
                   {visibleColumns.llegada_patio && <td className={`${accentClassPatio} text-center align-middle p-0`} style={cellStyle}>
                     {(rowEditable || rowTimeEditable) ? (
                       <input type="time" defaultValue={item.llegada_patio || ''} className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1" onBlur={(e) => handleCellEdit(item.id, 'llegada_patio', e.target.value, rowTimeEditable ? { preserveEstado: true } : {})} />
                     ) : (
-                      <div className="py-2 px-1 text-center">{item.llegada_patio || ''}</div>
+                      <div className="py-1 px-1 text-center">{item.llegada_patio || ''}</div>
                     )}
                   </td>}
                   {visibleColumns.retiro_patio && <td className={`${accentClassPatio} text-center align-middle p-0`} style={cellStyle}>
                     {(rowEditable || rowTimeEditable) ? (
                       <input type="time" defaultValue={item.retiro_patio || ''} className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1" onBlur={(e) => handleCellEdit(item.id, 'retiro_patio', e.target.value, rowTimeEditable ? { preserveEstado: true } : {})} />
                     ) : (
-                      <div className="py-2 px-1 text-center">{item.retiro_patio || ''}</div>
+                      <div className="py-1 px-1 text-center">{item.retiro_patio || ''}</div>
                     )}
                   </td>}
                   {visibleColumns.llegada_destino && <td className={`${accentClass2} text-center align-middle p-0`} style={cellStyle}>
                     {(rowEditable || rowTimeEditable) ? (
                       <input type="time" defaultValue={item.llegada_destino || ''} className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1" onBlur={(e) => handleCellEdit(item.id, 'llegada_destino', e.target.value, rowTimeEditable ? { preserveEstado: true } : {})} />
                     ) : (
-                      <div className="py-2 px-1 text-center">{item.llegada_destino || ''}</div>
+                      <div className="py-1 px-1 text-center">{item.llegada_destino || ''}</div>
                     )}
                   </td>}
                   {visibleColumns.cierre && <td className={`${accentClass2} text-center align-middle p-0`} style={cellStyle}>
                     {(rowEditable || rowTimeEditable) ? (
                       <input type="time" defaultValue={item.cierre || ''} className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1" onBlur={(e) => handleCellEdit(item.id, 'cierre', e.target.value, rowTimeEditable ? { preserveEstado: true } : {})} />
                     ) : (
-                      <div className="py-2 px-1 text-center">{item.cierre || ''}</div>
+                      <div className="py-1 px-1 text-center">{item.cierre || ''}</div>
                     )}
                   </td>}
                   {visibleColumns.salida_destino && <td className={`${accentClass2} text-center align-middle p-0`} style={cellStyle}>
                     {(rowEditable || rowTimeEditable) ? (
                       <input type="time" defaultValue={item.salida_destino || ''} className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1" onBlur={(e) => handleCellEdit(item.id, 'salida_destino', e.target.value, rowTimeEditable ? { preserveEstado: true } : {})} />
                     ) : (
-                      <div className="py-2 px-1 text-center">{item.salida_destino || ''}</div>
+                      <div className="py-1 px-1 text-center">{item.salida_destino || ''}</div>
                     )}
                   </td>}
                   {visibleColumns.hora_revision_puerto && <td className="text-center align-middle p-0" style={cellStyle}>
-                    <div className="py-2 px-1 text-center text-nowrap">
+                    <div className="py-1 px-1 text-center text-nowrap">
                       {item.hora_revision_puerto
                         ? new Date(item.hora_revision_puerto).toLocaleString('es-CO', { timeZone: 'America/Bogota', dateStyle: 'short', timeStyle: 'short' })
                         : ''}
@@ -428,12 +428,12 @@ export default function ProgramadorTable({
                     {rowEditable ? (
                       <input
                         list="movimiento-options"
-                        defaultValue={item.movimiento || 'Local'}
+                        defaultValue={item.movimientoLabel || 'Local'}
                         className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
                         onBlur={(e) => handleLookupTextEdit(item, 'movimiento', e.target.value)}
                       />
                     ) : (
-                      <div className="py-2 px-1 text-center">{item.movimiento}</div>
+                      <div className="py-1 px-1 text-center">{item.movimientoLabel}</div>
                     )}
                   </td>}
                   {visibleColumns.contenedor && <td className="text-center align-middle p-0" style={cellStyle}>
@@ -445,17 +445,17 @@ export default function ProgramadorTable({
                         onBlur={(e) => handleCellEdit(item.id, 'contenedor', e.target.value)}
                       />
                     ) : (
-                      <div className="py-2 px-1 text-center">{item.contenedorLabel || ''}</div>
+                      <div className="py-1 px-1 text-center">{item.contenedorLabel || ''}</div>
                     )}
                   </td>}
                   {visibleColumns.articulo_serial && (
                     <td className="text-center align-middle p-0" style={compactCellStyle}>
-                      <div className="py-2 px-1 text-center">{formatSerialArticuloLabel(item) || ''}</div>
+                      <div className="py-1 px-1 text-center">{formatSerialArticuloLabel(item) || ''}</div>
                     </td>
                   )}
                   {visibleColumns.serial && (
                     <td className="text-center align-middle p-0" style={compactCellStyle}>
-                      <div className="py-2 px-1 text-center">{formatSerialLabel(item) || ''}</div>
+                      <div className="py-1 px-1 text-center">{formatSerialLabel(item) || ''}</div>
                     </td>
                   )}
                   {visibleColumns.estado_listado && <td className="text-center align-middle p-0" style={cellStyle}>

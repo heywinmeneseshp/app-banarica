@@ -34,9 +34,15 @@ const comparativaProgramacionCorte = async (semana) => {
     return res.data;
 };
 
+const listadoRelacionadoProgramacionCorte = async (id) => {
+    const res = await axios.get(endPoints.programacionCorte.listadoRelacionado(id), getAuthConfig());
+    return res.data;
+};
+
 export {
     listarProgramacionCorte,
     cargarProgramacionCorte,
     eliminarProgramacionCorte,
-    comparativaProgramacionCorte
+    comparativaProgramacionCorte,
+    listadoRelacionadoProgramacionCorte
 };
