@@ -166,9 +166,13 @@ const inspeccionAntinarcoticos = async (Formulario, rechazos) => {
         );
         return response.data;
     } catch (error) {
+        // No alertar aca — el componente que llama ya muestra el error via
+        // notify() en su catch; alertar en los dos lados duplicaba el aviso
+        // (uno con el mensaje real, otro con el generico de axios). Se
+        // relanza con el mensaje real del backend para que ese unico aviso
+        // sea el util.
         const message = error?.response?.data?.message || "No fue posible guardar la inspeccion.";
-        window.alert(message);
-        throw error;
+        throw new Error(message);
     }
 };
 
