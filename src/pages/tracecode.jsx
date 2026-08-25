@@ -807,7 +807,7 @@ export default function TracecodePage() {
               <div className="row g-4">
                 <div className="col-12 col-lg-4">
                   <div className="text-muted small">Fecha de inspeccion</div>
-                  <div className="fw-semibold mb-3">{formatDateTime(emptyInspection?.fecha_inspeccion)}</div>
+                  <div className="fw-semibold mb-3">{formatDate(emptyInspection?.fecha_inspeccion)}</div>
 
                   <div className="text-muted small">Agente</div>
                   <div className="fw-semibold mb-3">{emptyInspection?.agente || "No registrado"}</div>
@@ -974,7 +974,7 @@ export default function TracecodePage() {
                       <div className="row g-3">
                         <div className="col-12 col-lg-4">
                           <div className="text-muted small">Fecha</div>
-                          <div className="fw-semibold mb-2">{formatDateTime(group.inspection?.fecha_inspeccion)}</div>
+                          <div className="fw-semibold mb-2">{formatDate(group.inspection?.fecha_inspeccion)}</div>
                           <div className="text-muted small">Agente</div>
                           <div className="fw-semibold mb-2">{group.inspection?.agente || "No registrado"}</div>
                           <div className="text-muted small">Horario</div>
