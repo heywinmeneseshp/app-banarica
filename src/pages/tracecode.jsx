@@ -30,9 +30,36 @@ const EMPTY_DATA = {
 const isEmptyInspectionZone = (zone) =>
   String(zone || "").toLowerCase().includes("vacio");
 
+const toBogotaDate = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+  const str = String(value).trim();
+  if (!str) return null;
+  const hasOffset = str.endsWith("Z") || /[+-]\d{2}:?\d{2}(?::?\d{2})?$/.test(str);
+  if (hasOffset) {
+    const d = new Date(str);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const d = new Date(`${str}T00:00:00-05:00`);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  const iso = str.replace(" ", "T");
+  const normalized = `${iso}-05:00`;
+  const d = new Date(normalized);
+  if (!Number.isNaN(d.getTime())) return d;
+  const fallback = new Date(str);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+};
+
+// Compatibilidad: alias historico usado en helpers externos
+// eslint-disable-next-line no-unused-vars
+const toUtcDate = toBogotaDate;
+
 const formatDate = (value) => {
   if (!value) return "No registrado";
-
   if (typeof value === "string") {
     const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (match) {
@@ -40,31 +67,17 @@ const formatDate = (value) => {
       return `${day}/${month}/${year}`;
     }
   }
-
-  const date = toUtcDate(value);
+  const date = toBogotaDate(value);
   if (!date) return String(value);
-
   return date.toLocaleDateString("es-CO", {
     timeZone: "America/Bogota"
   });
 };
 
-const toUtcDate = (value) => {
-  if (!value) return null;
-  const str = String(value).trim();
-  // Si no tiene indicador de zona horaria, MySQL devolvió hora local sin TZ → forzar UTC
-  const hasOffset = str.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(str);
-  const normalized = hasOffset ? str : str.replace(" ", "T") + "Z";
-  const d = new Date(normalized);
-  return Number.isNaN(d.getTime()) ? null : d;
-};
-
 const formatDateTime = (value) => {
   if (!value) return "No registrado";
-
-  const date = toUtcDate(value);
+  const date = toBogotaDate(value);
   if (!date) return String(value);
-
   return date.toLocaleString("es-CO", {
     timeZone: "America/Bogota"
   });
@@ -99,12 +112,10 @@ const uniqueStrings = (values = []) =>
 const getTransitDays = (start, end) => {
   if (!start || !end) return "No calculado";
 
-  const startDate = new Date(start);
-  const endDate = new Date(end);
+  const startDate = toBogotaDate(start);
+  const endDate = toBogotaDate(end);
 
-  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-    return "No calculado";
-  }
+  if (!startDate || !endDate) return "No calculado";
 
   const diff = Math.abs(endDate.getTime() - startDate.getTime());
   return `${Math.floor(diff / (1000 * 60 * 60 * 24))} dias`;
@@ -698,11 +709,11 @@ export default function TracecodePage() {
                   </div>
                   <div className="col-12 col-md-6">
                     <div className="text-muted small">Fecha zarpe</div>
-                    <div className="fw-semibold">{formatDateTime(embarque?.fecha_zarpe)}</div>
+                    <div className="fw-semibold">{formatDate(embarque?.fecha_zarpe)}</div>
                   </div>
                   <div className="col-12 col-md-6">
                     <div className="text-muted small">Fecha arribo</div>
-                    <div className="fw-semibold">{formatDateTime(embarque?.fecha_arribo)}</div>
+                    <div className="fw-semibold">{formatDate(embarque?.fecha_arribo)}</div>
                   </div>
                   <div className="col-12">
                     <div className="text-muted small">Tiempo de transito</div>
