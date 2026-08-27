@@ -192,9 +192,14 @@ const usarSeriales = async (semana, fecha, seriales, contenedorID, id_usuario, m
         const response = await axios.post(endPoints.seguridad.usarSeriales, body, buildConfig());
         return response.data;
     } catch (error) {
+        // No alertar aca: el componente que llama no envuelve este await en
+        // try/catch, asi que el rechazo termina mostrando un aviso via el
+        // manejador global de errores — alertar aca tambien duplicaba el
+        // aviso (uno con el mensaje real, otro con el generico de axios).
+        // Se relanza con el mensaje real del backend para que ese aviso
+        // muestre algo util.
         const message = getErrorMessage(error, "No fue posible registrar el uso de seriales.");
-        window.alert(message);
-        throw error;
+        throw new Error(message);
     }
 };
 
