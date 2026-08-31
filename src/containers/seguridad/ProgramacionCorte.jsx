@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
 import { FaTrash, FaFileExcel, FaCog, FaPlus, FaChevronDown, FaChevronRight, FaArrowLeft } from 'react-icons/fa';
@@ -15,6 +16,187 @@ import ListadoContenedores from '@containers/seguridad/ListadoContenedores';
 
 const COLUMNAS_ESPERADAS = ['Fecha', 'Booking', 'Transportadora', 'Proceso de Empaque', 'Finca', 'Producto', 'Cajas'];
 const PROCESOS_OPCIONES = ['Finca', 'Local', 'Puerto', 'Contenedor Local'];
+const MENU_WIDTH = 260;
+
+// Extractores para el orden tipo Excel: cada tabla usa su propio nombre de
+// campo para la misma columna logica (ej. proceso_empaque en "Programacion
+// cargada", procesoEmpaque en la Comparativa).
+const EXTRACTORES_ORDEN_CARGADA = {
+  semana: (f) => f.Embarque?.semana?.consecutivo,
+  fecha: (f) => f.fecha,
+  booking: (f) => f.booking,
+  transportadora: (f) => f.transportadora,
+  procesoEmpaque: (f) => f.proceso_empaque,
+  finca: (f) => f.finca,
+  producto: (f) => f.combo?.nombre,
+  cajas: (f) => f.cajas,
+  embarque: (f) => f.Embarque?.bl || f.id_embarque,
+  almacen: (f) => f.almacen?.nombre || f.id_almacen,
+};
+
+const EXTRACTORES_ORDEN_COMPARATIVA = {
+  fecha: (f) => f.fecha,
+  booking: (f) => f.booking,
+  procesoEmpaque: (f) => f.procesoEmpaque,
+  finca: (f) => f.finca,
+  producto: (f) => f.producto,
+  cajasProgramacion: (f) => f.cajasProgramacion,
+  cajasListado: (f) => f.cajasListado,
+  diferencia: (f) => f.diferencia,
+  estado: (f) => f.estado,
+};
+
+// Encabezado de columna con filtro estilo Excel: icono de embudo que abre un
+// menu con checkboxes de los valores unicos de esa columna, mas un buscador.
+// Solo un menu puede estar abierto a la vez (columnaAbierta en el padre).
+function ColumnFilterHeader({
+  label, columnKey, menuId, valores, seleccionados, abierto, onToggle, busqueda, onBusqueda, onChange, onLimpiar,
+  orden, onOrdenar, formatValor,
+}) {
+  const activo = Boolean(seleccionados && seleccionados.size > 0);
+  const mostrar = formatValor || ((v) => v);
+  const botonRef = useRef(null);
+  const [posicion, setPosicion] = useState(null);
+  const valoresVisibles = busqueda
+    ? valores.filter((v) => v.toLowerCase().includes(busqueda.toLowerCase()))
+    : valores;
+
+  // El menu se renderiza en un portal a document.body (posicion fixed segun
+  // el boton) en vez de quedar dentro del <th> — el contenedor
+  // "table-responsive" de la tabla tiene overflow-x: auto, lo que en la
+  // mayoria de navegadores fuerza tambien overflow-y a recortar contenido,
+  // asi que un menu desplegable adentro se cortaba cuando la tabla era
+  // corta (pocas filas).
+  useEffect(() => {
+    if (!abierto || !botonRef.current) {
+      setPosicion(null);
+      return;
+    }
+    const rect = botonRef.current.getBoundingClientRect();
+    const margen = 8;
+    // Si el menu (MENU_WIDTH de ancho) se saldria por la derecha de la
+    // pantalla, se alinea contra el borde derecho del boton en vez del
+    // izquierdo — evita que quede cortado en columnas cerca del borde.
+    const left = rect.left + MENU_WIDTH > window.innerWidth - margen
+      ? Math.max(margen, rect.right - MENU_WIDTH)
+      : rect.left;
+    setPosicion({ top: rect.bottom, left });
+  }, [abierto]);
+
+  return (
+    <th
+      className="text-custom-small text-center text-white bg-secondary"
+      style={{ whiteSpace: 'nowrap' }}
+    >
+      <span>{label}</span>
+      <button
+        ref={botonRef}
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onToggle(menuId); }}
+        title={`Filtrar por ${label}`}
+        style={{
+          all: 'unset',
+          cursor: 'pointer',
+          marginLeft: '4px',
+          color: activo ? '#ffc107' : 'rgba(255,255,255,0.75)',
+        }}
+      >
+        ▾
+      </button>
+      {abierto && posicion && typeof document !== 'undefined' && createPortal(
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+        <div
+          role="presentation"
+          onClick={(e) => e.stopPropagation()}
+          className="shadow-lg bg-white text-dark rounded"
+          style={{
+            position: 'fixed', top: posicion.top + 4, left: posicion.left, zIndex: 2000,
+            width: `${MENU_WIDTH}px`, maxHeight: '360px', display: 'flex', flexDirection: 'column',
+            fontWeight: 'normal', border: '1px solid #dee2e6', overflow: 'hidden',
+          }}
+        >
+          <div className="px-3 py-2 bg-light border-bottom">
+            <span className="small fw-semibold text-muted text-uppercase">Filtrar: {label}</span>
+          </div>
+
+          <div className="px-3 pt-3">
+            {onOrdenar && (
+              <div className="d-flex gap-2 mb-3">
+                <button
+                  type="button"
+                  className={`btn btn-sm flex-fill ${orden?.columnKey === columnKey && orden?.direccion === 'asc' ? 'btn-secondary' : 'btn-outline-secondary'}`}
+                  onClick={() => onOrdenar(columnKey, 'asc')}
+                  title="Ordenar ascendente"
+                >
+                  ↑ A-Z
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-sm flex-fill ${orden?.columnKey === columnKey && orden?.direccion === 'desc' ? 'btn-secondary' : 'btn-outline-secondary'}`}
+                  onClick={() => onOrdenar(columnKey, 'desc')}
+                  title="Ordenar descendente"
+                >
+                  ↓ Z-A
+                </button>
+              </div>
+            )}
+            <Form.Control
+              size="sm"
+              placeholder="Buscar..."
+              value={busqueda}
+              onChange={(e) => onBusqueda(e.target.value)}
+              className="mb-2"
+            />
+            <div className="d-flex justify-content-between mb-1 pb-2 border-bottom">
+              <button
+                type="button"
+                className="btn btn-link btn-sm p-0 text-decoration-none"
+                onClick={() => onChange(columnKey, new Set(valores))}
+              >
+                Seleccionar todos
+              </button>
+              <button
+                type="button"
+                className="btn btn-link btn-sm p-0 text-danger text-decoration-none"
+                onClick={() => onLimpiar(columnKey)}
+              >
+                Limpiar
+              </button>
+            </div>
+          </div>
+
+          <div className="px-3 pb-3" style={{ overflowY: 'auto' }}>
+            {valoresVisibles.length === 0 && (
+              <div className="text-muted small py-2">Sin valores</div>
+            )}
+            {valoresVisibles.map((valor) => {
+              const marcado = seleccionados ? seleccionados.has(valor) : false;
+              return (
+                <div className="form-check py-1" key={valor}>
+                  <input
+                    type="checkbox"
+                    className="form-check-input"
+                    id={`filtro-${columnKey}-${valor}`}
+                    checked={marcado}
+                    onChange={() => {
+                      const nuevo = new Set(seleccionados || []);
+                      if (marcado) nuevo.delete(valor); else nuevo.add(valor);
+                      onChange(columnKey, nuevo);
+                    }}
+                  />
+                  <label className="form-check-label small" htmlFor={`filtro-${columnKey}-${valor}`}>
+                    {mostrar(valor)}
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+        </div>,
+        document.body
+      )}
+    </th>
+  );
+}
 
 const normalizarFecha = (valor) => {
   if (valor === null || valor === undefined || valor === '') return '';
@@ -75,6 +257,30 @@ const ProgramacionCorte = () => {
   const [bookingFiltro, setBookingFiltro] = useState('');
   const [almacenFiltro, setAlmacenFiltro] = useState('');
   const [productoFiltro, setProductoFiltro] = useState('');
+  // Filtros tipo Excel en los encabezados de las tablas: por columna, un set
+  // de valores seleccionados (null/vacio = sin filtro, muestra todo). Se
+  // combinan con los filtros de arriba (booking/finca/producto) en ambas
+  // tablas (Programacion cargada y Comparativa vs Listado).
+  const [filtrosColumna, setFiltrosColumna] = useState({
+    semana: null,
+    fecha: null,
+    booking: null,
+    transportadora: null,
+    procesoEmpaque: null,
+    finca: null,
+    producto: null,
+    cajas: null,
+    embarque: null,
+    almacen: null,
+    cajasProgramacion: null,
+    cajasListado: null,
+    diferencia: null,
+    estado: null,
+  });
+  const [columnaAbierta, setColumnaAbierta] = useState(null);
+  const [busquedaColumna, setBusquedaColumna] = useState('');
+  // Orden tipo Excel: una sola columna a la vez, con direccion asc/desc.
+  const [ordenColumna, setOrdenColumna] = useState({ columnKey: null, direccion: 'asc' });
   const [openModal, setOpenModal] = useState(false);
   const [archivo, setArchivo] = useState(null);
   const [datosExcel, setDatosExcel] = useState([]);
@@ -158,6 +364,65 @@ const ProgramacionCorte = () => {
     (s) => String(s?.consecutivo || '').toLowerCase() === String(valor || '').trim().toLowerCase()
   );
 
+  // Valores unicos por columna (sobre TODAS las filas, no las ya filtradas),
+  // para poblar el listado de checkboxes de cada filtro tipo Excel.
+  const valoresUnicosColumna = useMemo(() => ({
+    semana: [...new Set(filas.map((f) => String(f.Embarque?.semana?.consecutivo || '').trim()).filter(Boolean))].sort(),
+    fecha: [...new Set(filas.map((f) => String(f.fecha || '').trim()).filter(Boolean))].sort(),
+    booking: [...new Set(filas.map((f) => String(f.booking || '').trim()).filter(Boolean))].sort(),
+    transportadora: [...new Set(filas.map((f) => String(f.transportadora || '').trim()).filter(Boolean))].sort(),
+    procesoEmpaque: [...new Set(filas.map((f) => String(f.proceso_empaque || '').trim()).filter(Boolean))].sort(),
+    finca: [...new Set(filas.map((f) => String(f.finca || '').trim()).filter(Boolean))].sort(),
+    producto: [...new Set(filas.map((f) => String(f.combo?.nombre || '').trim()).filter(Boolean))].sort(),
+    cajas: [...new Set(filas.map((f) => String(f.cajas ?? '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
+    embarque: [...new Set(filas.map((f) => String(f.Embarque?.bl || f.id_embarque || '').trim()).filter(Boolean))].sort(),
+    almacen: [...new Set(filas.map((f) => String(f.almacen?.nombre || f.id_almacen || '').trim()).filter(Boolean))].sort(),
+    cajasProgramacion: [...new Set((comparativa?.filas || []).map((f) => String(f.cajasProgramacion ?? '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
+    cajasListado: [...new Set((comparativa?.filas || []).map((f) => String(f.cajasListado ?? '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
+    diferencia: [...new Set((comparativa?.filas || []).map((f) => String(f.diferencia ?? '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
+    estado: [...new Set((comparativa?.filas || []).map((f) => String(f.estado || '').trim()).filter(Boolean))],
+  }), [filas, comparativa]);
+
+  // Set vacio/null = sin filtro (muestra todo); si tiene valores, solo pasan
+  // filas cuyo valor de esa columna este en el set.
+  const pasaFiltroColumna = useCallback((columnKey, valorCrudo) => {
+    const set = filtrosColumna[columnKey];
+    if (!set || set.size === 0) return true;
+    return set.has(String(valorCrudo || '').trim());
+  }, [filtrosColumna]);
+
+  const toggleColumnaFiltro = (columnKey) => {
+    setBusquedaColumna('');
+    setColumnaAbierta((prev) => (prev === columnKey ? null : columnKey));
+  };
+
+  const cambiarFiltroColumna = (columnKey, nuevoSet) => {
+    setFiltrosColumna((prev) => ({ ...prev, [columnKey]: nuevoSet }));
+  };
+
+  const limpiarFiltroColumna = (columnKey) => {
+    setFiltrosColumna((prev) => ({ ...prev, [columnKey]: null }));
+  };
+
+  // Click en "Ascendente"/"Descendente": si ya estaba ordenando por esa
+  // columna en esa direccion, lo apaga (vuelve al orden original); si no,
+  // ordena por esa columna en esa direccion (reemplaza cualquier otra).
+  const ordenarColumna = (columnKey, direccion) => {
+    setOrdenColumna((prev) => (
+      prev.columnKey === columnKey && prev.direccion === direccion
+        ? { columnKey: null, direccion: 'asc' }
+        : { columnKey, direccion }
+    ));
+  };
+
+  // Cierra el menu de filtro abierto al hacer clic en cualquier otro lado.
+  useEffect(() => {
+    if (!columnaAbierta) return undefined;
+    const cerrar = () => setColumnaAbierta(null);
+    document.addEventListener('click', cerrar);
+    return () => document.removeEventListener('click', cerrar);
+  }, [columnaAbierta]);
+
   const filasFiltradas = useMemo(() => {
     const semanaTexto = semanaFiltro.trim().toLowerCase();
     const bookingTexto = bookingFiltro.trim().toLowerCase();
@@ -180,9 +445,30 @@ const ProgramacionCorte = () => {
       if (productoTexto && !String(fila.combo?.nombre || '').toLowerCase().includes(productoTexto)) {
         return false;
       }
+      if (!pasaFiltroColumna('semana', fila.Embarque?.semana?.consecutivo)) return false;
+      if (!pasaFiltroColumna('fecha', fila.fecha)) return false;
+      if (!pasaFiltroColumna('booking', fila.booking)) return false;
+      if (!pasaFiltroColumna('transportadora', fila.transportadora)) return false;
+      if (!pasaFiltroColumna('procesoEmpaque', fila.proceso_empaque)) return false;
+      if (!pasaFiltroColumna('finca', fila.finca)) return false;
+      if (!pasaFiltroColumna('producto', fila.combo?.nombre)) return false;
+      if (!pasaFiltroColumna('cajas', fila.cajas)) return false;
+      if (!pasaFiltroColumna('embarque', fila.Embarque?.bl || fila.id_embarque)) return false;
+      if (!pasaFiltroColumna('almacen', fila.almacen?.nombre || fila.id_almacen)) return false;
       return true;
     });
-  }, [filas, semanaFiltro, bookingFiltro, almacenFiltro, productoFiltro]);
+  }, [filas, semanaFiltro, bookingFiltro, almacenFiltro, productoFiltro, pasaFiltroColumna]);
+
+  // Ordenamiento tipo Excel (una columna a la vez). Cada tabla usa su propio
+  // extractor (arriba, a nivel de modulo) para la misma columna logica.
+  const filasFiltradasOrdenadas = useMemo(() => {
+    const extractor = ordenColumna.columnKey && EXTRACTORES_ORDEN_CARGADA[ordenColumna.columnKey];
+    if (!extractor) return filasFiltradas;
+    const factor = ordenColumna.direccion === 'desc' ? -1 : 1;
+    return [...filasFiltradas].sort((a, b) => (
+      factor * String(extractor(a) || '').localeCompare(String(extractor(b) || ''), undefined, { numeric: true })
+    ));
+  }, [filasFiltradas, ordenColumna]);
 
   // La comparativa se trae completa para la semana; se le aplican aca los
   // mismos filtros (booking, lugar de llenado, producto) que a la
@@ -203,9 +489,27 @@ const ProgramacionCorte = () => {
       if (productoTexto && !String(fila.producto || '').toLowerCase().includes(productoTexto)) {
         return false;
       }
+      if (!pasaFiltroColumna('fecha', fila.fecha)) return false;
+      if (!pasaFiltroColumna('booking', fila.booking)) return false;
+      if (!pasaFiltroColumna('procesoEmpaque', fila.procesoEmpaque)) return false;
+      if (!pasaFiltroColumna('finca', fila.finca)) return false;
+      if (!pasaFiltroColumna('producto', fila.producto)) return false;
+      if (!pasaFiltroColumna('cajasProgramacion', fila.cajasProgramacion)) return false;
+      if (!pasaFiltroColumna('cajasListado', fila.cajasListado)) return false;
+      if (!pasaFiltroColumna('diferencia', fila.diferencia)) return false;
+      if (!pasaFiltroColumna('estado', fila.estado)) return false;
       return true;
     });
-  }, [comparativa, bookingFiltro, almacenFiltro, productoFiltro]);
+  }, [comparativa, bookingFiltro, almacenFiltro, productoFiltro, pasaFiltroColumna]);
+
+  const comparativaFilasFiltradasOrdenadas = useMemo(() => {
+    const extractor = ordenColumna.columnKey && EXTRACTORES_ORDEN_COMPARATIVA[ordenColumna.columnKey];
+    if (!extractor) return comparativaFilasFiltradas;
+    const factor = ordenColumna.direccion === 'desc' ? -1 : 1;
+    return [...comparativaFilasFiltradas].sort((a, b) => (
+      factor * String(extractor(a) || '').localeCompare(String(extractor(b) || ''), undefined, { numeric: true })
+    ));
+  }, [comparativaFilasFiltradas, ordenColumna]);
 
   const comparativaTotales = useMemo(() => comparativaFilasFiltradas.reduce((acc, fila) => ({
     totalProgramacion: acc.totalProgramacion + Number(fila.cajasProgramacion || 0),
@@ -566,16 +870,70 @@ const ProgramacionCorte = () => {
           <table className="table table-striped table-bordered table-sm mt-2 text-center align-middle mb-0">
             <thead className="align-middle">
               <tr>
-                <th className="text-custom-small text-center text-white bg-secondary">Semana</th>
-                <th className="text-custom-small text-center text-white bg-secondary">Fecha</th>
-                <th className="text-custom-small text-center text-white bg-secondary">Booking</th>
-                <th className="text-custom-small text-center text-white bg-secondary">Transportadora</th>
-                <th className="text-custom-small text-center text-white bg-secondary">Proceso de Empaque</th>
-                <th className="text-custom-small text-center text-white bg-secondary">Finca</th>
-                <th className="text-custom-small text-center text-white bg-secondary">Producto</th>
-                <th className="text-custom-small text-center text-white bg-secondary">Cajas</th>
-                <th className="text-custom-small text-center text-white bg-secondary">Embarque</th>
-                <th className="text-custom-small text-center text-white bg-secondary">Almacen</th>
+                <ColumnFilterHeader
+                  label="Semana" columnKey="semana" menuId="cargada-semana" valores={valoresUnicosColumna.semana}
+                  seleccionados={filtrosColumna.semana} abierto={columnaAbierta === 'cargada-semana'}
+                  onToggle={toggleColumnaFiltro} busqueda={columnaAbierta === 'cargada-semana' ? busquedaColumna : ''}
+                  onBusqueda={setBusquedaColumna} onChange={cambiarFiltroColumna} onLimpiar={limpiarFiltroColumna}
+                  orden={ordenColumna} onOrdenar={ordenarColumna}
+                />
+                <ColumnFilterHeader
+                  label="Fecha" columnKey="fecha" menuId="cargada-fecha" valores={valoresUnicosColumna.fecha}
+                  seleccionados={filtrosColumna.fecha} abierto={columnaAbierta === 'cargada-fecha'}
+                  onToggle={toggleColumnaFiltro} busqueda={columnaAbierta === 'cargada-fecha' ? busquedaColumna : ''}
+                  onBusqueda={setBusquedaColumna} onChange={cambiarFiltroColumna} onLimpiar={limpiarFiltroColumna} orden={ordenColumna} onOrdenar={ordenarColumna}
+                />
+                <ColumnFilterHeader
+                  label="Booking" columnKey="booking" menuId="cargada-booking" valores={valoresUnicosColumna.booking}
+                  seleccionados={filtrosColumna.booking} abierto={columnaAbierta === 'cargada-booking'}
+                  onToggle={toggleColumnaFiltro} busqueda={columnaAbierta === 'cargada-booking' ? busquedaColumna : ''}
+                  onBusqueda={setBusquedaColumna} onChange={cambiarFiltroColumna} onLimpiar={limpiarFiltroColumna} orden={ordenColumna} onOrdenar={ordenarColumna}
+                />
+                <ColumnFilterHeader
+                  label="Transportadora" columnKey="transportadora" menuId="cargada-transportadora" valores={valoresUnicosColumna.transportadora}
+                  seleccionados={filtrosColumna.transportadora} abierto={columnaAbierta === 'cargada-transportadora'}
+                  onToggle={toggleColumnaFiltro} busqueda={columnaAbierta === 'cargada-transportadora' ? busquedaColumna : ''}
+                  onBusqueda={setBusquedaColumna} onChange={cambiarFiltroColumna} onLimpiar={limpiarFiltroColumna} orden={ordenColumna} onOrdenar={ordenarColumna}
+                />
+                <ColumnFilterHeader
+                  label="Proceso de Empaque" columnKey="procesoEmpaque" menuId="cargada-procesoEmpaque" valores={valoresUnicosColumna.procesoEmpaque}
+                  seleccionados={filtrosColumna.procesoEmpaque} abierto={columnaAbierta === 'cargada-procesoEmpaque'}
+                  onToggle={toggleColumnaFiltro} busqueda={columnaAbierta === 'cargada-procesoEmpaque' ? busquedaColumna : ''}
+                  onBusqueda={setBusquedaColumna} onChange={cambiarFiltroColumna} onLimpiar={limpiarFiltroColumna} orden={ordenColumna} onOrdenar={ordenarColumna}
+                />
+                <ColumnFilterHeader
+                  label="Finca" columnKey="finca" menuId="cargada-finca" valores={valoresUnicosColumna.finca}
+                  seleccionados={filtrosColumna.finca} abierto={columnaAbierta === 'cargada-finca'}
+                  onToggle={toggleColumnaFiltro} busqueda={columnaAbierta === 'cargada-finca' ? busquedaColumna : ''}
+                  onBusqueda={setBusquedaColumna} onChange={cambiarFiltroColumna} onLimpiar={limpiarFiltroColumna} orden={ordenColumna} onOrdenar={ordenarColumna}
+                />
+                <ColumnFilterHeader
+                  label="Producto" columnKey="producto" menuId="cargada-producto" valores={valoresUnicosColumna.producto}
+                  seleccionados={filtrosColumna.producto} abierto={columnaAbierta === 'cargada-producto'}
+                  onToggle={toggleColumnaFiltro} busqueda={columnaAbierta === 'cargada-producto' ? busquedaColumna : ''}
+                  onBusqueda={setBusquedaColumna} onChange={cambiarFiltroColumna} onLimpiar={limpiarFiltroColumna} orden={ordenColumna} onOrdenar={ordenarColumna}
+                />
+                <ColumnFilterHeader
+                  label="Cajas" columnKey="cajas" menuId="cargada-cajas" valores={valoresUnicosColumna.cajas}
+                  seleccionados={filtrosColumna.cajas} abierto={columnaAbierta === 'cargada-cajas'}
+                  onToggle={toggleColumnaFiltro} busqueda={columnaAbierta === 'cargada-cajas' ? busquedaColumna : ''}
+                  onBusqueda={setBusquedaColumna} onChange={cambiarFiltroColumna} onLimpiar={limpiarFiltroColumna}
+                  orden={ordenColumna} onOrdenar={ordenarColumna}
+                />
+                <ColumnFilterHeader
+                  label="Embarque" columnKey="embarque" menuId="cargada-embarque" valores={valoresUnicosColumna.embarque}
+                  seleccionados={filtrosColumna.embarque} abierto={columnaAbierta === 'cargada-embarque'}
+                  onToggle={toggleColumnaFiltro} busqueda={columnaAbierta === 'cargada-embarque' ? busquedaColumna : ''}
+                  onBusqueda={setBusquedaColumna} onChange={cambiarFiltroColumna} onLimpiar={limpiarFiltroColumna}
+                  orden={ordenColumna} onOrdenar={ordenarColumna}
+                />
+                <ColumnFilterHeader
+                  label="Almacen" columnKey="almacen" menuId="cargada-almacen" valores={valoresUnicosColumna.almacen}
+                  seleccionados={filtrosColumna.almacen} abierto={columnaAbierta === 'cargada-almacen'}
+                  onToggle={toggleColumnaFiltro} busqueda={columnaAbierta === 'cargada-almacen' ? busquedaColumna : ''}
+                  onBusqueda={setBusquedaColumna} onChange={cambiarFiltroColumna} onLimpiar={limpiarFiltroColumna}
+                  orden={ordenColumna} onOrdenar={ordenarColumna}
+                />
                 <th className="text-custom-small text-center text-white bg-secondary">Accion</th>
               </tr>
             </thead>
@@ -587,7 +945,7 @@ const ProgramacionCorte = () => {
                   </td>
                 </tr>
               )}
-              {filasFiltradas.map((fila) => (
+              {filasFiltradasOrdenadas.map((fila) => (
                 <tr
                   key={fila.id}
                   onClick={() => verDetalleFila(fila)}
@@ -647,19 +1005,69 @@ const ProgramacionCorte = () => {
               <table className="table table-striped table-bordered table-sm mt-2 text-center align-middle mb-0">
                 <thead className="align-middle">
                   <tr>
-                    <th className="text-custom-small text-center text-white bg-secondary">Fecha</th>
-                    <th className="text-custom-small text-center text-white bg-secondary">Booking</th>
-                    <th className="text-custom-small text-center text-white bg-secondary">Proceso de empaque</th>
-                    <th className="text-custom-small text-center text-white bg-secondary">Lugar de llenado</th>
-                    <th className="text-custom-small text-center text-white bg-secondary">Producto</th>
-                    <th className="text-custom-small text-center text-white bg-secondary">Cajas programacion</th>
-                    <th className="text-custom-small text-center text-white bg-secondary">Cajas listado</th>
-                    <th className="text-custom-small text-center text-white bg-secondary">Diferencia</th>
-                    <th className="text-custom-small text-center text-white bg-secondary">Estado</th>
+                    <ColumnFilterHeader
+                      label="Fecha" columnKey="fecha" menuId="comparativa-fecha" valores={valoresUnicosColumna.fecha}
+                      seleccionados={filtrosColumna.fecha} abierto={columnaAbierta === 'comparativa-fecha'}
+                      onToggle={toggleColumnaFiltro} busqueda={columnaAbierta === 'comparativa-fecha' ? busquedaColumna : ''}
+                      onBusqueda={setBusquedaColumna} onChange={cambiarFiltroColumna} onLimpiar={limpiarFiltroColumna} orden={ordenColumna} onOrdenar={ordenarColumna}
+                    />
+                    <ColumnFilterHeader
+                      label="Booking" columnKey="booking" menuId="comparativa-booking" valores={valoresUnicosColumna.booking}
+                      seleccionados={filtrosColumna.booking} abierto={columnaAbierta === 'comparativa-booking'}
+                      onToggle={toggleColumnaFiltro} busqueda={columnaAbierta === 'comparativa-booking' ? busquedaColumna : ''}
+                      onBusqueda={setBusquedaColumna} onChange={cambiarFiltroColumna} onLimpiar={limpiarFiltroColumna} orden={ordenColumna} onOrdenar={ordenarColumna}
+                    />
+                    <ColumnFilterHeader
+                      label="Proceso de empaque" columnKey="procesoEmpaque" menuId="comparativa-procesoEmpaque" valores={valoresUnicosColumna.procesoEmpaque}
+                      seleccionados={filtrosColumna.procesoEmpaque} abierto={columnaAbierta === 'comparativa-procesoEmpaque'}
+                      onToggle={toggleColumnaFiltro} busqueda={columnaAbierta === 'comparativa-procesoEmpaque' ? busquedaColumna : ''}
+                      onBusqueda={setBusquedaColumna} onChange={cambiarFiltroColumna} onLimpiar={limpiarFiltroColumna} orden={ordenColumna} onOrdenar={ordenarColumna}
+                    />
+                    <ColumnFilterHeader
+                      label="Lugar de llenado" columnKey="finca" menuId="comparativa-finca" valores={valoresUnicosColumna.finca}
+                      seleccionados={filtrosColumna.finca} abierto={columnaAbierta === 'comparativa-finca'}
+                      onToggle={toggleColumnaFiltro} busqueda={columnaAbierta === 'comparativa-finca' ? busquedaColumna : ''}
+                      onBusqueda={setBusquedaColumna} onChange={cambiarFiltroColumna} onLimpiar={limpiarFiltroColumna} orden={ordenColumna} onOrdenar={ordenarColumna}
+                    />
+                    <ColumnFilterHeader
+                      label="Producto" columnKey="producto" menuId="comparativa-producto" valores={valoresUnicosColumna.producto}
+                      seleccionados={filtrosColumna.producto} abierto={columnaAbierta === 'comparativa-producto'}
+                      onToggle={toggleColumnaFiltro} busqueda={columnaAbierta === 'comparativa-producto' ? busquedaColumna : ''}
+                      onBusqueda={setBusquedaColumna} onChange={cambiarFiltroColumna} onLimpiar={limpiarFiltroColumna} orden={ordenColumna} onOrdenar={ordenarColumna}
+                    />
+                    <ColumnFilterHeader
+                      label="Cajas programacion" columnKey="cajasProgramacion" menuId="comparativa-cajasProgramacion" valores={valoresUnicosColumna.cajasProgramacion}
+                      seleccionados={filtrosColumna.cajasProgramacion} abierto={columnaAbierta === 'comparativa-cajasProgramacion'}
+                      onToggle={toggleColumnaFiltro} busqueda={columnaAbierta === 'comparativa-cajasProgramacion' ? busquedaColumna : ''}
+                      onBusqueda={setBusquedaColumna} onChange={cambiarFiltroColumna} onLimpiar={limpiarFiltroColumna}
+                      orden={ordenColumna} onOrdenar={ordenarColumna}
+                    />
+                    <ColumnFilterHeader
+                      label="Cajas listado" columnKey="cajasListado" menuId="comparativa-cajasListado" valores={valoresUnicosColumna.cajasListado}
+                      seleccionados={filtrosColumna.cajasListado} abierto={columnaAbierta === 'comparativa-cajasListado'}
+                      onToggle={toggleColumnaFiltro} busqueda={columnaAbierta === 'comparativa-cajasListado' ? busquedaColumna : ''}
+                      onBusqueda={setBusquedaColumna} onChange={cambiarFiltroColumna} onLimpiar={limpiarFiltroColumna}
+                      orden={ordenColumna} onOrdenar={ordenarColumna}
+                    />
+                    <ColumnFilterHeader
+                      label="Diferencia" columnKey="diferencia" menuId="comparativa-diferencia" valores={valoresUnicosColumna.diferencia}
+                      seleccionados={filtrosColumna.diferencia} abierto={columnaAbierta === 'comparativa-diferencia'}
+                      onToggle={toggleColumnaFiltro} busqueda={columnaAbierta === 'comparativa-diferencia' ? busquedaColumna : ''}
+                      onBusqueda={setBusquedaColumna} onChange={cambiarFiltroColumna} onLimpiar={limpiarFiltroColumna}
+                      orden={ordenColumna} onOrdenar={ordenarColumna}
+                    />
+                    <ColumnFilterHeader
+                      label="Estado" columnKey="estado" menuId="comparativa-estado" valores={valoresUnicosColumna.estado}
+                      seleccionados={filtrosColumna.estado} abierto={columnaAbierta === 'comparativa-estado'}
+                      onToggle={toggleColumnaFiltro} busqueda={columnaAbierta === 'comparativa-estado' ? busquedaColumna : ''}
+                      onBusqueda={setBusquedaColumna} onChange={cambiarFiltroColumna} onLimpiar={limpiarFiltroColumna}
+                      orden={ordenColumna} onOrdenar={ordenarColumna}
+                      formatValor={(v) => LABEL_ESTADO[v] || v}
+                    />
                   </tr>
                 </thead>
                 <tbody className="align-middle">
-                  {comparativaFilasFiltradas.map((fila, idx) => (
+                  {comparativaFilasFiltradasOrdenadas.map((fila, idx) => (
                     <tr
                       key={`${fila.fecha}-${fila.booking}-${fila.finca}-${fila.producto}-${idx}`}
                       onClick={() => abrirListadoRelacionado(fila)}
