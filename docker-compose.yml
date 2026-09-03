@@ -1,0 +1,24 @@
+# Referencia para probar la imagen localmente. NO reemplaza ni toca los
+# contenedores/servicios ya existentes en el VPS de Hostinger (MySQL,
+# Traefik, api-logistica) — se conecta a la red Docker externa
+# "banarica-network" donde ya vive el resto, en vez de crear una red propia.
+services:
+  app-banarica:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_API_URL: https://api-logistica.banarica.cloud
+        NEXT_PUBLIC_API_VERSION: v1
+        NEXT_PUBLIC_OWN_URL: https://logistica.banarica.cloud
+        NEXT_PUBLIC_EVIDENCIAS_DRIVE_FOLDER_ID: 1ZnxhLTlN5WROcl-oozkSJXwjI87aG4bM
+    image: ghcr.io/heywinmeneseshp/app-banarica:latest
+    pull_policy: always
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    networks:
+      - banarica-network
+
+networks:
+  banarica-network:
+    external: true

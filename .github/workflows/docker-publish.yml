@@ -1,0 +1,45 @@
+name: Docker Publish
+
+on:
+  push:
+    branches: [master, main]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # NEXT_PUBLIC_* se hornea en el build, no en runtime — sin esto la
+          # imagen queda con el fallback de desarrollo (localhost) horneado
+          # adentro. Configura estos valores en Settings > Secrets and
+          # variables > Actions > Variables del repo (no son secretos, son
+          # publicos por diseno de Next.js, pero asi no quedan hardcodeados
+          # en el workflow).
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_API_VERSION=${{ vars.NEXT_PUBLIC_API_VERSION }}
+            NEXT_PUBLIC_OWN_URL=${{ vars.NEXT_PUBLIC_OWN_URL }}
+            NEXT_PUBLIC_EVIDENCIAS_DRIVE_FOLDER_ID=${{ vars.NEXT_PUBLIC_EVIDENCIAS_DRIVE_FOLDER_ID }}
+          tags: |
+            ghcr.io/heywinmeneseshp/app-banarica:latest
+            ghcr.io/heywinmeneseshp/app-banarica:${{ github.sha }}
