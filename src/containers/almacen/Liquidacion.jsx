@@ -43,6 +43,7 @@ export default function Liquidacion({ movimiento }) {
     const [respuesta, setRespuesta] = useState(null);
     const [pendiente, setPendiente] = useState(null);
     const [semanaActual, setSemanaActual] = useState(null);
+    const [enviando, setEnviando] = useState(false);
 
     useEffect(() => {
         if (!movimiento) {
@@ -81,45 +82,60 @@ export default function Liquidacion({ movimiento }) {
     }
 
     async function rechazarAjuste() {
+        if (enviando) return;
         const formData = new FormData(formRef.current);
         const IdNoti = gestionNotificacion.notificacion.id;
         const cons_movimiento = gestionNotificacion.notificacion.cons_movimiento;
         const respuesta = formData.get("respuesta");
         if (!respuesta) return window.alert("Por favor rellenar todos los campos");
-        actualizarMovimiento(movimientoID, {
-            "pendiente": false,
-            "respuesta": respuesta,
-            "aprobado_por": user.username
-        });
-        actualizarNotificaciones(IdNoti, { aprobado: true, visto: true });
-        const { data } = await axios.get(endPoints.historial.filter(cons_movimiento));
-        data.forEach(element => {
-            actualizarHistorial(element.id, { razon_movimiento: "Rechazado" });
-        });
-        const dataNotificacion = {
-            almacen_emisor: gestionNotificacion.notificacion.almacen_emisor,
-            almacen_receptor: gestionNotificacion.notificacion.almacen_receptor,
-            cons_movimiento: gestionNotificacion.notificacion.cons_movimiento,
-            tipo_movimiento: "Liquidacion",
-            descripcion: "rechazada",
-            aprobado: true,
-            visto: false
-        };
-        agregarNotificaciones(dataNotificacion);
-        gestionNotificacion.ingresarNotificacion(null);
-        setRespuesta(respuesta);
-        setPendiente(false);
-        setAlert({
-            active: true,
-            mensaje: "Liquidación rechazada.",
-            color: "warning",
-            autoClose: false
-        });
+        setEnviando(true);
+        try {
+            await actualizarMovimiento(movimientoID, {
+                "pendiente": false,
+                "respuesta": respuesta,
+                "aprobado_por": user.username
+            });
+            await actualizarNotificaciones(IdNoti, { aprobado: true, visto: true });
+            const { data } = await axios.get(endPoints.historial.filter(cons_movimiento));
+            for (const element of data) {
+                await actualizarHistorial(element.id, { razon_movimiento: "Rechazado" });
+            }
+            const dataNotificacion = {
+                almacen_emisor: gestionNotificacion.notificacion.almacen_emisor,
+                almacen_receptor: gestionNotificacion.notificacion.almacen_receptor,
+                cons_movimiento: gestionNotificacion.notificacion.cons_movimiento,
+                tipo_movimiento: "Liquidacion",
+                descripcion: "rechazada",
+                aprobado: true,
+                visto: false
+            };
+            await agregarNotificaciones(dataNotificacion);
+            gestionNotificacion.ingresarNotificacion(null);
+            setRespuesta(respuesta);
+            setPendiente(false);
+            setAlert({
+                active: true,
+                mensaje: "Liquidación rechazada.",
+                color: "warning",
+                autoClose: false
+            });
+        } catch (e) {
+            setAlert({
+                active: true,
+                mensaje: e?.message || "Error al rechazar la liquidación",
+                color: "danger",
+                autoClose: false
+            });
+        } finally {
+            setEnviando(false);
+        }
     }
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (enviando) return;
         const formData = new FormData(formRef.current);
+        setEnviando(true);
         try {
             if (user?.id_rol == "Super administrador" && movimiento) {
                 const consAlmacen = almacenByUser.find((item) => item.nombre == almacen).consecutivo;
@@ -129,16 +145,19 @@ export default function Liquidacion({ movimiento }) {
                     "respuesta": respuesta,
                     "aprobado_por": user.username
                 };
-                actualizarMovimiento(movimientoID, changes);
-                products.forEach(item => {
+                // Aprobar solo se confirma al usuario despues de que TODO
+                // esto (marcar aprobado + restar cada producto del stock)
+                // haya terminado sin errores, no antes.
+                await actualizarMovimiento(movimientoID, changes);
+                for (const item of products) {
                     const { cons_producto, cantidad } = item;
-                    restar(consAlmacen, cons_producto, cantidad);
-                });
+                    await restar(consAlmacen, cons_producto, cantidad);
+                }
                 const notiChange = {
                     "descripcion": "Liquidación aprobada",
                     "aprobado": true
                 };
-                actualizarNotificaciones(gestionNotificacion.notificacion.id, notiChange);
+                await actualizarNotificaciones(gestionNotificacion.notificacion.id, notiChange);
                 const dataNotificacion = {
                     almacen_emisor: gestionNotificacion.notificacion.almacen_emisor,
                     almacen_receptor: gestionNotificacion.notificacion.almacen_receptor,
@@ -148,7 +167,7 @@ export default function Liquidacion({ movimiento }) {
                     aprobado: true,
                     visto: false
                 };
-                agregarNotificaciones(dataNotificacion);
+                await agregarNotificaciones(dataNotificacion);
                 setRespuesta(respuesta);
                 setPendiente(false);
                 setAlert({
@@ -178,41 +197,42 @@ export default function Liquidacion({ movimiento }) {
                     "fecha": fecha,
                     "realizado_por": user.username
                 };
-                agregarMovimiento(data).then(res => {
-                    const consMovimientoR = res.data.consecutivo;
-                    setConsMovimiento(consMovimientoR);
-                    const dataNotificacion = {
-                        almacen_emisor: consAlmacen,
-                        almacen_receptor: consAlmacen,
-                        cons_movimiento: consMovimientoR,
-                        tipo_movimiento: "Liquidacion",
-                        descripcion: "pendiente por aprobación",
-                        aprobado: false,
-                        visto: true
+                const res = await agregarMovimiento(data);
+                const consMovimientoR = res.data.consecutivo;
+                setConsMovimiento(consMovimientoR);
+                const dataNotificacion = {
+                    almacen_emisor: consAlmacen,
+                    almacen_receptor: consAlmacen,
+                    cons_movimiento: consMovimientoR,
+                    tipo_movimiento: "Liquidacion",
+                    descripcion: "pendiente por aprobación",
+                    aprobado: false,
+                    visto: true
+                };
+                await agregarNotificaciones(dataNotificacion);
+                let array = [];
+                for (let index = 0; index < products.length; index++) {
+                    const producto = productos.find(producto => producto.name == formData.get(`producto-${index}`));
+                    if (!producto) throw new Error(`El producto "${formData.get(`producto-${index}`)}" no existe.`);
+                    const consecutiveProdcut = producto.consecutivo;
+                    const dataProducto = {
+                        "cantidad": formData.get("cantidad-" + index),
+                        "cons_producto": consecutiveProdcut,
+                        "nombre": formData.get(`producto-${index}`)
                     };
-                    agregarNotificaciones(dataNotificacion);
-                    let array = [];
-                    products.map((product, index) => {
-                        const consecutiveProdcut = productos.find(producto => producto.name == formData.get(`producto-${index}`)).consecutivo;
-                        const dataProducto = {
-                            "cantidad": formData.get("cantidad-" + index),
-                            "cons_producto": consecutiveProdcut,
-                            "nombre": formData.get(`producto-${index}`)
-                        };
-                        array.push(dataProducto);
-                        const dataHistorial = {
-                            cons_movimiento: consMovimientoR,
-                            cons_producto: consecutiveProdcut,
-                            cons_almacen_gestor: consAlmacen,
-                            cons_lista_movimientos: "LQ",
-                            tipo_movimiento: "Salida",
-                            razon_movimiento: tipoDeMovimiento,
-                            cantidad: formData.get("cantidad-" + index)
-                        };
-                        agregarHistorial(dataHistorial);
-                    });
-                    setProducts(array);
-                });
+                    array.push(dataProducto);
+                    const dataHistorial = {
+                        cons_movimiento: consMovimientoR,
+                        cons_producto: consecutiveProdcut,
+                        cons_almacen_gestor: consAlmacen,
+                        cons_lista_movimientos: "LQ",
+                        tipo_movimiento: "Salida",
+                        razon_movimiento: tipoDeMovimiento,
+                        cantidad: formData.get("cantidad-" + index)
+                    };
+                    await agregarHistorial(dataHistorial);
+                }
+                setProducts(array);
                 setBool(true);
                 setAlert({
                     active: true,
@@ -224,10 +244,12 @@ export default function Liquidacion({ movimiento }) {
         } catch (e) {
             setAlert({
                 active: true,
-                mensaje: "Error al cargar datos",
+                mensaje: e?.message || "Error al cargar datos",
                 color: "danger",
                 autoClose: false
             });
+        } finally {
+            setEnviando(false);
         }
     };
     return (
@@ -425,8 +447,8 @@ export default function Liquidacion({ movimiento }) {
                             <div className={styles.display}></div>
                             <div className={styles.display}></div>
                             <div>
-                                <Button type="submit" className={styles.button} variant="warning" size="sm">
-                                    Enviar Liquidación
+                                <Button type="submit" className={styles.button} variant="warning" size="sm" disabled={enviando}>
+                                    {enviando ? "Enviando..." : "Enviar Liquidación"}
                                 </Button>
                             </div>
                         </div>
@@ -439,13 +461,13 @@ export default function Liquidacion({ movimiento }) {
                             </div>
                             <div></div>
                             <div>
-                                <Button className={styles.button} onClick={rechazarAjuste} variant="danger" size="sm">
+                                <Button className={styles.button} onClick={rechazarAjuste} variant="danger" size="sm" disabled={enviando}>
                                     Rechazar liquidación
                                 </Button>
                             </div>
                             <div>
-                                <Button type="submit" className={styles.button} variant="warning" size="sm">
-                                    Liquidar
+                                <Button type="submit" className={styles.button} variant="warning" size="sm" disabled={enviando}>
+                                    {enviando ? "Procesando..." : "Liquidar"}
                                 </Button>
                             </div>
                         </div>

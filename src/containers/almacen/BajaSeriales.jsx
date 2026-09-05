@@ -206,7 +206,13 @@ export default function BajaSeriales() {
                 });
             })
             .then((lista) => setSemanas(lista || []))
-            .catch(() => {});
+            .catch(() => {
+                // Antes se tragaba en silencio: el <select> de Semana
+                // (requerido) quedaba vacio sin que el usuario supiera por
+                // que no podia enviar el formulario.
+                setSemanas([]);
+                window.alert("No se pudo cargar la lista de semanas. Recarga la pagina o avisa a soporte si el problema sigue.");
+            });
 
         if (user?.id_rol === "Super administrador") {
             setMostrarSerial(true);

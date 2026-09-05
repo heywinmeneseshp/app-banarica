@@ -19,7 +19,7 @@ const agregarPedido = async (cons_pedido, item) => {
         const response = await axios.post(endPoints.pedidos.create, data, config);
         return response.data;
     } catch (err) {
-        alert("Error al agregar pedido");
+        throw new Error(err?.response?.data?.message || err?.message || "Error al agregar pedido");
     }
 };
 
@@ -28,7 +28,7 @@ const agregarTablePedido = async (data) => {
         const response = await axios.post(endPoints.pedidos.createTable, data, config);
         return response.data;
     } catch (e) {
-        alert("Error al agregar tabla pedido");
+        throw new Error(e?.response?.data?.message || e?.message || "Error al agregar tabla pedido");
     }
 };
 

@@ -25,6 +25,7 @@ export default function Exportacion() {
     const { almacenByUser, user } = useAuth();
     const [combos, setCombos] = useState([]);
     const [bool, setBool] = useState(false);
+    const [enviando, setEnviando] = useState(false);
     const [consMovimiento, setConsMovimiento] = useState([]);
     const [date, setDate] = useState(useDate());
     const [almacen, setAlmacen] = useState(null);
@@ -80,8 +81,10 @@ export default function Exportacion() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (enviando) return;
         if (radio == 0 && moduloSeguridad) return setAlertRadio(true);
         setAlertRadio(false);
+        setEnviando(true);
         const formData = new FormData(formRef.current);
 
         let existeCombo = [];
@@ -160,7 +163,10 @@ export default function Exportacion() {
 
             const { movimiento } = await exportCombo(body, arrayPost);
             setConsMovimiento(movimiento.consecutivo);
-            if (moduloSeguridad) exportarArticulosConSerial(serialesVerificados, consAlmacen, movimiento.consecutivo);
+            // Antes no se esperaba esto: si fallaba, los precintos de
+            // seguridad quedaban sin marcarse como usados/exportados pero la
+            // pantalla igual mostraba "exito" en el stock ya exportado.
+            if (moduloSeguridad) await exportarArticulosConSerial(serialesVerificados, consAlmacen, movimiento.consecutivo);
             const dataNotificacion = {
                 almacen_emisor: consAlmacen,
                 almacen_receptor: "BRC",
@@ -170,7 +176,7 @@ export default function Exportacion() {
                 aprobado: true,
                 visto: false
             };
-            agregarNotificaciones(dataNotificacion);
+            await agregarNotificaciones(dataNotificacion);
             setBool(true);
             setAlert({
                 active: true,
@@ -181,11 +187,14 @@ export default function Exportacion() {
         } catch (e) {
             setAlert({
                 active: true,
-                mensaje: "Error al cargar datos",
+                mensaje: e?.message || "Error al cargar datos",
                 color: "danger",
                 autoClose: false
             });
+            setEnviando(false);
+            return;
         }
+        setEnviando(false);
         setBool(true);
     };
 
@@ -598,8 +607,8 @@ export default function Exportacion() {
                             <div className={styles.display}></div>
                             <div className={styles.display}></div>
                             <div>
-                                {!bool && <Button type="submit" className={styles.button} variant="info" size="sm">
-                                    Exportar
+                                {!bool && <Button type="submit" className={styles.button} variant="info" size="sm" disabled={enviando}>
+                                    {enviando ? "Exportando..." : "Exportar"}
                                 </Button>}
                                 {bool && <Button type="button" onClick={nuevoMovimiento} className={styles.button} variant="primary" size="sm">
                                     Nueva exportación

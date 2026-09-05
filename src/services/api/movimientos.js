@@ -13,7 +13,11 @@ const agregarMovimiento = async (data) => {
         const response = await axios.post(endPoints.movimientos.create, data, config);
         return response.data;
     } catch (err) {
-        alert("Error al crear el Movimiento");
+        // Antes: alert() + devolvia undefined, y quien llamaba (Ajuste/
+        // Liquidacion/Devolucion) usaba res.data.consecutivo sin chequear
+        // nada, mientras la pantalla ya habia mostrado "carga exitosa" — se
+        // relanza para que el catch de quien llama se entere de verdad.
+        throw new Error(err?.response?.data?.message || err?.message || "Error al crear el Movimiento");
     }
 };
 

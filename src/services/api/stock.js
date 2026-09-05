@@ -50,8 +50,15 @@ const restar = async (cons_almacen, cons_producto, cantidad) => {
     try {
         const res = await axios.patch(endPoints.stock.subtract(cons_almacen, cons_producto), { cantidad: cantidad });
         return res.data;
-    } catch {
-        crearStock(cons_almacen, cons_producto, false);
+    } catch (error) {
+        // Antes: cualquier error (de red, de validacion, lo que sea) se
+        // tragaba en silencio y en vez de avisar creaba un registro de stock
+        // en cero — el backend YA crea ese registro solo si de verdad no
+        // existe (subtractAmounts), asi que esto solo ocultaba errores
+        // reales. Se relanza para que quien llama se entere y no muestre
+        // "exito" con el stock mal.
+        alert("Error al restar del stock: " + (error?.response?.data?.message || error?.message || ""));
+        throw error;
     }
 };
 
@@ -73,7 +80,7 @@ const exportCombo = async (body, listaCombo) => {
         const res = await axios.post(endPoints.stock.export, data);
         return res.data;
     } catch (e) {
-        alert("Se ha presentado un error al exportar");
+        throw new Error(e?.response?.data?.message || e?.message || "Se ha presentado un error al exportar");
     }
 };
 

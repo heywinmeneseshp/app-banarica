@@ -43,6 +43,7 @@ export default function RealizarTraslado() {
     const { alert, setAlert, toogleAlert } = useAlert();
     const [consTraslado, setConsTraslado] = useState(null);
     const [semana, setSemana] = useState(null);
+    const [enviando, setEnviando] = useState(false);
 
     useEffect(() => {
         const listar = async () => {
@@ -86,7 +87,8 @@ export default function RealizarTraslado() {
                 color: "danger",
                 autoClose: true
             });
-        } else {
+        } else if (!enviando) {
+            setEnviando(true);
             try {
                 setTransportadora(transportadora0);
                 setConductor(conductor0);
@@ -102,38 +104,39 @@ export default function RealizarTraslado() {
                     fecha_salida: fecha,
                     semana: semanaR
                 };
-                agregarTraslado(data).then(res => {
-                    const consMovimiento = res.data.consecutivo;
-                    setConsTraslado(consMovimiento);
-                    const dataNotificacion = {
-                        almacen_emisor: origen0,
-                        almacen_receptor: destino0,
+                // El stock recien se mueve cuando el destino "recibe" el
+                // traslado (RecibirTraslado.jsx), no al crearlo — por eso acá
+                // no hay ningun sumar/restar de stock, a proposito.
+                const res = await agregarTraslado(data);
+                const consMovimiento = res.data.consecutivo;
+                setConsTraslado(consMovimiento);
+                const dataNotificacion = {
+                    almacen_emisor: origen0,
+                    almacen_receptor: destino0,
+                    cons_movimiento: consMovimiento,
+                    tipo_movimiento: "Traslado",
+                    descripcion: "pendiente por recibir",
+                    aprobado: false,
+                    visto: false
+                };
+                await agregarNotificaciones(dataNotificacion);
+                let array = [];
+                for (let index = 0; index < products.length; index++) {
+                    const consecutiveProdcut = productos.find(producto => producto.name == formData.get(`producto-${index}`)).consecutivo;
+                    array.push(consecutiveProdcut);
+                    const dataHistorial = {
                         cons_movimiento: consMovimiento,
+                        cons_producto: consecutiveProdcut,
+                        cons_almacen_gestor: origen0,
+                        cons_almacen_receptor: destino0,
+                        cons_lista_movimientos: "TR",
                         tipo_movimiento: "Traslado",
-                        descripcion: "pendiente por recibir",
-                        aprobado: false,
-                        visto: false
+                        cantidad: formData.get("cantidad-" + index)
                     };
-                    agregarNotificaciones(dataNotificacion);
-                    let array = [];
-                    products.map((product, index) => {
-                        const consecutiveProdcut = productos.find(producto => producto.name == formData.get(`producto-${index}`)).consecutivo;
-                        array.push(consecutiveProdcut);
-                        const dataHistorial = {
-                            cons_movimiento: consMovimiento,
-                            cons_producto: consecutiveProdcut,
-                            cons_almacen_gestor: origen0,
-                            cons_almacen_receptor: destino0,
-                            cons_lista_movimientos: "TR",
-                            tipo_movimiento: "Traslado",
-                            cantidad: formData.get("cantidad-" + index)
-                        };
-                        //sumar(almacen, consecutiveProdcut, formData.get("cantidad-" + index));
-                        agregarHistorial(dataHistorial);
-                    });
-                    window.open(endPoints.document.traslados(consMovimiento));
-                    setProductsCons(array);
-                });
+                    await agregarHistorial(dataHistorial);
+                }
+                window.open(endPoints.document.traslados(consMovimiento));
+                setProductsCons(array);
                 setBool(true);
                 setAlert({
                     active: true,
@@ -144,12 +147,13 @@ export default function RealizarTraslado() {
             } catch (e) {
                 setAlert({
                     active: true,
-                    mensaje: "Error al cargar datos",
+                    mensaje: e?.message || "Error al cargar datos",
                     color: "danger",
                     autoClose: false
                 });
+            } finally {
+                setEnviando(false);
             }
-            setBool(true);
         }
     };
 
@@ -350,8 +354,8 @@ export default function RealizarTraslado() {
                             <div className={styles.display}></div>
                             <div className={styles.display}></div>
                             <div>
-                                <Button type="submit" className={styles.button} variant="success" size="sm">
-                                    Enviar artículos
+                                <Button type="submit" className={styles.button} variant="success" size="sm" disabled={enviando}>
+                                    {enviando ? "Enviando..." : "Enviar artículos"}
                                 </Button>
                             </div>
 

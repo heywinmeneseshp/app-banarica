@@ -41,6 +41,7 @@ export default function Ajuste({ exportacion, movimiento }) {
     const [semanaActual, setSemanaActual] = useState(null);
     const [editarMovimiento, setEditarMovimiento] = useState(true);
     const [movimientoID, setMovimientoID] = useState(null);
+    const [enviando, setEnviando] = useState(false);
 
     useEffect(() => {
         if (exportacion) setTitulo(exportacion);
@@ -104,6 +105,7 @@ export default function Ajuste({ exportacion, movimiento }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (enviando) return;
         const formData = new FormData(formRef.current);
         const almacenR = formData.get('almacen');
         const tipoDeMovimiento = formData.get('tipo-movimiento');
@@ -114,6 +116,7 @@ export default function Ajuste({ exportacion, movimiento }) {
         let tipo;
         if (tipoDeMovimiento == "Sobrante") tipo = "Entrada";
         if (tipoDeMovimiento == "Faltante") tipo = "Salida";
+        setEnviando(true);
         try {
             setAlmacen(almacenR);
             setTipoMovimiento(tipoDeMovimiento);
@@ -130,41 +133,45 @@ export default function Ajuste({ exportacion, movimiento }) {
                 "fecha": fecha
             };
 
-            //VAMOS EN ESTE LUGAR ¡¡¡¡ATENCION!!!!!
-            agregarMovimiento(data).then(res => {//ESTA FUNCION NO EXISTE
-                const consMovimiento = res.data.consecutivo;
-                setConsMovimiento(consMovimiento);
-                const dataNotificacion = {
-                    almacen_emisor: consAlmacen,
-                    almacen_receptor: "BRC",
+            // Todo esto se espera en orden: si algo falla a mitad (un
+            // producto que ya no existe, la resta de stock, el historial),
+            // el catch de abajo lo agarra y NO se muestra "carga exitosa" —
+            // antes esto corria suelto con .then()/sin await y la alerta de
+            // exito salia siempre, aunque el stock nunca se hubiera tocado.
+            const res = await agregarMovimiento(data);
+            const consMovimiento = res.data.consecutivo;
+            setConsMovimiento(consMovimiento);
+            const dataNotificacion = {
+                almacen_emisor: consAlmacen,
+                almacen_receptor: "BRC",
+                cons_movimiento: consMovimiento,
+                tipo_movimiento: "Ajuste",
+                descripcion: "realizado",
+                aprobado: true,
+                visto: false
+            };
+            await agregarNotificaciones(dataNotificacion);
+            let array = [];
+            for (let index = 0; index < products.length; index++) {
+                const producto = productos.find(producto => producto.name == formData.get(`producto-${index}`));
+                if (!producto) throw new Error(`El producto "${formData.get(`producto-${index}`)}" no existe.`);
+                const productData = { cons_producto: producto.consecutivo, nombre: producto.name, cantidad: formData.get(`cantidad-${index}`) };
+                array.push(productData);
+                const dataHistorial = {
                     cons_movimiento: consMovimiento,
-                    tipo_movimiento: "Ajuste",
-                    descripcion: "realizado",
-                    aprobado: true,
-                    visto: false
+                    cons_producto: producto.consecutivo,
+                    cons_almacen_gestor: consAlmacen,
+                    cons_lista_movimientos: "AJ",
+                    tipo_movimiento: tipo,
+                    razon_movimiento: tipoDeMovimiento,
+                    cantidad: formData.get("cantidad-" + index)
                 };
-                agregarNotificaciones(dataNotificacion);
-                let array = [];
-                products.map((product, index) => {
-                    const producto = productos.find(producto => producto.name == formData.get(`producto-${index}`));
-                    const data = { cons_producto: producto.consecutivo, nombre: producto.name, cantidad: formData.get(`cantidad-${index}`) };
-                    array.push(data);
-                    const dataHistorial = {
-                        cons_movimiento: consMovimiento,
-                        cons_producto: producto.consecutivo,
-                        cons_almacen_gestor: consAlmacen,
-                        cons_lista_movimientos: "AJ",
-                        tipo_movimiento: tipo,
-                        razon_movimiento: tipoDeMovimiento,
-                        cantidad: formData.get("cantidad-" + index)
-                    };
-                    if (tipoDeMovimiento == "Sobrante") sumar(consAlmacen, producto.consecutivo, dataHistorial.cantidad);
-                    if (tipoDeMovimiento == "Faltante") restar(consAlmacen, producto.consecutivo, dataHistorial.cantidad);
-                    agregarHistorial(dataHistorial);
-                });
-                setProductsCons(array);
-                setProducts(array);
-            });
+                if (tipoDeMovimiento == "Sobrante") await sumar(consAlmacen, producto.consecutivo, dataHistorial.cantidad);
+                if (tipoDeMovimiento == "Faltante") await restar(consAlmacen, producto.consecutivo, dataHistorial.cantidad);
+                await agregarHistorial(dataHistorial);
+            }
+            setProductsCons(array);
+            setProducts(array);
             setBool(true);
             setAlert({
                 active: true,
@@ -175,12 +182,13 @@ export default function Ajuste({ exportacion, movimiento }) {
         } catch (e) {
             setAlert({
                 active: true,
-                mensaje: "Error al cargar datos",
+                mensaje: e?.message || "Error al cargar datos",
                 color: "danger",
                 autoClose: false
             });
+        } finally {
+            setEnviando(false);
         }
-        setBool(true);
     };
     return (
         <>
@@ -360,8 +368,8 @@ export default function Ajuste({ exportacion, movimiento }) {
                                 </Button>}
                         </div>
                         <div>
-                            {!bool && <Button type="submit" className={styles.button} variant="danger" size="sm">
-                                Ajustar
+                            {!bool && <Button type="submit" className={styles.button} variant="danger" size="sm" disabled={enviando}>
+                                {enviando ? "Ajustando..." : "Ajustar"}
                             </Button>}
                             {bool && (user?.id_rol == "Super administrador") &&
                                 editarMovimiento &&

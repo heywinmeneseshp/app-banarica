@@ -35,6 +35,7 @@ export default function Pedidos() {
     const [bool, setBool] = useState(false);
     const [observaciones, setObservaciones] = useState(null);
     const [semanaActual, setSemanaActual] = useState(null);
+    const [enviando, setEnviando] = useState(false);
 
     useEffect(() => {
         gestionPedido.initialize(almacenByUser);
@@ -53,46 +54,62 @@ export default function Pedidos() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const formData = new FormData(formRef.current);
-        const observaciones = formData.get("observaciones");
-        const week = formData.get("semana");
-        const semanaR = await generarSemana(week);
-        setObservaciones(observaciones);
-        const data = {
-            pendiente: true,
-            observaciones: observaciones,
-            fecha: formData.get('fecha'),
-            cons_semana: semanaR,
-            usuario: user.username
-        };
-        let almacenes = [];
-        const res = await agregarTablePedido(data);
-        setConsPedido(res.data.consecutivo);
-        const cons_pedido = res.data.consecutivo;
-        gestionPedido.listaPedido.map((item) => {
-            const existe = almacenes.find(element => element == item.cons_almacen_destino);
-            if (existe == null) almacenes = [...almacenes, item.cons_almacen_destino];
-            agregarPedido(res.data.consecutivo, item);
-        });
-        almacenes.map(async (cons_alamcen) => {
-            const dataNotificacion = {
-                almacen_emisor: cons_alamcen,
-                almacen_receptor: cons_alamcen,
-                cons_movimiento: cons_pedido,
-                tipo_movimiento: "Pedido",
-                descripcion: "pendiente por recibir",
-                aprobado: false,
-                visto: false
+        if (enviando) return;
+        setEnviando(true);
+        try {
+            const formData = new FormData(formRef.current);
+            const observaciones = formData.get("observaciones");
+            const week = formData.get("semana");
+            const semanaR = await generarSemana(week);
+            setObservaciones(observaciones);
+            const data = {
+                pendiente: true,
+                observaciones: observaciones,
+                fecha: formData.get('fecha'),
+                cons_semana: semanaR,
+                usuario: user.username
             };
-            await axios.post(endPoints.notificaciones.create, dataNotificacion);
-        });
-        setAlert({
-            active: true,
-            mensaje: "Se ha cargado el pedido con éxito",
-            color: "success",
-            autoClose: false
-        });
-        setBool(true);
+            let almacenes = [];
+            const res = await agregarTablePedido(data);
+            setConsPedido(res.data.consecutivo);
+            const cons_pedido = res.data.consecutivo;
+            // Antes cada item corria suelto (sin await): si uno fallaba a
+            // mitad de un pedido con varios almacenes, el pedido quedaba con
+            // lineas faltantes y la pantalla igual decia "exito".
+            for (const item of gestionPedido.listaPedido) {
+                const existe = almacenes.find(element => element == item.cons_almacen_destino);
+                if (existe == null) almacenes = [...almacenes, item.cons_almacen_destino];
+                await agregarPedido(cons_pedido, item);
+            }
+            for (const cons_alamcen of almacenes) {
+                const dataNotificacion = {
+                    almacen_emisor: cons_alamcen,
+                    almacen_receptor: cons_alamcen,
+                    cons_movimiento: cons_pedido,
+                    tipo_movimiento: "Pedido",
+                    descripcion: "pendiente por recibir",
+                    aprobado: false,
+                    visto: false
+                };
+                await axios.post(endPoints.notificaciones.create, dataNotificacion);
+            }
+            setAlert({
+                active: true,
+                mensaje: "Se ha cargado el pedido con éxito",
+                color: "success",
+                autoClose: false
+            });
+            setBool(true);
+        } catch (e) {
+            setAlert({
+                active: true,
+                mensaje: e?.message || "Error al cargar el pedido",
+                color: "danger",
+                autoClose: false
+            });
+        } finally {
+            setEnviando(false);
+        }
     };
 
     const nuevoMovimiento = () => {
@@ -205,8 +222,8 @@ export default function Pedidos() {
                         {!(user?.id_rol == "Super administrador" || user?.id_rol == "Administrador") && <div className={styles.display}></div>}
                         {!(user?.id_rol == "Super administrador" || user?.id_rol == "Administrador") && <div className={styles.display}></div>}
                         <div>
-                            {!bool && <Button type='submit' className={styles.button} variant="success" size="sm">
-                                Cargar productos
+                            {!bool && <Button type='submit' className={styles.button} variant="success" size="sm" disabled={enviando}>
+                                {enviando ? "Cargando..." : "Cargar productos"}
                             </Button>}
                             {bool && <Button type='submit' onClick={nuevoMovimiento} className={styles.button} variant="primary" size="sm">
                                 Nuevo pedido

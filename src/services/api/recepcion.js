@@ -13,7 +13,7 @@ const agregarRecepcion = async (data) => {
         const response = await axios.post(endPoints.recepcion.create, data, config);
         return response.data;
     } catch (err) {
-        alert("Error al agregar recepción");
+        throw new Error(err?.response?.data?.message || err?.message || "Error al agregar recepción");
     }
 };
 

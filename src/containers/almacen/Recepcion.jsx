@@ -39,6 +39,7 @@ export default function Recepcion({ movimiento }) {
     const [notificaciones, setNotificaciones] = useState([]);
     const [change, setChange] = useState(false);
     const [semanaActual, setSemanaActual] = useState(null);
+    const [enviando, setEnviando] = useState(false);
 
     useEffect(() => {
         async function listrasItems() {
@@ -89,6 +90,8 @@ export default function Recepcion({ movimiento }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (enviando) return;
+        setEnviando(true);
         try {
 
 
@@ -122,43 +125,45 @@ export default function Recepcion({ movimiento }) {
                 aprobado_por: user.username,
                 realizado_por: user.username
             };
-            agregarRecepcion(body).then((res) => {
-                const consMovimiento = res.data.consecutivo;
-                setConsecutivo(consMovimiento);
-                let array = [];
-                products.map((product, index) => {
-                    const consecutiveProdcut = formData.get(`producto-${index}`);
-                    let dataPedido = {
-                        cons_producto: consecutiveProdcut,
-                        cons_almacen_destino: almacen,
-                        cantidad: formData.get("cantidad-" + index)
-                    };
-                    const dataHistorial = {
-                        cons_movimiento: consMovimiento,
-                        cons_producto: consecutiveProdcut,
-                        cons_almacen_gestor: almacen,
-                        cons_almacen_receptor: almacen,
-                        cons_lista_movimientos: "RC",
-                        tipo_movimiento: "Entrada",
-                        cantidad: formData.get("cantidad-" + index),
-                        cons_pedido: pedido
-                    };
-                    sumar(almacen, dataHistorial.cons_producto, dataHistorial.cantidad);
-                    agregarHistorial(dataHistorial);
-                    array.push(dataPedido);
-                });
-                const dataNotificacion = {
-                    almacen_emisor: almacen,
-                    almacen_receptor: "BRC",
-                    cons_movimiento: consMovimiento,
-                    tipo_movimiento: "Recepcion",
-                    descripcion: "realizada",
-                    aprobado: true,
-                    visto: false
+            const res = await agregarRecepcion(body);
+            const consMovimiento = res.data.consecutivo;
+            setConsecutivo(consMovimiento);
+            let array = [];
+            for (let index = 0; index < products.length; index++) {
+                const consecutiveProdcut = formData.get(`producto-${index}`);
+                let dataPedido = {
+                    cons_producto: consecutiveProdcut,
+                    cons_almacen_destino: almacen,
+                    cantidad: formData.get("cantidad-" + index)
                 };
-                agregarNotificaciones(dataNotificacion);
-                setProducts(array);
-            });
+                const dataHistorial = {
+                    cons_movimiento: consMovimiento,
+                    cons_producto: consecutiveProdcut,
+                    cons_almacen_gestor: almacen,
+                    cons_almacen_receptor: almacen,
+                    cons_lista_movimientos: "RC",
+                    tipo_movimiento: "Entrada",
+                    cantidad: formData.get("cantidad-" + index),
+                    cons_pedido: pedido
+                };
+                // Antes esto corria suelto (sin await, sin Promise.all) y la
+                // alerta de "exito" salia igual aunque sumar/agregarHistorial
+                // todavia no hubieran terminado o hubieran fallado.
+                await sumar(almacen, dataHistorial.cons_producto, dataHistorial.cantidad);
+                await agregarHistorial(dataHistorial);
+                array.push(dataPedido);
+            }
+            const dataNotificacion = {
+                almacen_emisor: almacen,
+                almacen_receptor: "BRC",
+                cons_movimiento: consMovimiento,
+                tipo_movimiento: "Recepcion",
+                descripcion: "realizada",
+                aprobado: true,
+                visto: false
+            };
+            await agregarNotificaciones(dataNotificacion);
+            setProducts(array);
             setBool(true);
             setAlert({
                 active: true,
@@ -169,10 +174,12 @@ export default function Recepcion({ movimiento }) {
         } catch (e) {
             setAlert({
                 active: true,
-                mensaje: "Error al cargar datos",
+                mensaje: e?.message || "Error al cargar datos",
                 color: "danger",
                 autoClose: false
             });
+        } finally {
+            setEnviando(false);
         }
     };
 
@@ -397,8 +404,8 @@ export default function Recepcion({ movimiento }) {
                         <div>
 
                             <div>
-                                {!bool && <Button type='submit' className={styles.button} variant="success" size="sm">
-                                    Cargar artículos
+                                {!bool && <Button type='submit' className={styles.button} variant="success" size="sm" disabled={enviando}>
+                                    {enviando ? "Cargando..." : "Cargar artículos"}
                                 </Button>}
                                 {bool && <Button type='submit' onClick={nuevoMovimiento} className={styles.button} variant="primary" size="sm">
                                     Nueva recepción

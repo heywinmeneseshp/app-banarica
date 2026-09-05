@@ -17,7 +17,7 @@ export default function Traslado() {
     useEffect(() => {
         const result = gestionNotificacion.notificaciones.filter(noti => noti.tipo_movimiento === "Traslado");
         setNotificaciones(result);
-    }, []);
+    }, [gestionNotificacion.notificaciones]);
 
     const nextPage = () => {
         router.push("/noti/traslado");

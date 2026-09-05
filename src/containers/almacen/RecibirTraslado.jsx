@@ -15,7 +15,6 @@ import Button from 'react-bootstrap/Button';
 import Alertas from "@components/shared/Alertas";
 //CSS
 import styles from "@styles/almacen/almacen.module.css";
-import { restar, sumar } from "@services/api/stock";
 
 export default function RecibirTraslado({ movimiento }) {
     const { gestionNotificacion } = useContext(AppContext);
@@ -55,15 +54,22 @@ export default function RecibirTraslado({ movimiento }) {
         setDate(generarFecha());
     }, [movimiento?.consecutivo]);
 
+    const [enviando, setEnviando] = useState(false);
+
     const rechazarTraslados = async () => {
+        if (enviando) return;
+        const formData = new FormData(formRef.current);
+        const respuesta = formData.get("observaciones");
+        if (!respuesta || respuesta == "") return window.alert("Por favor ingresar las obervaciones");
+        setEnviando(true);
         try {
-            const formData = new FormData(formRef.current);
-            const respuesta = formData.get("observaciones");
-            if (!respuesta || respuesta == "") return window.alert("Por favor ingresar las obervaciones");
-            const dataNotificacion = { descripcion: "Traslado rechazado", aprobado: true };
-            actualizarNotificaciones(gestionNotificacion.notificacion.id, dataNotificacion);
             const data = { estado: "Rechazado", fecha_entrada: date, observaciones: respuesta };
-            actualizarTraslado(idTraslado, data);
+            // Si el traslado ya fue procesado (doble clic, o alguien mas ya lo
+            // gestiono), el backend rechaza el cambio de estado y esto tira —
+            // no se avisa exito hasta que el backend confirma.
+            await actualizarTraslado(idTraslado, data);
+            const dataNotificacion = { descripcion: "Traslado rechazado", aprobado: true };
+            await actualizarNotificaciones(gestionNotificacion.notificacion.id, dataNotificacion);
             setBool(true);
             setAlert({
                 active: true,
@@ -71,25 +77,33 @@ export default function RecibirTraslado({ movimiento }) {
                 color: "warning",
                 autoClose: false
             });
-        } catch {
-            alert("Error, se presentó un problema al rechazar el traslado");
+        } catch (e) {
+            setAlert({
+                active: true,
+                mensaje: e?.message || "Error, se presentó un problema al rechazar el traslado",
+                color: "danger",
+                autoClose: false
+            });
+        } finally {
+            setEnviando(false);
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        if (enviando) return;
+        setEnviando(true);
         try {
             const formData = new FormData(formRef.current);
             const respuesta = formData.get("observaciones");
             const data = { estado: "Completado", fecha_entrada: date, observaciones: respuesta };
+            // El backend mueve el stock (origen -> destino) dentro de esta
+            // misma llamada, en una unica transaccion — ya no se dispara nada
+            // aparte desde aca, asi que si esto falla el stock no se toco.
+            await actualizarTraslado(idTraslado, data);
             setObservaciones(respuesta);
-            actualizarTraslado(idTraslado, data);
-            products.map((product) => {
-                restar(origen, product.cons_producto, product.cantidad);
-                sumar(destino, product.cons_producto, product.cantidad);
-            });
             const dataNotificacion = { descripcion: "Traslado compledado con exito", aprobado: true };
-            actualizarNotificaciones(gestionNotificacion.notificacion.id, dataNotificacion);
+            await actualizarNotificaciones(gestionNotificacion.notificacion.id, dataNotificacion);
             setBool(true);
             setAlert({
                 active: true,
@@ -97,16 +111,17 @@ export default function RecibirTraslado({ movimiento }) {
                 color: "success",
                 autoClose: false
             });
+            gestionNotificacion.ingresarNotificacion(null);
         } catch (e) {
             setAlert({
                 active: true,
-                mensaje: "Error al cargar datos",
+                mensaje: e?.message || "Error al cargar datos",
                 color: "danger",
                 autoClose: false
             });
+        } finally {
+            setEnviando(false);
         }
-        setBool(true);
-        gestionNotificacion.ingresarNotificacion(null);
     };
 
     return (
