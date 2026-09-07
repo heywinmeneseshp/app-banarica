@@ -1214,6 +1214,20 @@ const ProgramacionCorte = () => {
                                   ))}
                                 </ul>
                               )}
+                              {resultado.corbana.errores?.length > 0 && (
+                                <>
+                                  <div className="mt-1">Corbana rechazó estas filas puntuales (código de finca o producto sin coincidencia en su catálogo):</div>
+                                  <ul className="mb-0 mt-1">
+                                    {resultado.corbana.errores.map((err, idx) => (
+                                      <li key={idx}>
+                                        {typeof err === 'string'
+                                          ? err
+                                          : `${err.fila ? `Fila ${err.fila}: ` : ''}${err.error || err.message || JSON.stringify(err)}`}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </>
+                              )}
                             </>
                           )}
                           {resultado.corbana.ok === false && (
