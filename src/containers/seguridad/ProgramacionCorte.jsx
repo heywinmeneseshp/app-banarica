@@ -1195,6 +1195,35 @@ const ProgramacionCorte = () => {
                           </>
                         )}
                       </div>
+                      {!resultado.abortado && resultado.corbana && (
+                        <div className={`alert ${
+                          resultado.corbana.ok === true ? 'alert-success'
+                            : resultado.corbana.ok === false ? 'alert-warning'
+                            : 'alert-secondary'
+                        } mb-2`}>
+                          {resultado.corbana.ok === true && (
+                            <>
+                              Corbana sincronizado: {resultado.corbana.totalFilas ?? 0} fila(s) recibidas
+                              {typeof resultado.corbana.creados === 'number' && (
+                                <> ({resultado.corbana.creados} creadas, {resultado.corbana.borrados ?? 0} borradas)</>
+                              )}.
+                              {resultado.corbana.advertencias?.length > 0 && (
+                                <ul className="mb-0 mt-1">
+                                  {resultado.corbana.advertencias.map((adv, idx) => (
+                                    <li key={idx}>{adv}</li>
+                                  ))}
+                                </ul>
+                              )}
+                            </>
+                          )}
+                          {resultado.corbana.ok === false && (
+                            <>No se pudo avisar a Corbana: {resultado.corbana.message}. La carga en Banarica sí quedó guardada.</>
+                          )}
+                          {resultado.corbana.ok === null && (
+                            <>Corbana no está configurado en este entorno — no se envió ningún aviso.</>
+                          )}
+                        </div>
+                      )}
                       {resultado.errores?.length > 0 && (
                         <div className="table-responsive" style={{ maxHeight: '240px' }}>
                           <table className="table table-sm table-bordered mb-0">
