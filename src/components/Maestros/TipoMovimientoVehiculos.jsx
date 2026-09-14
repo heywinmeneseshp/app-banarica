@@ -18,10 +18,17 @@ export default function TipoMovimientoVehiculos() {
         "ID": "id",
         "Movimiento": "movimiento",
         "Requiere contenedor": "requiere_contenedor",
+        "Finca en": "finca_en",
         "Editar": "",
         "Activar": "activo",
       }}
       checkboxFields={["requiere_contenedor"]}
+      listas={{
+        "Finca en": [
+          { id: "origen", nombre: "Origen" },
+          { id: "destino", nombre: "Destino" },
+        ],
+      }}
     />
   );
 }

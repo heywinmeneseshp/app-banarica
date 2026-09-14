@@ -207,9 +207,11 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
         const tipoMovimiento = movimientoPorId.get(String(movimientoId));
         const movimiento = tipoMovimiento?.movimiento || '';
         const requiereContenedor = Boolean(tipoMovimiento?.requiere_contenedor);
-        // Con contenedor: la finca es el destino (el origen lo elige el
-        // usuario). Sin contenedor: la finca es el origen (el destino lo
-        // elige el usuario).
+        // finca_en es independiente de requiere_contenedor — se configura por
+        // separado en Maestros > Tipos de Movimiento (ver TipoMovimientoVehiculos.jsx).
+        // Si el tipo de movimiento no trae finca_en (dato viejo sin migrar
+        // manualmente), se asume 'origen' por compatibilidad.
+        const fincaEnDestino = tipoMovimiento?.finca_en === 'destino';
         const fincaUbicacion = ubicacionPorNombre.get(normalizarComparacion(finca));
         // La finca va en la clave: varias fincas distintas pueden compartir el
         // mismo proceso de empaque (ej. "Finca"), y cada una debe quedar en su
@@ -227,10 +229,15 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
           movimientoId,
           requiereContenedor,
           contenedor: requiereContenedor ? DEMO_CONTENEDOR : '',
-          origen: requiereContenedor ? '' : finca,
-          origenId: requiereContenedor ? '' : (fincaUbicacion?.id || ''),
-          destino: requiereContenedor ? finca : '',
-          destinoId: requiereContenedor ? (fincaUbicacion?.id || '') : '',
+          // Se guarda aparte del origen/destino (que el usuario puede editar
+          // libremente despues) para poder recolocar la finca sola si cambia
+          // el movimiento a mano — ver cambiarMovimientoFila.
+          fincaLabel: finca,
+          fincaId: fincaUbicacion?.id || '',
+          origen: fincaEnDestino ? '' : finca,
+          origenId: fincaEnDestino ? '' : (fincaUbicacion?.id || ''),
+          destino: fincaEnDestino ? finca : '',
+          destinoId: fincaEnDestino ? (fincaUbicacion?.id || '') : '',
           vehiculo: '',
           vehiculoId: '',
           productos: [],
@@ -265,23 +272,45 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
     setSugeridoBorrador((prev) => prev.map((fila) => (fila.id === id ? { ...fila, [campo]: valor } : fila)));
   };
 
-  // Cambiar el movimiento a mano debe recalcular si requiere contenedor
-  // (el borrador solo lo calculaba una vez, al generarse, con el movimiento
-  // que trajo del mapeo de proceso de empaque). Si el nuevo movimiento no lo
-  // requiere, el contenedor deja de tener sentido y se limpia; si si lo
-  // requiere y estaba vacio, se precarga el demo por defecto.
+  // Cambiar el movimiento a mano debe recalcular si requiere contenedor y
+  // donde va la finca (el borrador solo los calculaba una vez, al generarse,
+  // con el movimiento que trajo del mapeo de proceso de empaque). Si el
+  // nuevo movimiento no requiere contenedor, el contenedor deja de tener
+  // sentido y se limpia; si si lo requiere y estaba vacio, se precarga el
+  // demo por defecto. Si finca_en cambia de lado, la finca se mueve sola al
+  // campo que corresponde — el otro campo (lo que el usuario haya puesto ahi
+  // a mano) no se toca.
   const cambiarMovimientoFila = (id, nuevoMovimientoId) => {
     const tipo = (tiposMovimiento || []).find((m) => String(m.id) === String(nuevoMovimientoId));
     const requiereContenedor = Boolean(tipo?.requiere_contenedor);
+    const fincaEnDestino = tipo?.finca_en === 'destino';
     setSugeridoBorrador((prev) => prev.map((fila) => {
       if (fila.id !== id) return fila;
-      return {
+      const cambios = {
         ...fila,
         movimientoId: nuevoMovimientoId,
         movimiento: tipo?.movimiento || '',
         requiereContenedor,
         contenedor: requiereContenedor ? (fila.contenedor || DEMO_CONTENEDOR) : '',
       };
+      if (fila.fincaLabel) {
+        if (fincaEnDestino) {
+          cambios.destino = fila.fincaLabel;
+          cambios.destinoId = fila.fincaId;
+          if (fila.origen === fila.fincaLabel) {
+            cambios.origen = '';
+            cambios.origenId = '';
+          }
+        } else {
+          cambios.origen = fila.fincaLabel;
+          cambios.origenId = fila.fincaId;
+          if (fila.destino === fila.fincaLabel) {
+            cambios.destino = '';
+            cambios.destinoId = '';
+          }
+        }
+      }
+      return cambios;
     }));
   };
 
@@ -416,7 +445,8 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
         <Modal.Body>
           <p className="text-muted small">
             Relacione un proceso de empaque con un movimiento de vehiculo para el sugerido de transporte.
-            Si el movimiento requiere contenedor, la finca del proceso se usa como destino; si no, como origen.
+            Donde queda la finca del proceso (origen o destino) depende de como este configurado ese
+            movimiento en Maestros &gt; Tipos de Movimiento (campo &quot;Finca en&quot;).
           </p>
           {draftMovimientos.length === 0 && (
             <p className="text-muted small">Aun no hay relaciones configuradas.</p>
