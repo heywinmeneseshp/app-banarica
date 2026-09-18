@@ -23,6 +23,7 @@ const endPoints = {
         create: `${API}/api/${VERSION}/usuarios`,
         update: (username) => `${API}/api/${VERSION}/usuarios/${username}`,
         delete: (username) => `${API}/api/${VERSION}/usuarios/${username}`,
+        regenerarPasswordLote: `${API}/api/${VERSION}/usuarios/regenerar-password-lote`,
         almacenes: {
             list: (username) => `${API}/api/${VERSION}/usuarios/almacen/${username}`,
             findByUsername: (username) => `${API}/api/${VERSION}/usuarios/almacen/${username}`,
@@ -506,6 +507,12 @@ const endPoints = {
         create: `${API}/api/${VERSION}/inspeccion`,
         update: (id) => `${API}/api/${VERSION}/inspeccion/${id}`,
         delete: (id) => `${API}/api/${VERSION}/inspeccion/${id}`,
+        exportar: (fechaInicio, fechaFin) => {
+            const params = new URLSearchParams();
+            if (fechaInicio) params.set('fecha_inicio', fechaInicio);
+            if (fechaFin) params.set('fecha_fin', fechaFin);
+            return `${API}/api/${VERSION}/inspeccion/exportar?${params.toString()}`;
+        },
         estadisticas: (groupBy, anio) => {
             const params = new URLSearchParams();
             if (groupBy?.length) params.set('groupBy', groupBy.join(','));

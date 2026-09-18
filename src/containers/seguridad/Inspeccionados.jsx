@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { FaCheckCircle, FaChartBar, FaCog, FaExchangeAlt, FaEdit, FaSave, FaTable } from "react-icons/fa";
+import ExcelJS from "exceljs";
+import { FaCheckCircle, FaChartBar, FaCog, FaDownload, FaExchangeAlt, FaEdit, FaSave, FaTable } from "react-icons/fa";
 import { GrCircleInformation } from "react-icons/gr";
 import { Dropdown } from "react-bootstrap";
 
 import Paginacion from "@components/shared/Tablas/Paginacion";
 import CorregirInspeccionContenedorModal from "@components/seguridad/CorregirInspeccionContenedorModal";
 import { encontrarModulo } from "@services/api/configuracion";
-import { actualizarInspeccion, paginarInspecciones } from "@services/api/inspecciones";
+import { actualizarInspeccion, exportarInspecciones, paginarInspecciones } from "@services/api/inspecciones";
 import { aprobarInspeccionLleno, corregirInspeccionContenedor, rechazarInspeccionLleno } from "@services/api/seguridad";
 import InsumoConfig from "@components/shared/InsumoConfig";
 import InspeccionesGraficos from "./InspeccionesGraficos";
@@ -14,6 +15,101 @@ import { useAuth } from "@hooks/useAuth";
 
 const isEmptyInspectionZone = (zone) =>
     String(zone || "").toLowerCase().includes("vacio");
+
+// Todas las fechas del reporte descargable salen en hora de Bogotá y en
+// formato en español (pedido explícito), sin depender de la zona horaria
+// del navegador de quien descarga.
+const formatFechaBogota = (fecha) => {
+    if (!fecha) return "";
+    const d = new Date(fecha);
+    if (isNaN(d.getTime())) return String(fecha);
+    return d.toLocaleDateString("es-CO", { timeZone: "America/Bogota", day: "2-digit", month: "2-digit", year: "numeric" });
+};
+
+// Para columnas que pueden traer varias fechas separadas por ", " (ej. un
+// contenedor llenado más de una vez) — formatea cada una sin romper el resto.
+const formatFechasBogota = (fechas) => {
+    if (!fechas) return "";
+    return String(fechas)
+        .split(",")
+        .map((f) => formatFechaBogota(f.trim()))
+        .join(", ");
+};
+
+const ENCABEZADOS_DESCARGA = [
+    "N°", "Semana", "Fecha Inspección", "Contenedor", "Serial", "Movimiento",
+    "Fruta", "Cantidad de Cajas", "Agente", "Hora Inicio", "Hora Fin", "Usuario",
+    "Estado", "Almacén(es) de Llenado", "Fecha(s) de Llenado", "Booking", "Destino", "Naviera",
+];
+
+const ENCABEZADOS_SERIALES = [
+    "Contenedor", "Semana", "Fecha Inspección", "Serial", "Artículo", "Almacén", "Fecha de Uso", "Usuario",
+];
+
+const BORDE_FINO = {
+    top: { style: "thin", color: { argb: "FFD9D9D9" } },
+    left: { style: "thin", color: { argb: "FFD9D9D9" } },
+    bottom: { style: "thin", color: { argb: "FFD9D9D9" } },
+    right: { style: "thin", color: { argb: "FFD9D9D9" } },
+};
+
+// Mismo patrón de estilos ya usado en GenerarCarruselExcel.jsx (exceljs):
+// encabezado en verde institucional con texto blanco, filas cebra y bordes
+// finos, para que el Excel descargado no salga "pelado".
+const construirHoja = (workbook, nombre, encabezados, filas) => {
+    const worksheet = workbook.addWorksheet(nombre, {
+        views: [{ state: "frozen", ySplit: 1 }],
+    });
+
+    worksheet.columns = encabezados.map((header) => ({ header, key: header, width: 18 }));
+    filas.forEach((fila) => worksheet.addRow(fila));
+
+    const headerRow = worksheet.getRow(1);
+    headerRow.height = 24;
+    headerRow.eachCell((cell) => {
+        cell.font = { bold: true, color: { argb: "FFFFFFFF" }, name: "Arial", size: 10 };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF166534" } };
+        cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+        cell.border = BORDE_FINO;
+    });
+
+    worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) return;
+        row.eachCell((cell) => {
+            cell.font = { name: "Arial", size: 10 };
+            cell.alignment = { vertical: "middle", horizontal: "center" };
+            cell.border = BORDE_FINO;
+            if (rowNumber % 2 === 0) {
+                cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF2F2F2" } };
+            }
+        });
+    });
+
+    worksheet.autoFilter = {
+        from: "A1",
+        to: `${String.fromCharCode(64 + encabezados.length)}1`,
+    };
+
+    return worksheet;
+};
+
+// Dos pestañas: "Unidades Inspeccionadas" (una fila por contenedor) y
+// "Seriales" (una fila por cada serial/precinto usado en cada contenedor
+// inspeccionado, pedido explícito).
+const generarExcelInspeccionados = async (filasInspecciones, filasSeriales) => {
+    const workbook = new ExcelJS.Workbook();
+    construirHoja(workbook, "Unidades Inspeccionadas", ENCABEZADOS_DESCARGA, filasInspecciones);
+    construirHoja(workbook, "Seriales", ENCABEZADOS_SERIALES, filasSeriales);
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Unidades Inspeccionadas ${new Date().toISOString().slice(0, 10)}.xlsx`;
+    link.click();
+    URL.revokeObjectURL(url);
+};
 
 export default function Inspeccionados() {
     const formRef = useRef();
@@ -37,6 +133,7 @@ export default function Inspeccionados() {
     const [corrigiendoContenedor, setCorrigiendoContenedor] = useState(false);
     const [aprobandoInspeccionId, setAprobandoInspeccionId] = useState(null);
     const [rechazandoInspeccionId, setRechazandoInspeccionId] = useState(null);
+    const [descargando, setDescargando] = useState(false);
 
     const limit = 30;
 
@@ -141,6 +238,67 @@ export default function Inspeccionados() {
 
     const handleConfig = () => {
         setOpenConfig(!openConfig);
+    };
+
+    const handleDescargar = async () => {
+        const formData = new FormData(formRef.current);
+        const fechaInicio = formData.get("fecha-inicio");
+        const fechaFin = formData.get("fecha-fin");
+
+        if (!fechaInicio || !fechaFin) {
+            window.alert("Selecciona la fecha inicio y fecha fin para descargar.");
+            return;
+        }
+
+        try {
+            setDescargando(true);
+            const res = await exportarInspecciones(fechaInicio, fechaFin);
+            const rows = res?.data || [];
+
+            if (rows.length === 0) {
+                window.alert("No hay unidades inspeccionadas en ese rango de fechas.");
+                return;
+            }
+
+            const filas = rows.map((item, index) => ({
+                "N°": index + 1,
+                "Semana": getWeekConsecutive(item) || "-",
+                "Fecha Inspección": item?.Inspeccion?.fecha_inspeccion ? formatFechaBogota(item.Inspeccion.fecha_inspeccion) : "",
+                "Contenedor": item?.contenedor?.contenedor || "",
+                "Serial": item?.serial || "",
+                "Movimiento": item?.MotivoDeUso?.motivo_de_uso || "",
+                "Fruta": item?.fruta || "",
+                "Cantidad de Cajas": item?.cantidadCajas || 0,
+                "Agente": item?.Inspeccion?.agente || "",
+                "Hora Inicio": item?.Inspeccion?.hora_inicio || "",
+                "Hora Fin": item?.Inspeccion?.hora_fin || "",
+                "Usuario": `${item?.usuario?.nombre || ""} ${item?.usuario?.apellido || ""}`.trim(),
+                "Estado": item?.Inspeccion?.habilitado ? "Aprobada" : "Pendiente",
+                "Almacén(es) de Llenado": item?.almacenesLlenado || "",
+                "Fecha(s) de Llenado": formatFechasBogota(item?.fechasLlenado),
+                "Booking": item?.booking || "",
+                "Destino": item?.destino || "",
+                "Naviera": item?.naviera || "",
+            }));
+
+            const filasSeriales = (res?.seriales || []).map((s) => ({
+                "Contenedor": s?.contenedor || "",
+                "Semana": s?.semana || "-",
+                "Fecha Inspección": s?.fecha_inspeccion ? formatFechaBogota(s.fecha_inspeccion) : "",
+                "Serial": s?.serial || "",
+                "Artículo": s?.producto || "",
+                "Almacén": s?.almacen || "",
+                "Fecha de Uso": s?.fecha_de_uso ? formatFechaBogota(s.fecha_de_uso) : "",
+                "Usuario": s?.usuario || "",
+            }));
+
+            await generarExcelInspeccionados(filas, filasSeriales);
+        } catch (error) {
+            console.error("Error al descargar unidades inspeccionadas:", error);
+            window.alert("Error al descargar el reporte de unidades inspeccionadas.");
+        } finally {
+            setDescargando(false);
+        }
     };
 
     const abrirCorreccionContenedor = (item) => {
@@ -304,24 +462,37 @@ export default function Inspeccionados() {
             <div className="container-fluid px-0">
                 <div className="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-2 mb-3">
                     <h2 className="mb-0">Unidades Inspeccionadas</h2>
-                    {canVerGraficos && (
-                        <div className="btn-group btn-group-sm" role="group" aria-label="Cambiar vista">
+                    <div className="d-flex align-items-center gap-2">
+                        {canVerGraficos && (
+                            <div className="btn-group btn-group-sm" role="group" aria-label="Cambiar vista">
+                                <button
+                                    type="button"
+                                    onClick={() => setVista("tabla")}
+                                    className={`btn ${vista === "tabla" ? "btn-primary" : "btn-outline-primary"} d-inline-flex align-items-center gap-1`}
+                                >
+                                    <FaTable /> Tabla
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setVista("grafico")}
+                                    className={`btn ${vista === "grafico" ? "btn-primary" : "btn-outline-primary"} d-inline-flex align-items-center gap-1`}
+                                >
+                                    <FaChartBar /> Gráfico
+                                </button>
+                            </div>
+                        )}
+                        {user?.id_rol === "Super administrador" && vista === "tabla" && (
                             <button
                                 type="button"
-                                onClick={() => setVista("tabla")}
-                                className={`btn ${vista === "tabla" ? "btn-primary" : "btn-outline-primary"} d-inline-flex align-items-center gap-1`}
+                                onClick={handleDescargar}
+                                disabled={descargando}
+                                className="btn btn-sm btn-success d-inline-flex align-items-center gap-1"
+                                title="Descargar unidades inspeccionadas del rango de fechas seleccionado"
                             >
-                                <FaTable /> Tabla
+                                <FaDownload /> {descargando ? "Descargando..." : "Descargar"}
                             </button>
-                            <button
-                                type="button"
-                                onClick={() => setVista("grafico")}
-                                className={`btn ${vista === "grafico" ? "btn-primary" : "btn-outline-primary"} d-inline-flex align-items-center gap-1`}
-                            >
-                                <FaChartBar /> Gráfico
-                            </button>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
 
                 {vista === "grafico" && canVerGraficos ? (

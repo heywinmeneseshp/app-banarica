@@ -33,6 +33,11 @@ const estadisticasInspecciones = async (groupBy = ['anio'], anio) => {
     return res.data;
 };
 
+const exportarInspecciones = async (fechaInicio, fechaFin) => {
+    const res = await axios.get(endPoints.inspecciones.exportar(fechaInicio, fechaFin));
+    return res.data;
+};
+
 
 export {
     listarInspecciones,
@@ -40,5 +45,6 @@ export {
     actualizarInspeccion,
     paginarInspecciones,
     eliminarInspeccion,
-    estadisticasInspecciones
+    estadisticasInspecciones,
+    exportarInspecciones
 };

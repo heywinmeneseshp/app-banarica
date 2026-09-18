@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
-import { FaCheckCircle, FaEdit, FaUserSlash } from 'react-icons/fa';
+import { FaCheckCircle, FaEdit, FaKey, FaUserSlash } from 'react-icons/fa';
 //Services
-import { actualizarUsuario } from '@services/api/usuarios';
+import { actualizarUsuario, regenerarPasswordLote } from '@services/api/usuarios';
 import endPoints from '@services/api';
 import { fetchAuthenticatedProfile } from '@services/api/auth';
 //Components
@@ -25,6 +25,9 @@ const { alert, setAlert, toogleAlert } = useAlert();
 const [open, setOpen] = useState(false);
 const [pagination, setPagination] = useState(1);
 const [total, setTotal] = useState(0);
+const [seleccionados, setSeleccionados] = useState([]);
+const [regenerando, setRegenerando] = useState(false);
+const [passwordsGeneradas, setPasswordsGeneradas] = useState(null);
 const limit = 10;
 
 const listarUsurios = useCallback(async () => {
@@ -116,6 +119,44 @@ useEffect(() => {
         return true;
     });
 
+    const todosSeleccionados = usuariosFiltrados.length > 0 &&
+        usuariosFiltrados.every((usuarioItem) => seleccionados.includes(usuarioItem.username));
+
+    const handleCheckUsuario = (username) => {
+        setSeleccionados((prev) =>
+            prev.includes(username) ? prev.filter((u) => u !== username) : [...prev, username]
+        );
+    };
+
+    const handleCheckAll = () => {
+        if (todosSeleccionados) {
+            setSeleccionados((prev) => prev.filter((u) => !usuariosFiltrados.some((usuarioItem) => usuarioItem.username === u)));
+        } else {
+            setSeleccionados((prev) => Array.from(new Set([...prev, ...usuariosFiltrados.map((usuarioItem) => usuarioItem.username)])));
+        }
+    };
+
+    const handleRegenerarLote = async () => {
+        if (seleccionados.length === 0) return;
+        const confirmar = window.confirm(`Esta seguro que desea regenerar la contraseña de ${seleccionados.length} usuario(s)?`);
+        if (!confirmar) return;
+        try {
+            setRegenerando(true);
+            const { data } = await regenerarPasswordLote(seleccionados);
+            setPasswordsGeneradas(data);
+            setSeleccionados([]);
+        } catch (e) {
+            setAlert({
+                active: true,
+                mensaje: 'Se ha presentado un error al regenerar las contraseñas',
+                color: "danger",
+                autoClose: true
+            });
+        } finally {
+            setRegenerando(false);
+        }
+    };
+
     return (
         <div className='container-fluid px-0'>
             <Alertas alert={alert} handleClose={toogleAlert}></Alertas>
@@ -143,10 +184,32 @@ useEffect(() => {
                 </div>
             </div>
 
+            <div className="row g-2 align-items-center mb-3">
+                <div className="col-12 col-md-4">
+                    <button
+                        onClick={handleRegenerarLote}
+                        type="button"
+                        className="btn btn-outline-primary btn-sm w-100"
+                        disabled={seleccionados.length === 0 || regenerando}
+                    >
+                        {regenerando ? 'Regenerando...' : `Regenerar contraseña (${seleccionados.length})`}
+                    </button>
+                </div>
+            </div>
+
             <div className="table-responsive">
             <table className="table table-striped table-bordered align-middle">
                 <thead className={styles.letter}>
                     <tr>
+                        <th scope="col" className="text-center align-middle">
+                            <input
+                                type="checkbox"
+                                className="form-check-input"
+                                checked={todosSeleccionados}
+                                onChange={handleCheckAll}
+                                aria-label="Seleccionar todos"
+                            />
+                        </th>
                         <th scope="col" className="text-center align-middle">Cod</th>
                         <th scope="col" className="text-center align-middle">Nombre</th>
                         <th scope="col" className="text-center align-middle">Usuario</th>
@@ -163,6 +226,15 @@ useEffect(() => {
 
                         return (
                             <tr key={index}>
+                                <td className="text-center align-middle">
+                                    <input
+                                        type="checkbox"
+                                        className="form-check-input"
+                                        checked={seleccionados.includes(usuario.username)}
+                                        onChange={() => handleCheckUsuario(usuario.username)}
+                                        aria-label={`Seleccionar ${usuario.username}`}
+                                    />
+                                </td>
                                 <td className="text-center align-middle">{usuario.id}</td>
                                 <td className="text-center align-middle">{usuario.nombre + " " + usuario.apellido}</td>
                                 <td className="text-center align-middle">{usuario.username}</td>
@@ -203,6 +275,46 @@ useEffect(() => {
             </div>
             <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
             {open && <NuevoUsuario setOpen={setOpen} setAlert={setAlert} user={editUser} />}
+            {passwordsGeneradas && (
+                <div className="modal d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">
+                                    <FaKey className="me-2" />Contraseñas regeneradas
+                                </h5>
+                                <button type="button" className="btn-close" onClick={() => setPasswordsGeneradas(null)}></button>
+                            </div>
+                            <div className="modal-body">
+                                <p className="text-muted small">Copie y comparta estas contraseñas con cada usuario. No se volverán a mostrar.</p>
+                                <table className="table table-sm table-bordered align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Usuario</th>
+                                            <th>Contraseña</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {passwordsGeneradas.map((item) => (
+                                            <tr key={item.username}>
+                                                <td>{item.username}</td>
+                                                <td>
+                                                    {item.password
+                                                        ? <code>{item.password}</code>
+                                                        : <span className="text-danger">{item.error}</span>}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setPasswordsGeneradas(null)}>Cerrar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

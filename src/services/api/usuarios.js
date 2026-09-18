@@ -42,6 +42,11 @@ const listarUsuarios = async () => {
     return res.data;
 };
 
+const regenerarPasswordLote = async (usernames) => {
+    const res = await axios.patch(endPoints.usuarios.regenerarPasswordLote, { usernames }, config);
+    return res.data;
+};
+
 const listarAlmacenesPorUsuario = async (username) => {
     const res = await axios.get(endPoints.usuarios.almacenes.list(username));
     return res.data;
@@ -69,5 +74,6 @@ export {
     cargarAlmacenesPorUsuario,
     cargarTransportadorasPorUsuario,
     eliminarUsuario, actualizarUsuario, buscarUsuario, listarUsuarios, listarAlmacenesPorUsuario,
-    listarTransportadorasPorUsuario
+    listarTransportadorasPorUsuario,
+    regenerarPasswordLote
 };
