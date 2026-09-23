@@ -225,6 +225,12 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
           id: key,
           fecha: fila.fecha,
           booking: fila.booking,
+          // filasSemana ya viene filtrado por semanaSugerido (linea 155), asi
+          // que toda fila de este borrador pertenece a esa semana. Sin esto,
+          // la programacion creada abajo queda con semana en blanco (bloquea
+          // la carga de evidencia/fotos, que la exige - ver
+          // cargueFotos.router.js#validarSolicitud).
+          semana: semanaSugerido,
           movimiento,
           movimientoId,
           requiereContenedor,
@@ -391,6 +397,7 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
         contenedor: fila.contenedor || '',
         ruta_id: rutaId,
         vehiculo_id: fila.vehiculoId,
+        semana: fila.semana || '',
         activo: true,
       });
       const programacionId = creado?.data?.id || creado?.id;
