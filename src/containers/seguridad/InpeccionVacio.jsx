@@ -722,6 +722,13 @@ export default function InspeccionVacio() {
             return { serial, status: 'available', label: serialMap.get(serial) };
           }
           const existing = await encontrarUnSerial({ serial });
+          // No disponible porque esta reservado en un traslado todavia
+          // Pendiente de aceptacion (no un uso real) -- no se bloquea.
+          const trasladoPendiente = existing?.[0]?.cons_movimiento?.startsWith('TR-')
+            && existing[0].traslado_estado === 'Pendiente';
+          if (trasladoPendiente) {
+            return { serial, status: 'available', label: serialMap.get(serial) };
+          }
           return {
             serial,
             status: existing?.[0] ? 'used' : 'missing',
