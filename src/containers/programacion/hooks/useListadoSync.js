@@ -450,7 +450,7 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
     }
   }, [buildListadoUpdateRowsFromProgramaciones, computarDiferenciasPorDia, ejecutarSincronizacion, setAlert]);
 
-  const continuarSincronizacion = useCallback(async () => {
+  const continuarSincronizacion = useCallback(async (idsAQuitarDeListado = []) => {
     const datos = diferenciasListado;
     setDiferenciasListado(null);
 
@@ -458,9 +458,15 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
       return;
     }
 
+    // Solo se deshabilitan las unidades "solo en Listado" que el usuario
+    // marco explicitamente en el modal (pedido explicito: una unidad sin
+    // linea en Programador ya no se quita sola del Listado).
+    const idsSet = new Set(idsAQuitarDeListado);
+    const soloListadoRowsAQuitar = (datos.soloListadoRows || []).filter((row) => idsSet.has(row.id));
+
     try {
       setSyncingListado(true);
-      await ejecutarSincronizacion(datos.payloadRows, datos.skippedRows || [], datos.soloListadoRows || []);
+      await ejecutarSincronizacion(datos.payloadRows, datos.skippedRows || [], soloListadoRowsAQuitar);
     } catch (error) {
       setAlert({
         active: true,

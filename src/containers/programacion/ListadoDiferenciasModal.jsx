@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Badge, Button, Modal } from 'react-bootstrap';
 
 const CONTAINER_CHIP_LIMIT = 20;
@@ -35,6 +35,27 @@ function ListadoDiferenciasModal({ diferenciasListado, show, syncingListado, onC
   const totales = diferenciasListado?.totales || {};
   const skippedRows = diferenciasListado?.skippedRows || [];
   const haySkipped = skippedRows.length > 0;
+  const soloListadoRows = diferenciasListado?.soloListadoRows || [];
+  const haySoloListado = soloListadoRows.length > 0;
+
+  // Unidades que el usuario marco explicitamente para quitar del Listado —
+  // arranca vacio a proposito: una unidad que esta en Listado pero no en
+  // Programador ya NO se deshabilita sola, el usuario decide caso por caso
+  // (pedido explicito, antes se quitaban todas al continuar).
+  const [idsAQuitar, setIdsAQuitar] = useState(() => new Set());
+
+  useEffect(() => {
+    setIdsAQuitar(new Set());
+  }, [diferenciasListado]);
+
+  const toggleQuitar = (id) => {
+    setIdsAQuitar((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   return (
     <Modal show={show} onHide={onClose} centered size="xl" scrollable>
@@ -44,9 +65,10 @@ function ListadoDiferenciasModal({ diferenciasListado, show, syncingListado, onC
       <Modal.Body>
         <div className="small text-muted mb-3">
           Se detectaron diferencias entre lo programado y el Listado para las fechas con movimientos
-          pendientes. Revisa el resumen antes de sincronizar: las líneas con coincidencia se actualizan,
-          y las líneas que quedaron <strong>solo en Listado</strong> (p. ej. por una línea eliminada en
-          Programador) se deshabilitarán para que Listado quede igual a Programador.
+          pendientes. Revisa el resumen antes de sincronizar: las líneas con coincidencia se actualizan.
+          Las unidades que quedaron <strong>solo en Listado</strong> (p. ej. porque todavía no tienen línea
+          en Programador) <strong>no se eliminan solas</strong> — quedan listadas abajo para que decidas,
+          una por una, si las querés quitar del Listado o dejarlas como están.
         </div>
 
         <div className="d-flex flex-wrap gap-2 mb-3">
@@ -67,7 +89,6 @@ function ListadoDiferenciasModal({ diferenciasListado, show, syncingListado, onC
                 <th className="text-center">Coincidencias</th>
                 <th className="text-center">Cajas difieren</th>
                 <th>Solo en programación</th>
-                <th>Solo en Listado</th>
               </tr>
             </thead>
             <tbody>
@@ -78,12 +99,50 @@ function ListadoDiferenciasModal({ diferenciasListado, show, syncingListado, onC
                   <td className="text-center">{dia.coincidencias}</td>
                   <td className="text-center">{dia.cajasDifieren}</td>
                   <td><ContainerChips contenedores={dia.soloProgramacion} /></td>
-                  <td><ContainerChips contenedores={dia.soloListado} /></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+
+        {haySoloListado && (
+          <>
+            <h6 className="mb-2">Unidades solo en Listado (sin línea en Programador)</h6>
+            <div className="table-responsive mb-3" style={{ maxHeight: '260px' }}>
+              <table className="table table-sm table-bordered align-middle mb-0">
+                <thead className="table-secondary">
+                  <tr>
+                    <th className="text-center" style={{ width: '1%' }}>Quitar</th>
+                    <th>Fecha</th>
+                    <th>Contenedor</th>
+                    <th>BL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {soloListadoRows.map((row) => (
+                    <tr key={row.id}>
+                      <td className="text-center">
+                        <input
+                          type="checkbox"
+                          className="form-check-input"
+                          checked={idsAQuitar.has(row.id)}
+                          onChange={() => toggleQuitar(row.id)}
+                          aria-label={`Quitar ${row.contenedor} del Listado`}
+                        />
+                      </td>
+                      <td className="text-nowrap">{row.fecha || '-'}</td>
+                      <td>{row.contenedor || '-'}</td>
+                      <td>{row.bl || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="small text-muted mb-3">
+              Marcadas: {idsAQuitar.size} de {soloListadoRows.length}. Las que no marques quedan igual en el Listado.
+            </div>
+          </>
+        )}
 
         {haySkipped && (
           <>
@@ -117,8 +176,8 @@ function ListadoDiferenciasModal({ diferenciasListado, show, syncingListado, onC
         <Button variant="secondary" onClick={onClose} disabled={syncingListado}>
           Cancelar
         </Button>
-        <Button variant="success" onClick={onContinue} disabled={syncingListado}>
-          {syncingListado ? 'Sincronizando...' : 'Continuar de todas formas'}
+        <Button variant="success" onClick={() => onContinue([...idsAQuitar])} disabled={syncingListado}>
+          {syncingListado ? 'Sincronizando...' : 'Continuar'}
         </Button>
       </Modal.Footer>
     </Modal>
