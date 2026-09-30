@@ -36,13 +36,21 @@ export function useListadoSync({ setAlert, markProgramacionesEstadoListado }) {
           return;
         }
 
-        const almacenDestino = findAlmacenFromUbicacion(item?.ruta?.ubicacion_2, almacenesList);
+        // El almacen que se sincroniza al Listado (id_lugar_de_llenado) es el
+        // lado de la ruta donde esta la finca segun "Finca en" del tipo de
+        // movimiento (Maestros > Tipos de Movimiento) — mismo criterio que
+        // usa ProgramadorSugeridoTransporte.jsx al generar el borrador. Si el
+        // tipo de movimiento no trae finca_en (dato viejo sin migrar), se
+        // asume 'origen' por compatibilidad, no 'destino'.
+        const fincaEnDestino = item?.tipoMovimiento?.finca_en === 'destino';
+        const ubicacionFinca = fincaEnDestino ? item?.ruta?.ubicacion_2 : item?.ruta?.ubicacion_1;
+        const almacenDestino = findAlmacenFromUbicacion(ubicacionFinca, almacenesList);
         if (!almacenDestino?.id) {
           skippedRows.push({
             fecha,
             bl,
             contenedor,
-            reason: `No se encontro almacen para el destino ${item?.ruta?.ubicacion_2?.ubicacion || 'sin nombre'}`,
+            reason: `No se encontro almacen para ${fincaEnDestino ? 'el destino' : 'el origen'} ${ubicacionFinca?.ubicacion || 'sin nombre'}`,
           });
           return;
         }
