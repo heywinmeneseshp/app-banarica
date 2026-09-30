@@ -25,6 +25,7 @@ export default function ProgramadorFilters({
   setReloadKey,
   setOpen,
   canEditarProgramador,
+  canNuevoMovimiento,
   isSuperAdmin,
   isEditable,
   setIsEditable,
@@ -306,9 +307,11 @@ export default function ProgramadorFilters({
               <FaCog size={17} />
             </button>
           )}
-          <Button type="button" onClick={() => setOpen(true)} variant="primary" size="sm">
-            Nuevo movimiento
-          </Button>
+          {(isSuperAdmin || canNuevoMovimiento) && (
+            <Button type="button" onClick={() => setOpen(true)} variant="primary" size="sm">
+              Nuevo movimiento
+            </Button>
+          )}
 
           {(canEditarProgramador || isSuperAdmin) && (
             <Button type="button" onClick={() => setIsEditable((prev) => !prev)} variant={isEditable ? 'success' : 'warning'} size="sm">

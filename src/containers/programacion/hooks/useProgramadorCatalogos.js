@@ -37,6 +37,7 @@ export function useProgramadorCatalogos({ setAlert }) {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [canActualizarPendientes, setCanActualizarPendientes] = useState(false);
   const [canEditarProgramador, setCanEditarProgramador] = useState(false);
+  const [canNuevoMovimiento, setCanNuevoMovimiento] = useState(false);
   const [canVerCarpetaDrive, setCanVerCarpetaDrive] = useState(false);
   const [transportadoras, setTransportadoras] = useState([]);
   const [currentUsername, setCurrentUsername] = useState('');
@@ -112,6 +113,7 @@ export function useProgramadorCatalogos({ setAlert }) {
           setCanActualizarPendientes(true);
           setCanEditarProgramador(true);
           setCanVerCarpetaDrive(true);
+          setCanNuevoMovimiento(true);
         } else {
           let botones = [];
           try {
@@ -123,6 +125,7 @@ export function useProgramadorCatalogos({ setAlert }) {
           setCanActualizarPendientes(botones.includes('programador_actualizar_pendientes'));
           setCanEditarProgramador(botones.includes('programador_edicion'));
           setCanVerCarpetaDrive(botones.includes('evidencias_ver_carpeta_drive'));
+          setCanNuevoMovimiento(botones.includes('programador_nuevo_movimiento'));
         }
 
         setCatalogsReady(true);
@@ -155,6 +158,7 @@ export function useProgramadorCatalogos({ setAlert }) {
     canActualizarPendientes,
     canEditarProgramador,
     canVerCarpetaDrive,
+    canNuevoMovimiento,
     transportadoras,
     currentUsername,
     diasEdicionHoras,

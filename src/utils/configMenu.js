@@ -96,6 +96,7 @@ const botones = [
     "dashboard_configuracion",
     "dashboard_seriales",
     "programador_creacion_rapida",
+    "programador_nuevo_movimiento",
     "programador_edicion",
     "programador_actualizar_pendientes",
     "programador_sellos_configuracion",

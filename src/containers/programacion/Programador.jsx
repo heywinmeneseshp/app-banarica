@@ -95,6 +95,7 @@ export default function Programador() {
     canActualizarPendientes,
     canEditarProgramador,
     canVerCarpetaDrive,
+    canNuevoMovimiento,
     transportadoras,
     currentUsername,
     diasEdicionHoras,
@@ -738,6 +739,7 @@ export default function Programador() {
                 setReloadKey={setReloadKey}
                 setOpen={setOpen}
                 canEditarProgramador={canEditarProgramador}
+                canNuevoMovimiento={canNuevoMovimiento}
                 isSuperAdmin={isSuperAdmin}
                 isEditable={isEditable}
                 setIsEditable={setIsEditable}
