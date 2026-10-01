@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Button, Form, Modal } from 'react-bootstrap';
 import { FaCog, FaCopy, FaMinus, FaPaperPlane, FaPlus, FaTrash } from 'react-icons/fa';
 import { listarProgramacionCorte } from '@services/api/programacionCorte';
@@ -57,6 +57,40 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
 
   const [showSugeridoModal, setShowSugeridoModal] = useState(false);
   const [sugeridoBorrador, setSugeridoBorrador] = useState([]);
+  const FILTROS_BORRADOR_VACIOS = {
+    fecha: '', booking: '', movimiento: '', origen: '', destino: '', vehiculo: '', producto: '', contenedor: '',
+  };
+  const [filtrosBorrador, setFiltrosBorrador] = useState(FILTROS_BORRADOR_VACIOS);
+
+  const actualizarFiltroBorrador = (campo, valor) => {
+    setFiltrosBorrador((prev) => ({ ...prev, [campo]: valor }));
+  };
+
+  const limpiarFiltrosBorrador = () => setFiltrosBorrador(FILTROS_BORRADOR_VACIOS);
+
+  // Filtro solo de lo que se ve en la tabla del borrador — las filas que
+  // quedan afuera siguen en sugeridoBorrador (editar/enviar/eliminar operan
+  // sobre el arreglo completo via fila.id, no sobre esta lista filtrada).
+  const sugeridoBorradorFiltrado = useMemo(() => {
+    const f = filtrosBorrador;
+    const hayFiltros = Object.values(f).some((v) => String(v || '').trim());
+    if (!hayFiltros) return sugeridoBorrador;
+
+    return sugeridoBorrador.filter((fila) => {
+      if (f.fecha && !normalizarComparacion(fila.fecha).includes(normalizarComparacion(f.fecha))) return false;
+      if (f.booking && !normalizarComparacion(fila.booking).includes(normalizarComparacion(f.booking))) return false;
+      if (f.movimiento && !normalizarComparacion(fila.movimiento).includes(normalizarComparacion(f.movimiento))) return false;
+      if (f.origen && !normalizarComparacion(fila.origen).includes(normalizarComparacion(f.origen))) return false;
+      if (f.destino && !normalizarComparacion(fila.destino).includes(normalizarComparacion(f.destino))) return false;
+      if (f.vehiculo && !normalizarComparacion(fila.vehiculo).includes(normalizarComparacion(f.vehiculo))) return false;
+      if (f.contenedor && !normalizarComparacion(fila.contenedor).includes(normalizarComparacion(f.contenedor))) return false;
+      if (f.producto) {
+        const coincide = (fila.productos || []).some((p) => normalizarComparacion(p.producto).includes(normalizarComparacion(f.producto)));
+        if (!coincide) return false;
+      }
+      return true;
+    });
+  }, [sugeridoBorrador, filtrosBorrador]);
   const [enviandoFilaId, setEnviandoFilaId] = useState(null);
 
   const abrirConfig = async () => {
@@ -264,6 +298,7 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
       );
 
       setSugeridoBorrador(borrador);
+      limpiarFiltrosBorrador();
       setShowSemanaModal(false);
       setShowSugeridoModal(true);
     } catch (error) {
@@ -602,9 +637,48 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
                     <th className="text-custom-small text-center text-white bg-secondary" style={CELL_STYLE}>Contenedor</th>
                     <th className="text-custom-small text-center text-white bg-secondary" style={CELL_STYLE}></th>
                   </tr>
+                  <tr>
+                    {[
+                      ['fecha', 'Filtrar...'],
+                      ['booking', 'Filtrar...'],
+                      ['movimiento', 'Filtrar...'],
+                      ['origen', 'Filtrar...'],
+                      ['destino', 'Filtrar...'],
+                      ['vehiculo', 'Filtrar...'],
+                      ['producto', 'Filtrar producto...'],
+                      ['contenedor', 'Filtrar...'],
+                    ].map(([campo, placeholder]) => (
+                      <th key={campo} className="bg-light p-1" style={CELL_STYLE}>
+                        <Form.Control
+                          size="sm"
+                          className={COMPACT_INPUT_CLASS}
+                          placeholder={placeholder}
+                          value={filtrosBorrador[campo]}
+                          onChange={(e) => actualizarFiltroBorrador(campo, e.target.value)}
+                        />
+                      </th>
+                    ))}
+                    <th className="bg-light p-1 text-center" style={CELL_STYLE}>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-secondary border-0"
+                        title="Limpiar filtros"
+                        onClick={limpiarFiltrosBorrador}
+                      >
+                        <FaTrash size={11} />
+                      </button>
+                    </th>
+                  </tr>
                 </thead>
                 <tbody>
-                  {sugeridoBorrador.map((fila) => (
+                  {sugeridoBorradorFiltrado.length === 0 && (
+                    <tr>
+                      <td colSpan={9} className="text-muted py-3">
+                        Ninguna fila coincide con los filtros.
+                      </td>
+                    </tr>
+                  )}
+                  {sugeridoBorradorFiltrado.map((fila) => (
                     <tr key={fila.id}>
                       <td style={{ ...CELL_STYLE, minWidth: '110px' }}>
                         <Form.Control
