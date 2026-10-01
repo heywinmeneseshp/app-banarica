@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Button, Form, Modal } from 'react-bootstrap';
-import { FaCog, FaCopy, FaMinus, FaPaperPlane, FaPlus, FaTrash } from 'react-icons/fa';
+import { Button, Dropdown, Form, Modal } from 'react-bootstrap';
+import { FaCog, FaCopy, FaFilter, FaMinus, FaPaperPlane, FaPlus, FaTrash } from 'react-icons/fa';
 import { listarProgramacionCorte } from '@services/api/programacionCorte';
 import { listarSemanas } from '@services/api/semanas';
 import { encontrarModulo, actualizarModulo } from '@services/api/configuracion';
@@ -37,6 +37,73 @@ const COMPACT_INPUT_CLASS = 'py-0';
 
 const normalizarComparacion = (valor) => String(valor || '').trim().toLowerCase();
 
+// Filtro de columna estilo Excel: icono de embudo en el encabezado, al
+// hacer clic abre la lista de valores distintos de esa columna con
+// checkboxes (todos marcados = sin filtro). `activo` es el Set de valores
+// seleccionados o undefined/null si no hay filtro en esta columna.
+function ExcelColumnFilter({ valores, activo, onChange }) {
+  const seleccionados = activo || new Set(valores);
+  const hayFiltro = Boolean(activo);
+  const [busqueda, setBusqueda] = useState('');
+
+  const valoresVisibles = busqueda
+    ? valores.filter((v) => normalizarComparacion(v).includes(normalizarComparacion(busqueda)))
+    : valores;
+
+  const toggleValor = (valor) => {
+    const siguiente = new Set(seleccionados);
+    if (siguiente.has(valor)) siguiente.delete(valor);
+    else siguiente.add(valor);
+    // Si quedaron todos marcados, es lo mismo que "sin filtro".
+    onChange(siguiente.size === valores.length ? null : siguiente);
+  };
+
+  const marcarTodos = () => onChange(null);
+  const desmarcarTodos = () => onChange(new Set());
+
+  return (
+    <Dropdown autoClose="outside">
+      <Dropdown.Toggle
+        as="button"
+        type="button"
+        className={`btn btn-sm border-0 p-0 ${hayFiltro ? 'text-primary' : 'text-white'}`}
+        style={{ boxShadow: 'none' }}
+        title="Filtrar"
+      >
+        <FaFilter size={10} />
+      </Dropdown.Toggle>
+      <Dropdown.Menu style={{ minWidth: '200px', maxHeight: '280px', overflowY: 'auto', fontSize: '0.8rem' }}>
+        <div className="px-2 pb-1">
+          <Form.Control
+            size="sm"
+            placeholder="Buscar..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+        <div className="d-flex gap-2 px-2 pb-1">
+          <button type="button" className="btn btn-link btn-sm p-0" onClick={marcarTodos}>Todos</button>
+          <button type="button" className="btn btn-link btn-sm p-0" onClick={desmarcarTodos}>Ninguno</button>
+        </div>
+        <Dropdown.Divider />
+        {valoresVisibles.length === 0 && <div className="px-2 text-muted">Sin valores</div>}
+        {valoresVisibles.map((valor) => (
+          <label key={valor} className="dropdown-item d-flex align-items-center gap-2 mb-0" style={{ cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              className="form-check-input m-0"
+              checked={seleccionados.has(valor)}
+              onChange={() => toggleValor(valor)}
+            />
+            <span className="text-truncate">{valor || '(vacío)'}</span>
+          </label>
+        ))}
+      </Dropdown.Menu>
+    </Dropdown>
+  );
+}
+
 // Sugerido de transporte: arma un borrador de movimientos de Programador a
 // partir de lo que ya se cargo en Programacion de Corte, para que el
 // programador de transporte no tenga que crear cada linea desde cero. La
@@ -57,39 +124,56 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
 
   const [showSugeridoModal, setShowSugeridoModal] = useState(false);
   const [sugeridoBorrador, setSugeridoBorrador] = useState([]);
-  const FILTROS_BORRADOR_VACIOS = {
-    fecha: '', booking: '', movimiento: '', origen: '', destino: '', vehiculo: '', producto: '', contenedor: '',
-  };
-  const [filtrosBorrador, setFiltrosBorrador] = useState(FILTROS_BORRADOR_VACIOS);
 
-  const actualizarFiltroBorrador = (campo, valor) => {
-    setFiltrosBorrador((prev) => ({ ...prev, [campo]: valor }));
-  };
+  // Filtros estilo Excel: por columna, un Set con los valores que se quieren
+  // VER (undefined/ausente = sin filtro, se ven todos). Igual que en Excel,
+  // solo filtran lo que se muestra en la tabla -- editar/enviar/eliminar
+  // siguen operando sobre sugeridoBorrador completo via fila.id.
+  const [filtrosBorrador, setFiltrosBorrador] = useState({});
 
-  const limpiarFiltrosBorrador = () => setFiltrosBorrador(FILTROS_BORRADOR_VACIOS);
+  const limpiarFiltrosBorrador = () => setFiltrosBorrador({});
 
-  // Filtro solo de lo que se ve en la tabla del borrador — las filas que
-  // quedan afuera siguen en sugeridoBorrador (editar/enviar/eliminar operan
-  // sobre el arreglo completo via fila.id, no sobre esta lista filtrada).
-  const sugeridoBorradorFiltrado = useMemo(() => {
-    const f = filtrosBorrador;
-    const hayFiltros = Object.values(f).some((v) => String(v || '').trim());
-    if (!hayFiltros) return sugeridoBorrador;
-
-    return sugeridoBorrador.filter((fila) => {
-      if (f.fecha && !normalizarComparacion(fila.fecha).includes(normalizarComparacion(f.fecha))) return false;
-      if (f.booking && !normalizarComparacion(fila.booking).includes(normalizarComparacion(f.booking))) return false;
-      if (f.movimiento && !normalizarComparacion(fila.movimiento).includes(normalizarComparacion(f.movimiento))) return false;
-      if (f.origen && !normalizarComparacion(fila.origen).includes(normalizarComparacion(f.origen))) return false;
-      if (f.destino && !normalizarComparacion(fila.destino).includes(normalizarComparacion(f.destino))) return false;
-      if (f.vehiculo && !normalizarComparacion(fila.vehiculo).includes(normalizarComparacion(f.vehiculo))) return false;
-      if (f.contenedor && !normalizarComparacion(fila.contenedor).includes(normalizarComparacion(f.contenedor))) return false;
-      if (f.producto) {
-        const coincide = (fila.productos || []).some((p) => normalizarComparacion(p.producto).includes(normalizarComparacion(f.producto)));
-        if (!coincide) return false;
-      }
-      return true;
+  const actualizarFiltroColumna = (campo, nuevoSet) => {
+    setFiltrosBorrador((prev) => {
+      const siguiente = { ...prev };
+      if (nuevoSet) siguiente[campo] = nuevoSet;
+      else delete siguiente[campo];
+      return siguiente;
     });
+  };
+
+  const valoresPorColumna = useMemo(() => {
+    const columnas = ['fecha', 'booking', 'movimiento', 'origen', 'destino', 'vehiculo', 'producto', 'contenedor'];
+    const resultado = {};
+    columnas.forEach((campo) => { resultado[campo] = new Set(); });
+    sugeridoBorrador.forEach((fila) => {
+      ['fecha', 'booking', 'movimiento', 'origen', 'destino', 'vehiculo', 'contenedor'].forEach((campo) => {
+        const valor = String(fila[campo] ?? '').trim();
+        resultado[campo].add(valor);
+      });
+      (fila.productos || []).forEach((p) => {
+        const valor = String(p?.producto ?? '').trim();
+        if (valor) resultado.producto.add(valor);
+      });
+    });
+    const ordenado = {};
+    Object.entries(resultado).forEach(([campo, set]) => {
+      ordenado[campo] = [...set].sort((a, b) => a.localeCompare(b));
+    });
+    return ordenado;
+  }, [sugeridoBorrador]);
+
+  const sugeridoBorradorFiltrado = useMemo(() => {
+    const campos = Object.keys(filtrosBorrador).filter((campo) => filtrosBorrador[campo]);
+    if (campos.length === 0) return sugeridoBorrador;
+
+    return sugeridoBorrador.filter((fila) => campos.every((campo) => {
+      const seleccionados = filtrosBorrador[campo];
+      if (campo === 'producto') {
+        return (fila.productos || []).some((p) => seleccionados.has(String(p?.producto ?? '').trim()));
+      }
+      return seleccionados.has(String(fila[campo] ?? '').trim());
+    }));
   }, [sugeridoBorrador, filtrosBorrador]);
   const [enviandoFilaId, setEnviandoFilaId] = useState(null);
 
@@ -627,46 +711,42 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
                   style={{ whiteSpace: 'nowrap', fontSize: '0.8rem', position: 'sticky', top: 0, zIndex: 2 }}
                 >
                   <tr>
-                    <th className="text-custom-small text-center text-white bg-secondary" style={CELL_STYLE}>Fecha</th>
-                    <th className="text-custom-small text-center text-white bg-secondary" style={CELL_STYLE}>Booking</th>
-                    <th className="text-custom-small text-center text-white bg-secondary" style={CELL_STYLE}>Movimiento</th>
-                    <th className="text-custom-small text-center text-white bg-secondary" style={CELL_STYLE}>Origen</th>
-                    <th className="text-custom-small text-center text-white bg-secondary" style={CELL_STYLE}>Destino</th>
-                    <th className="text-custom-small text-center text-white bg-secondary" style={CELL_STYLE}>Vehiculo</th>
-                    <th className="text-custom-small text-center text-white bg-secondary" style={{ ...CELL_STYLE, whiteSpace: 'normal', minWidth: '170px' }}>Productos / Cajas</th>
-                    <th className="text-custom-small text-center text-white bg-secondary" style={CELL_STYLE}>Contenedor</th>
-                    <th className="text-custom-small text-center text-white bg-secondary" style={CELL_STYLE}></th>
-                  </tr>
-                  <tr>
                     {[
-                      ['fecha', 'Filtrar...'],
-                      ['booking', 'Filtrar...'],
-                      ['movimiento', 'Filtrar...'],
-                      ['origen', 'Filtrar...'],
-                      ['destino', 'Filtrar...'],
-                      ['vehiculo', 'Filtrar...'],
-                      ['producto', 'Filtrar producto...'],
-                      ['contenedor', 'Filtrar...'],
-                    ].map(([campo, placeholder]) => (
-                      <th key={campo} className="bg-light p-1" style={CELL_STYLE}>
-                        <Form.Control
-                          size="sm"
-                          className={COMPACT_INPUT_CLASS}
-                          placeholder={placeholder}
-                          value={filtrosBorrador[campo]}
-                          onChange={(e) => actualizarFiltroBorrador(campo, e.target.value)}
-                        />
+                      ['fecha', 'Fecha'],
+                      ['booking', 'Booking'],
+                      ['movimiento', 'Movimiento'],
+                      ['origen', 'Origen'],
+                      ['destino', 'Destino'],
+                      ['vehiculo', 'Vehiculo'],
+                      ['producto', 'Productos / Cajas'],
+                      ['contenedor', 'Contenedor'],
+                    ].map(([campo, titulo]) => (
+                      <th
+                        key={campo}
+                        className="text-custom-small text-center text-white bg-secondary"
+                        style={campo === 'producto' ? { ...CELL_STYLE, whiteSpace: 'normal', minWidth: '170px' } : CELL_STYLE}
+                      >
+                        <div className="d-flex align-items-center justify-content-center gap-1">
+                          <span>{titulo}</span>
+                          <ExcelColumnFilter
+                            valores={valoresPorColumna[campo]}
+                            activo={filtrosBorrador[campo]}
+                            onChange={(nuevoSet) => actualizarFiltroColumna(campo, nuevoSet)}
+                          />
+                        </div>
                       </th>
                     ))}
-                    <th className="bg-light p-1 text-center" style={CELL_STYLE}>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-secondary border-0"
-                        title="Limpiar filtros"
-                        onClick={limpiarFiltrosBorrador}
-                      >
-                        <FaTrash size={11} />
-                      </button>
+                    <th className="text-custom-small text-center text-white bg-secondary" style={CELL_STYLE}>
+                      {Object.keys(filtrosBorrador).length > 0 && (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-link text-white border-0 p-0"
+                          title="Limpiar filtros"
+                          onClick={limpiarFiltrosBorrador}
+                        >
+                          <FaTrash size={11} />
+                        </button>
+                      )}
                     </th>
                   </tr>
                 </thead>
