@@ -61,13 +61,24 @@ export default function ProgramadorTable({
     pageLimit
   );
 
-  // Fila -> cantidad de productos que tenia cuando se pulso "+". El espacio
-  // para un producto nuevo se muestra solo mientras la fila siga teniendo esa
-  // misma cantidad: al guardarse el producto la cantidad cambia y el espacio
-  // se cierra solo (sin depender de alternar un estado desde el blur, que
-  // chocaba con el clic en "+" y hacia desaparecer/reaparecer productos).
-  const [nuevoProductoEn, setNuevoProductoEn] = useState({});
-  const abrirNuevoProducto = (id, cantidadActual) => setNuevoProductoEn((prev) => ({ ...prev, [id]: cantidadActual }));
+  // Espacios vacios para productos nuevos por fila: { base, count } donde
+  // base es la cantidad de productos guardados al abrirlos. Cada producto que
+  // se guarda consume un espacio (base queda atras de la cantidad real), asi
+  // el espacio se cierra solo sin alternar estado desde el blur.
+  const [nuevosProductos, setNuevosProductos] = useState({});
+  const espaciosNuevos = (id, cantidadActual) => {
+    const estado = nuevosProductos[id];
+    if (!estado) return 0;
+    return Math.max(0, estado.count - Math.max(0, cantidadActual - estado.base));
+  };
+  const agregarEspacioNuevo = (id, cantidadActual) => setNuevosProductos((prev) => ({
+    ...prev,
+    [id]: { base: cantidadActual, count: espaciosNuevos(id, cantidadActual) + 1 },
+  }));
+  const quitarEspacioNuevo = (id, cantidadActual) => setNuevosProductos((prev) => ({
+    ...prev,
+    [id]: { base: cantidadActual, count: Math.max(0, espaciosNuevos(id, cantidadActual) - 1) },
+  }));
   return (
     <>
       {/* Datalists compartidos — una sola instancia para todas las filas editables */}
@@ -229,7 +240,7 @@ export default function ProgramadorTable({
                   </td>}
                   {visibleColumns.productos && (() => {
                     const pvs = item.productosViaje || [];
-                    const hayBorrador = rowEditable && nuevoProductoEn[item.id] === pvs.length && pvs.length > 0;
+                    const borradores = rowEditable && pvs.length > 0 ? espaciosNuevos(item.id, pvs.length) : 0;
                     const inputProducto = (valor, campo, placeholder, key) => (
                       <input
                         key={key}
@@ -264,37 +275,47 @@ export default function ProgramadorTable({
                                 <FaMinus size={10} />
                               </button>
                             )}
-                            {rowEditable && index === pvs.length - 1 && !hayBorrador && (
+                            {rowEditable && index === pvs.length - 1 && borradores === 0 && (
                               <button
                                 type="button"
                                 className="btn btn-link btn-sm p-0 text-success"
                                 title="Agregar producto"
-                                onClick={() => abrirNuevoProducto(item.id, pvs.length)}
+                                onClick={() => agregarEspacioNuevo(item.id, pvs.length)}
                               >
                                 <FaPlus size={10} />
                               </button>
                             )}
                           </div>
                         ))}
-                        {hayBorrador && (
-                          <div className="d-flex align-items-center justify-content-center gap-1 px-1 border-top">
-                            {inputProducto('', `producto:${pvs.length}`, `Producto ${pvs.length + 1}`, `prod-${item.id}-nuevo-${pvs.length}`)}
+                        {Array.from({ length: borradores }, (_, k) => (
+                          <div key={`prod-${item.id}-nuevo-${pvs.length}-${k}`} className="d-flex align-items-center justify-content-center gap-1 px-1 border-top">
+                            {inputProducto('', `producto:${pvs.length}`, `Producto ${pvs.length + k + 1}`, `prod-${item.id}-nuevo-${pvs.length}-${k}-i`)}
                             <button
                               type="button"
                               className="btn btn-link btn-sm p-0 text-danger"
-                              title="Cancelar producto nuevo"
-                              onClick={() => setNuevoProductoEn((prev) => { const next = { ...prev }; delete next[item.id]; return next; })}
+                              title="Quitar producto nuevo"
+                              onClick={() => quitarEspacioNuevo(item.id, pvs.length)}
                             >
                               <FaMinus size={10} />
                             </button>
+                            {k === borradores - 1 && (
+                              <button
+                                type="button"
+                                className="btn btn-link btn-sm p-0 text-success"
+                                title="Agregar producto"
+                                onClick={() => agregarEspacioNuevo(item.id, pvs.length)}
+                              >
+                                <FaPlus size={10} />
+                              </button>
+                            )}
                           </div>
-                        )}
+                        ))}
                       </td>
                     );
                   })()}
                   {visibleColumns.cantidad_productos && (() => {
                     const pvs = item.productosViaje || [];
-                    const hayBorrador = rowEditable && nuevoProductoEn[item.id] === pvs.length && pvs.length > 0;
+                    const borradores = rowEditable && pvs.length > 0 ? espaciosNuevos(item.id, pvs.length) : 0;
                     return (
                       <td className="text-center align-middle p-0" style={cellStyle}>
                         {pvs.length === 0 && (rowEditable ? (
@@ -325,16 +346,16 @@ export default function ProgramadorTable({
                             )}
                           </div>
                         ))}
-                        {hayBorrador && (
-                          <div className="px-1 border-top">
+                        {Array.from({ length: borradores }, (_, k) => (
+                          <div key={`qty-${item.id}-nuevo-${pvs.length}-${k}`} className="px-1 border-top">
                             <input
                               type="number"
                               disabled
-                              placeholder={`Cant. ${pvs.length + 1}`}
+                              placeholder={`Cant. ${pvs.length + k + 1}`}
                               className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
                             />
                           </div>
-                        )}
+                        ))}
                       </td>
                     );
                   })()}
