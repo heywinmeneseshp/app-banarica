@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from 'react-bootstrap';
-import { FaCamera, FaHistory, FaPlus, FaTrashAlt } from 'react-icons/fa';
+import { FaCamera, FaHistory, FaMinus, FaPlus, FaTrashAlt } from 'react-icons/fa';
 import Paginacion from '@components/shared/Tablas/Paginacion';
 import useContenedorRowNumbers from '@hooks/useContenedorRowNumbers';
 import {
@@ -61,12 +61,13 @@ export default function ProgramadorTable({
     pageLimit
   );
 
-  const [expandedRows, setExpandedRows] = useState(new Set());
-  const toggleExpand = (id) => setExpandedRows((prev) => {
-    const next = new Set(prev);
-    if (next.has(id)) next.delete(id); else next.add(id);
-    return next;
-  });
+  // Fila -> cantidad de productos que tenia cuando se pulso "+". El espacio
+  // para un producto nuevo se muestra solo mientras la fila siga teniendo esa
+  // misma cantidad: al guardarse el producto la cantidad cambia y el espacio
+  // se cierra solo (sin depender de alternar un estado desde el blur, que
+  // chocaba con el clic en "+" y hacia desaparecer/reaparecer productos).
+  const [nuevoProductoEn, setNuevoProductoEn] = useState({});
+  const abrirNuevoProducto = (id, cantidadActual) => setNuevoProductoEn((prev) => ({ ...prev, [id]: cantidadActual }));
   return (
     <>
       {/* Datalists compartidos — una sola instancia para todas las filas editables */}
@@ -228,81 +229,64 @@ export default function ProgramadorTable({
                   </td>}
                   {visibleColumns.productos && (() => {
                     const pvs = item.productosViaje || [];
-                    const isExpanded = expandedRows.has(item.id);
-                    // Productos adicionales al primero (indices 1..n-1) + un
-                    // espacio vacio para uno nuevo cuando se pulsa "+".
-                    const adicionales = pvs.slice(1);
-                    const mostrarNuevo = rowEditable && isExpanded;
+                    const hayBorrador = rowEditable && nuevoProductoEn[item.id] === pvs.length && pvs.length > 0;
+                    const inputProducto = (valor, campo, placeholder, key) => (
+                      <input
+                        key={key}
+                        list="producto-options"
+                        defaultValue={valor}
+                        placeholder={placeholder}
+                        className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                        style={{ minWidth: 80 }}
+                        onBlur={(e) => handleLookupTextEdit(item, campo, e.target.value)}
+                      />
+                    );
                     return (
                       <td className="text-center align-middle p-0" style={cellStyle}>
-                        <div className="d-flex align-items-center justify-content-center gap-1 px-1">
-                          {rowEditable ? (
-                            <input
-                              key={`prod-${item.id}-0`}
-                              list="producto-options"
-                              defaultValue={item.productoLabel || ''}
-                              className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                              style={{ minWidth: 80 }}
-                              onBlur={(e) => handleLookupTextEdit(item, 'producto', e.target.value)}
-                            />
-                          ) : (
-                            <span className="py-1" style={{ fontSize: '0.75rem', color: '#000' }}>{item.productoLabel || ''}</span>
-                          )}
-                          {rowEditable && (
+                        {pvs.length === 0 && (rowEditable
+                          ? inputProducto('', 'producto', 'Producto', `prod-${item.id}-vacio`)
+                          : <span className="py-1" style={{ fontSize: '0.75rem', color: '#000' }}>{item.productoLabel || ''}</span>)}
+                        {pvs.map((pv, index) => (
+                          <div
+                            key={`prod-${item.id}-${index}-${pv?.id || ''}`}
+                            className={`d-flex align-items-center justify-content-center gap-1 px-1 ${index > 0 ? 'border-top' : ''}`}
+                          >
+                            {rowEditable
+                              ? inputProducto(pv?.label || '', index === 0 ? 'producto' : `producto:${index}`, `Producto ${index + 1}`, `prod-${item.id}-${index}-${pv?.id || ''}-i`)
+                              : <span className="py-1" style={{ fontSize: '0.75rem', color: '#000' }}>{pv?.label || ''}</span>}
+                            {rowEditable && (
+                              <button
+                                type="button"
+                                className="btn btn-link btn-sm p-0 text-danger"
+                                title={`Quitar producto ${index + 1}`}
+                                onClick={() => handleEliminarProducto(item, index)}
+                              >
+                                <FaMinus size={10} />
+                              </button>
+                            )}
+                            {rowEditable && index === pvs.length - 1 && !hayBorrador && (
+                              <button
+                                type="button"
+                                className="btn btn-link btn-sm p-0 text-success"
+                                title="Agregar producto"
+                                onClick={() => abrirNuevoProducto(item.id, pvs.length)}
+                              >
+                                <FaPlus size={10} />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        {hayBorrador && (
+                          <div className="d-flex align-items-center justify-content-center gap-1 px-1 border-top">
+                            {inputProducto('', `producto:${pvs.length}`, `Producto ${pvs.length + 1}`, `prod-${item.id}-nuevo-${pvs.length}`)}
                             <button
                               type="button"
-                              className="btn btn-link btn-sm p-0 text-success"
-                              title="Agregar producto"
-                              onClick={() => toggleExpand(item.id)}
+                              className="btn btn-link btn-sm p-0 text-danger"
+                              title="Cancelar producto nuevo"
+                              onClick={() => setNuevoProductoEn((prev) => { const next = { ...prev }; delete next[item.id]; return next; })}
                             >
-                              <FaPlus size={10} />
+                              <FaMinus size={10} />
                             </button>
-                          )}
-                        </div>
-                        {adicionales.map((pv, offset) => {
-                          const index = offset + 1;
-                          return (
-                            <div key={`prod-${item.id}-${index}-${pv?.id || ''}`} className="border-top pt-1 mt-1 px-1">
-                              {rowEditable ? (
-                                <div className="d-flex align-items-center gap-1">
-                                  <input
-                                    list="producto-options"
-                                    defaultValue={pv?.label || ''}
-                                    placeholder={`Producto ${index + 1}`}
-                                    className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                                    style={{ minWidth: 80 }}
-                                    onBlur={(e) => handleLookupTextEdit(item, `producto:${index}`, e.target.value)}
-                                  />
-                                  <button
-                                    type="button"
-                                    className="btn btn-link btn-sm p-0 text-danger"
-                                    title={`Eliminar producto ${index + 1}`}
-                                    onClick={() => handleEliminarProducto(item, index)}
-                                  >
-                                    <FaTrashAlt size={10} />
-                                  </button>
-                                </div>
-                              ) : (
-                                <div className="py-1 text-center" style={{ fontSize: '0.75rem', color: '#000' }}>{pv?.label || ''}</div>
-                              )}
-                            </div>
-                          );
-                        })}
-                        {mostrarNuevo && (
-                          <div className="border-top pt-1 mt-1 px-1">
-                            <input
-                              key={`prod-${item.id}-nuevo-${pvs.length}`}
-                              list="producto-options"
-                              defaultValue=""
-                              placeholder={`Producto ${pvs.length + 1}`}
-                              className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                              style={{ minWidth: 80 }}
-                              onBlur={async (e) => {
-                                const texto = e.target.value;
-                                await handleLookupTextEdit(item, `producto:${pvs.length}`, texto);
-                                if (String(texto || '').trim()) toggleExpand(item.id);
-                              }}
-                            />
                           </div>
                         )}
                       </td>
@@ -310,46 +294,46 @@ export default function ProgramadorTable({
                   })()}
                   {visibleColumns.cantidad_productos && (() => {
                     const pvs = item.productosViaje || [];
-                    const isExpanded = expandedRows.has(item.id);
-                    const adicionales = pvs.slice(1);
-                    const mostrarNuevo = rowEditable && isExpanded;
+                    const hayBorrador = rowEditable && nuevoProductoEn[item.id] === pvs.length && pvs.length > 0;
                     return (
                       <td className="text-center align-middle p-0" style={cellStyle}>
-                        {rowEditable ? (
+                        {pvs.length === 0 && (rowEditable ? (
                           <input
-                            key={`qty-${item.id}-0`}
+                            key={`qty-${item.id}-vacio`}
                             type="number"
                             min="0"
                             step="1"
-                            defaultValue={item.cantidadProductosLabel || ''}
+                            defaultValue=""
+                            disabled
                             className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                            onBlur={(e) => handleLookupTextEdit(item, 'cantidad', e.target.value)}
                           />
-                        ) : (
-                          <div className="py-1 px-1 text-center" style={{ fontSize: '0.75rem', color: '#000' }}>{item.cantidadProductosLabel || ''}</div>
-                        )}
-                        {adicionales.map((pv, offset) => {
-                          const index = offset + 1;
-                          return (
-                            <div key={`qty-${item.id}-${index}-${pv?.id || ''}`} className="border-top pt-1 mt-1 px-1">
-                              {rowEditable ? (
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step="1"
-                                  defaultValue={pv?.cantidad ?? ''}
-                                  placeholder={`Cant. ${index + 1}`}
-                                  className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                                  onBlur={(e) => handleLookupTextEdit(item, `cantidad:${index}`, e.target.value)}
-                                />
-                              ) : (
-                                <div className="py-1 text-center" style={{ fontSize: '0.75rem', color: '#000' }}>{pv?.cantidad ?? ''}</div>
-                              )}
-                            </div>
-                          );
-                        })}
-                        {mostrarNuevo && (
-                          <div className="border-top pt-1 mt-1 px-1" style={{ minHeight: 28 }} />
+                        ) : null)}
+                        {pvs.map((pv, index) => (
+                          <div key={`qty-${item.id}-${index}-${pv?.id || ''}`} className={`px-1 ${index > 0 ? 'border-top' : ''}`}>
+                            {rowEditable ? (
+                              <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                defaultValue={pv?.cantidad ?? ''}
+                                placeholder={`Cant. ${index + 1}`}
+                                className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                                onBlur={(e) => handleLookupTextEdit(item, index === 0 ? 'cantidad' : `cantidad:${index}`, e.target.value)}
+                              />
+                            ) : (
+                              <div className="py-1 text-center" style={{ fontSize: '0.75rem', color: '#000' }}>{pv?.cantidad ?? ''}</div>
+                            )}
+                          </div>
+                        ))}
+                        {hayBorrador && (
+                          <div className="px-1 border-top">
+                            <input
+                              type="number"
+                              disabled
+                              placeholder={`Cant. ${pvs.length + 1}`}
+                              className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                            />
+                          </div>
                         )}
                       </td>
                     );
