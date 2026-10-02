@@ -49,6 +49,10 @@ export default function FormulariosProgramacion({
   catalogosIniciales = null,
 }) {
   const [listaUbicaciones, setListaUbicaciones] = useState([]);
+  // Ultimo catalogosIniciales del padre: permite reflejar conductores/vehiculos
+  // recien creados (el padre los refresca) sin cerrar el modal.
+  const catalogosRef = useRef(catalogosIniciales);
+  catalogosRef.current = catalogosIniciales;
   const [listaConductores, setListaConductores] = useState([]);
   const [listaVehiculos, setListaVehiculos] = useState([]);
   const [listaCategoriasVehiculo, setListaCategoriasVehiculo] = useState([]);
@@ -150,8 +154,12 @@ export default function FormulariosProgramacion({
     const userConfig = getCatalogValue(11, []);
 
     setListaUbicaciones(ubicaciones || []);
-    setListaConductores([...conductores].sort((a, b) => String(a.conductor).localeCompare(String(b.conductor))) || []);
-    setListaVehiculos([...vehiculos].sort((a, b) => String(a.placa).localeCompare(String(b.placa))) || []);
+    // Si el padre refresco conductores/vehiculos mientras esto cargaba, se usa
+    // la version mas reciente (no el snapshot del montaje).
+    const conductoresActuales = catalogosRef.current?.conductores || conductores;
+    const vehiculosActuales = catalogosRef.current?.vehiculos || vehiculos;
+    setListaConductores([...conductoresActuales].sort((a, b) => String(a.conductor).localeCompare(String(b.conductor))) || []);
+    setListaVehiculos([...vehiculosActuales].sort((a, b) => String(a.placa).localeCompare(String(b.placa))) || []);
     setListaCategoriasVehiculo(categoriasVehiculo || []);
     setListaTransportadoras(transportadoras || []);
     setListaNavieras(navieras || []);
@@ -184,6 +192,21 @@ export default function FormulariosProgramacion({
   useEffect(() => {
     cargarCatalogos();
   }, [cargarCatalogos]);
+
+  // Cuando el padre refresca conductores/vehiculos (p. ej. se creo uno nuevo
+  // en otra pestana), el modal abierto los muestra al instante.
+  const conductoresPadre = catalogosIniciales?.conductores;
+  const vehiculosPadre = catalogosIniciales?.vehiculos;
+  useEffect(() => {
+    if (Array.isArray(conductoresPadre)) {
+      setListaConductores([...conductoresPadre].sort((a, b) => String(a.conductor).localeCompare(String(b.conductor))));
+    }
+  }, [conductoresPadre]);
+  useEffect(() => {
+    if (Array.isArray(vehiculosPadre)) {
+      setListaVehiculos([...vehiculosPadre].sort((a, b) => String(a.placa).localeCompare(String(b.placa))));
+    }
+  }, [vehiculosPadre]);
 
   const semanaActual = useMemo(
     () => listaSemanas.find((item) => String(item?.id || "") === String(semanaSeleccionada)),

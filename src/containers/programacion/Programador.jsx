@@ -8,7 +8,9 @@ import { paginarProgramaciones, eliminarProgramaciones, actualizarProgramaciones
 import { agregarProductosViaje, actualizarProductosViaje, eliminarProductosViaje } from '@services/api/productos_viaje';
 import { agregarRutas, buscarRutaPost } from '@services/api/rutas';
 import useAlert from '@hooks/useAlert';
+import { FaInfoCircle } from 'react-icons/fa';
 import ProgramadorColumnModal from './ProgramadorColumnModal';
+import ProgramadorAyudaModal from './ProgramadorAyudaModal';
 import ProgramadorPendingSyncModal from './ProgramadorPendingSyncModal';
 import ProgramadorEvidenceModal from './ProgramadorEvidenceModal';
 import VerEvidenciasModal from './VerEvidenciasModal';
@@ -49,6 +51,7 @@ export default function Programador() {
   const [isEditable, setIsEditable] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState(DEFAULT_VISIBLE_COLUMNS);
   const [showColumnConfig, setShowColumnConfig] = useState(false);
+  const [showAyuda, setShowAyuda] = useState(false);
   const [showSerialesModal, setShowSerialesModal] = useState(false);
   const [selectedSerialProgramacion, setSelectedSerialProgramacion] = useState(null);
   const [showInsumoConfig, setShowInsumoConfig] = useState(false);
@@ -83,6 +86,7 @@ export default function Programador() {
 
   const {
     catalogsReady,
+    refrescarConductoresVehiculos,
     ubicaciones,
     conductores,
     vehiculos,
@@ -737,7 +741,19 @@ export default function Programador() {
       >
         <div className="card shadow-sm mb-4">
           <div className="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-            <h5 className="mb-0">Programador</h5>
+            <h5 className="mb-0 d-flex align-items-center gap-2">
+              Programador
+              <button
+                type="button"
+                className="btn btn-link p-0 text-white"
+                style={{ lineHeight: 1 }}
+                title="¿Cómo funciona el Programador?"
+                aria-label="Ayuda del Programador"
+                onClick={() => setShowAyuda(true)}
+              >
+                <FaInfoCircle size={16} />
+              </button>
+            </h5>
             <ProgramadorSugeridoTransporte
               ubicaciones={ubicaciones}
               vehiculos={vehiculos}
@@ -747,6 +763,7 @@ export default function Programador() {
               transportadoras={transportadoras}
               isSuperAdmin={isSuperAdmin}
               setAlert={setAlert}
+              onRefrescarCatalogos={() => refrescarConductoresVehiculos({ forzar: true })}
               onEnviado={() => setReloadKey((prev) => prev + 1)}
             />
           </div>
@@ -762,7 +779,10 @@ export default function Programador() {
                 setTransportadoraFiltro={setTransportadoraFiltro}
                 setPagination={setPagination}
                 setReloadKey={setReloadKey}
-                setOpen={setOpen}
+                setOpen={(valor) => {
+                  if (valor) refrescarConductoresVehiculos({ forzar: true });
+                  setOpen(valor);
+                }}
                 canEditarProgramador={canEditarProgramador}
                 canNuevoMovimiento={canNuevoMovimiento}
                 isSuperAdmin={isSuperAdmin}
@@ -828,6 +848,8 @@ export default function Programador() {
         onClose={() => setShowHistorialGeneral(false)}
         programacionId={null}
       />
+
+      <ProgramadorAyudaModal show={showAyuda} onClose={() => setShowAyuda(false)} />
 
       <ProgramadorColumnModal
         show={showColumnConfig}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { listarUbicaciones } from '@services/api/ubicaciones';
 import { listarConductores } from '@services/api/conductores';
 import { listarVehiculo } from '@services/api/vehiculos';
@@ -41,6 +41,46 @@ export function useProgramadorCatalogos({ setAlert }) {
   const [canVerCarpetaDrive, setCanVerCarpetaDrive] = useState(false);
   const [transportadoras, setTransportadoras] = useState([]);
   const [currentUsername, setCurrentUsername] = useState('');
+
+  // Vuelve a pedir conductores y vehiculos (con el mismo filtro por
+  // transportadora del usuario) para que los recien creados aparezcan sin
+  // recargar la pagina. Se llama al volver a la pestana, al abrir "Nuevo
+  // movimiento" y al abrir el sugerido de transporte.
+  const ultimaActualizacionPersonas = useRef(0);
+  const refrescarConductoresVehiculos = useCallback(async ({ forzar = false } = {}) => {
+    const ahora = Date.now();
+    if (!forzar && ahora - ultimaActualizacionPersonas.current < 3000) return;
+    ultimaActualizacionPersonas.current = ahora;
+    try {
+      const usuario = getStoredUser() || {};
+      const superAdmin = usuario?.id_rol === ROL_SUPER_ADMIN;
+      const [nuevosConductores, nuevosVehiculos] = await Promise.all([listarConductores(), listarVehiculo()]);
+      const transportadoraIdSet = new Set((superAdmin ? [] : getStoredTransporters()).map((t) => String(t.id)));
+      const filtrar = !superAdmin && transportadoraIdSet.size > 0;
+      const conductoresFiltrados = filtrar
+        ? (nuevosConductores || []).filter((c) => transportadoraIdSet.has(String(c.cons_transportadora)))
+        : (nuevosConductores || []);
+      const vehiculosFiltrados = filtrar
+        ? (nuevosVehiculos || []).filter((v) => transportadoraIdSet.has(String(v.transportadoraId)))
+        : (nuevosVehiculos || []);
+      setConductores([...conductoresFiltrados].sort((a, b) => String(a.conductor).localeCompare(String(b.conductor))));
+      setVehiculos([...vehiculosFiltrados].sort((a, b) => String(a.placa).localeCompare(String(b.placa))));
+    } catch (error) {
+      console.warn('No fue posible refrescar conductores y vehiculos:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    const alVolver = () => {
+      if (document.visibilityState === 'visible') refrescarConductoresVehiculos();
+    };
+    window.addEventListener('focus', alVolver);
+    document.addEventListener('visibilitychange', alVolver);
+    return () => {
+      window.removeEventListener('focus', alVolver);
+      document.removeEventListener('visibilitychange', alVolver);
+    };
+  }, [refrescarConductoresVehiculos]);
 
   useEffect(() => {
     const cargarCatalogos = async () => {
@@ -145,6 +185,7 @@ export function useProgramadorCatalogos({ setAlert }) {
 
   return {
     catalogsReady,
+    refrescarConductoresVehiculos,
     ubicaciones,
     conductores,
     vehiculos,

@@ -119,7 +119,7 @@ function ExcelColumnFilter({ valores, activo, onChange }) {
 // ya se configura en Programacion de Corte; el movimiento (Cargue, Entrega,
 // etc.) sale de una relacion propia de este modulo (proceso de empaque ->
 // movimiento), porque es un concepto de transporte, no de empaque.
-export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, conductores, combos, tiposMovimiento, transportadoras, isSuperAdmin, setAlert, onEnviado }) {
+export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, conductores, combos, tiposMovimiento, transportadoras, isSuperAdmin, setAlert, onEnviado, onRefrescarCatalogos }) {
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [draftMovimientos, setDraftMovimientos] = useState([]);
   const [guardandoConfig, setGuardandoConfig] = useState(false);
@@ -184,6 +184,50 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
     }));
   }, [sugeridoBorrador, filtrosBorrador]);
   const [enviandoFilaId, setEnviandoFilaId] = useState(null);
+
+  // Respaldo local del borrador: si se va la luz o se cierra el navegador, lo
+  // que no se ha enviado se recupera (por usuario, en este equipo). Se borra
+  // solo cuando el borrador queda vacio (todo enviado o descartado).
+  const claveRespaldo = `programadorSugeridoBorrador_${getStoredUser()?.username || ''}`;
+  const [respaldoListo, setRespaldoListo] = useState(false);
+  useEffect(() => {
+    try {
+      const guardado = JSON.parse(window.localStorage.getItem(claveRespaldo) || 'null');
+      if (guardado && Array.isArray(guardado.borrador) && guardado.borrador.length > 0) {
+        setSugeridoBorrador(guardado.borrador);
+        setSemanaSugerido(guardado.semana || '');
+        setFechaSugerido(guardado.fecha || '');
+      }
+    } catch (error) {
+      console.warn('No fue posible recuperar el borrador guardado:', error);
+    }
+    setRespaldoListo(true);
+  }, [claveRespaldo]);
+
+  useEffect(() => {
+    if (!respaldoListo) return;
+    try {
+      if (sugeridoBorrador.length === 0) {
+        window.localStorage.removeItem(claveRespaldo);
+      } else {
+        window.localStorage.setItem(claveRespaldo, JSON.stringify({
+          borrador: sugeridoBorrador,
+          semana: semanaSugerido,
+          fecha: fechaSugerido,
+          guardadoEn: Date.now(),
+        }));
+      }
+    } catch (error) {
+      console.warn('No fue posible guardar el respaldo del borrador:', error);
+    }
+  }, [sugeridoBorrador, semanaSugerido, fechaSugerido, respaldoListo, claveRespaldo]);
+
+  const descartarBorrador = () => {
+    if (!window.confirm('¿Descartar todo el borrador? Se perderan las lineas que no haya enviado.')) return;
+    setSugeridoBorrador([]);
+    limpiarFiltrosBorrador();
+    setShowSugeridoModal(false);
+  };
 
   // Articulos con serial (los mismos que ofrece ProgramadorSerialesModal) —
   // se cargan al abrir el borrador, solo la primera vez.
@@ -276,6 +320,7 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
   };
 
   const abrirSelectorSemana = async () => {
+    onRefrescarCatalogos?.();
     setShowSemanaModal(true);
     try {
       const res = await listarSemanas();
@@ -304,6 +349,11 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
   const generarSugerido = async () => {
     if (!semanaSugerido) {
       window.alert('Elija una semana.');
+      return;
+    }
+    if (sugeridoBorrador.length > 0 && !window.confirm(
+      `Hay un borrador guardado con ${sugeridoBorrador.length} linea(s) sin enviar. Generar uno nuevo lo reemplaza. ¿Continuar?`
+    )) {
       return;
     }
     setGenerandoSugerido(true);
@@ -652,6 +702,16 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
         <Button variant="light" size="sm" onClick={abrirSelectorSemana}>
           Sugerir transporte
         </Button>
+        {sugeridoBorrador.length > 0 && (
+          <Button
+            variant="warning"
+            size="sm"
+            title="Hay un borrador sin enviar guardado en este equipo"
+            onClick={() => { onRefrescarCatalogos?.(); setShowSugeridoModal(true); }}
+          >
+            Continuar borrador ({sugeridoBorrador.length})
+          </Button>
+        )}
         {isSuperAdmin && (
           <Button variant="outline-light" size="sm" onClick={abrirConfig}>
             <FaCog className="me-1" /> Configurar movimientos
@@ -1093,6 +1153,12 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
           )}
         </Modal.Body>
         <Modal.Footer>
+          <span className="me-auto small text-muted">
+            El borrador se guarda solo en este equipo hasta que lo envie o lo descarte.
+          </span>
+          {sugeridoBorrador.length > 0 && (
+            <Button variant="outline-danger" size="sm" onClick={descartarBorrador}>Descartar borrador</Button>
+          )}
           <Button variant="secondary" size="sm" onClick={() => setShowSugeridoModal(false)}>Cerrar</Button>
         </Modal.Footer>
       </Modal>
