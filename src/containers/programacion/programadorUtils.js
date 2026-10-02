@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 
 export const ROL_SUPER_ADMIN = 'Super administrador';
-export const PAGE_LIMIT = 25;
+export const PAGE_LIMIT = 200;
 export const COLUMN_STORAGE_KEY = 'programadorColumnConfig';
 
 export const buildFilterBody = (formEl) => {
@@ -204,7 +204,7 @@ export const formatTimeCell = (value) => {
 export const compactCellStyle = {
   whiteSpace: 'nowrap',
   width: '1%',
-  padding: '0.15rem 0.4rem',
+  padding: '0.15rem 0.1rem',
   fontSize: '0.8rem',
   verticalAlign: 'middle',
 };
@@ -212,7 +212,7 @@ export const compactCellStyle = {
 export const editableCellStyle = {
   ...compactCellStyle,
   width: 'auto',
-  minWidth: '120px',
+  minWidth: 0,
 };
 
 export const ESTADO_LISTADO_PENDIENTE = 'pendiente';

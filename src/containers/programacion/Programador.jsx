@@ -23,6 +23,7 @@ import { useProgramadorCatalogos } from './hooks/useProgramadorCatalogos';
 import { useListadoSync } from './hooks/useListadoSync';
 import { useProgramadorImport } from './hooks/useProgramadorImport';
 import { useEvidencias } from './hooks/useEvidencias';
+import useProgramadorColumnPresets from './hooks/useProgramadorColumnPresets';
 import {
   PAGE_LIMIT,
   COLUMN_STORAGE_KEY,
@@ -54,7 +55,7 @@ export default function Programador() {
   const [historialProgramacionId, setHistorialProgramacionId] = useState(null);
   const [showHistorialGeneral, setShowHistorialGeneral] = useState(false);
   const [transportadoraFiltro, setTransportadoraFiltro] = useState('');
-  const [pageLimit, setPageLimit] = useState(PAGE_LIMIT);
+  const pageLimit = PAGE_LIMIT;
 
   const { alert, setAlert, toogleAlert } = useAlert();
   const formRef = useRef(null);
@@ -522,28 +523,33 @@ export default function Programador() {
         }));
         return;
       }
-      if (field === 'producto2') {
-        const combo = getComboByText(text);
-        if (!combo) throw new Error(`El producto "${text}" no existe.`);
-        const productoViajeId = await upsertProductoViaje(row, { producto_id: combo.id }, 1);
-        updateLocalRow(row.id, (current) => {
-          const pvs = current?.productos_viajes?.length ? [...current.productos_viajes] : [current.productos_viajes?.[0]].filter(Boolean);
-          if (pvs.length >= 2) pvs[1] = { ...pvs[1], producto_id: combo.id, id: pvs[1].id || productoViajeId };
-          else pvs.push({ id: productoViajeId, producto_id: combo.id, cantidad: 0 });
-          return { ...current, productos_viajes: pvs };
-        });
-        setReloadKey((prev) => prev + 1);
-        return;
-      }
-      if (field === 'cantidad2') {
+      // Productos adicionales al primero: "producto:N" / "cantidad:N" con N >= 1
+      // (la fila puede llevar cualquier cantidad de productos).
+      const campoIndexado = /^(producto|cantidad):(\d+)$/.exec(field);
+      if (campoIndexado) {
+        const [, tipoCampo, indiceTexto] = campoIndexado;
+        const indice = Number(indiceTexto);
+        if (tipoCampo === 'producto') {
+          const combo = getComboByText(text);
+          if (!combo) throw new Error(`El producto "${text}" no existe.`);
+          const productoViajeId = await upsertProductoViaje(row, { producto_id: combo.id }, indice);
+          updateLocalRow(row.id, (current) => {
+            const pvs = [...(current?.productos_viajes || [])];
+            if (pvs[indice]) pvs[indice] = { ...pvs[indice], producto_id: combo.id, id: pvs[indice].id || productoViajeId };
+            else pvs.push({ id: productoViajeId, producto_id: combo.id, cantidad: 0 });
+            return { ...current, productos_viajes: pvs };
+          });
+          setReloadKey((prev) => prev + 1);
+          return;
+        }
         const amount = Number(text);
         if (Number.isNaN(amount) || amount < 0) throw new Error('La cantidad debe ser un numero valido.');
-        const currentComboId = row?.productos_viajes?.[1]?.producto_id;
-        if (!currentComboId) throw new Error('Selecciona primero el segundo producto.');
-        const productoViajeId = await upsertProductoViaje(row, { producto_id: currentComboId, cantidad: amount }, 1);
+        const currentComboId = row?.productos_viajes?.[indice]?.producto_id;
+        if (!currentComboId) throw new Error(`Selecciona primero el producto ${indice + 1}.`);
+        const productoViajeId = await upsertProductoViaje(row, { producto_id: currentComboId, cantidad: amount }, indice);
         updateLocalRow(row.id, (current) => {
-          const pvs = current?.productos_viajes?.length ? [...current.productos_viajes] : [];
-          if (pvs.length >= 2) pvs[1] = { ...pvs[1], cantidad: amount, id: pvs[1].id || productoViajeId };
+          const pvs = [...(current?.productos_viajes || [])];
+          if (pvs[indice]) pvs[indice] = { ...pvs[indice], cantidad: amount, id: pvs[indice].id || productoViajeId };
           return { ...current, productos_viajes: pvs };
         });
         return;
@@ -568,14 +574,14 @@ export default function Programador() {
     }
   };
 
-  const handleEliminarProducto2 = async (row) => {
+  const handleEliminarProducto = async (row, indice) => {
     try {
-      const pv2 = row?.productos_viajes?.[1];
-      if (!pv2?.id) return;
-      await eliminarProductosViaje(pv2.id);
+      const pv = row?.productos_viajes?.[indice];
+      if (!pv?.id) return;
+      await eliminarProductosViaje(pv.id);
       updateLocalRow(row.id, (current) => ({
         ...current,
-        productos_viajes: (current.productos_viajes || []).filter((_, i) => i !== 1),
+        productos_viajes: (current.productos_viajes || []).filter((_, i) => i !== indice),
       }));
       setReloadKey((prev) => prev + 1);
     } catch (error) {
@@ -626,6 +632,24 @@ export default function Programador() {
   const toggleColumn = (columnId) => {
     setVisibleColumns((prev) => ({ ...prev, [columnId]: !prev[columnId] }));
   };
+
+  const toggleAllColumns = (checked) => {
+    setVisibleColumns(COLUMN_OPTIONS.reduce((acc, column) => ({ ...acc, [column.id]: checked }), {}));
+  };
+
+  // Configuraciones guardadas de columnas (personales + globales).
+  const { presetsUsuario, presetsGlobales, guardarPreset, eliminarPreset } = useProgramadorColumnPresets({
+    username: getStoredUser()?.username,
+    isSuperAdmin,
+  });
+
+  const aplicarPreset = (preset) => {
+    saveColumnConfig({ ...DEFAULT_VISIBLE_COLUMNS, ...preset.columnas });
+  };
+
+  const guardarColumnasComoPreset = ({ nombre, global }) => (
+    guardarPreset({ nombre, columnas: visibleColumns, global })
+  );
 
   // Feature hooks
   const { syncingListado, pendingListadoSync, setPendingListadoSync, sincronizarListadoPendiente, descargarNoEncontradosListado, confirmarListadoCoincidencias, diferenciasListado, setDiferenciasListado, continuarSincronizacion } = useListadoSync({ setAlert, markProgramacionesEstadoListado });
@@ -717,6 +741,7 @@ export default function Programador() {
             <ProgramadorSugeridoTransporte
               ubicaciones={ubicaciones}
               vehiculos={vehiculos}
+              conductores={conductores}
               combos={combos}
               tiposMovimiento={tiposMovimiento}
               transportadoras={transportadoras}
@@ -756,12 +781,11 @@ export default function Programador() {
                 rowCount={distinctContenedores}
                 total={total}
                 rowsShown={itemList.length}
-                pageLimit={pageLimit}
-                setPageLimit={setPageLimit}
                 onVerHistorialGeneral={() => setShowHistorialGeneral(true)}
               />
 
             <ProgramadorTable
+              pageLimit={pageLimit}
               rows={rows}
               visibleColumns={visibleColumns}
               isEditable={isEditable}
@@ -779,7 +803,7 @@ export default function Programador() {
               canEditTimeColumns={canEditTimeColumns}
               handleCellEdit={handleCellEdit}
               handleLookupTextEdit={handleLookupTextEdit}
-              handleEliminarProducto2={handleEliminarProducto2}
+              handleEliminarProducto={handleEliminarProducto}
               abrirModalSeriales={abrirModalSeriales}
               abrirModalEvidencia={abrirModalEvidencia}
               abrirVerEvidencias={abrirVerEvidencias}
@@ -811,7 +835,14 @@ export default function Programador() {
         columns={COLUMN_OPTIONS}
         visibleColumns={visibleColumns}
         onToggleColumn={toggleColumn}
+        onToggleAll={toggleAllColumns}
         onSave={() => { saveColumnConfig(visibleColumns); setShowColumnConfig(false); }}
+        isSuperAdmin={isSuperAdmin}
+        presetsUsuario={presetsUsuario}
+        presetsGlobales={presetsGlobales}
+        onAplicarPreset={aplicarPreset}
+        onGuardarPreset={guardarColumnasComoPreset}
+        onEliminarPreset={eliminarPreset}
       />
 
       {showInsumoConfig && isSuperAdmin && (

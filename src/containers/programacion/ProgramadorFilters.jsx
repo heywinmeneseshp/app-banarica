@@ -41,12 +41,9 @@ export default function ProgramadorFilters({
   rowCount,
   total,
   rowsShown,
-  pageLimit,
-  setPageLimit,
   onVerHistorialGeneral,
 }) {
   const [movimientoOpen, setMovimientoOpen] = useState(false);
-  const [draftLimit, setDraftLimit] = useState(pageLimit ?? 25);
   const [showAyudaEdicion, setShowAyudaEdicion] = useState(false);
   const [showConfigEdicion, setShowConfigEdicion] = useState(false);
   const [diasEdicionDraft, setDiasEdicionDraft] = useState(diasEdicionHoras ?? 1);
@@ -69,13 +66,6 @@ export default function ProgramadorFilters({
     }
   };
 
-  useEffect(() => { setDraftLimit(pageLimit ?? 25); }, [pageLimit]);
-
-  const commitLimit = () => {
-    const v = Math.max(1, Math.min(500, Number(draftLimit) || 25));
-    setDraftLimit(v);
-    if (v !== pageLimit) setPageLimit(v);
-  };
   const [selectedMovimientos, setSelectedMovimientos] = useState([]);
   const movimientoDropdownRef = useRef(null);
   const debounceRef = useRef(null);
@@ -327,18 +317,6 @@ export default function ProgramadorFilters({
           <span style={{ color: '#198754', fontWeight: 700 }}>{rowsShown ?? 0}</span>
           <span className="text-muted small">de</span>
           <span style={{ color: '#0d6efd', fontWeight: 700 }}>{total ?? 0}</span>
-          <span className="text-muted small" style={{ marginLeft: '4px' }}>Límite:</span>
-          <input
-            type="number"
-            min={1}
-            max={500}
-            value={draftLimit}
-            onChange={(e) => setDraftLimit(e.target.value)}
-            onBlur={commitLimit}
-            onKeyDown={(e) => e.key === 'Enter' && commitLimit()}
-            className="form-control form-control-sm"
-            style={{ width: '60px' }}
-          />
         </div>
 
         <div className="d-flex align-items-center gap-2">

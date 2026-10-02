@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Dropdown, Form, Modal } from 'react-bootstrap';
 import { FaCog, FaCopy, FaFilter, FaMinus, FaPaperPlane, FaPlus, FaTrash } from 'react-icons/fa';
 import { listarProgramacionCorte } from '@services/api/programacionCorte';
@@ -7,6 +7,10 @@ import { encontrarModulo, actualizarModulo } from '@services/api/configuracion';
 import { agregarRutas, buscarRutaPost } from '@services/api/rutas';
 import { agregarProgramaciones } from '@services/api/programaciones';
 import { agregarProductosViaje } from '@services/api/productos_viaje';
+import { filtrarProductos } from '@services/api/productos';
+import { encontrarUnSerial } from '@services/api/seguridad';
+import { crearProgramacionSerialesMasivo } from '@services/api/programacionSeriales';
+import { getStoredUser } from '@utils/session';
 
 const MODULO_MOVIMIENTOS = 'ProgramadorMovimientosProceso';
 
@@ -20,6 +24,10 @@ const PROCESOS_OPCIONES = ['Finca', 'Local', 'Puerto', 'Contenedor Local'];
 // marcar filas de prueba/relleno — se precarga cuando el movimiento requiere
 // contenedor, y queda editable para poner el contenedor real.
 const DEMO_CONTENEDOR = 'DEMO0000000';
+
+// Mismo motivo que usa ProgramadorSerialesModal al asignar seriales a una
+// linea del Programador.
+const MOTIVO_PROGRAMADOR = 'Uso Transportadora';
 
 // Mismo estilo compacto de celda que usa la tabla del Programador
 // (programadorUtils.compactCellStyle), para que el borrador se vea igual.
@@ -111,7 +119,7 @@ function ExcelColumnFilter({ valores, activo, onChange }) {
 // ya se configura en Programacion de Corte; el movimiento (Cargue, Entrega,
 // etc.) sale de una relacion propia de este modulo (proceso de empaque ->
 // movimiento), porque es un concepto de transporte, no de empaque.
-export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, combos, tiposMovimiento, transportadoras, isSuperAdmin, setAlert, onEnviado }) {
+export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, conductores, combos, tiposMovimiento, transportadoras, isSuperAdmin, setAlert, onEnviado }) {
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [draftMovimientos, setDraftMovimientos] = useState([]);
   const [guardandoConfig, setGuardandoConfig] = useState(false);
@@ -143,11 +151,11 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
   };
 
   const valoresPorColumna = useMemo(() => {
-    const columnas = ['fecha', 'booking', 'movimiento', 'origen', 'destino', 'vehiculo', 'producto', 'contenedor'];
+    const columnas = ['fecha', 'booking', 'movimiento', 'origen', 'destino', 'vehiculo', 'conductor', 'producto', 'contenedor'];
     const resultado = {};
     columnas.forEach((campo) => { resultado[campo] = new Set(); });
     sugeridoBorrador.forEach((fila) => {
-      ['fecha', 'booking', 'movimiento', 'origen', 'destino', 'vehiculo', 'contenedor'].forEach((campo) => {
+      ['fecha', 'booking', 'movimiento', 'origen', 'destino', 'vehiculo', 'conductor', 'contenedor'].forEach((campo) => {
         const valor = String(fila[campo] ?? '').trim();
         resultado[campo].add(valor);
       });
@@ -176,6 +184,49 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
     }));
   }, [sugeridoBorrador, filtrosBorrador]);
   const [enviandoFilaId, setEnviandoFilaId] = useState(null);
+
+  // Articulos con serial (los mismos que ofrece ProgramadorSerialesModal) —
+  // se cargan al abrir el borrador, solo la primera vez.
+  const [articulosSerial, setArticulosSerial] = useState([]);
+  const [almacenesUsuario, setAlmacenesUsuario] = useState([]);
+  useEffect(() => {
+    if (!showSugeridoModal || articulosSerial.length > 0) return undefined;
+    let cancelado = false;
+    (async () => {
+      try {
+        const almacenes = JSON.parse(localStorage.getItem('almacenByUser') || '[]')?.map((item) => item.consecutivo) || [];
+        const productos = await filtrarProductos({ producto: { serial: true }, stock: { cons_almacen: almacenes, isBlock: false } });
+        if (cancelado) return;
+        setAlmacenesUsuario(almacenes);
+        setArticulosSerial(Array.isArray(productos) ? productos : []);
+      } catch (error) {
+        console.error('Error cargando articulos con serial del sugerido:', error);
+      }
+    })();
+    return () => { cancelado = true; };
+  }, [showSugeridoModal, articulosSerial.length]);
+
+  const agregarSerial = (filaId) => {
+    setSugeridoBorrador((prev) => prev.map((fila) => (
+      fila.id === filaId
+        ? { ...fila, seriales: [...(fila.seriales || []), { id: `${Date.now()}-${Math.random()}`, cons_producto: '', value: '' }] }
+        : fila
+    )));
+  };
+
+  const actualizarSerial = (filaId, serialId, cambios) => {
+    setSugeridoBorrador((prev) => prev.map((fila) => (
+      fila.id === filaId
+        ? { ...fila, seriales: (fila.seriales || []).map((s) => (s.id === serialId ? { ...s, ...cambios } : s)) }
+        : fila
+    )));
+  };
+
+  const eliminarSerial = (filaId, serialId) => {
+    setSugeridoBorrador((prev) => prev.map((fila) => (
+      fila.id === filaId ? { ...fila, seriales: (fila.seriales || []).filter((s) => s.id !== serialId) } : fila
+    )));
+  };
 
   const abrirConfig = async () => {
     setShowConfigModal(true);
@@ -364,6 +415,9 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
           destinoId: fincaEnDestino ? (fincaUbicacion?.id || '') : '',
           vehiculo: '',
           vehiculoId: '',
+          conductor: '',
+          conductorId: '',
+          seriales: [],
           productos: [],
         };
 
@@ -468,6 +522,7 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
       ...fila,
       id: `${fila.id}__dup${Date.now()}`,
       productos: fila.productos.map((p) => ({ ...p })),
+      seriales: (fila.seriales || []).map((s, i) => ({ ...s, id: `${s.id}__dup${Date.now()}${i}`, value: '' })),
     };
     setSugeridoBorrador((prev) => {
       const idx = prev.findIndex((f) => f.id === fila.id);
@@ -495,8 +550,34 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
       return;
     }
 
+    const serialesFila = (fila.seriales || []).filter((s) => String(s.value || '').trim() || s.cons_producto);
+    if (serialesFila.some((s) => !s.cons_producto || !String(s.value || '').trim())) {
+      window.alert('Cada serial necesita su articulo y su valor (o quitelo de la fila).');
+      return;
+    }
+    const valoresSerial = serialesFila.map((s) => String(s.value).trim().toUpperCase());
+    if (new Set(valoresSerial).size !== valoresSerial.length) {
+      window.alert('Existen seriales duplicados en la fila.');
+      return;
+    }
+
     setEnviandoFilaId(fila.id);
     try {
+      // Se validan ANTES de crear la programacion para no dejar una linea a
+      // medias si un serial no existe o no esta disponible.
+      for (const s of serialesFila) {
+        const encontrados = await encontrarUnSerial({
+          bag_pack: String(s.value).trim(),
+          available: true,
+          cons_producto: s.cons_producto,
+          cons_almacen: almacenesUsuario,
+        });
+        if (!Array.isArray(encontrados) || encontrados.length === 0) {
+          window.alert(`El serial "${s.value}" no existe, no esta disponible o no pertenece al articulo seleccionado.`);
+          return;
+        }
+      }
+
       let rutaId;
       try {
         const ruta = await buscarRutaPost({ ubicacion1: fila.origenId, ubicacion2: fila.destinoId });
@@ -516,6 +597,7 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
         contenedor: fila.contenedor || '',
         ruta_id: rutaId,
         vehiculo_id: fila.vehiculoId,
+        ...(fila.conductorId ? { conductor_id: fila.conductorId } : {}),
         semana: fila.semana || '',
         activo: true,
       });
@@ -538,6 +620,19 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
           unidad_de_medida: 'cajas',
           activo: true,
         });
+      }
+
+      if (serialesFila.length > 0) {
+        const usuario = getStoredUser() || {};
+        await crearProgramacionSerialesMasivo(serialesFila.map((s) => ({
+          programacion_id: programacionId,
+          bag_pack: String(s.value).trim(),
+          id_contenedor: null,
+          fecha_uso: fila.fecha,
+          semana: fila.semana || '',
+          id_usuario: usuario?.id,
+          motivo_de_uso: MOTIVO_PROGRAMADOR,
+        })));
       }
 
       eliminarFila(fila.id);
@@ -718,8 +813,10 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
                       ['origen', 'Origen'],
                       ['destino', 'Destino'],
                       ['vehiculo', 'Vehiculo'],
+                      ['conductor', 'Conductor'],
                       ['producto', 'Productos / Cajas'],
                       ['contenedor', 'Contenedor'],
+                      ['seriales', 'Seriales'],
                     ].map(([campo, titulo]) => (
                       <th
                         key={campo}
@@ -728,11 +825,13 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
                       >
                         <div className="d-flex align-items-center justify-content-center gap-1">
                           <span>{titulo}</span>
-                          <ExcelColumnFilter
-                            valores={valoresPorColumna[campo]}
-                            activo={filtrosBorrador[campo]}
-                            onChange={(nuevoSet) => actualizarFiltroColumna(campo, nuevoSet)}
-                          />
+                          {valoresPorColumna[campo] && (
+                            <ExcelColumnFilter
+                              valores={valoresPorColumna[campo]}
+                              activo={filtrosBorrador[campo]}
+                              onChange={(nuevoSet) => actualizarFiltroColumna(campo, nuevoSet)}
+                            />
+                          )}
                         </div>
                       </th>
                     ))}
@@ -753,7 +852,7 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
                 <tbody>
                   {sugeridoBorradorFiltrado.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="text-muted py-3">
+                      <td colSpan={11} className="text-muted py-3">
                         Ninguna fila coincide con los filtros.
                       </td>
                     </tr>
@@ -841,6 +940,23 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
                           ))}
                         </Form.Select>
                       </td>
+                      <td style={{ ...CELL_STYLE, minWidth: '130px' }}>
+                        <Form.Select
+                          size="sm"
+                          className={COMPACT_INPUT_CLASS}
+                          value={fila.conductorId || ''}
+                          onChange={(e) => {
+                            const conductor = (conductores || []).find((c) => String(c.id) === e.target.value);
+                            actualizarFila(fila.id, 'conductorId', e.target.value);
+                            actualizarFila(fila.id, 'conductor', conductor?.conductor || '');
+                          }}
+                        >
+                          <option value="">Elegir...</option>
+                          {(conductores || []).map((c) => (
+                            <option key={c.id} value={c.id}>{c.conductor}</option>
+                          ))}
+                        </Form.Select>
+                      </td>
                       <td style={{ ...CELL_STYLE, whiteSpace: 'normal', textAlign: 'left' }}>
                         {fila.productos.map((p, index) => (
                           <div key={index} className="d-flex gap-1 mb-1 align-items-center">
@@ -899,6 +1015,48 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
                           onChange={(e) => actualizarFila(fila.id, 'contenedor', e.target.value)}
                           disabled={!fila.requiereContenedor}
                         />
+                      </td>
+                      <td style={{ ...CELL_STYLE, whiteSpace: 'normal', textAlign: 'left', minWidth: '230px' }}>
+                        {(fila.seriales || []).map((serial) => (
+                          <div key={serial.id} className="d-flex gap-1 mb-1 align-items-center">
+                            <Form.Select
+                              size="sm"
+                              className={COMPACT_INPUT_CLASS}
+                              style={{ maxWidth: '110px', fontSize: '0.75rem' }}
+                              value={serial.cons_producto || ''}
+                              onChange={(e) => actualizarSerial(fila.id, serial.id, { cons_producto: e.target.value })}
+                            >
+                              <option value="">Articulo...</option>
+                              {articulosSerial.map((a) => (
+                                <option key={a.consecutivo || a.id} value={a.consecutivo}>{a.name}</option>
+                              ))}
+                            </Form.Select>
+                            <Form.Control
+                              size="sm"
+                              className={COMPACT_INPUT_CLASS}
+                              style={{ maxWidth: '100px', fontSize: '0.75rem' }}
+                              placeholder="Serial"
+                              value={serial.value || ''}
+                              onChange={(e) => actualizarSerial(fila.id, serial.id, { value: e.target.value })}
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-danger border-0"
+                              title="Quitar serial"
+                              onClick={() => eliminarSerial(fila.id, serial.id)}
+                            >
+                              <FaMinus size={11} />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-secondary border-0"
+                          title="Agregar serial"
+                          onClick={() => agregarSerial(fila.id)}
+                        >
+                          <FaPlus size={11} />
+                        </button>
                       </td>
                       <td style={CELL_STYLE} className="text-nowrap">
                         <button

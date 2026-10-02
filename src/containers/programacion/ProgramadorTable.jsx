@@ -43,7 +43,8 @@ export default function ProgramadorTable({
   canEditTimeColumns,
   handleCellEdit,
   handleLookupTextEdit,
-  handleEliminarProducto2,
+  handleEliminarProducto,
+  pageLimit = PAGE_LIMIT,
   abrirModalSeriales,
   abrirModalEvidencia,
   abrirVerEvidencias,
@@ -57,7 +58,7 @@ export default function ProgramadorTable({
     rows,
     (item) => item?.contenedor || item?.contenedorLabel || '',
     pagination,
-    PAGE_LIMIT
+    pageLimit
   );
 
   const [expandedRows, setExpandedRows] = useState(new Set());
@@ -100,11 +101,24 @@ export default function ProgramadorTable({
         .programador-table tbody tr:hover td { filter: brightness(0.94); }
         .programador-table tbody tr { transition: filter 0.1s; }
         .programador-table tbody tr.row-demo td { background-color: transparent !important; color: red !important; }
+        /* Modo compacto de ANCHO: padding horizontal minimo y columnas del
+           tamano de su contenido; el alto de las filas no se toca. */
+        .programador-table > :not(caption) > * > * { padding-left: 0.1rem !important; padding-right: 0.1rem !important; }
+        .programador-table .px-1 { padding-left: 0.05rem !important; padding-right: 0.05rem !important; }
+        .programador-table thead th { white-space: normal !important; word-break: normal; line-height: 1.1; }
+        .programador-table .form-control,
+        .programador-table .form-select { width: 100% !important; min-width: 0 !important; padding-left: 0.1rem !important; padding-right: 0.1rem !important; }
+        .programador-table input[type="time"] { min-width: 4.3rem !important; }
+        .programador-table input[type="date"] { min-width: 6.2rem !important; }
+        .programador-table input[type="number"] { min-width: 2.6rem !important; }
+        .programador-table input:not([type]),
+        .programador-table input[type="text"] { min-width: 3.5rem !important; }
+        .programador-table .btn { padding-left: 0.1rem !important; padding-right: 0.1rem !important; }
       `}</style>
       <div className="table-responsive mt-2" style={{ overflowX: 'auto', maxHeight: '75vh', overflowY: 'auto' }}>
         <table
           className="table table-striped table-bordered table-sm text-center align-middle mb-0 programador-table"
-          style={{ minWidth: isEditable ? '2400px' : '1600px', tableLayout: 'auto', whiteSpace: 'nowrap', fontSize: '0.8rem' }}
+          style={{ width: 'auto', tableLayout: 'auto', whiteSpace: 'nowrap', fontSize: '0.8rem' }}
         >
           <thead className="align-middle" style={{ whiteSpace: 'nowrap', fontSize: '0.8rem', position: 'sticky', top: 0, zIndex: 2, backgroundColor: '#fff' }}>
             <tr>
@@ -214,10 +228,11 @@ export default function ProgramadorTable({
                   </td>}
                   {visibleColumns.productos && (() => {
                     const pvs = item.productosViaje || [];
-                    const hasMultiple = pvs.length > 1;
                     const isExpanded = expandedRows.has(item.id);
-                    const showSecond = hasMultiple || isExpanded;
-                    const pv2 = pvs[1];
+                    // Productos adicionales al primero (indices 1..n-1) + un
+                    // espacio vacio para uno nuevo cuando se pulsa "+".
+                    const adicionales = pvs.slice(1);
+                    const mostrarNuevo = rowEditable && isExpanded;
                     return (
                       <td className="text-center align-middle p-0" style={cellStyle}>
                         <div className="d-flex align-items-center justify-content-center gap-1 px-1">
@@ -244,33 +259,50 @@ export default function ProgramadorTable({
                             </button>
                           )}
                         </div>
-                        {showSecond && (
-                          <div className="border-top pt-1 mt-1 px-1">
-                            {rowEditable ? (
-                              <div className="d-flex align-items-center gap-1">
-                                <input
-                                  key={`prod-${item.id}-1`}
-                                  list="producto-options"
-                                  defaultValue={pv2?.label || ''}
-                                  placeholder="Producto 2"
-                                  className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                                  style={{ minWidth: 80 }}
-                                  onBlur={(e) => handleLookupTextEdit(item, 'producto2', e.target.value)}
-                                />
-                                {pv2 && (
+                        {adicionales.map((pv, offset) => {
+                          const index = offset + 1;
+                          return (
+                            <div key={`prod-${item.id}-${index}-${pv?.id || ''}`} className="border-top pt-1 mt-1 px-1">
+                              {rowEditable ? (
+                                <div className="d-flex align-items-center gap-1">
+                                  <input
+                                    list="producto-options"
+                                    defaultValue={pv?.label || ''}
+                                    placeholder={`Producto ${index + 1}`}
+                                    className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                                    style={{ minWidth: 80 }}
+                                    onBlur={(e) => handleLookupTextEdit(item, `producto:${index}`, e.target.value)}
+                                  />
                                   <button
                                     type="button"
                                     className="btn btn-link btn-sm p-0 text-danger"
-                                    title="Eliminar segundo producto"
-                                    onClick={() => handleEliminarProducto2(item)}
+                                    title={`Eliminar producto ${index + 1}`}
+                                    onClick={() => handleEliminarProducto(item, index)}
                                   >
                                     <FaTrashAlt size={10} />
                                   </button>
-                                )}
-                              </div>
-                            ) : (
-                              <div className="py-1 text-center" style={{ fontSize: '0.75rem', color: '#000' }}>{pv2?.label || ''}</div>
-                            )}
+                                </div>
+                              ) : (
+                                <div className="py-1 text-center" style={{ fontSize: '0.75rem', color: '#000' }}>{pv?.label || ''}</div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {mostrarNuevo && (
+                          <div className="border-top pt-1 mt-1 px-1">
+                            <input
+                              key={`prod-${item.id}-nuevo-${pvs.length}`}
+                              list="producto-options"
+                              defaultValue=""
+                              placeholder={`Producto ${pvs.length + 1}`}
+                              className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                              style={{ minWidth: 80 }}
+                              onBlur={async (e) => {
+                                const texto = e.target.value;
+                                await handleLookupTextEdit(item, `producto:${pvs.length}`, texto);
+                                if (String(texto || '').trim()) toggleExpand(item.id);
+                              }}
+                            />
                           </div>
                         )}
                       </td>
@@ -278,10 +310,9 @@ export default function ProgramadorTable({
                   })()}
                   {visibleColumns.cantidad_productos && (() => {
                     const pvs = item.productosViaje || [];
-                    const pv2 = pvs[1];
-                    const hasMultiple = pvs.length > 1;
                     const isExpanded = expandedRows.has(item.id);
-                    const showSecond = hasMultiple || isExpanded;
+                    const adicionales = pvs.slice(1);
+                    const mostrarNuevo = rowEditable && isExpanded;
                     return (
                       <td className="text-center align-middle p-0" style={cellStyle}>
                         {rowEditable ? (
@@ -297,23 +328,28 @@ export default function ProgramadorTable({
                         ) : (
                           <div className="py-1 px-1 text-center" style={{ fontSize: '0.75rem', color: '#000' }}>{item.cantidadProductosLabel || ''}</div>
                         )}
-                        {showSecond && (
-                          <div className="border-top pt-1 mt-1 px-1">
-                            {rowEditable ? (
-                              <input
-                                key={`qty-${item.id}-1`}
-                                type="number"
-                                min="0"
-                                step="1"
-                                defaultValue={pv2?.cantidad ?? ''}
-                                placeholder="Cant. 2"
-                                className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                                onBlur={(e) => handleLookupTextEdit(item, 'cantidad2', e.target.value)}
-                              />
-                            ) : (
-                              <div className="py-1 text-center" style={{ fontSize: '0.75rem', color: '#000' }}>{pv2?.cantidad ?? ''}</div>
-                            )}
-                          </div>
+                        {adicionales.map((pv, offset) => {
+                          const index = offset + 1;
+                          return (
+                            <div key={`qty-${item.id}-${index}-${pv?.id || ''}`} className="border-top pt-1 mt-1 px-1">
+                              {rowEditable ? (
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  defaultValue={pv?.cantidad ?? ''}
+                                  placeholder={`Cant. ${index + 1}`}
+                                  className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                                  onBlur={(e) => handleLookupTextEdit(item, `cantidad:${index}`, e.target.value)}
+                                />
+                              ) : (
+                                <div className="py-1 text-center" style={{ fontSize: '0.75rem', color: '#000' }}>{pv?.cantidad ?? ''}</div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {mostrarNuevo && (
+                          <div className="border-top pt-1 mt-1 px-1" style={{ minHeight: 28 }} />
                         )}
                       </td>
                     );
@@ -569,7 +605,7 @@ export default function ProgramadorTable({
       </div>
 
       <div className="mt-3 d-flex justify-content-center">
-        <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={PAGE_LIMIT} />
+        <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={pageLimit} />
       </div>
     </>
   );
