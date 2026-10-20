@@ -79,7 +79,9 @@ function ProgramadorColumnModal({
   );
 
   return (
-    <Modal show={show} onHide={onClose} centered>
+    <Modal show={show} onHide={onClose} centered dialogClassName="columnas-visibles-modal">
+
+      <style>{`.columnas-visibles-modal.modal-dialog { max-width: 640px; }`}</style>
       <Modal.Header closeButton>
         <Modal.Title>Columnas visibles</Modal.Title>
       </Modal.Header>
@@ -108,18 +110,28 @@ function ProgramadorColumnModal({
           onChange={(e) => onToggleAll?.(e.target.checked)}
         />
 
+        {/* Numeradas en orden, repartidas en 3 columnas (en escritorio): la
+            primera lleva el primer tercio, la segunda continua y la tercera
+            termina. En pantallas chicas se apilan en una sola. */}
         <div className="row g-2">
-          {columns.map((column) => (
-            <div className="col-12 col-md-6" key={column.id}>
-              <Form.Check
-                type="checkbox"
-                id={`column-${column.id}`}
-                label={column.label}
-                checked={Boolean(visibleColumns[column.id])}
-                onChange={() => onToggleColumn(column.id)}
-              />
-            </div>
-          ))}
+          {(() => {
+            const porColumna = Math.ceil(columns.length / 3);
+            return [0, 1, 2].map((indiceGrupo) => (
+              <div className="col-12 col-md-4" key={indiceGrupo}>
+                {columns.slice(indiceGrupo * porColumna, (indiceGrupo + 1) * porColumna).map((column, indice) => (
+                  <Form.Check
+                    key={column.id}
+                    className="mb-2"
+                    type="checkbox"
+                    id={`column-${column.id}`}
+                    label={`${indiceGrupo * porColumna + indice + 1}. ${column.label}`}
+                    checked={Boolean(visibleColumns[column.id])}
+                    onChange={() => onToggleColumn(column.id)}
+                  />
+                ))}
+              </div>
+            ));
+          })()}
         </div>
 
         <div className="mt-3 pt-2 border-top">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button } from 'react-bootstrap';
+import { Button, Modal } from 'react-bootstrap';
 import { FaCamera, FaHistory, FaMinus, FaPlus, FaTrashAlt } from 'react-icons/fa';
 import Paginacion from '@components/shared/Tablas/Paginacion';
 import useContenedorRowNumbers from '@hooks/useContenedorRowNumbers';
@@ -13,6 +13,10 @@ import {
   PAGE_LIMIT,
   buildContenedorColorMap,
 } from './programadorUtils';
+
+// Alto minimo de cada linea cuando una celda apila varios vehiculos/conductores:
+// asi las filas de las columnas Vehiculos y Conductor quedan alineadas.
+const FILA_APILADA_MIN_ALTO = 18;
 
 function renderProgramadorHeader(columnId, label, isEditable) {
   return (
@@ -44,6 +48,8 @@ export default function ProgramadorTable({
   handleCellEdit,
   handleLookupTextEdit,
   handleEliminarProducto,
+  abrirVehiculoRecogida,
+  quitarVehiculoRecogida,
   pageLimit = PAGE_LIMIT,
   abrirModalSeriales,
   abrirModalEvidencia,
@@ -66,6 +72,8 @@ export default function ProgramadorTable({
   // se guarda consume un espacio (base queda atras de la cantidad real), asi
   // el espacio se cierra solo sin alternar estado desde el blur.
   const [nuevosProductos, setNuevosProductos] = useState({});
+  // Detalle (vehiculo, conductor y observacion) de un vehiculo adicional.
+  const [detalleOtroVehiculo, setDetalleOtroVehiculo] = useState(null);
   const espaciosNuevos = (id, cantidadActual) => {
     const estado = nuevosProductos[id];
     if (!estado) return 0;
@@ -145,8 +153,8 @@ export default function ProgramadorTable({
               {visibleColumns.destino_embarque && renderProgramadorHeader('destino_embarque', 'Destino', isEditable)}
               {visibleColumns.buque && renderProgramadorHeader('buque', 'Buque', isEditable)}
               {visibleColumns.bl && renderProgramadorHeader('bl', 'Booking', isEditable)}
-              {visibleColumns.vehiculo && renderProgramadorHeader('vehiculo', 'Vehiculos', isEditable)}
               {visibleColumns.transportadora && renderProgramadorHeader('transportadora', 'Transportadora', isEditable)}
+              {visibleColumns.vehiculo && renderProgramadorHeader('vehiculo', 'Vehiculos', isEditable)}
               {visibleColumns.conductor && renderProgramadorHeader('conductor', 'Conductor', isEditable)}
               {visibleColumns.llegada_origen && renderProgramadorHeader('llegada_origen', 'Ingreso origen', isEditable)}
               {visibleColumns.salida_origen && renderProgramadorHeader('salida_origen', 'Salida origen', isEditable)}
@@ -380,34 +388,116 @@ export default function ProgramadorTable({
                       <div className="py-1 px-1 text-center">{item.blLabel || ''}</div>
                     )}
                   </td>}
-                  {visibleColumns.vehiculo && <td className="text-center align-middle p-0" style={cellStyle}>
-                    {(rowEditable || rowTimeEditable) ? (
-                      <input
-                        list="vehiculo-options"
-                        defaultValue={item.vehiculoLabel || ''}
-                        className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                        onBlur={(e) => handleLookupTextEdit(item, 'vehiculo', e.target.value, rowTimeEditable ? { preserveEstado: true } : {})}
-                      />
-                    ) : (
-                      <div className="py-1 px-1 text-center">{item.vehiculoLabel}</div>
-                    )}
-                  </td>}
                   {visibleColumns.transportadora && (
                     <td className="text-center align-middle p-0" style={cellStyle}>
                       <div className="py-1 px-1 text-center">{item.transportadoraLabel || ''}</div>
                     </td>
                   )}
+                  {visibleColumns.vehiculo && (() => {
+                    const otros = item.vehiculosRecogida || [];
+                    const puedeEditar = rowEditable || rowTimeEditable;
+                    const opcionesEstado = rowTimeEditable ? { preserveEstado: true } : {};
+                    return (
+                      <td className="text-center align-middle p-0" style={cellStyle}>
+                        <div className="d-flex align-items-center justify-content-center gap-1 px-1">
+                          {puedeEditar ? (
+                            <input
+                              list="vehiculo-options"
+                              defaultValue={item.vehiculoLabel || ''}
+                              className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                              onBlur={(e) => handleLookupTextEdit(item, 'vehiculo', e.target.value, rowTimeEditable ? { preserveEstado: true } : {})}
+                            />
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn btn-link btn-sm p-0 text-decoration-none py-1"
+                              style={{ color: 'inherit' }}
+                              title="Ver detalle"
+                              onClick={() => setDetalleOtroVehiculo({
+                                principal: true,
+                                placa: item.vehiculoLabel,
+                                conductor: item.conductorLabel,
+                                transportadora: item.transportadoraLabel,
+                              })}
+                            >
+                              {item.vehiculoLabel}
+                            </button>
+                          )}
+                          {puedeEditar && otros.length === 0 && (
+                            <button
+                              type="button"
+                              className="btn btn-link btn-sm p-0 text-success"
+                              title="Agregar otro vehiculo"
+                              onClick={() => abrirVehiculoRecogida(item, opcionesEstado)}
+                            >
+                              <FaPlus size={10} />
+                            </button>
+                          )}
+                        </div>
+                        {otros.map((v, index) => (
+                          <div
+                            key={`otro-${item.id}-${index}-${v.vehiculo_id}`}
+                            className="d-flex align-items-center justify-content-center gap-1 px-1 border-top"
+                            style={{ minHeight: FILA_APILADA_MIN_ALTO, lineHeight: 1.1 }}
+                          >
+                            <button
+                              type="button"
+                              className="btn btn-link btn-sm p-0 text-decoration-none"
+                              style={{ fontSize: '0.75rem', color: '#000', lineHeight: 1.1 }}
+                              title={`${v.conductor} - ${v.observacion} (clic para ver)`}
+                              onClick={() => setDetalleOtroVehiculo(v)}
+                            >
+                              {v.placa}
+                            </button>
+                            {puedeEditar && (
+                              <button
+                                type="button"
+                                className="btn btn-link btn-sm p-0 text-danger"
+                                title="Quitar vehiculo"
+                                onClick={() => quitarVehiculoRecogida(item, index, opcionesEstado)}
+                              >
+                                <FaMinus size={10} />
+                              </button>
+                            )}
+                            {puedeEditar && index === otros.length - 1 && (
+                              <button
+                                type="button"
+                                className="btn btn-link btn-sm p-0 text-success"
+                                title="Agregar otro vehiculo"
+                                onClick={() => abrirVehiculoRecogida(item, opcionesEstado)}
+                              >
+                                <FaPlus size={10} />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </td>
+                    );
+                  })()}
                   {visibleColumns.conductor && <td className="text-center align-middle p-0" style={cellStyle}>
-                    {(rowEditable || rowTimeEditable) ? (
-                      <input
-                        list="conductor-options"
-                        defaultValue={item.conductorLabel || ''}
-                        className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
-                        onBlur={(e) => handleLookupTextEdit(item, 'conductor', e.target.value, rowTimeEditable ? { preserveEstado: true } : {})}
-                      />
-                    ) : (
-                      <div className="py-1 px-1 text-center">{item.conductorLabel}</div>
-                    )}
+                    <div className="d-flex align-items-center justify-content-center">
+                      {(rowEditable || rowTimeEditable) ? (
+                        <input
+                          list="conductor-options"
+                          defaultValue={item.conductorLabel || ''}
+                          className="form-control form-control-sm text-center rounded-0 border-0 bg-transparent px-1"
+                          onBlur={(e) => handleLookupTextEdit(item, 'conductor', e.target.value, rowTimeEditable ? { preserveEstado: true } : {})}
+                        />
+                      ) : (
+                        <div className="py-1 px-1 text-center">{item.conductorLabel}</div>
+                      )}
+                    </div>
+                    {/* Un conductor por cada vehiculo adicional, alineado con su fila en "Vehiculos". */}
+                    {(item.vehiculosRecogida || []).map((v, index) => (
+                      <div
+                        key={`cond-otro-${item.id}-${index}-${v.vehiculo_id}`}
+                        className="d-flex align-items-center justify-content-center px-1 border-top"
+                        style={{ minHeight: FILA_APILADA_MIN_ALTO, lineHeight: 1.1, fontSize: '0.75rem', color: '#000' }}
+                        title={v.observacion}
+                      >
+                        {v.conductor}
+                      </div>
+                    ))}
                   </td>}
                   {visibleColumns.llegada_origen && <td className={`${accentClass} text-center align-middle p-0`} style={cellStyle}>
                     {(rowEditable || rowTimeEditable) ? (
@@ -612,6 +702,24 @@ export default function ProgramadorTable({
       <div className="mt-3 d-flex justify-content-center">
         <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={pageLimit} />
       </div>
+      <Modal show={Boolean(detalleOtroVehiculo)} onHide={() => setDetalleOtroVehiculo(null)} centered size="sm">
+        <Modal.Header closeButton>
+          <Modal.Title className="h6 mb-0">{detalleOtroVehiculo?.principal ? 'Vehiculo' : 'Otro vehiculo'}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="small">
+          <div><strong>Vehiculo:</strong> {detalleOtroVehiculo?.placa}</div>
+          {detalleOtroVehiculo?.transportadora && (
+            <div><strong>Transportadora:</strong> {detalleOtroVehiculo.transportadora}</div>
+          )}
+          <div className="mb-2"><strong>Conductor:</strong> {detalleOtroVehiculo?.conductor}</div>
+          {!detalleOtroVehiculo?.principal && (
+            <>
+              <div><strong>Observacion:</strong></div>
+              <div style={{ whiteSpace: 'pre-wrap' }}>{detalleOtroVehiculo?.observacion}</div>
+            </>
+          )}
+        </Modal.Body>
+      </Modal>
     </>
   );
 }

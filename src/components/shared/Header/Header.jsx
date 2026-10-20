@@ -1,13 +1,15 @@
 import React, { useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { Navbar, Nav, DropdownButton, Dropdown, Button, Container } from 'react-bootstrap';
-import { FaSignOutAlt, FaUserCircle } from 'react-icons/fa';
+import { FaEnvelope, FaSignOutAlt, FaUserCircle } from 'react-icons/fa';
 
 import { useAuth } from '@hooks/useAuth';
 import useAlert from '@hooks/useAlert';
 import AppContext from '@context/AppContext';
 
 import EditarPerfilModal from "@components/administrador/EditarPerfilModal";
+import MensajesModal from "./MensajesModal";
+import { contarMensajesNoLeidos } from "@services/api/comunicados";
 import Configuracion from '@containers/administrador/Configuracion';
 
 import { encontrarModulo } from '@services/api/configuracion';
@@ -53,10 +55,33 @@ const Header = () => {
   const { initialMenu, nombreApp } = useContext(AppContext);
 
   const [openProfile, setOpenProfile] = useState(false);
+  const [openMensajes, setOpenMensajes] = useState(false);
+  const [mensajesNoLeidos, setMensajesNoLeidos] = useState(0);
   const [openConfig, setOpenConfig] = useState(false);
   const [configMenu, setConfigMenu] = useState([]);
   const [configSubMenu, setConfigSubMenu] = useState([]);
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+
+  // Comunicados recibidos (ademas del correo): el contador se refresca cada
+  // minuto y al volver a la pestana.
+  const refrescarMensajesNoLeidos = useCallback(async () => {
+    try {
+      setMensajesNoLeidos(await contarMensajesNoLeidos());
+    } catch {
+      // sin sesion o sin conexion: se deja el ultimo valor
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!user?.username) return undefined;
+    refrescarMensajesNoLeidos();
+    const intervalo = setInterval(refrescarMensajesNoLeidos, 60000);
+    window.addEventListener('focus', refrescarMensajesNoLeidos);
+    return () => {
+      clearInterval(intervalo);
+      window.removeEventListener('focus', refrescarMensajesNoLeidos);
+    };
+  }, [user?.username, refrescarMensajesNoLeidos]);
 
   const isSuperAdmin = useMemo(() => user?.id_rol === SUPER_ADMIN_ROLE, [user?.id_rol]);
 
@@ -224,6 +249,24 @@ const Header = () => {
               <Button
                 variant="link"
                 size="sm"
+                onClick={() => setOpenMensajes(true)}
+                className="position-relative w-auto d-inline-flex align-items-center justify-content-center px-2 py-1 text-white text-decoration-none border-0 shadow-none"
+                title={mensajesNoLeidos > 0 ? `${mensajesNoLeidos} mensaje(s) sin leer` : 'Mis mensajes'}
+                aria-label="Mis mensajes"
+              >
+                <FaEnvelope />
+                {mensajesNoLeidos > 0 && (
+                  <span
+                    className="position-absolute badge rounded-pill bg-danger"
+                    style={{ top: -2, right: -4, fontSize: '0.65rem' }}
+                  >
+                    {mensajesNoLeidos > 99 ? '99+' : mensajesNoLeidos}
+                  </span>
+                )}
+              </Button>
+              <Button
+                variant="link"
+                size="sm"
                 onClick={cerrarSesion}
                 className="w-auto d-inline-flex align-items-center justify-content-center px-2 py-1 text-white text-decoration-none border-0 shadow-none"
                 title="Cerrar sesion"
@@ -246,6 +289,11 @@ const Header = () => {
         />
       )}
       {openConfig && <Configuracion setOpen={setOpenConfig} />}
+      <MensajesModal
+        show={openMensajes}
+        onClose={() => { setOpenMensajes(false); refrescarMensajesNoLeidos(); }}
+        onCambioNoLeidos={refrescarMensajesNoLeidos}
+      />
     </div>
   );
 };

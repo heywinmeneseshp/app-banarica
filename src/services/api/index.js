@@ -256,6 +256,11 @@ const endPoints = {
         exportarDb: `${API}/api/${VERSION}/confi/exportar-db`,
         importarDb: `${API}/api/${VERSION}/confi/importar-db`,
     },
+    comunicados: {
+        base: `${API}/api/${VERSION}/comunicados`,
+        destinatarios: `${API}/api/${VERSION}/comunicados/destinatarios`,
+        misMensajes: `${API}/api/${VERSION}/comunicados/mis-mensajes`,
+    },
     programacionCorte: {
         list: `${API}/api/${VERSION}/programacion-corte`,
         cargar: `${API}/api/${VERSION}/programacion-corte/cargar`,

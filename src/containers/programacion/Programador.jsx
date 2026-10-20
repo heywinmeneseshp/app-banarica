@@ -11,6 +11,7 @@ import useAlert from '@hooks/useAlert';
 import { FaInfoCircle } from 'react-icons/fa';
 import ProgramadorColumnModal from './ProgramadorColumnModal';
 import ProgramadorAyudaModal from './ProgramadorAyudaModal';
+import ProgramadorVehiculoRecogidaModal from './ProgramadorVehiculoRecogidaModal';
 import ProgramadorPendingSyncModal from './ProgramadorPendingSyncModal';
 import ProgramadorEvidenceModal from './ProgramadorEvidenceModal';
 import VerEvidenciasModal from './VerEvidenciasModal';
@@ -52,6 +53,7 @@ export default function Programador() {
   const [visibleColumns, setVisibleColumns] = useState(DEFAULT_VISIBLE_COLUMNS);
   const [showColumnConfig, setShowColumnConfig] = useState(false);
   const [showAyuda, setShowAyuda] = useState(false);
+  const [recogidaModal, setRecogidaModal] = useState(null); // { row, preserveEstado }
   const [showSerialesModal, setShowSerialesModal] = useState(false);
   const [selectedSerialProgramacion, setSelectedSerialProgramacion] = useState(null);
   const [showInsumoConfig, setShowInsumoConfig] = useState(false);
@@ -262,6 +264,7 @@ export default function Programador() {
           destinoId: item?.ruta?.ubicacion_2?.id || '',
           conductorLabel: item?.conductor?.conductor || '',
           vehiculoLabel: item?.vehiculo?.placa || '',
+          vehiculosRecogida: Array.isArray(item?.vehiculos_recogida_detalle) ? item.vehiculos_recogida_detalle : [],
           transportadoraLabel: getTransportadoraLabel(item?.vehiculo?.transportadora || {}),
           contenedorLabel: item?.contenedor || '',
           semanaLabel: item?.semana || '',
@@ -578,6 +581,56 @@ export default function Programador() {
     }
   };
 
+  // Otros vehiculos (lista indefinida por linea). Cada uno lleva su
+  // vehiculo, conductor y una observacion obligatoria; se guarda la lista
+  // completa en la linea y el backend devuelve las placas/nombres resueltos.
+  const guardarVehiculosRecogida = async (row, lista, options = {}) => {
+    const payload = {
+      vehiculos_recogida: lista.map((item) => ({
+        vehiculo_id: item.vehiculo_id,
+        conductor_id: item.conductor_id,
+        observacion: item.observacion,
+      })),
+    };
+    if (options.preserveEstado) {
+      const currentRow = itemList.find((r) => r.id === row.id);
+      if (currentRow?.estado_listado) payload.estado_listado = currentRow.estado_listado;
+    }
+    await actualizarProgramaciones(row.id, payload);
+    updateLocalRow(row.id, (current) => ({
+      ...current,
+      vehiculos_recogida_detalle: lista,
+      ...(options.preserveEstado ? {} : { estado_listado: ESTADO_LISTADO_PENDIENTE }),
+    }));
+  };
+
+  const agregarVehiculoRecogida = async (row, { vehiculoId, conductorId, observacion }, options = {}) => {
+    const vehiculo = vehiculos.find((item) => String(item.id) === String(vehiculoId));
+    const conductor = conductores.find((item) => String(item.id) === String(conductorId));
+    const actuales = Array.isArray(row?.vehiculos_recogida_detalle) ? row.vehiculos_recogida_detalle : [];
+    await guardarVehiculosRecogida(row, [
+      ...actuales,
+      {
+        vehiculo_id: String(vehiculoId),
+        placa: vehiculo?.placa || '',
+        conductor_id: String(conductorId),
+        conductor: conductor?.conductor || '',
+        observacion,
+      },
+    ], options);
+  };
+
+  const quitarVehiculoRecogida = async (row, indice, options = {}) => {
+    if (!window.confirm('¿Quitar este vehiculo?')) return;
+    try {
+      const actuales = Array.isArray(row?.vehiculos_recogida_detalle) ? row.vehiculos_recogida_detalle : [];
+      await guardarVehiculosRecogida(row, actuales.filter((_, i) => i !== indice), options);
+    } catch (error) {
+      setAlert({ active: true, mensaje: error.message || 'No fue posible quitar el vehiculo.', color: 'danger', autoClose: true });
+      setReloadKey((prev) => prev + 1);
+    }
+  };
+
   const handleEliminarProducto = async (row, indice) => {
     try {
       const pv = row?.productos_viajes?.[indice];
@@ -824,6 +877,8 @@ export default function Programador() {
               handleCellEdit={handleCellEdit}
               handleLookupTextEdit={handleLookupTextEdit}
               handleEliminarProducto={handleEliminarProducto}
+              abrirVehiculoRecogida={(row, options = {}) => setRecogidaModal({ row, options })}
+              quitarVehiculoRecogida={quitarVehiculoRecogida}
               abrirModalSeriales={abrirModalSeriales}
               abrirModalEvidencia={abrirModalEvidencia}
               abrirVerEvidencias={abrirVerEvidencias}
@@ -850,6 +905,15 @@ export default function Programador() {
       />
 
       <ProgramadorAyudaModal show={showAyuda} onClose={() => setShowAyuda(false)} />
+
+      <ProgramadorVehiculoRecogidaModal
+        show={Boolean(recogidaModal)}
+        onClose={() => setRecogidaModal(null)}
+        programacion={recogidaModal?.row}
+        vehiculos={vehiculos}
+        conductores={conductores}
+        onGuardar={(datos) => agregarVehiculoRecogida(recogidaModal.row, datos, recogidaModal.options)}
+      />
 
       <ProgramadorColumnModal
         show={showColumnConfig}

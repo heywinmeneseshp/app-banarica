@@ -272,6 +272,36 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
     )));
   };
 
+  // Otros vehiculos de la linea (cantidad indefinida): cada uno lleva su
+  // conductor y una observacion obligatoria, igual que en el Programador.
+  const agregarOtroVehiculo = (filaId) => {
+    setSugeridoBorrador((prev) => prev.map((fila) => (
+      fila.id === filaId
+        ? {
+          ...fila,
+          otrosVehiculos: [
+            ...(fila.otrosVehiculos || []),
+            { id: `${Date.now()}-${Math.random()}`, vehiculoId: '', vehiculo: '', conductorId: '', conductor: '', observacion: '' },
+          ],
+        }
+        : fila
+    )));
+  };
+
+  const actualizarOtroVehiculo = (filaId, otroId, cambios) => {
+    setSugeridoBorrador((prev) => prev.map((fila) => (
+      fila.id === filaId
+        ? { ...fila, otrosVehiculos: (fila.otrosVehiculos || []).map((o) => (o.id === otroId ? { ...o, ...cambios } : o)) }
+        : fila
+    )));
+  };
+
+  const eliminarOtroVehiculo = (filaId, otroId) => {
+    setSugeridoBorrador((prev) => prev.map((fila) => (
+      fila.id === filaId ? { ...fila, otrosVehiculos: (fila.otrosVehiculos || []).filter((o) => o.id !== otroId) } : fila
+    )));
+  };
+
   const abrirConfig = async () => {
     setShowConfigModal(true);
     try {
@@ -468,6 +498,7 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
           conductor: '',
           conductorId: '',
           seriales: [],
+          otrosVehiculos: [],
           productos: [],
         };
 
@@ -573,6 +604,7 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
       id: `${fila.id}__dup${Date.now()}`,
       productos: fila.productos.map((p) => ({ ...p })),
       seriales: (fila.seriales || []).map((s, i) => ({ ...s, id: `${s.id}__dup${Date.now()}${i}`, value: '' })),
+      otrosVehiculos: (fila.otrosVehiculos || []).map((o, i) => ({ ...o, id: `${o.id}__dup${Date.now()}${i}` })),
     };
     setSugeridoBorrador((prev) => {
       const idx = prev.findIndex((f) => f.id === fila.id);
@@ -589,6 +621,11 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
     }
     if (!fila.origenId || !fila.destinoId) {
       window.alert('Elija origen y destino antes de enviar.');
+      return;
+    }
+    const otrosFila = fila.otrosVehiculos || [];
+    if (otrosFila.some((o) => !o.vehiculoId || !o.conductorId || !String(o.observacion || '').trim())) {
+      window.alert('Cada otro vehiculo necesita su vehiculo, su conductor y una observacion (o quitelo de la fila).');
       return;
     }
     if (!fila.vehiculoId) {
@@ -648,6 +685,15 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
         ruta_id: rutaId,
         vehiculo_id: fila.vehiculoId,
         ...(fila.conductorId ? { conductor_id: fila.conductorId } : {}),
+        ...(otrosFila.length > 0
+          ? {
+            vehiculos_recogida: otrosFila.map((o) => ({
+              vehiculo_id: o.vehiculoId,
+              conductor_id: o.conductorId,
+              observacion: String(o.observacion).trim(),
+            })),
+          }
+          : {}),
         semana: fila.semana || '',
         activo: true,
       });
@@ -984,21 +1030,54 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
                         </Form.Select>
                       </td>
                       <td style={{ ...CELL_STYLE, minWidth: '90px' }}>
-                        <Form.Select
-                          size="sm"
-                          className={COMPACT_INPUT_CLASS}
-                          value={fila.vehiculoId || ''}
-                          onChange={(e) => {
-                            const vehiculo = (vehiculos || []).find((v) => String(v.id) === e.target.value);
-                            actualizarFila(fila.id, 'vehiculoId', e.target.value);
-                            actualizarFila(fila.id, 'vehiculo', vehiculo?.placa || '');
-                          }}
-                        >
-                          <option value="">Elegir...</option>
-                          {(vehiculos || []).map((v) => (
-                            <option key={v.id} value={v.id}>{v.placa}</option>
-                          ))}
-                        </Form.Select>
+                        <div className="d-flex align-items-center gap-1">
+                          <Form.Select
+                            size="sm"
+                            className={COMPACT_INPUT_CLASS}
+                            value={fila.vehiculoId || ''}
+                            onChange={(e) => {
+                              const vehiculo = (vehiculos || []).find((v) => String(v.id) === e.target.value);
+                              actualizarFila(fila.id, 'vehiculoId', e.target.value);
+                              actualizarFila(fila.id, 'vehiculo', vehiculo?.placa || '');
+                            }}
+                          >
+                            <option value="">Elegir...</option>
+                            {(vehiculos || []).map((v) => (
+                              <option key={v.id} value={v.id}>{v.placa}</option>
+                            ))}
+                          </Form.Select>
+                          {(fila.otrosVehiculos || []).length === 0 && (
+                            <button type="button" className="btn btn-sm btn-outline-secondary border-0 p-0" title="Agregar otro vehiculo" onClick={() => agregarOtroVehiculo(fila.id)}>
+                              <FaPlus size={11} />
+                            </button>
+                          )}
+                        </div>
+                        {(fila.otrosVehiculos || []).map((o, index, lista) => (
+                          <div key={o.id} className="d-flex align-items-center gap-1 mt-1">
+                            <Form.Select
+                              size="sm"
+                              className={`${COMPACT_INPUT_CLASS} ${!o.vehiculoId ? 'border-danger' : ''}`}
+                              value={o.vehiculoId || ''}
+                              onChange={(e) => {
+                                const vehiculo = (vehiculos || []).find((v) => String(v.id) === e.target.value);
+                                actualizarOtroVehiculo(fila.id, o.id, { vehiculoId: e.target.value, vehiculo: vehiculo?.placa || '' });
+                              }}
+                            >
+                              <option value="">Otro vehiculo...</option>
+                              {(vehiculos || []).map((v) => (
+                                <option key={v.id} value={v.id}>{v.placa}</option>
+                              ))}
+                            </Form.Select>
+                            <button type="button" className="btn btn-sm btn-outline-danger border-0 p-0" title="Quitar vehiculo" onClick={() => eliminarOtroVehiculo(fila.id, o.id)}>
+                              <FaMinus size={11} />
+                            </button>
+                            {index === lista.length - 1 && (
+                              <button type="button" className="btn btn-sm btn-outline-secondary border-0 p-0" title="Agregar otro vehiculo" onClick={() => agregarOtroVehiculo(fila.id)}>
+                                <FaPlus size={11} />
+                              </button>
+                            )}
+                          </div>
+                        ))}
                       </td>
                       <td style={{ ...CELL_STYLE, minWidth: '130px' }}>
                         <Form.Select
@@ -1016,6 +1095,33 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
                             <option key={c.id} value={c.id}>{c.conductor}</option>
                           ))}
                         </Form.Select>
+                        {/* Conductor y observacion (obligatorios) de cada otro vehiculo, en la misma fila que su placa. */}
+                        {(fila.otrosVehiculos || []).map((o) => (
+                          <div key={o.id} className="d-flex align-items-center gap-1 mt-1">
+                            <Form.Select
+                              size="sm"
+                              className={`${COMPACT_INPUT_CLASS} ${!o.conductorId ? 'border-danger' : ''}`}
+                              value={o.conductorId || ''}
+                              onChange={(e) => {
+                                const conductor = (conductores || []).find((c) => String(c.id) === e.target.value);
+                                actualizarOtroVehiculo(fila.id, o.id, { conductorId: e.target.value, conductor: conductor?.conductor || '' });
+                              }}
+                            >
+                              <option value="">Conductor...</option>
+                              {(conductores || []).map((c) => (
+                                <option key={c.id} value={c.id}>{c.conductor}</option>
+                              ))}
+                            </Form.Select>
+                            <Form.Control
+                              size="sm"
+                              className={`${COMPACT_INPUT_CLASS} ${!String(o.observacion || '').trim() ? 'border-danger' : ''}`}
+                              style={{ minWidth: '120px', fontSize: '0.75rem' }}
+                              placeholder="Observacion *"
+                              value={o.observacion || ''}
+                              onChange={(e) => actualizarOtroVehiculo(fila.id, o.id, { observacion: e.target.value })}
+                            />
+                          </div>
+                        ))}
                       </td>
                       <td style={{ ...CELL_STYLE, whiteSpace: 'normal', textAlign: 'left' }}>
                         {fila.productos.map((p, index) => (

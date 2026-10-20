@@ -307,6 +307,7 @@ export function useProgramadorImport({
           BL: item?.bl || '',
           'Estado listado': normalizeValue(item?.estado_listado) === 'actualizado' ? 'Actualizado' : 'Pendiente',
           Vehiculo: item?.vehiculo?.placa || '',
+          'Otros vehiculos': (item?.vehiculos_recogida_detalle || []).map((v) => `${v.placa} (${v.conductor}) - ${v.observacion}`).join(' | '),
           Transportadora: getTransportadoraLabel(item?.vehiculo?.transportadora || {}),
           Conductor: item?.conductor?.conductor || '',
           Movimiento: item?.movimiento || '',

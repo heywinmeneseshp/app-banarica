@@ -12,6 +12,7 @@ import Transporte from "@containers/administrador/Transporte";
 import Users from "@containers/administrador/Users";
 import Etiquetas from "@containers/administrador/Etiquetas";
 import MotivoDeRechazo from "@containers/administrador/MotivoDeRechazo";
+import Comunicados from "@containers/administrador/Comunicados";
 import CategoriaVehiculos from "@components/Maestros/CategoriaVehiculos";
 import Clientes from "@components/Maestros/Clientes";
 import TipoMovimientoVehiculos from "@components/Maestros/TipoMovimientoVehiculos";
@@ -34,6 +35,7 @@ export default function Maestros() {
             {item === "proveedores" && <Proveedor />}
             {item === "transporte" && <Transporte />}
             {item === "usuarios" && user?.id_rol === ROL_SUPER_ADMIN && <Users />}
+            {item === "comunicados" && user?.id_rol === ROL_SUPER_ADMIN && <Comunicados />}
             {item === "etiquetas" && <Etiquetas />}
             {item === "MotivoDeRechazo" && <MotivoDeRechazo />}
             {item === "categoriaVehiculos" && <CategoriaVehiculos />}

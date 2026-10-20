@@ -22,7 +22,7 @@ function ProgramadorAyudaModal({ show, onClose }) {
           <li><strong>Nuevo movimiento:</strong> crea una línea (o varias con el cargue masivo desde Excel).</li>
           <li>
             <strong>Sugerir transporte:</strong> arma un borrador desde la Programación de Corte de una semana. Ahí puede
-            completar vehículo, conductor, productos, contenedor y <strong>seriales</strong> antes de enviarlo al Programador.
+            completar vehículo y conductor (con el <strong>+</strong> puede agregar otros vehículos, cada uno con conductor y observación obligatoria), productos, contenedor y <strong>seriales</strong> antes de enviarlo al Programador.
           </li>
           <li><strong>Descargar Excel:</strong> exporta lo que está filtrado.</li>
         </ul>
@@ -42,6 +42,22 @@ function ProgramadorAyudaModal({ show, onClose }) {
             <strong>−</strong> la quita.
           </li>
           <li>Cada cambio queda registrado en el <strong>Historial</strong>.</li>
+        </ul>
+
+        <h6 className="fw-bold mt-3">Varios vehículos en una línea</h6>
+        <ul className="ps-3">
+          <li>
+            Si un contenedor lo lleva un vehículo y lo retira otro, use la columna <strong>Vehículos</strong>: arriba va
+            el vehículo principal y debajo los <strong>otros vehículos</strong> (los que necesite).
+          </li>
+          <li>
+            En modo edición, el botón <strong>+</strong> agrega otro vehículo. Cada uno exige su <strong>conductor</strong> y
+            una <strong>observación obligatoria</strong>; el conductor aparece en la columna Conductor, en la misma fila.
+          </li>
+          <li>
+            Haga clic sobre una placa para ver su detalle (conductor y observación) y use <strong>−</strong> para quitarlo.
+            Estos vehículos son informativos: no cuentan para combustible ni liquidaciones.
+          </li>
         </ul>
 
         <h6 className="fw-bold mt-3">Columnas</h6>

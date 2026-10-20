@@ -5,6 +5,7 @@ const menuCompleto = {
         ["categoriaVehiculos", "Categoria vehiculos"],
         ["clientes", "Clientes"],
         ["combos", "Combos"],
+        ["comunicados", "Comunicados"],
         ["etiquetas", "Etiquetas"],
         ["MotivoDeRechazo", "Motivos de Rechazo"],
         ["tipoMovimientoVehiculos", "Movimientos vehiculos"],
