@@ -3,6 +3,7 @@ import { Button, Form, Modal } from 'react-bootstrap';
 import {
   FaAt, FaCheckCircle, FaClock, FaEye, FaFileAlt, FaPaperclip, FaPaperPlane, FaSearch, FaTimesCircle, FaUser, FaUsers,
 } from 'react-icons/fa';
+import EditorMensaje from '@components/shared/EditorMensaje';
 import {
   buscarComunicado, enviarComunicado, listarComunicados, listarDestinatarios,
 } from '@services/api/comunicados';
@@ -59,6 +60,8 @@ function SelectorMultiple({ opciones, seleccionados, onChange, placeholder }) {
 export default function Comunicados() {
   const [asunto, setAsunto] = useState('');
   const [mensaje, setMensaje] = useState('');
+  const [mensajeTexto, setMensajeTexto] = useState('');
+  const [reinicioEditor, setReinicioEditor] = useState(0);
   const [rolesDisponibles, setRolesDisponibles] = useState([]);
   const [usuariosDisponibles, setUsuariosDisponibles] = useState([]);
   const [rolesSel, setRolesSel] = useState([]);
@@ -154,7 +157,7 @@ export default function Comunicados() {
   };
 
   const totalSeleccionados = rolesSel.length + usuariosSel.length + correos.length;
-  const listo = asunto.trim() && mensaje.trim() && totalSeleccionados > 0;
+  const listo = asunto.trim() && mensajeTexto.trim() && totalSeleccionados > 0;
 
   const handleEnviar = async (event) => {
     event.preventDefault();
@@ -180,6 +183,8 @@ export default function Comunicados() {
       setResultado(enviado);
       setAsunto('');
       setMensaje('');
+      setMensajeTexto('');
+      setReinicioEditor((n) => n + 1);
       setRolesSel([]);
       setUsuariosSel([]);
       setCorreos([]);
@@ -231,16 +236,13 @@ export default function Comunicados() {
               <Form.Group className="mb-3">
                 <div className="d-flex justify-content-between">
                   <Form.Label className="small fw-medium">Mensaje <span className="text-danger">*</span></Form.Label>
-                  <span className="small text-secondary">{mensaje.length}/{MAX_MENSAJE}</span>
+                  <span className="small text-secondary">{mensajeTexto.length}/{MAX_MENSAJE}</span>
                 </div>
-                <Form.Control
-                  as="textarea"
-                  rows={7}
-                  maxLength={MAX_MENSAJE}
-                  required
+                <EditorMensaje
+                  maxTexto={MAX_MENSAJE}
+                  reinicio={reinicioEditor}
                   placeholder="Escriba el mensaje que recibira cada destinatario..."
-                  value={mensaje}
-                  onChange={(e) => setMensaje(e.target.value)}
+                  onChange={(html, texto) => { setMensaje(html); setMensajeTexto(texto); }}
                 />
               </Form.Group>
 
@@ -433,7 +435,9 @@ export default function Comunicados() {
           {!detalle ? <div className="text-center text-secondary py-3">Cargando...</div> : (
             <>
               <p className="fw-semibold mb-1">{detalle.asunto}</p>
-              <p className="text-secondary" style={{ whiteSpace: 'pre-line' }}>{detalle.mensaje}</p>
+              {/* El backend ya dejo solo etiquetas permitidas (negrita, color, listas, enlaces). */}
+              {/* eslint-disable-next-line react/no-danger */}
+              <div className="mb-3" dangerouslySetInnerHTML={{ __html: detalle.mensaje }} />
               <p className="text-secondary">Enviado por <strong>{detalle.created_by || '—'}</strong> el {fechaLocal(detalle.createdAt)}</p>
               {detalle.destinatarios_resumen?.roles?.length > 0 && <div><strong>Roles:</strong> {detalle.destinatarios_resumen.roles.join(', ')}</div>}
               {detalle.destinatarios_resumen?.usuarios?.length > 0 && <div><strong>Usuarios:</strong> {detalle.destinatarios_resumen.usuarios.map((u) => u.nombre || u.username).join(', ')}</div>}

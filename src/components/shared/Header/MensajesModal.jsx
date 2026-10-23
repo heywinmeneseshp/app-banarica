@@ -75,7 +75,9 @@ export default function MensajesModal({ show, onClose, onCambioNoLeidos }) {
             <p className="text-secondary mb-3">
               Recibido el {fechaLocal(abierto.recibido)}{abierto.enviado_por ? ` — enviado por ${abierto.enviado_por}` : ''}
             </p>
-            <div style={{ whiteSpace: 'pre-line' }}>{abierto.mensaje}</div>
+            {/* El backend ya dejo solo etiquetas permitidas (negrita, color, listas, enlaces). */}
+            {/* eslint-disable-next-line react/no-danger */}
+            <div dangerouslySetInnerHTML={{ __html: abierto.mensaje }} />
             {abierto.adjuntos?.length > 0 && (
               <div className="mt-3 text-secondary">
                 <FaPaperclip /> Adjuntos enviados a su correo: {abierto.adjuntos.map((a) => a.nombre).join(', ')}
@@ -100,7 +102,7 @@ export default function MensajesModal({ show, onClose, onCambioNoLeidos }) {
                 </span>
                 <span className="flex-grow-1" style={{ minWidth: 0 }}>
                   <span className={`d-block text-truncate ${m.leido ? '' : 'fw-bold'}`}>{m.asunto}</span>
-                  <span className="d-block text-secondary text-truncate">{m.mensaje}</span>
+                  <span className="d-block text-secondary text-truncate">{m.mensaje_texto}</span>
                 </span>
                 <span className="text-secondary text-nowrap" style={{ fontSize: '0.75rem' }}>{fechaLocal(m.recibido)}</span>
               </button>

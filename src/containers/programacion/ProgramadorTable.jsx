@@ -133,7 +133,7 @@ export default function ProgramadorTable({
         .programador-table input[type="number"] { min-width: 2.6rem !important; }
         .programador-table input:not([type]),
         .programador-table input[type="text"] { min-width: 3.5rem !important; }
-        .programador-table .btn { padding-left: 0.1rem !important; padding-right: 0.1rem !important; }
+        .programador-table .btn { padding-left: 0.1rem !important; padding-right: 0.1rem !important; flex: 0 0 auto; }
       `}</style>
       <div className="table-responsive mt-2" style={{ overflowX: 'auto', maxHeight: '75vh', overflowY: 'auto' }}>
         <table
@@ -423,16 +423,6 @@ export default function ProgramadorTable({
                               {item.vehiculoLabel}
                             </button>
                           )}
-                          {puedeEditar && otros.length === 0 && (
-                            <button
-                              type="button"
-                              className="btn btn-link btn-sm p-0 text-success"
-                              title="Agregar otro vehiculo"
-                              onClick={() => abrirVehiculoRecogida(item, opcionesEstado)}
-                            >
-                              <FaPlus size={10} />
-                            </button>
-                          )}
                         </div>
                         {otros.map((v, index) => (
                           <div
@@ -459,18 +449,21 @@ export default function ProgramadorTable({
                                 <FaMinus size={10} />
                               </button>
                             )}
-                            {puedeEditar && index === otros.length - 1 && (
-                              <button
-                                type="button"
-                                className="btn btn-link btn-sm p-0 text-success"
-                                title="Agregar otro vehiculo"
-                                onClick={() => abrirVehiculoRecogida(item, opcionesEstado)}
-                              >
-                                <FaPlus size={10} />
-                              </button>
-                            )}
                           </div>
                         ))}
+                        {puedeEditar && (
+                          <div className="d-flex justify-content-center border-top">
+                            <button
+                              type="button"
+                              className="btn btn-link btn-sm p-0 text-success text-decoration-none d-inline-flex align-items-center gap-1"
+                              style={{ fontSize: '0.7rem' }}
+                              title="Agregar otro vehiculo"
+                              onClick={() => abrirVehiculoRecogida(item, opcionesEstado)}
+                            >
+                              <FaPlus size={9} /> Otro
+                            </button>
+                          </div>
+                        )}
                       </td>
                     );
                   })()}
