@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Badge, Button, Col, Form, Modal, Row } from 'react-bootstrap';
+import { Alert, Badge, Button, ButtonGroup, Col, Form, Modal, Row } from 'react-bootstrap';
 import {
   FaChevronDown, FaChevronRight, FaEdit, FaExclamationTriangle, FaInfoCircle, FaPlus, FaTimes, FaTrash,
 } from 'react-icons/fa';
@@ -12,8 +12,8 @@ import FacturaForm from './FacturaForm';
 import ManualFacturasModal from './ManualFacturasModal';
 
 const TIPOS_FALLBACK = ['Factura', 'Nota Débito', 'Nota Crédito', 'Otro'];
-const FILTROS_VACIOS = { nit_proveedor: '', tipo: '', estado: '', advertencia: '', numero_factura: '', fecha_desde: '', fecha_hasta: '' };
-const BOTON_CUADRADO = { display: 'flex', justifyContent: 'center', alignItems: 'center', height: 25, width: 25, margin: 'auto' };
+const FILTROS_VACIOS = { nit_proveedor: '', tipo: '', estado: '', advertencia: '', numero_factura: '', concepto: '', semana: '', fecha_desde: '', fecha_hasta: '' };
+const BOTON_CUADRADO = { display: 'flex', justifyContent: 'center', alignItems: 'center', height: 25, width: 25, margin: 'auto', fontSize: 16 };
 
 const NOTAS_CARGUE = [
   'Cada fila es un ítem. Las filas con el mismo N Factura se agrupan en una sola factura; si el N Factura va vacío, cada fila crea su propia factura.',
@@ -25,6 +25,7 @@ const NOTAS_CARGUE = [
   'Para un costo de todo un mes deje Contenedor, Booking y Semana vacíos y escriba el Mes (ej. Junio 2026); para uno de todo un año, solo el Año.',
   'El Contenedor, el Booking y la Semana se validan contra la operación: si no coinciden entre sí, se guardan en blanco y se muestra el aviso.',
   'Una factura repetida (mismo proveedor, número y año) se rechaza y aparece en la lista de errores del resultado.',
+  'Cobrar a (tercero) y Motivo del cobro son opcionales: si escribe un tercero, el ítem queda en la pestaña Pendiente por cobrar (si el tercero no existe, se crea).',
 ];
 
 const COLUMNAS_CARGUE = [
@@ -44,12 +45,18 @@ const COLUMNAS_CARGUE = [
   { key: 'total', label: 'Total Factura', required: false, example: '300000' },
   { key: 'nivel_asociacion', label: 'Nivel Asociacion', required: false, example: 'booking' },
   { key: 'tipo_costo', label: 'Tipo Costo', required: false, example: 'FINCA' },
+  { key: 'tercero', label: 'Cobrar a (tercero)', required: false, example: 'Finca La Esperanza' },
+  { key: 'motivo_cobro', label: 'Motivo del cobro', required: false, example: 'Error de la finca en el despacho' },
 ];
 
 export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDocs = [], tiposCosto = [] }) {
   const [items, setItems] = useState([]);
   const [filtros, setFiltros] = useState(FILTROS_VACIOS);
   const [numInput, setNumInput] = useState('');
+  const [conceptoInput, setConceptoInput] = useState('');
+  const [semanaInput, setSemanaInput] = useState('');
+  const [semanasSug, setSemanasSug] = useState([]);
+  const [vista, setVista] = useState('factura');
   const [editando, setEditando] = useState(null);
   const [creando, setCreando] = useState(false);
   const [cargando, setCargando] = useState(false);
@@ -78,6 +85,13 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
   }, [filtros, setAlert]);
 
   useEffect(() => { cargar(); setPagina(1); }, [cargar]);
+
+  useEffect(() => {
+    if (semanaInput.length < 2) { setSemanasSug([]); return undefined; }
+    const t = setTimeout(() => costosGet(`/semanas?q=${encodeURIComponent(semanaInput)}`)
+      .then((d) => setSemanasSug(Array.isArray(d) ? d.slice(0, 12) : [])).catch(() => setSemanasSug([])), 250);
+    return () => clearTimeout(t);
+  }, [semanaInput]);
 
   const cambiarFiltro = (clave, valor) => setFiltros((f) => ({ ...f, [clave]: valor }));
   const hayFiltros = Object.values(filtros).some(Boolean);
@@ -202,6 +216,9 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
   const tiposOpciones = tiposDocs.length ? tiposDocs : TIPOS_FALLBACK.map((n) => ({ nombre: n }));
 
   const filasPagina = items.slice((pagina - 1) * limite, pagina * limite);
+  // Vista "una línea por ítem": cada ítem de cada factura filtrada es una fila.
+  const lineas = items.flatMap((f) => (f.items || []).map((it) => ({ ...it, factura: f })));
+  const lineasPagina = lineas.slice((pagina - 1) * limite, pagina * limite);
   const paginaCompleta = filasPagina.length > 0 && filasPagina.every((f) => seleccion.has(f.id));
   const totalSuma = items.filter((f) => sentido(f.tipo) === 'suma').reduce((s, f) => s + (f.total || 0), 0);
   const totalResta = items.filter((f) => sentido(f.tipo) === 'resta').reduce((s, f) => s + (f.total || 0), 0);
@@ -233,110 +250,194 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
         {seleccion.size > 0 && <Badge bg="primary" pill className="fs-6">{seleccion.size} seleccionada(s)</Badge>}
       </div>
 
-      <Row className="g-2 align-items-center mb-2">
-        <Col xs={12} md="auto">
-          <Button variant="success" size="sm" className="px-3 text-nowrap w-100" type="button" onClick={() => { setCreando(true); setEditando(null); }}>
-            <FaPlus className="me-1" /> Nueva factura
-          </Button>
-        </Col>
-        <Col xs={12} md="auto">
-          <Button variant="outline-primary" size="sm" className="px-3 text-nowrap w-100" type="button" disabled={items.length === 0}
+      {/* Acciones principales */}
+      <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <Button variant="success" size="sm" className="px-3 text-nowrap" type="button" onClick={() => { setCreando(true); setEditando(null); }}>
+          <FaPlus className="me-1" /> Nueva factura
+        </Button>
+        <CargaMasivaCostos
+          apiUrl="/facturas-bulk"
+          templateName="plantilla_facturas"
+          onDone={cargar}
+          validateConceptos
+          validateNits
+          validateUrl="/contenedores-cache"
+          notas={NOTAS_CARGUE}
+          columns={COLUMNAS_CARGUE}
+          groupValidation={{
+            groupBy: 'numero_factura',
+            totalCol: 'total',
+            calcItem: (row) => (parseFloat(row.cantidad) || 0) * (parseFloat(row.valor_unitario) || 0),
+          }}
+        />
+        <Button variant="outline-danger" size="sm" className="px-3 text-nowrap ms-auto" type="button" onClick={vaciarTodas}>
+          <FaTrash className="me-1" /> Vaciar todas
+        </Button>
+      </div>
+
+      {/* Filtros */}
+      <div className="border rounded bg-light p-2 mb-3">
+        <Row className="g-2 align-items-end">
+          <Col xs={12} sm={6} lg={3} xl={2}>
+            <Form.Label className="small text-muted mb-0">N° de factura</Form.Label>
+            <Form.Control
+              size="sm"
+              placeholder="Buscar + Enter"
+              value={numInput}
+              onChange={(e) => setNumInput(e.target.value)}
+              onBlur={() => cambiarFiltro('numero_factura', numInput)}
+              onKeyDown={(e) => e.key === 'Enter' && cambiarFiltro('numero_factura', numInput)}
+            />
+          </Col>
+          <Col xs={12} sm={6} lg={3} xl={2}>
+            <Form.Label className="small text-muted mb-0">Ítem / concepto</Form.Label>
+            <Form.Control
+              size="sm"
+              placeholder="Buscar + Enter"
+              value={conceptoInput}
+              onChange={(e) => setConceptoInput(e.target.value)}
+              onBlur={() => cambiarFiltro('concepto', conceptoInput.trim())}
+              onKeyDown={(e) => e.key === 'Enter' && cambiarFiltro('concepto', conceptoInput.trim())}
+              aria-label="Filtrar por ítem"
+            />
+          </Col>
+          <Col xs={12} sm={6} lg={3} xl={2}>
+            <Form.Label className="small text-muted mb-0">Semana</Form.Label>
+            <Form.Control
+              size="sm"
+              list="listado-semanas"
+              placeholder="Ej. S43-2026 + Enter"
+              value={semanaInput}
+              onChange={(e) => setSemanaInput(e.target.value)}
+              onBlur={() => cambiarFiltro('semana', semanaInput.trim())}
+              onKeyDown={(e) => e.key === 'Enter' && cambiarFiltro('semana', semanaInput.trim())}
+              aria-label="Filtrar por semana"
+            />
+            <datalist id="listado-semanas">{semanasSug.map((x) => <option key={x.consecutivo} value={x.consecutivo} />)}</datalist>
+          </Col>
+          <Col xs={12} sm={6} lg={3} xl={3}>
+            <Form.Label className="small text-muted mb-0">Proveedor</Form.Label>
+            <Form.Select size="sm" value={filtros.nit_proveedor} onChange={(e) => cambiarFiltro('nit_proveedor', e.target.value)} aria-label="Proveedor">
+              <option value="">Todos los proveedores</option>
+              {proveedores.map((p) => <option key={p.nit} value={p.nit}>{p.nombre}</option>)}
+            </Form.Select>
+          </Col>
+          <Col xs={6} sm={4} lg={3} xl={3}>
+            <Form.Label className="small text-muted mb-0">Tipo</Form.Label>
+            <Form.Select size="sm" value={filtros.tipo} onChange={(e) => cambiarFiltro('tipo', e.target.value)} aria-label="Tipo">
+              <option value="">Todos los tipos</option>
+              {tiposOpciones.map((t) => <option key={t.nombre} value={t.nombre}>{t.nombre}</option>)}
+            </Form.Select>
+          </Col>
+          <Col xs={6} sm={4} lg={3} xl={2}>
+            <Form.Label className="small text-muted mb-0">Estado</Form.Label>
+            <Form.Select size="sm" value={filtros.estado} onChange={(e) => cambiarFiltro('estado', e.target.value)} aria-label="Estado">
+              <option value="">Todos los estados</option>
+              <option value="__sin_estado__">Sin estado</option>
+              {estadosDocs.map((e) => <option key={e.id} value={e.nombre}>{e.nombre}</option>)}
+            </Form.Select>
+          </Col>
+          <Col xs={12} sm={4} lg={3} xl={2}>
+            <Form.Label className="small text-muted mb-0">Advertencia</Form.Label>
+            <Form.Select size="sm" value={filtros.advertencia} onChange={(e) => cambiarFiltro('advertencia', e.target.value)} aria-label="Advertencia">
+              <option value="">Todas</option>
+              <option value="mismatch">Con advertencia de total</option>
+            </Form.Select>
+          </Col>
+          <Col xs={6} sm={4} lg={3} xl={2}>
+            <Form.Label className="small text-muted mb-0">Fecha desde</Form.Label>
+            <Form.Control size="sm" type="date" value={filtros.fecha_desde} onChange={(e) => cambiarFiltro('fecha_desde', e.target.value)} aria-label="Desde" />
+          </Col>
+          <Col xs={6} sm={4} lg={3} xl={2}>
+            <Form.Label className="small text-muted mb-0">Fecha hasta</Form.Label>
+            <Form.Control size="sm" type="date" value={filtros.fecha_hasta} onChange={(e) => cambiarFiltro('fecha_hasta', e.target.value)} aria-label="Hasta" />
+          </Col>
+          {hayFiltros && (
+            <Col xs="auto">
+              <Button variant="outline-secondary" size="sm" type="button" onClick={() => { setNumInput(''); setConceptoInput(''); setSemanaInput(''); setFiltros(FILTROS_VACIOS); }}>
+                <FaTimes className="me-1" /> Limpiar filtros
+              </Button>
+            </Col>
+          )}
+        </Row>
+      </div>
+
+      {/* Vista y acciones sobre la selección */}
+      <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
+        <span className="small text-muted">Ver:</span>
+        <ButtonGroup size="sm">
+          <Button variant={vista === 'factura' ? 'primary' : 'outline-primary'} onClick={() => { setVista('factura'); setPagina(1); }}>Por factura</Button>
+          <Button variant={vista === 'item' ? 'primary' : 'outline-primary'} onClick={() => { setVista('item'); setPagina(1); }}>Línea por ítem</Button>
+        </ButtonGroup>
+        {vista === 'item' && <span className="small text-muted">{lineas.length} ítem(s) en {items.length} factura(s)</span>}
+
+        <div className="d-flex flex-wrap align-items-center gap-2 ms-lg-auto">
+          <span className="small text-muted">{seleccion.size} seleccionada(s)</span>
+          <Button variant="outline-primary" size="sm" className="text-nowrap" type="button" disabled={items.length === 0}
             onClick={() => setSeleccion(new Set(items.map((f) => f.id)))}>
             Seleccionar las {items.length} filtradas
           </Button>
-        </Col>
-        <Col xs={12} md="auto">
-          <div className="input-group input-group-sm">
-            <Form.Select size="sm" value={estadoMasivo} onChange={(e) => setEstadoMasivo(e.target.value)} aria-label="Estado a aplicar">
+          <div className="input-group input-group-sm" style={{ width: 'auto' }}>
+            <Form.Select size="sm" value={estadoMasivo} onChange={(e) => setEstadoMasivo(e.target.value)} aria-label="Estado a aplicar" style={{ maxWidth: 190 }}>
               <option value="">Sin estado</option>
               {estadosDocs.map((e) => <option key={e.id} value={e.nombre}>{e.nombre}</option>)}
             </Form.Select>
             <Button variant="primary" size="sm" className="text-nowrap" type="button" disabled={seleccion.size === 0 || cambiandoMasivo} onClick={cambiarEstadoMasivo}>
-              {cambiandoMasivo ? 'Aplicando...' : 'Aplicar a seleccionadas'}
+              {cambiandoMasivo ? 'Aplicando...' : 'Aplicar estado'}
             </Button>
           </div>
-        </Col>
-        <Col xs={12} md="auto">
-          <Button variant="danger" size="sm" className="px-3 text-nowrap w-100" type="button" disabled={seleccion.size === 0} onClick={eliminarSeleccion}>
+          <Button variant="outline-danger" size="sm" className="text-nowrap" type="button" disabled={seleccion.size === 0} onClick={eliminarSeleccion}>
             <FaTrash className="me-1" /> Eliminar seleccionadas
           </Button>
-        </Col>
-        <Col xs={12} md="auto">
-          <CargaMasivaCostos
-            apiUrl="/facturas-bulk"
-            templateName="plantilla_facturas"
-            onDone={cargar}
-            validateConceptos
-            validateNits
-            validateUrl="/contenedores-cache"
-            notas={NOTAS_CARGUE}
-            columns={COLUMNAS_CARGUE}
-            groupValidation={{
-              groupBy: 'numero_factura',
-              totalCol: 'total',
-              calcItem: (row) => (parseFloat(row.cantidad) || 0) * (parseFloat(row.valor_unitario) || 0),
-            }}
-          />
-        </Col>
-        <Col xs={12} md="auto">
-          <Button variant="outline-danger" size="sm" className="px-3 text-nowrap w-100" type="button" onClick={vaciarTodas}>
-            <FaTrash className="me-1" /> Vaciar todas
-          </Button>
-        </Col>
-      </Row>
+        </div>
+      </div>
 
-      <Row className="g-2 align-items-center mb-3">
-        <Col xs={12} md={6} xl>
-          <Form.Control
-            size="sm"
-            placeholder="N° de factura (Enter)"
-            value={numInput}
-            onChange={(e) => setNumInput(e.target.value)}
-            onBlur={() => cambiarFiltro('numero_factura', numInput)}
-            onKeyDown={(e) => e.key === 'Enter' && cambiarFiltro('numero_factura', numInput)}
-          />
-        </Col>
-        <Col xs={12} md={6} xl>
-          <Form.Select size="sm" value={filtros.nit_proveedor} onChange={(e) => cambiarFiltro('nit_proveedor', e.target.value)} aria-label="Proveedor">
-            <option value="">Todos los proveedores</option>
-            {proveedores.map((p) => <option key={p.nit} value={p.nit}>{p.nombre}</option>)}
-          </Form.Select>
-        </Col>
-        <Col xs={12} md={6} xl>
-          <Form.Select size="sm" value={filtros.tipo} onChange={(e) => cambiarFiltro('tipo', e.target.value)} aria-label="Tipo">
-            <option value="">Todos los tipos</option>
-            {tiposOpciones.map((t) => <option key={t.nombre} value={t.nombre}>{t.nombre}</option>)}
-          </Form.Select>
-        </Col>
-        <Col xs={12} md={6} xl>
-          <Form.Select size="sm" value={filtros.estado} onChange={(e) => cambiarFiltro('estado', e.target.value)} aria-label="Estado">
-            <option value="">Todos los estados</option>
-            <option value="__sin_estado__">Sin estado</option>
-            {estadosDocs.map((e) => <option key={e.id} value={e.nombre}>{e.nombre}</option>)}
-          </Form.Select>
-        </Col>
-        <Col xs={12} md={6} xl>
-          <Form.Select size="sm" value={filtros.advertencia} onChange={(e) => cambiarFiltro('advertencia', e.target.value)} aria-label="Advertencia">
-            <option value="">Todas</option>
-            <option value="mismatch">Con advertencia de total</option>
-          </Form.Select>
-        </Col>
-        <Col xs={6} md={3} xl="auto">
-          <Form.Control size="sm" type="date" value={filtros.fecha_desde} onChange={(e) => cambiarFiltro('fecha_desde', e.target.value)} aria-label="Desde" title="Desde" />
-        </Col>
-        <Col xs={6} md={3} xl="auto">
-          <Form.Control size="sm" type="date" value={filtros.fecha_hasta} onChange={(e) => cambiarFiltro('fecha_hasta', e.target.value)} aria-label="Hasta" title="Hasta" />
-        </Col>
-        {hayFiltros && (
-          <Col xs="auto">
-            <Button variant="outline-secondary" size="sm" type="button" onClick={() => { setNumInput(''); setFiltros(FILTROS_VACIOS); }}>
-              <FaTimes className="me-1" /> Limpiar
-            </Button>
-          </Col>
-        )}
-      </Row>
+      {vista === 'item' && (
+        <div className="table-responsive">
+          <table className="table table-bordered table-sm table-hover text-nowrap">
+            <thead>
+              <tr>
+                {['Fecha', 'Tipo', 'N° factura', 'Proveedor', 'Concepto', 'Contenedor', 'Booking', 'Semana', 'Mes', 'Divisa', 'Cantidad', 'V. unit.', 'Subtotal', 'Nivel', 'Tipo de costo', 'Cobrar a', 'Editar'].map((h) => (
+                  <th key={h} className="text-custom-small text-center align-middle" style={{ padding: 2 }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {cargando && <tr><td colSpan={17} className="text-center py-4">Cargando...</td></tr>}
+              {!cargando && lineasPagina.length === 0 && <tr><td colSpan={17} className="text-center py-4 text-muted">Sin ítems para mostrar</td></tr>}
+              {!cargando && lineasPagina.map((it) => (
+                <tr key={it.id}>
+                  <td className="text-custom-small text-center">{it.factura.fecha || '—'}</td>
+                  <td className="text-custom-small text-center">
+                    <Badge bg={sentido(it.factura.tipo) === 'suma' ? 'success' : 'danger'} className="fw-normal">{it.factura.tipo || '—'}</Badge>
+                  </td>
+                  <td className="text-custom-small text-center">{it.factura.numero_factura || '—'}</td>
+                  <td className="text-custom-small text-center">{it.factura.proveedor_nombre || it.factura.nit_proveedor || '—'}</td>
+                  <td className="text-custom-small">{it.concepto || '-'}</td>
+                  <td className="text-custom-small text-center">{it.id_contenedor || '-'}</td>
+                  <td className="text-custom-small text-center">{it.booking || '-'}</td>
+                  <td className="text-custom-small text-center">{it.semana || '-'}</td>
+                  <td className="text-custom-small text-center">{it.mes || '-'}</td>
+                  <td className="text-custom-small text-center">{it.divisa || 'COP'}</td>
+                  <td className="text-custom-small text-end">{formatoNumero(it.cantidad)}</td>
+                  <td className="text-custom-small text-end">{formatoNumero(it.valor_unitario)}</td>
+                  <td className="text-custom-small text-end fw-bold">{formatoNumero((parseFloat(it.cantidad) || 0) * (parseFloat(it.valor_unitario) || 0))}</td>
+                  <td className="text-custom-small text-center">{it.nivel_asociacion ? <Badge bg="primary" className="fw-normal">{it.nivel_asociacion}</Badge> : '-'}</td>
+                  <td className="text-custom-small text-center">{it.tipo_costo ? <Badge bg="secondary" className="fw-normal">{it.tipo_costo}</Badge> : '-'}</td>
+                  <td className="text-custom-small text-center">
+                    {it.tercero_nombre ? <Badge bg="warning" text="dark" className="fw-normal" title={it.cobro_motivo || ''}>{it.tercero_nombre} · {it.cobro_estado}</Badge> : '-'}
+                  </td>
+                  <td className="align-middle text-center" style={{ padding: 2 }}>
+                    <button type="button" className="btn btn-link btn-sm p-0 border-0 text-warning" style={BOTON_CUADRADO} title="Editar la factura" onClick={() => { setEditando(it.factura); setCreando(false); setExpandida(null); }}><FaEdit /></button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-      <div className="table-responsive">
+      <div className="table-responsive" hidden={vista === 'item'}>
         <table className="table table-bordered table-sm table-hover">
           <thead>
             <tr>
@@ -391,10 +492,10 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
                     </Form.Select>
                   </td>
                   <td className="align-middle" style={{ padding: 2 }}>
-                    <button type="button" className="btn btn-warning btn-sm" style={BOTON_CUADRADO} title="Editar" onClick={() => { setEditando(f); setCreando(false); setExpandida(null); }}><FaEdit /></button>
+                    <button type="button" className="btn btn-link btn-sm p-0 border-0 text-warning" style={BOTON_CUADRADO} title="Editar" onClick={() => { setEditando(f); setCreando(false); setExpandida(null); }}><FaEdit /></button>
                   </td>
                   <td className="align-middle" style={{ padding: 2 }}>
-                    <button type="button" className="btn btn-danger btn-sm" style={BOTON_CUADRADO} title="Eliminar" onClick={() => eliminar(f.id)}><FaTrash /></button>
+                    <button type="button" className="btn btn-link btn-sm p-0 border-0 text-danger" style={BOTON_CUADRADO} title="Eliminar" onClick={() => eliminar(f.id)}><FaTrash /></button>
                   </td>
                 </tr>
                 {expandida === f.id && (f.items || []).length > 0 && (
@@ -403,7 +504,7 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
                       <table className="table table-bordered table-sm mb-0">
                         <thead className="table-light">
                           <tr>
-                            {['#', 'Concepto', 'Contenedor', 'Booking', 'Semana', 'Mes', 'Divisa', 'Cantidad', 'V. unit.', 'Subtotal', 'Nivel', 'Tipo de costo'].map((h) => (
+                            {['#', 'Concepto', 'Contenedor', 'Booking', 'Semana', 'Mes', 'Divisa', 'Cantidad', 'V. unit.', 'Subtotal', 'Nivel', 'Tipo de costo', 'Cobrar a'].map((h) => (
                               <th key={h} className="text-custom-small text-center" style={{ padding: 2 }}>{h}</th>
                             ))}
                           </tr>
@@ -423,6 +524,9 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
                               <td className="text-custom-small text-end fw-bold">{formatoNumero((parseFloat(it.cantidad) || 0) * (parseFloat(it.valor_unitario) || 0))}</td>
                               <td className="text-custom-small text-center">{it.nivel_asociacion ? <Badge bg="primary" className="fw-normal">{it.nivel_asociacion}</Badge> : '-'}</td>
                               <td className="text-custom-small text-center">{it.tipo_costo ? <Badge bg="secondary" className="fw-normal">{it.tipo_costo}</Badge> : '-'}</td>
+                              <td className="text-custom-small text-center">
+                                {it.tercero_nombre ? <Badge bg="warning" text="dark" className="fw-normal" title={it.cobro_motivo || ''}>{it.tercero_nombre} · {it.cobro_estado}</Badge> : '-'}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -455,7 +559,7 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
           {[30, 50, 100, 200, 500, 1000].map((n) => <option key={n} value={n}>{n}</option>)}
         </Form.Select>
       </div>
-      <Paginacion setPagination={setPagina} pagination={pagina} total={items.length} limit={limite} />
+      <Paginacion setPagination={setPagina} pagination={pagina} total={vista === 'item' ? lineas.length : items.length} limit={limite} />
 
       <ManualFacturasModal show={verManual} onClose={() => setVerManual(false)} />
 

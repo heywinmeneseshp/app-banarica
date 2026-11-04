@@ -173,3 +173,56 @@ export function EstadosFacturaTab({ onCambio }) {
     />
   );
 }
+
+export function TercerosTab({ onCambio }) {
+  const TIPOS = [
+    { valor: 'cliente', etiqueta: 'Cliente' },
+    { valor: 'finca', etiqueta: 'Finca' },
+    { valor: 'proveedor', etiqueta: 'Proveedor' },
+    { valor: 'otro', etiqueta: 'Otro' },
+  ];
+  return (
+    <CatalogoCrud
+      titulo="Terceros"
+      singular="tercero"
+      endpoint="/terceros"
+      vacio={{ tipo: 'otro', nombre: '', nit: '' }}
+      filtrarTexto={(f) => [f.nombre, f.nit, f.tipo]}
+      columnas={[
+        { etiqueta: 'Nombre', campo: 'nombre' },
+        { etiqueta: 'Tipo', render: (f) => <span className="badge bg-secondary">{f.tipo}</span> },
+        { etiqueta: 'NIT', campo: 'nit' },
+      ]}
+      campos={[
+        { clave: 'nombre', etiqueta: 'Nombre', requerido: true, ancho: 12, placeholder: 'Ej. Finca La Esperanza' },
+        { clave: 'tipo', etiqueta: 'Tipo', tipo: 'select', requerido: true, ancho: 6, opciones: TIPOS },
+        { clave: 'nit', etiqueta: 'NIT', ancho: 6, placeholder: 'Opcional' },
+      ]}
+      eliminar={(f) => ({ ruta: `/terceros?id=${f.id}` })}
+      onCambio={onCambio}
+    />
+  );
+}
+
+export function EstadosCobroTab({ onCambio }) {
+  return (
+    <CatalogoCrud
+      titulo="Estados de cobro"
+      singular="estado"
+      endpoint="/estados-cobro"
+      vacio={{ nombre: '', color: '#6c757d', descripcion: '' }}
+      filtrarTexto={(f) => [f.nombre, f.descripcion]}
+      columnas={[
+        { etiqueta: 'Estado', render: (f) => <span className="badge" style={{ background: f.color }}>{f.nombre}</span> },
+        { etiqueta: 'Descripción', campo: 'descripcion' },
+      ]}
+      campos={[
+        { clave: 'nombre', etiqueta: 'Nombre', requerido: true, ancho: 12, placeholder: 'Ej. Pendiente por cobrar' },
+        { clave: 'color', etiqueta: 'Color', tipo: 'color', ancho: 12 },
+        { clave: 'descripcion', etiqueta: 'Descripción', ancho: 12, placeholder: 'Opcional' },
+      ]}
+      eliminar={(f) => ({ ruta: `/estados-cobro?id=${f.id}` })}
+      onCambio={onCambio}
+    />
+  );
+}

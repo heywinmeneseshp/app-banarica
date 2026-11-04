@@ -10,7 +10,7 @@ import CargaMasivaCostos from './CargaMasivaCostos';
 const LIMITE = 30;
 const COLORES = ['#6c757d', '#fd7e14', '#0dcaf0', '#198754', '#6f42c1', '#dc3545', '#20c997', '#0d6efd', '#d63384', '#ffc107'];
 
-const BOTON_CUADRADO = { display: 'flex', justifyContent: 'center', alignItems: 'center', height: 25, width: 25, margin: 'auto' };
+const BOTON_CUADRADO = { display: 'flex', justifyContent: 'center', alignItems: 'center', height: 25, width: 25, margin: 'auto', fontSize: 16 };
 
 // CRUD de un catalogo de Costos logisticos con el mismo aspecto que las tablas de Maestros:
 // buscador, boton Nuevo, tabla con editar/eliminar, paginacion y formulario en ventana.
@@ -168,10 +168,10 @@ export default function CatalogoCrud({
                   </td>
                 ))}
                 <td className="align-middle" style={{ padding: 2 }}>
-                  <button type="button" className="btn btn-warning btn-sm" style={BOTON_CUADRADO} title="Editar" onClick={() => editar(fila)}><FaEdit /></button>
+                  <button type="button" className="btn btn-link btn-sm p-0 border-0 text-warning" style={BOTON_CUADRADO} title="Editar" onClick={() => editar(fila)}><FaEdit /></button>
                 </td>
                 <td className="align-middle" style={{ padding: 2 }}>
-                  <button type="button" className="btn btn-danger btn-sm" style={BOTON_CUADRADO} title="Eliminar" onClick={() => borrar(fila)}><FaTrash /></button>
+                  <button type="button" className="btn btn-link btn-sm p-0 border-0 text-danger" style={BOTON_CUADRADO} title="Eliminar" onClick={() => borrar(fila)}><FaTrash /></button>
                 </td>
               </tr>
             ))}

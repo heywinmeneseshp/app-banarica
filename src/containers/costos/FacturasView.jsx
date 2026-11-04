@@ -5,6 +5,7 @@ import ListadoFacturas from './ListadoFacturas';
 import { EstadosFacturaTab, ItemsTab, ProveedoresTab, TiposDocumentoTab } from './CatalogosCostos';
 import TrmTab from './TrmTab';
 import CostoPorClienteTab from './CostoPorClienteTab';
+import PendientePorCobrarTab from './PendientePorCobrarTab';
 
 const PESTANAS = [
   { clave: 'listado', etiqueta: 'Registro de facturas' },
@@ -14,6 +15,7 @@ const PESTANAS = [
   { clave: 'estados', etiqueta: 'Estados de factura' },
   { clave: 'trm', etiqueta: 'TRM' },
   { clave: 'clientes', etiqueta: 'Costo por cliente' },
+  { clave: 'cobrar', etiqueta: 'Pendiente por cobrar' },
 ];
 
 // Costos logisticos > Facturas: registro de facturas y los catalogos que usa.
@@ -45,7 +47,7 @@ export default function FacturasView() {
   }, [cargarCatalogos]);
 
   return (
-    <div className="container-fluid pt-3">
+    <div className="container-fluid pt-3" style={{ width: "max-content", minWidth: "100%", maxWidth: "95vw", position: "relative", left: "50%", transform: "translateX(-50%)" }}>
       <Nav variant="tabs" activeKey={pestana} onSelect={(k) => setPestana(k)} className="mb-3 flex-wrap">
         {PESTANAS.map((p) => (
           <Nav.Item key={p.clave}>
@@ -63,6 +65,7 @@ export default function FacturasView() {
       {pestana === 'estados' && <EstadosFacturaTab onCambio={cargarCatalogos} />}
       {pestana === 'trm' && <TrmTab onCambio={cargarCatalogos} />}
       {pestana === 'clientes' && <CostoPorClienteTab />}
+      {pestana === 'cobrar' && <PendientePorCobrarTab />}
     </div>
   );
 }

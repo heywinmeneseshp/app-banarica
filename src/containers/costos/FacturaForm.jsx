@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaCopy, FaTimes } from 'react-icons/fa';
 import { Modal } from 'react-bootstrap';
-import { costosEnviar, costosFetch } from './costosApi';
+import { costosEnviar, costosFetch, costosGet } from './costosApi';
 import SugerenciasDropdown, { useNavegacionSugerencias } from './SugerenciasDropdown';
 
 const SuggestDropdown = SugerenciasDropdown;
@@ -39,7 +39,7 @@ function mesDesdeRango(fechaInicio, fechaFin) {
   return `${MESES_ES[parseInt(month)]} ${year}`;
 }
 
-function ItemRow({ item, idx, onChange, onRemove, onDuplicate, tiposCosto = [] }) {
+function ItemRow({ item, idx, onChange, onRemove, onDuplicate, tiposCosto = [], terceros = [], onTerceroCreado }) {
   const [conceptoQuery, setConceptoQuery] = useState(item.concepto || '');
   const [conceptoSugs, setConceptoSugs]   = useState([]);
   const [conceptoFocused, setConceptoFocused] = useState(false);
@@ -63,6 +63,9 @@ function ItemRow({ item, idx, onChange, onRemove, onDuplicate, tiposCosto = [] }
   const [validAnhos, setValidAnhos]       = useState([]);
   const [anhoFocused, setAnhoFocused]     = useState(false);
 
+  const [terceroQuery, setTerceroQuery] = useState(item.tercero_nombre || '');
+  const [terceroFocused, setTerceroFocused] = useState(false);
+  const terceroRef = useRef(null);
   const conceptoRef = useRef(null);
   const contRef     = useRef(null);
   const bookRef     = useRef(null);
@@ -229,6 +232,26 @@ function ItemRow({ item, idx, onChange, onRemove, onDuplicate, tiposCosto = [] }
     const nb = { ...item, booking: b.booking, semana: b.consecutivo_semana || '' };
     onChange(idx, { ...nb, nivel_asociacion: calcNivel(nb) });
   }
+
+  const tercerosFiltrados = terceros
+    .filter((t) => !terceroQuery.trim() || t.nombre.toLowerCase().includes(terceroQuery.trim().toLowerCase()))
+    .slice(0, 12);
+  const puedeCrearTercero = terceroQuery.trim().length > 1
+    && !terceros.some((t) => t.nombre.toLowerCase() === terceroQuery.trim().toLowerCase());
+  const opcionesTercero = [...tercerosFiltrados, ...(puedeCrearTercero ? [{ id: 'nuevo', nombre: terceroQuery.trim(), nuevo: true }] : [])];
+  async function elegirTercero(t) {
+    let sel = t;
+    if (t.nuevo) {
+      const r = await costosEnviar('POST', '/terceros', { nombre: t.nombre, tipo: 'otro' });
+      if (!r.ok) return;
+      sel = { id: r.data.id, nombre: t.nombre, tipo: 'otro' };
+      onTerceroCreado?.(sel);
+    }
+    setTerceroQuery(sel.nombre);
+    setTerceroFocused(false);
+    onChange(idx, { ...item, tercero_id: sel.id, tercero_nombre: sel.nombre });
+  }
+  const navTercero = useNavegacionSugerencias(opcionesTercero, terceroFocused && opcionesTercero.length > 0, elegirTercero);
 
   const showConcepto = conceptoFocused && conceptoSugs.length > 0;
   const showCont = contFocused && contSugs.length > 0 && !item.id_contenedor;
@@ -547,6 +570,41 @@ function ItemRow({ item, idx, onChange, onRemove, onDuplicate, tiposCosto = [] }
         )}
       </td>
 
+      {/* Cobrar a un tercero (seguimiento en la pestaña Pendiente por cobrar) */}
+      <td style={{ minWidth: 190 }} className="align-middle">
+        <input ref={terceroRef} className="form-control form-control-sm" value={terceroQuery}
+          placeholder="Cobrar a (opcional)..."
+          style={item.tercero_id ? { borderColor: '#fd7e14' } : undefined}
+          onChange={e => {
+            setTerceroQuery(e.target.value);
+            if (!e.target.value.trim()) onChange(idx, { ...item, tercero_id: null, tercero_nombre: '', cobro_motivo: '' });
+            else if (item.tercero_id) onChange(idx, { ...item, tercero_id: null, tercero_nombre: '' });
+          }}
+          onKeyDown={navTercero.onKeyDown}
+          onFocus={() => setTerceroFocused(true)}
+          onBlur={() => { setTimeout(() => setTerceroFocused(false), 150); }}
+          autoComplete="off" />
+        <SuggestDropdown anchorRef={terceroRef} show={terceroFocused && opcionesTercero.length > 0 && !item.tercero_id}>
+          {opcionesTercero.map((t, i) => (
+            <li key={t.id}
+              className={navTercero.claseItem(i)}
+              data-sug-activa={navTercero.activo === i}
+              style={{ cursor: 'pointer', fontSize: 12 }}
+              onMouseDown={e => { e.preventDefault(); elegirTercero(t); }}>
+              {t.nuevo
+                ? <span>+ Crear tercero <strong>{t.nombre}</strong></span>
+                : <><strong>{t.nombre}</strong>{t.tipo && <span className="ms-2 badge bg-secondary" style={{ fontSize: 10 }}>{t.tipo}</span>}</>}
+            </li>
+          ))}
+        </SuggestDropdown>
+        {item.tercero_id && (
+          <input className="form-control form-control-sm mt-1" value={item.cobro_motivo || ''}
+            onChange={e => upd('cobro_motivo', e.target.value)}
+            placeholder="Motivo / error..." autoComplete="off" />
+        )}
+        {item.cobro_estado && <small className="text-muted d-block" style={{ fontSize: 10 }}>{item.cobro_estado}</small>}
+      </td>
+
       {/* Acciones */}
       <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
         <div style={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
@@ -627,6 +685,9 @@ function FacturaForm({ initial, proveedores, tiposDocs = [], tiposCosto = [], on
   const [trm, setTrm]       = useState(null);
   const [trmLoading, setTrmLoading] = useState(false);
   const [errorAsoc, setErrorAsoc] = useState('');
+  const [terceros, setTerceros] = useState([]);
+
+  useEffect(() => { costosGet('/terceros').then(setTerceros).catch(() => setTerceros([])); }, []);
   const [conflictos, setConflictos] = useState(null);
 
   useEffect(() => {
@@ -646,7 +707,10 @@ function FacturaForm({ initial, proveedores, tiposDocs = [], tiposCosto = [], on
   function addItem() { setItems(prev => [...prev, { ...EMPTY_ITEM }]); }
   function removeItem(idx) { setItems(prev => prev.filter((_, i) => i !== idx)); }
   function updateItem(idx, val) { setItems(prev => prev.map((it, i) => i === idx ? val : it)); }
-  function duplicateItem(idx) { setItems(prev => [...prev.slice(0, idx + 1), { ...prev[idx] }, ...prev.slice(idx + 1)]); }
+  function duplicateItem(idx) {
+    const { id: _id, tercero_id: _t, tercero_nombre: _tn, cobro_motivo: _cm, cobro_estado: _ce, ...copia } = items[idx];
+    setItems(prev => [...prev.slice(0, idx + 1), copia, ...prev.slice(idx + 1)]);
+  }
 
   const hasUSD = items.some(it => (it.divisa||'COP').toUpperCase() === 'USD');
   const calcTotal = items.reduce((s, it) => {
@@ -821,15 +885,17 @@ function FacturaForm({ initial, proveedores, tiposDocs = [], tiposCosto = [], on
               <th>Nivel</th>
               <th>Tipo costo</th>
               <th title="Método de distribución">Distribución</th>
+              <th title="Si el ítem se le va a cobrar a un tercero">Cobrar a</th>
               <th style={{ width: 36 }}></th>
             </tr>
           </thead>
           <tbody>
             {items.map((it, idx) => (
-              <ItemRow key={idx} item={it} idx={idx} onChange={updateItem} onRemove={removeItem} onDuplicate={duplicateItem} tiposCosto={tiposCosto} />
+              <ItemRow key={idx} item={it} idx={idx} onChange={updateItem} onRemove={removeItem} onDuplicate={duplicateItem} tiposCosto={tiposCosto}
+                terceros={terceros} onTerceroCreado={(t) => setTerceros(prev => [...prev, t])} />
             ))}
             {items.length === 0 && (
-              <tr><td colSpan={14} className="text-center text-muted py-2 small">Sin ítems — agrega uno arriba</td></tr>
+              <tr><td colSpan={15} className="text-center text-muted py-2 small">Sin ítems — agrega uno arriba</td></tr>
             )}
           </tbody>
           {items.length > 1 && (
@@ -839,7 +905,7 @@ function FacturaForm({ initial, proveedores, tiposDocs = [], tiposCosto = [], on
                 <td className="text-end fw-bold text-primary">
                   {calcTotal.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                 </td>
-                <td colSpan={5}></td>
+                <td colSpan={6}></td>
               </tr>
             </tfoot>
           )}
