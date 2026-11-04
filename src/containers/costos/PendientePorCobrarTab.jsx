@@ -6,7 +6,6 @@ import Alertas from '@components/shared/Alertas';
 import { costosEnviar, costosGet, formatoNumero } from './costosApi';
 import { EstadosCobroTab, TercerosTab } from './CatalogosCostos';
 
-const LIMITE = 30;
 
 // Costos logisticos > Facturas > Pendiente por cobrar: seguimiento de los items que se le van a
 // cobrar a un tercero (error de un cliente, finca, proveedor...), con su estado y fechas.
@@ -22,6 +21,7 @@ export default function PendientePorCobrarTab() {
   const [seleccion, setSeleccion] = useState(new Set());
   const [estadoMasivo, setEstadoMasivo] = useState('');
   const [pagina, setPagina] = useState(1);
+  const [limite, setLimite] = useState(30);
   const { alert, setAlert, toogleAlert } = useAlert();
 
   const cargarCatalogos = useCallback(() => {
@@ -92,7 +92,7 @@ export default function PendientePorCobrarTab() {
     setAlert({ active: true, mensaje: `Se actualizaron ${ids.length} cobro(s)`, color: 'success', autoClose: true });
   }
 
-  const filasPagina = filas.slice((pagina - 1) * LIMITE, pagina * LIMITE);
+  const filasPagina = filas.slice((pagina - 1) * limite, pagina * limite);
   const paginaCompleta = filasPagina.length > 0 && filasPagina.every((f) => seleccion.has(f.id));
   const alternar = (id) => setSeleccion((p) => {
     const n = new Set(p);
@@ -179,6 +179,15 @@ export default function PendientePorCobrarTab() {
                 Seleccionar los {filas.length} filtrados
               </Button>
             </Col>
+            <Col xs="auto">
+              <div className="d-flex align-items-center gap-1 small text-muted">
+          <span>Filas por página</span>
+          <Form.Select size="sm" style={{ width: 80 }} value={limite} aria-label="Filas por página"
+            onChange={(e) => { setLimite(Number(e.target.value)); setPagina(1); }}>
+            {[30, 50, 100, 200, 500, 1000].map((n) => <option key={n} value={n}>{n}</option>)}
+          </Form.Select>
+        </div>
+            </Col>
             {cargando && <Col xs="auto"><Spinner size="sm" animation="border" /></Col>}
           </Row>
 
@@ -260,7 +269,7 @@ export default function PendientePorCobrarTab() {
               )}
             </Table>
           </div>
-          <Paginacion setPagination={setPagina} pagination={pagina} total={filas.length} limit={LIMITE} />
+          <Paginacion setPagination={setPagina} pagination={pagina} total={filas.length} limit={limite} />
         </>
       )}
     </div>

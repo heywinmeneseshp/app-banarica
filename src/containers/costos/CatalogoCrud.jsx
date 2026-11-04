@@ -7,10 +7,9 @@ import Alertas from '@components/shared/Alertas';
 import { costosEnviar, costosGet } from './costosApi';
 import CargaMasivaCostos from './CargaMasivaCostos';
 
-const LIMITE = 30;
 const COLORES = ['#6c757d', '#fd7e14', '#0dcaf0', '#198754', '#6f42c1', '#dc3545', '#20c997', '#0d6efd', '#d63384', '#ffc107'];
 
-const BOTON_CUADRADO = { display: 'flex', justifyContent: 'center', alignItems: 'center', height: 25, width: 25, margin: 'auto', fontSize: 16 };
+const BOTON_CUADRADO = { display: 'flex', justifyContent: 'center', alignItems: 'center', height: 20, width: 20, margin: 'auto', fontSize: 12 };
 
 // CRUD de un catalogo de Costos logisticos con el mismo aspecto que las tablas de Maestros:
 // buscador, boton Nuevo, tabla con editar/eliminar, paginacion y formulario en ventana.
@@ -27,6 +26,7 @@ export default function CatalogoCrud({
   const [texto, setTexto] = useState('');
   const [filtros, setFiltros] = useState({});
   const [pagina, setPagina] = useState(1);
+  const [limite, setLimite] = useState(30);
   const [editando, setEditando] = useState(null); // null | { ...fila }
   const [esNuevo, setEsNuevo] = useState(false);
   const [error, setError] = useState('');
@@ -55,7 +55,7 @@ export default function CatalogoCrud({
 
   useEffect(() => { setPagina(1); }, [texto, filtros]);
 
-  const pagina_ = visibles.slice((pagina - 1) * LIMITE, pagina * LIMITE);
+  const pagina_ = visibles.slice((pagina - 1) * limite, pagina * limite);
 
   const nuevo = () => { setEsNuevo(true); setError(''); setEditando({ ...vacio }); };
   const editar = (fila) => {
@@ -179,7 +179,13 @@ export default function CatalogoCrud({
         </table>
       </div>
 
-      <Paginacion setPagination={setPagina} pagination={pagina} total={visibles.length} limit={LIMITE} />
+      <div className="d-flex align-items-center gap-1 small text-muted mb-1">
+        <span>Filas por página</span>
+        <Form.Select size="sm" style={{ width: 80 }} value={limite} aria-label="Filas por página" onChange={(e) => { setLimite(Number(e.target.value)); setPagina(1); }}>
+          {[30, 50, 100, 200, 500, 1000].map((n) => <option key={n} value={n}>{n}</option>)}
+        </Form.Select>
+      </div>
+      <Paginacion setPagination={setPagina} pagination={pagina} total={visibles.length} limit={limite} />
 
       <Modal show={Boolean(editando)} onHide={() => setEditando(null)} centered size={anchoModal}>
         {editando && (

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Badge, Button, ButtonGroup, Col, Form, Modal, Row } from 'react-bootstrap';
+import { Alert, Badge, Button, ButtonGroup, Col, Dropdown, Form, Modal, Row } from 'react-bootstrap';
 import {
   FaChevronDown, FaChevronRight, FaEdit, FaExclamationTriangle, FaInfoCircle, FaPlus, FaTimes, FaTrash,
 } from 'react-icons/fa';
@@ -13,7 +13,19 @@ import ManualFacturasModal from './ManualFacturasModal';
 
 const TIPOS_FALLBACK = ['Factura', 'Nota Débito', 'Nota Crédito', 'Otro'];
 const FILTROS_VACIOS = { nit_proveedor: '', tipo: '', estado: '', advertencia: '', numero_factura: '', concepto: '', semana: '', fecha_desde: '', fecha_hasta: '' };
-const BOTON_CUADRADO = { display: 'flex', justifyContent: 'center', alignItems: 'center', height: 25, width: 25, margin: 'auto', fontSize: 16 };
+// Circulo de color que representa el estado (gris vacio = sin estado).
+function PuntoEstado({ color }) {
+  return (
+    <span
+      style={{
+        display: 'inline-block', width: 11, height: 11, borderRadius: '50%', verticalAlign: 'middle',
+        background: color || 'transparent', border: `1.5px solid ${color || '#adb5bd'}`,
+      }}
+    />
+  );
+}
+
+const BOTON_CUADRADO = { display: 'flex', justifyContent: 'center', alignItems: 'center', height: 20, width: 20, margin: 'auto', fontSize: 12 };
 
 const NOTAS_CARGUE = [
   'Cada fila es un ítem. Las filas con el mismo N Factura se agrupan en una sola factura; si el N Factura va vacío, cada fila crea su propia factura.',
@@ -138,6 +150,19 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
     await Promise.all([...seleccion].map((id) => costosEnviar('DELETE', '/facturas', { id })));
     setSeleccion(new Set());
     cargar();
+  }
+
+  // Completa booking y semana de los ítems con contenedor que no los tienen (solo si el dato es único).
+  async function completarBookings() {
+    if (!window.confirm('Se completará el booking y la semana de los ítems que tienen contenedor pero no los tienen. ¿Continuar?')) return;
+    const r = await costosEnviar('POST', '/facturas-completar-bookings');
+    setAlert({
+      active: true,
+      mensaje: r.ok ? `Se revisaron ${r.data.revisados} ítem(s) y se completaron ${r.data.actualizados}` : (r.error || 'No se pudo completar'),
+      color: r.ok ? 'success' : 'danger',
+      autoClose: true,
+    });
+    if (r.ok) cargar();
   }
 
   // Borra TODAS las facturas (no solo las filtradas). Pide escribir VACIAR para confirmar.
@@ -270,6 +295,10 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
             calcItem: (row) => (parseFloat(row.cantidad) || 0) * (parseFloat(row.valor_unitario) || 0),
           }}
         />
+        <Button variant="outline-secondary" size="sm" className="px-3 text-nowrap" type="button" onClick={completarBookings}
+          title="Completa el booking y la semana de los ítems que tienen contenedor pero les falta">
+          Completar bookings
+        </Button>
         <Button variant="outline-danger" size="sm" className="px-3 text-nowrap ms-auto" type="button" onClick={vaciarTodas}>
           <FaTrash className="me-1" /> Vaciar todas
         </Button>
@@ -370,6 +399,13 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
           <Button variant={vista === 'item' ? 'primary' : 'outline-primary'} onClick={() => { setVista('item'); setPagina(1); }}>Línea por ítem</Button>
         </ButtonGroup>
         {vista === 'item' && <span className="small text-muted">{lineas.length} ítem(s) en {items.length} factura(s)</span>}
+        <div className="d-flex align-items-center gap-1 small text-muted">
+          <span>Filas por página</span>
+          <Form.Select size="sm" style={{ width: 80 }} value={limite} aria-label="Filas por página"
+            onChange={(e) => { setLimite(Number(e.target.value)); setPagina(1); }}>
+            {[30, 50, 100, 200, 500, 1000].map((n) => <option key={n} value={n}>{n}</option>)}
+          </Form.Select>
+        </div>
 
         <div className="d-flex flex-wrap align-items-center gap-2 ms-lg-auto">
           <span className="small text-muted">{seleccion.size} seleccionada(s)</span>
@@ -397,14 +433,14 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
           <table className="table table-bordered table-sm table-hover text-nowrap">
             <thead>
               <tr>
-                {['Fecha', 'Tipo', 'N° factura', 'Proveedor', 'Concepto', 'Contenedor', 'Booking', 'Semana', 'Mes', 'Divisa', 'Cantidad', 'V. unit.', 'Subtotal', 'Nivel', 'Tipo de costo', 'Cobrar a', 'Editar'].map((h) => (
+                {['Fecha', 'Tipo', 'N° factura', 'Proveedor', 'Concepto', 'Contenedor', 'Booking', 'Semana', 'Mes', 'Cód. cliente', 'Divisa', 'Cantidad', 'V. unit.', 'Subtotal', 'Nivel', 'Tipo de costo', 'Cobrar a', 'Editar'].map((h) => (
                   <th key={h} className="text-custom-small text-center align-middle" style={{ padding: 2 }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {cargando && <tr><td colSpan={17} className="text-center py-4">Cargando...</td></tr>}
-              {!cargando && lineasPagina.length === 0 && <tr><td colSpan={17} className="text-center py-4 text-muted">Sin ítems para mostrar</td></tr>}
+              {cargando && <tr><td colSpan={18} className="text-center py-4">Cargando...</td></tr>}
+              {!cargando && lineasPagina.length === 0 && <tr><td colSpan={18} className="text-center py-4 text-muted">Sin ítems para mostrar</td></tr>}
               {!cargando && lineasPagina.map((it) => (
                 <tr key={it.id}>
                   <td className="text-custom-small text-center">{it.factura.fecha || '—'}</td>
@@ -418,6 +454,7 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
                   <td className="text-custom-small text-center">{it.booking || '-'}</td>
                   <td className="text-custom-small text-center">{it.semana || '-'}</td>
                   <td className="text-custom-small text-center">{it.mes || '-'}</td>
+                  <td className="text-custom-small text-center" title={it.cliente_nombre || ''}>{it.cliente || '-'}</td>
                   <td className="text-custom-small text-center">{it.divisa || 'COP'}</td>
                   <td className="text-custom-small text-end">{formatoNumero(it.cantidad)}</td>
                   <td className="text-custom-small text-end">{formatoNumero(it.valor_unitario)}</td>
@@ -479,17 +516,27 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
                       <FaExclamationTriangle className="ms-1 text-warning" title="El total declarado no coincide con la suma de ítems" />
                     )}
                   </td>
-                  <td className="align-middle" style={{ padding: 2, minWidth: 150 }}>
-                    <Form.Select
-                      size="sm"
-                      value={f.estado || ''}
-                      onChange={(e) => cambiarEstado(f.id, e.target.value)}
-                      aria-label="Estado de la factura"
-                      style={f.estado ? { background: colorEstado[f.estado] || '#6c757d', color: '#fff', borderColor: 'transparent' } : undefined}
-                    >
-                      <option value="">Sin estado</option>
-                      {estadosDocs.map((e) => <option key={e.id} value={e.nombre}>{e.nombre}</option>)}
-                    </Form.Select>
+                  <td className="align-middle text-start" style={{ padding: 2 }}>
+                    <Dropdown align="end">
+                      <Dropdown.Toggle
+                        as="button"
+                        type="button"
+                        className="btn btn-link p-0 border-0 shadow-none no-caret"
+                        title={f.estado || 'Sin estado'}
+                        aria-label={`Estado: ${f.estado || 'Sin estado'}`}
+                      >
+                        <PuntoEstado color={f.estado ? (colorEstado[f.estado] || '#6c757d') : null} />
+                        <span className="ms-1 text-custom-small text-body text-nowrap">{f.estado || 'Sin estado'}</span>
+                      </Dropdown.Toggle>
+                      <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
+                        <Dropdown.Item active={!f.estado} onClick={() => cambiarEstado(f.id, '')}><PuntoEstado color={null} /> Sin estado</Dropdown.Item>
+                        {estadosDocs.map((e) => (
+                          <Dropdown.Item key={e.id} active={f.estado === e.nombre} onClick={() => cambiarEstado(f.id, e.nombre)}>
+                            <PuntoEstado color={e.color} /> {e.nombre}
+                          </Dropdown.Item>
+                        ))}
+                      </Dropdown.Menu>
+                    </Dropdown>
                   </td>
                   <td className="align-middle" style={{ padding: 2 }}>
                     <button type="button" className="btn btn-link btn-sm p-0 border-0 text-warning" style={BOTON_CUADRADO} title="Editar" onClick={() => { setEditando(f); setCreando(false); setExpandida(null); }}><FaEdit /></button>
@@ -552,18 +599,11 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
         </table>
       </div>
 
-      <div className="d-flex align-items-center gap-2 small text-muted mb-1">
-        <span>Filas por página</span>
-        <Form.Select size="sm" style={{ width: 90 }} value={limite} aria-label="Filas por página"
-          onChange={(e) => { setLimite(Number(e.target.value)); setPagina(1); }}>
-          {[30, 50, 100, 200, 500, 1000].map((n) => <option key={n} value={n}>{n}</option>)}
-        </Form.Select>
-      </div>
       <Paginacion setPagination={setPagina} pagination={pagina} total={vista === 'item' ? lineas.length : items.length} limit={limite} />
 
       <ManualFacturasModal show={verManual} onClose={() => setVerManual(false)} />
 
-      <style>{'.factura-modal.modal-dialog { max-width: 96vw; width: 96vw; }'}</style>
+      <style>{'.factura-modal.modal-dialog { max-width: 96vw; width: 96vw; } .dropdown-toggle.no-caret::after { display: none; }'}</style>
       <Modal show={creando || Boolean(editando)} onHide={cerrarFormulario} centered dialogClassName="factura-modal" backdrop="static">
         <Modal.Header closeButton>
           <Modal.Title className="h6 mb-0">{editando ? 'Editar factura' : 'Nueva factura'}</Modal.Title>
