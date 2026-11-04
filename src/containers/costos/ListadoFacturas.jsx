@@ -11,7 +11,6 @@ import CargaMasivaCostos from './CargaMasivaCostos';
 import FacturaForm from './FacturaForm';
 import ManualFacturasModal from './ManualFacturasModal';
 
-const LIMITE = 30;
 const TIPOS_FALLBACK = ['Factura', 'Nota Débito', 'Nota Crédito', 'Otro'];
 const FILTROS_VACIOS = { nit_proveedor: '', tipo: '', estado: '', advertencia: '', numero_factura: '', fecha_desde: '', fecha_hasta: '' };
 const BOTON_CUADRADO = { display: 'flex', justifyContent: 'center', alignItems: 'center', height: 25, width: 25, margin: 'auto' };
@@ -56,6 +55,9 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
   const [cargando, setCargando] = useState(false);
   const [expandida, setExpandida] = useState(null);
   const [pagina, setPagina] = useState(1);
+  const [limite, setLimite] = useState(30);
+  const [estadoMasivo, setEstadoMasivo] = useState('');
+  const [cambiandoMasivo, setCambiandoMasivo] = useState(false);
   const [seleccion, setSeleccion] = useState(new Set());
   const [errorGuardar, setErrorGuardar] = useState('');
   const [verManual, setVerManual] = useState(false);
@@ -159,9 +161,39 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
     });
   };
 
+  // Cambia el estado actualizando solo esa fila en pantalla (sin recargar el listado).
   async function cambiarEstado(id, estado) {
-    await costosEnviar('PATCH', '/facturas', { id, _estadoOnly: true, estado: estado || null });
-    cargar();
+    const anterior = items.find((f) => f.id === id)?.estado || '';
+    setItems((prev) => prev.map((f) => (f.id === id ? { ...f, estado: estado || null } : f)));
+    const r = await costosEnviar('PATCH', '/facturas', { id, _estadoOnly: true, estado: estado || null });
+    if (!r.ok) {
+      setItems((prev) => prev.map((f) => (f.id === id ? { ...f, estado: anterior || null } : f)));
+      setAlert({ active: true, mensaje: r.error || 'No se pudo cambiar el estado', color: 'danger', autoClose: true });
+    }
+  }
+
+  // Aplica un estado a todas las facturas seleccionadas, en lotes, sin recargar el listado.
+  async function cambiarEstadoMasivo() {
+    const ids = [...seleccion];
+    if (!ids.length) return;
+    const nombre = estadoMasivo || 'Sin estado';
+    if (!window.confirm(`¿Cambiar el estado de ${ids.length} factura(s) a "${nombre}"?`)) return;
+    setCambiandoMasivo(true);
+    const fallidas = new Set();
+    for (let i = 0; i < ids.length; i += 10) {
+      // eslint-disable-next-line no-await-in-loop
+      const rs = await Promise.all(ids.slice(i, i + 10).map((id) => costosEnviar('PATCH', '/facturas', { id, _estadoOnly: true, estado: estadoMasivo || null })));
+      rs.forEach((r, k) => { if (!r.ok) fallidas.add(ids[i + k]); });
+    }
+    setItems((prev) => prev.map((f) => (seleccion.has(f.id) && !fallidas.has(f.id) ? { ...f, estado: estadoMasivo || null } : f)));
+    setSeleccion(new Set(fallidas));
+    setCambiandoMasivo(false);
+    setAlert({
+      active: true,
+      mensaje: fallidas.size ? `Se actualizaron ${ids.length - fallidas.size} factura(s); ${fallidas.size} fallaron` : `Se actualizaron ${ids.length} factura(s) a "${nombre}"`,
+      color: fallidas.size ? 'warning' : 'success',
+      autoClose: true,
+    });
   }
 
   const sentidoPorTipo = Object.fromEntries(tiposDocs.map((t) => [t.nombre, t.sentido]));
@@ -169,7 +201,7 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
   const colorEstado = Object.fromEntries(estadosDocs.map((e) => [e.nombre, e.color]));
   const tiposOpciones = tiposDocs.length ? tiposDocs : TIPOS_FALLBACK.map((n) => ({ nombre: n }));
 
-  const filasPagina = items.slice((pagina - 1) * LIMITE, pagina * LIMITE);
+  const filasPagina = items.slice((pagina - 1) * limite, pagina * limite);
   const paginaCompleta = filasPagina.length > 0 && filasPagina.every((f) => seleccion.has(f.id));
   const totalSuma = items.filter((f) => sentido(f.tipo) === 'suma').reduce((s, f) => s + (f.total || 0), 0);
   const totalResta = items.filter((f) => sentido(f.tipo) === 'resta').reduce((s, f) => s + (f.total || 0), 0);
@@ -206,6 +238,23 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
           <Button variant="success" size="sm" className="px-3 text-nowrap w-100" type="button" onClick={() => { setCreando(true); setEditando(null); }}>
             <FaPlus className="me-1" /> Nueva factura
           </Button>
+        </Col>
+        <Col xs={12} md="auto">
+          <Button variant="outline-primary" size="sm" className="px-3 text-nowrap w-100" type="button" disabled={items.length === 0}
+            onClick={() => setSeleccion(new Set(items.map((f) => f.id)))}>
+            Seleccionar las {items.length} filtradas
+          </Button>
+        </Col>
+        <Col xs={12} md="auto">
+          <div className="input-group input-group-sm">
+            <Form.Select size="sm" value={estadoMasivo} onChange={(e) => setEstadoMasivo(e.target.value)} aria-label="Estado a aplicar">
+              <option value="">Sin estado</option>
+              {estadosDocs.map((e) => <option key={e.id} value={e.nombre}>{e.nombre}</option>)}
+            </Form.Select>
+            <Button variant="primary" size="sm" className="text-nowrap" type="button" disabled={seleccion.size === 0 || cambiandoMasivo} onClick={cambiarEstadoMasivo}>
+              {cambiandoMasivo ? 'Aplicando...' : 'Aplicar a seleccionadas'}
+            </Button>
+          </div>
         </Col>
         <Col xs={12} md="auto">
           <Button variant="danger" size="sm" className="px-3 text-nowrap w-100" type="button" disabled={seleccion.size === 0} onClick={eliminarSeleccion}>
@@ -399,7 +448,14 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
         </table>
       </div>
 
-      <Paginacion setPagination={setPagina} pagination={pagina} total={items.length} limit={LIMITE} />
+      <div className="d-flex align-items-center gap-2 small text-muted mb-1">
+        <span>Filas por página</span>
+        <Form.Select size="sm" style={{ width: 90 }} value={limite} aria-label="Filas por página"
+          onChange={(e) => { setLimite(Number(e.target.value)); setPagina(1); }}>
+          {[30, 50, 100, 200, 500, 1000].map((n) => <option key={n} value={n}>{n}</option>)}
+        </Form.Select>
+      </div>
+      <Paginacion setPagination={setPagina} pagination={pagina} total={items.length} limit={limite} />
 
       <ManualFacturasModal show={verManual} onClose={() => setVerManual(false)} />
 
