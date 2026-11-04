@@ -47,7 +47,8 @@ export default function FacturasView() {
   }, [cargarCatalogos]);
 
   return (
-    <div className="container-fluid pt-3" style={{ width: "max-content", minWidth: "100%", maxWidth: "95vw", position: "relative", left: "50%", transform: "translateX(-50%)" }}>
+    <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+    <div className="container-fluid pt-3" style={{ width: "max-content", minWidth: "100%", maxWidth: "95vw" }}>
       <Nav variant="tabs" activeKey={pestana} onSelect={(k) => setPestana(k)} className="mb-3 flex-wrap">
         {PESTANAS.map((p) => (
           <Nav.Item key={p.clave}>
@@ -66,6 +67,7 @@ export default function FacturasView() {
       {pestana === 'trm' && <TrmTab onCambio={cargarCatalogos} />}
       {pestana === 'clientes' && <CostoPorClienteTab />}
       {pestana === 'cobrar' && <PendientePorCobrarTab />}
+    </div>
     </div>
   );
 }

@@ -213,7 +213,7 @@ export default function PendientePorCobrarTab() {
                   <th style={{ width: 32 }}>
                     <Form.Check type="checkbox" checked={paginaCompleta} onChange={alternarPagina} aria-label="Seleccionar página" />
                   </th>
-                  {['Tercero', 'Motivo', 'Factura', 'Fecha', 'Proveedor', 'Concepto', 'Semana', `Valor (${moneda})`, 'Estado', 'F. cobro', 'F. pago'].map((h) => (
+                  {['Tercero', 'Observación', 'Factura', 'Fecha', 'Proveedor', 'Concepto', 'Semana', `Valor (${moneda})`, 'Estado', 'F. cobro', 'F. pago'].map((h) => (
                     <th key={h} className="text-custom-small text-center">{h}</th>
                   ))}
                 </tr>
@@ -223,22 +223,23 @@ export default function PendientePorCobrarTab() {
                 {filasPagina.map((f) => (
                   <tr key={f.id}>
                     <td><Form.Check type="checkbox" checked={seleccion.has(f.id)} onChange={() => alternar(f.id)} aria-label="Seleccionar" /></td>
-                    <td className="fw-bold">{f.tercero} <Badge bg="secondary" className="fw-normal">{f.tercero_tipo}</Badge></td>
+                    <td className="fw-bold text-center">{f.tercero} <Badge bg="secondary" className="fw-normal">{f.tercero_tipo}</Badge></td>
                     <td style={{ minWidth: 200 }}>
                       <Form.Control
                         size="sm"
                         defaultValue={f.motivo || ''}
-                        placeholder="Motivo..."
+                        placeholder="Observación..."
+                        className="text-center"
                         onBlur={(e) => { if (e.target.value !== (f.motivo || '')) actualizar(f, { motivo: e.target.value }); }}
                       />
                     </td>
                     <td className="text-center">{f.numero_factura || '—'}</td>
                     <td className="text-center">{f.fecha || '—'}</td>
                     <td className="text-center">{f.proveedor || '—'}</td>
-                    <td>{f.concepto || '—'}</td>
+                    <td className="text-center">{f.concepto || '—'}</td>
                     <td className="text-center">{f.semana || '—'}</td>
-                    <td className="text-end fw-bold text-primary">{formatoNumero(monto(f), dec)}</td>
-                    <td style={{ minWidth: 160 }}>
+                    <td className="text-center fw-bold text-primary">{formatoNumero(monto(f), dec)}</td>
+                    <td className="text-center" style={{ minWidth: 160 }}>
                       <Form.Select
                         size="sm"
                         value={f.estado}
@@ -250,10 +251,10 @@ export default function PendientePorCobrarTab() {
                       </Form.Select>
                     </td>
                     <td style={{ minWidth: 140 }}>
-                      <Form.Control size="sm" type="date" value={f.fecha_cobro || ''} onChange={(e) => actualizar(f, { fecha_cobro: e.target.value })} />
+                      <Form.Control size="sm" type="date" className="text-center" value={f.fecha_cobro || ''} onChange={(e) => actualizar(f, { fecha_cobro: e.target.value })} />
                     </td>
                     <td style={{ minWidth: 140 }}>
-                      <Form.Control size="sm" type="date" value={f.fecha_pago || ''} onChange={(e) => actualizar(f, { fecha_pago: e.target.value })} />
+                      <Form.Control size="sm" type="date" className="text-center" value={f.fecha_pago || ''} onChange={(e) => actualizar(f, { fecha_pago: e.target.value })} />
                     </td>
                   </tr>
                 ))}

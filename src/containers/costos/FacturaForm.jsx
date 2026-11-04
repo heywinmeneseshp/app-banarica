@@ -600,7 +600,7 @@ function ItemRow({ item, idx, onChange, onRemove, onDuplicate, tiposCosto = [], 
         {item.tercero_id && (
           <input className="form-control form-control-sm mt-1" value={item.cobro_motivo || ''}
             onChange={e => upd('cobro_motivo', e.target.value)}
-            placeholder="Motivo / error..." autoComplete="off" />
+            placeholder="Observación..." autoComplete="off" />
         )}
         {item.cobro_estado && <small className="text-muted d-block" style={{ fontSize: 10 }}>{item.cobro_estado}</small>}
       </td>

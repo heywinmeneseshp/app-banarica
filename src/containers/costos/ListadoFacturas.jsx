@@ -37,7 +37,7 @@ const NOTAS_CARGUE = [
   'Para un costo de todo un mes deje Contenedor, Booking y Semana vacíos y escriba el Mes (ej. Junio 2026); para uno de todo un año, solo el Año.',
   'El Contenedor, el Booking y la Semana se validan contra la operación: si no coinciden entre sí, se guardan en blanco y se muestra el aviso.',
   'Una factura repetida (mismo proveedor, número y año) se rechaza y aparece en la lista de errores del resultado.',
-  'Cobrar a (tercero) y Motivo del cobro son opcionales: si escribe un tercero, el ítem queda en la pestaña Pendiente por cobrar (si el tercero no existe, se crea).',
+  'Cobrar a (tercero) y Observación del cobro son opcionales: si escribe un tercero, el ítem queda en la pestaña Pendiente por cobrar (si el tercero no existe, se crea).',
 ];
 
 const COLUMNAS_CARGUE = [
@@ -58,7 +58,7 @@ const COLUMNAS_CARGUE = [
   { key: 'nivel_asociacion', label: 'Nivel Asociacion', required: false, example: 'booking' },
   { key: 'tipo_costo', label: 'Tipo Costo', required: false, example: 'FINCA' },
   { key: 'tercero', label: 'Cobrar a (tercero)', required: false, example: 'Finca La Esperanza' },
-  { key: 'motivo_cobro', label: 'Motivo del cobro', required: false, example: 'Error de la finca en el despacho' },
+  { key: 'motivo_cobro', label: 'Observación del cobro', required: false, example: 'Error de la finca en el despacho' },
 ];
 
 export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDocs = [], tiposCosto = [] }) {
@@ -516,19 +516,19 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
                       <FaExclamationTriangle className="ms-1 text-warning" title="El total declarado no coincide con la suma de ítems" />
                     )}
                   </td>
-                  <td className="align-middle text-start" style={{ padding: 2 }}>
+                  <td className="align-middle text-center" style={{ padding: 2 }}>
                     <Dropdown align="end">
                       <Dropdown.Toggle
                         as="button"
                         type="button"
-                        className="btn btn-link p-0 border-0 shadow-none no-caret"
+                        className="btn btn-link p-0 border-0 shadow-none no-caret text-decoration-none"
                         title={f.estado || 'Sin estado'}
                         aria-label={`Estado: ${f.estado || 'Sin estado'}`}
                       >
                         <PuntoEstado color={f.estado ? (colorEstado[f.estado] || '#6c757d') : null} />
                         <span className="ms-1 text-custom-small text-body text-nowrap">{f.estado || 'Sin estado'}</span>
                       </Dropdown.Toggle>
-                      <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
+                      <Dropdown.Menu popperConfig={{ strategy: 'fixed', modifiers: [{ name: 'flip', enabled: false }] }} style={{ maxHeight: 280, overflowY: 'auto' }}>
                         <Dropdown.Item active={!f.estado} onClick={() => cambiarEstado(f.id, '')}><PuntoEstado color={null} /> Sin estado</Dropdown.Item>
                         {estadosDocs.map((e) => (
                           <Dropdown.Item key={e.id} active={f.estado === e.nombre} onClick={() => cambiarEstado(f.id, e.nombre)}>
@@ -603,7 +603,7 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
 
       <ManualFacturasModal show={verManual} onClose={() => setVerManual(false)} />
 
-      <style>{'.factura-modal.modal-dialog { max-width: 96vw; width: 96vw; } .dropdown-toggle.no-caret::after { display: none; }'}</style>
+      <style>{'.factura-modal.modal-dialog { max-width: 96vw; width: 96vw; } .dropdown-toggle.no-caret::after { display: none; } .dropdown-toggle.no-caret, .dropdown-toggle.no-caret:hover { text-decoration: none; }'}</style>
       <Modal show={creando || Boolean(editando)} onHide={cerrarFormulario} centered dialogClassName="factura-modal" backdrop="static">
         <Modal.Header closeButton>
           <Modal.Title className="h6 mb-0">{editando ? 'Editar factura' : 'Nueva factura'}</Modal.Title>
