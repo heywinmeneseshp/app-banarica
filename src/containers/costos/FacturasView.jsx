@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Nav } from 'react-bootstrap';
-import { costosGet } from './costosApi';
+import { costosEnviar, costosGet } from './costosApi';
 import ListadoFacturas from './ListadoFacturas';
 import { EstadosFacturaTab, ItemsTab, ProveedoresTab, TiposDocumentoTab } from './CatalogosCostos';
 import TrmTab from './TrmTab';
@@ -32,6 +32,15 @@ export default function FacturasView() {
   }, []);
 
   useEffect(() => { cargarCatalogos(); }, [cargarCatalogos, pestana]);
+
+  // Al abrir el modulo se actualiza la TRM oficial; el servidor lo hace solo la primera
+  // vez de cada dia (las demas veces responde de inmediato sin consultar). Si falla,
+  // no se interrumpe nada: se reintenta en el siguiente ingreso.
+  useEffect(() => {
+    costosEnviar('POST', '/trm/sincronizar-diaria')
+      .then((r) => { if (r.ok && r.data && !r.data.omitida) cargarCatalogos(); })
+      .catch(() => {});
+  }, [cargarCatalogos]);
 
   return (
     <div className="container-fluid pt-3">
