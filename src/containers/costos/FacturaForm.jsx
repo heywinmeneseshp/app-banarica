@@ -564,6 +564,20 @@ function ItemRow({ item, idx, onChange, onRemove, onDuplicate, tiposCosto = [] }
   );
 }
 
+// Los ítems cargados en masa traen vacíos los campos que no aplican según su nivel
+// (p. ej. nivel booking sin contenedor). Al editar se muestran con N/A marcado.
+function normalizarItem(it) {
+  const vacio = (v) => v === null || v === undefined || String(v).trim() === '';
+  const n = { ...it };
+  const nivel = n.nivel_asociacion;
+  if (nivel === 'contenedor') return n;
+  if (vacio(n.id_contenedor) && ['booking', 'semana', 'mes', 'año'].includes(nivel)) n.id_contenedor = 'N/A';
+  if (vacio(n.booking) && ['semana', 'mes', 'año'].includes(nivel)) n.booking = 'N/A';
+  if (vacio(n.semana) && ['mes', 'año'].includes(nivel)) n.semana = 'N/A';
+  if (vacio(n.mes) && nivel === 'año') n.mes = 'N/A';
+  return n;
+}
+
 // Comprueba que cada contenedor y cada booking escritos existan en Banarica.
 // Devuelve el mensaje de error, o '' si todo es valido.
 async function existe(ruta, campo, valor) {
@@ -608,7 +622,7 @@ function FacturaForm({ initial, proveedores, tiposDocs = [], tiposCosto = [], on
     const { items: _i, proveedor_nombre: _p, proveedor_razon: _r, semana: _s, mes: _m, estado_total: _e, ...rest } = initial;
     return { ...EMPTY_HEADER, ...rest, total: rest.total ?? '' };
   });
-  const [items, setItems]   = useState(initial?.items?.length ? initial.items : [{ ...EMPTY_ITEM }]);
+  const [items, setItems]   = useState(() => (initial?.items?.length ? initial.items.map(normalizarItem) : [{ ...EMPTY_ITEM }]));
   const [saving, setSaving] = useState(false);
   const [trm, setTrm]       = useState(null);
   const [trmLoading, setTrmLoading] = useState(false);

@@ -4,6 +4,7 @@ import { costosEnviar, costosGet } from './costosApi';
 import ListadoFacturas from './ListadoFacturas';
 import { EstadosFacturaTab, ItemsTab, ProveedoresTab, TiposDocumentoTab } from './CatalogosCostos';
 import TrmTab from './TrmTab';
+import CostoPorClienteTab from './CostoPorClienteTab';
 
 const PESTANAS = [
   { clave: 'listado', etiqueta: 'Registro de facturas' },
@@ -12,6 +13,7 @@ const PESTANAS = [
   { clave: 'tipos', etiqueta: 'Tipos de documento' },
   { clave: 'estados', etiqueta: 'Estados de factura' },
   { clave: 'trm', etiqueta: 'TRM' },
+  { clave: 'clientes', etiqueta: 'Costo por cliente' },
 ];
 
 // Costos logisticos > Facturas: registro de facturas y los catalogos que usa.
@@ -60,6 +62,7 @@ export default function FacturasView() {
       {pestana === 'tipos' && <TiposDocumentoTab onCambio={cargarCatalogos} />}
       {pestana === 'estados' && <EstadosFacturaTab onCambio={cargarCatalogos} />}
       {pestana === 'trm' && <TrmTab onCambio={cargarCatalogos} />}
+      {pestana === 'clientes' && <CostoPorClienteTab />}
     </div>
   );
 }
