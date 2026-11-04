@@ -172,6 +172,11 @@ const Header = () => {
       items: menuCompleto.seguridad,
       onItemClick: (item) => onSeguridad(item[0])
     },
+    costos: {
+      title: "Costos logísticos",
+      items: menuCompleto.costos,
+      onItemClick: (item) => router.push(`/Costos/${item[0]}`)
+    },
     almacen: {
       title: "Almacen",
       items: menuCompleto.almacen,
@@ -232,6 +237,7 @@ const Header = () => {
               {renderMenu('maestros')}
               {renderMenu('transporte')}
               {renderMenu('seguridad')}
+              {renderMenu('costos')}
               {renderMenu('almacen')}
               {renderMenu('informes')}
             </Nav>

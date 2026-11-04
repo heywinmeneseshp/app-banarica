@@ -44,6 +44,9 @@ const menuCompleto = {
         ["/Reportes", "Reportes"],
 
     ],
+    costos: [
+        ["facturas", "Facturas"],
+    ],
     almacen: [
         ["movimientos", "Movimientos"],
         ["pedidos", "Pedidos"],

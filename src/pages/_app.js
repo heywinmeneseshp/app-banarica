@@ -13,7 +13,7 @@ import '@styles/globals.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { encontrarEmpresa } from '@services/api/configuracion';
 
-const appShellRoutes = ['/', '/Seguridad/[item]', '/Transporte/[item]', '/Almacen/[item]', '/Informes/[item]', '/Maestros/[item]'];
+const appShellRoutes = ['/', '/Seguridad/[item]', '/Transporte/[item]', '/Almacen/[item]', '/Informes/[item]', '/Maestros/[item]', '/Costos/[item]'];
 
 function AppShell({ Component, pageProps, useAppShell }) {
     const { user } = useAuth();
