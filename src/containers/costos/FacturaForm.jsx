@@ -785,6 +785,12 @@ function FacturaForm({ initial, proveedores, tiposDocs = [], tiposCosto = [], on
               El total declarado ({Number(declaredTotal).toLocaleString('es-CO')}) no coincide con la suma de ítems ({calcTotal.toLocaleString('es-CO')}).
               Diferencia: {Math.abs(calcTotal - declaredTotal).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}.
               Se guardará el total declarado con estado mismatch.
+              {Math.abs(calcTotal - declaredTotal) < 0.5 && (
+                <button type="button" className="btn btn-warning btn-sm py-0 px-2 ms-2"
+                  onClick={() => set('total', String(Math.round(calcTotal * 100) / 100))}>
+                  Ajustar total declarado
+                </button>
+              )}
             </div>
           </div>
         )}
