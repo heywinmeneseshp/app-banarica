@@ -124,6 +124,25 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
     cargar();
   }
 
+  // Borra TODAS las facturas (no solo las filtradas). Pide escribir VACIAR para confirmar.
+  async function vaciarTodas() {
+    const texto = window.prompt('Se eliminarán TODAS las facturas y sus ítems. Esta acción no se puede deshacer.\n\nEscribe VACIAR para confirmar:');
+    if (texto === null) return;
+    if (texto.trim().toUpperCase() !== 'VACIAR') {
+      setAlert({ active: true, mensaje: 'Confirmación incorrecta, no se eliminó nada', color: 'warning', autoClose: true });
+      return;
+    }
+    const r = await costosEnviar('DELETE', '/facturas-clear');
+    setAlert({
+      active: true,
+      mensaje: r.ok ? `Se eliminaron ${r.data?.total ?? 0} factura(s)` : (r.error || 'No se pudo vaciar'),
+      color: r.ok ? 'success' : 'danger',
+      autoClose: true,
+    });
+    setSeleccion(new Set());
+    cargar();
+  }
+
   const alternar = (id) => setSeleccion((prev) => {
     const next = new Set(prev);
     if (next.has(id)) next.delete(id); else next.add(id);
@@ -209,6 +228,11 @@ export default function ListadoFacturas({ proveedores, tiposDocs = [], estadosDo
               calcItem: (row) => (parseFloat(row.cantidad) || 0) * (parseFloat(row.valor_unitario) || 0),
             }}
           />
+        </Col>
+        <Col xs={12} md="auto">
+          <Button variant="outline-danger" size="sm" className="px-3 text-nowrap w-100" type="button" onClick={vaciarTodas}>
+            <FaTrash className="me-1" /> Vaciar todas
+          </Button>
         </Col>
       </Row>
 

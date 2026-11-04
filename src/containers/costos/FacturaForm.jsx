@@ -2,8 +2,9 @@
 // Formulario de factura y su fila de ítem. Portado de la app Trazabilidad (Auxiliar Logístico > Facturas).
 import React, { useState, useEffect, useRef } from 'react';
 import { FaCopy, FaTimes } from 'react-icons/fa';
-import { costosFetch } from './costosApi';
-import SugerenciasDropdown from './SugerenciasDropdown';
+import { Modal } from 'react-bootstrap';
+import { costosEnviar, costosFetch } from './costosApi';
+import SugerenciasDropdown, { useNavegacionSugerencias } from './SugerenciasDropdown';
 
 const SuggestDropdown = SugerenciasDropdown;
 const GREY = { background: '#e9ecef', color: '#6c757d' };
@@ -203,6 +204,39 @@ function ItemRow({ item, idx, onChange, onRemove, onDuplicate, tiposCosto = [] }
     return () => clearTimeout(t);
   }, [semQuery, semanaEditable, semFocused, sinSemana]);
 
+  function elegirConcepto(c) {
+    setConceptoQuery(c.nombre);
+    setConceptoSugs([]);
+    onChange(idx, {
+      ...item,
+      concepto: c.nombre,
+      valor_unitario: c.precio_ref != null ? String(c.precio_ref) : item.valor_unitario,
+      tipo_costo: c.tipo_costo_default || item.tipo_costo,
+    });
+  }
+  function elegirContenedor(c) {
+    setContQuery(c.contenedor);
+    setBookQuery(c.booking || '');
+    setSemQuery(c.consecutivo_semana || '');
+    setContSugs([]);
+    const nc = { ...item, id_contenedor: c.contenedor, booking: c.booking || '', semana: c.consecutivo_semana || '' };
+    onChange(idx, { ...nc, nivel_asociacion: calcNivel(nc) });
+  }
+  function elegirBooking(b) {
+    setBookQuery(b.booking);
+    setSemQuery(b.consecutivo_semana || '');
+    setBookSugs([]);
+    const nb = { ...item, booking: b.booking, semana: b.consecutivo_semana || '' };
+    onChange(idx, { ...nb, nivel_asociacion: calcNivel(nb) });
+  }
+
+  const showConcepto = conceptoFocused && conceptoSugs.length > 0;
+  const showCont = contFocused && contSugs.length > 0 && !item.id_contenedor;
+  const showBook = bookFocused && bookSugs.length > 0;
+  const navConcepto = useNavegacionSugerencias(conceptoSugs, showConcepto, elegirConcepto);
+  const navCont = useNavegacionSugerencias(contSugs, showCont, elegirContenedor);
+  const navBook = useNavegacionSugerencias(bookSugs, showBook, elegirBooking);
+
   const anhoSugs = anhoFocused && validAnhos.length > 0
     ? (anhoQuery ? validAnhos.filter(a => String(a).includes(anhoQuery)) : validAnhos)
     : [];
@@ -215,25 +249,20 @@ function ItemRow({ item, idx, onChange, onRemove, onDuplicate, tiposCosto = [] }
       <td style={{ minWidth: 170 }} className="align-middle">
         <input ref={conceptoRef} className="form-control form-control-sm" value={conceptoQuery}
           onChange={e => { setConceptoQuery(e.target.value); upd('concepto', e.target.value); setConceptoSugs([]); }}
+          onKeyDown={navConcepto.onKeyDown}
           onFocus={() => setConceptoFocused(true)}
           onBlur={() => { setTimeout(() => { setConceptoFocused(false); setConceptoSugs([]); }, 150); }}
           placeholder="Concepto / descripción..."
           autoComplete="off" />
-        <SuggestDropdown anchorRef={conceptoRef} show={conceptoFocused && conceptoSugs.length > 0}>
-          {conceptoSugs.map(c => (
+        <SuggestDropdown anchorRef={conceptoRef} show={showConcepto}>
+          {conceptoSugs.map((c, i) => (
             <li key={c.id}
-              className="list-group-item list-group-item-action py-1 px-2"
+              className={navConcepto.claseItem(i)}
+              data-sug-activa={navConcepto.activo === i}
               style={{ cursor: 'pointer', fontSize: 12 }}
               onMouseDown={e => {
                 e.preventDefault();
-                setConceptoQuery(c.nombre);
-                setConceptoSugs([]);
-                onChange(idx, {
-                  ...item,
-                  concepto: c.nombre,
-                  valor_unitario: c.precio_ref != null ? String(c.precio_ref) : item.valor_unitario,
-                  tipo_costo: c.tipo_costo_default || item.tipo_costo,
-                });
+                elegirConcepto(c);
               }}>
               <div className="fw-bold">{c.nombre}</div>
               {(c.descripcion || c.unidad || c.precio_ref != null) && (
@@ -262,24 +291,21 @@ function ItemRow({ item, idx, onChange, onRemove, onDuplicate, tiposCosto = [] }
             disabled={sinContenedor}
             style={sinContenedor ? GREY : {}}
             onChange={e => { setContQuery(e.target.value); setBookQuery(''); const n = { ...item, id_contenedor: '', booking: '' }; onChange(idx, { ...n, nivel_asociacion: calcNivel(n) }); }}
+            onKeyDown={navCont.onKeyDown}
             onFocus={() => setContFocused(true)}
             onBlur={() => { setTimeout(() => { setContFocused(false); setContSugs([]); }, 150); }}
             placeholder={sinContenedor ? 'No aplica' : 'Buscar contenedor...'}
             autoComplete="off" />
         </div>
-        <SuggestDropdown anchorRef={contRef} show={contFocused && contSugs.length > 0 && !item.id_contenedor}>
-          {contSugs.map(c => (
+        <SuggestDropdown anchorRef={contRef} show={showCont}>
+          {contSugs.map((c, i) => (
             <li key={`${c.contenedor}|${c.consecutivo_semana}`}
-              className="list-group-item list-group-item-action py-1 px-2"
+              className={navCont.claseItem(i)}
+              data-sug-activa={navCont.activo === i}
               style={{ cursor: 'pointer', fontSize: 12 }}
               onMouseDown={e => {
                 e.preventDefault();
-                setContQuery(c.contenedor);
-                setBookQuery(c.booking || '');
-                setSemQuery(c.consecutivo_semana || '');
-                setContSugs([]);
-                const nc = { ...item, id_contenedor: c.contenedor, booking: c.booking || '', semana: c.consecutivo_semana || '' };
-                onChange(idx, { ...nc, nivel_asociacion: calcNivel(nc) });
+                elegirContenedor(c);
               }}>
               <div className="d-flex justify-content-between align-items-center">
                 <strong>{c.contenedor}</strong>
@@ -315,23 +341,21 @@ function ItemRow({ item, idx, onChange, onRemove, onDuplicate, tiposCosto = [] }
             disabled={sinBooking || !sinContenedor}
             style={(sinBooking || !sinContenedor) ? GREY : {}}
             onChange={e => { setBookQuery(e.target.value); setSemQuery(''); const nb = { ...item, booking: e.target.value, semana: '' }; onChange(idx, { ...nb, nivel_asociacion: calcNivel(nb) }); }}
+            onKeyDown={navBook.onKeyDown}
             onFocus={() => setBookFocused(true)}
             onBlur={() => { setTimeout(() => { setBookFocused(false); setBookSugs([]); }, 150); }}
             placeholder={sinBooking ? 'No aplica' : !sinContenedor ? (bookQuery || 'Auto con contenedor') : 'Buscar booking...'}
             autoComplete="off" />
         </div>
-        <SuggestDropdown anchorRef={bookRef} show={bookFocused && bookSugs.length > 0}>
-          {bookSugs.map(b => (
+        <SuggestDropdown anchorRef={bookRef} show={showBook}>
+          {bookSugs.map((b, i) => (
             <li key={`${b.booking}|${b.consecutivo_semana}`}
-              className="list-group-item list-group-item-action py-1 px-2 d-flex justify-content-between align-items-center"
+              className={`${navBook.claseItem(i)} d-flex justify-content-between align-items-center`}
+              data-sug-activa={navBook.activo === i}
               style={{ cursor: 'pointer', fontSize: 12 }}
               onMouseDown={e => {
                 e.preventDefault();
-                setBookQuery(b.booking);
-                setSemQuery(b.consecutivo_semana || '');
-                setBookSugs([]);
-                const nb = { ...item, booking: b.booking, semana: b.consecutivo_semana || '' };
-                onChange(idx, { ...nb, nivel_asociacion: calcNivel(nb) });
+                elegirBooking(b);
               }}>
               <strong>{b.booking}</strong>
               <span className="badge bg-secondary ms-1" style={{ fontSize: 10 }}>{b.consecutivo_semana}</span>
@@ -540,6 +564,39 @@ function ItemRow({ item, idx, onChange, onRemove, onDuplicate, tiposCosto = [] }
   );
 }
 
+// Comprueba que cada contenedor y cada booking escritos existan en Banarica.
+// Devuelve el mensaje de error, o '' si todo es valido.
+async function existe(ruta, campo, valor) {
+  try {
+    const r = await costosFetch(`${ruta}?q=${encodeURIComponent(valor)}`);
+    const lista = await r.json();
+    return Array.isArray(lista) && lista.some((x) => String(x[campo] || '').trim().toUpperCase() === valor.trim().toUpperCase());
+  } catch {
+    return false;
+  }
+}
+
+async function validarAsociaciones(items) {
+  for (let i = 0; i < items.length; i += 1) {
+    const it = items[i];
+    const fila = `Ítem ${i + 1}`;
+    const cont = (it.id_contenedor || '').trim();
+    const book = (it.booking || '').trim();
+    if (cont && cont !== 'N/A') {
+      // eslint-disable-next-line no-await-in-loop
+      if (!(await existe('/contenedores-cache', 'contenedor', cont))) return `${fila}: el contenedor "${cont}" no existe.`;
+    } else if (cont !== 'N/A') {
+      return `${fila}: selecciona un contenedor de la lista o marca N/A.`;
+    } else if (book && book !== 'N/A') {
+      // eslint-disable-next-line no-await-in-loop
+      if (!(await existe('/bookings-cache', 'booking', book))) return `${fila}: el booking "${book}" no existe.`;
+    } else if (!book) {
+      return `${fila}: selecciona un booking de la lista o marca N/A.`;
+    }
+  }
+  return '';
+}
+
 // ── Formulario de Factura ────────────────────────────────────────────────────
 const EMPTY_HEADER = {
   fecha: '', tipo: 'Factura', numero_factura: '', nit_proveedor: '', total: '',
@@ -555,6 +612,8 @@ function FacturaForm({ initial, proveedores, tiposDocs = [], tiposCosto = [], on
   const [saving, setSaving] = useState(false);
   const [trm, setTrm]       = useState(null);
   const [trmLoading, setTrmLoading] = useState(false);
+  const [errorAsoc, setErrorAsoc] = useState('');
+  const [conflictos, setConflictos] = useState(null);
 
   useEffect(() => {
     if (!form.fecha) { setTrm(null); return; }
@@ -586,7 +645,48 @@ function FacturaForm({ initial, proveedores, tiposDocs = [], tiposCosto = [], on
   async function handleSubmit(e) {
     e.preventDefault();
     setSaving(true);
+    setErrorAsoc('');
+    const error = await validarAsociaciones(items);
+    if (error) {
+      setErrorAsoc(error);
+      setSaving(false);
+      return;
+    }
+    // Bookings que no tienen ningun contenedor: se le pregunta al usuario, todos en un solo modal.
+    const bookings = items.map((it) => (it.booking || '').trim()).filter((b) => b && b !== 'N/A');
+    if (bookings.length) {
+      const r = await costosEnviar('POST', '/bookings-sin-contenedor', { bookings });
+      const sin = new Set((r.data?.sinContenedor || []).map((b) => b.toUpperCase()));
+      const lista = items
+        .map((it, i) => ({ i, booking: (it.booking || '').trim() }))
+        .filter((x) => sin.has(x.booking.toUpperCase()));
+      if (lista.length) {
+        setConflictos(lista);
+        setSaving(false);
+        return;
+      }
+    }
     await onSave({ ...form, items });
+    setSaving(false);
+  }
+
+  async function resolverConflictos(accion) {
+    const lista = conflictos;
+    setConflictos(null);
+    if (!lista || accion === 'volver') return;
+    let finales = items;
+    if (accion === 'quitar') {
+      const idxs = new Set(lista.map((x) => x.i));
+      finales = items.map((it, i) => {
+        if (!idxs.has(i)) return it;
+        const n = { ...it, booking: 'N/A' };
+        const nivel = n.semana && n.semana !== 'N/A' ? 'semana' : (n.mes && n.mes !== 'N/A' ? 'mes' : (n.anho ? 'año' : ''));
+        return { ...n, nivel_asociacion: nivel };
+      });
+      setItems(finales);
+    }
+    setSaving(true);
+    await onSave({ ...form, items: finales });
     setSaving(false);
   }
 
@@ -726,12 +826,32 @@ function FacturaForm({ initial, proveedores, tiposDocs = [], tiposCosto = [], on
         </table>
       </div>
 
+      {errorAsoc && <div className="alert alert-danger py-1 px-2 small">{errorAsoc}</div>}
       <div className="d-flex gap-2">
         <button className="btn btn-primary btn-sm" type="submit" disabled={saving}>
           {saving ? 'Guardando...' : 'Guardar'}
         </button>
         <button className="btn btn-secondary btn-sm" type="button" onClick={onCancel}>Cancelar</button>
       </div>
+      <Modal show={!!conflictos} onHide={() => resolverConflictos('volver')} centered>
+        <Modal.Header closeButton>
+          <Modal.Title className="fs-6">Bookings sin contenedor</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="small">
+          <p className="mb-2">Estos ítems tienen un booking al que no le corresponde ningún contenedor:</p>
+          <ul className="mb-2">
+            {(conflictos || []).map((x) => (
+              <li key={x.i}>Ítem {x.i + 1}: booking <strong>{x.booking}</strong></li>
+            ))}
+          </ul>
+          <p className="mb-0">¿Qué quieres hacer?</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={() => resolverConflictos('volver')}>Volver a corregir</button>
+          <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => resolverConflictos('quitar')}>Quitar el booking y guardar</button>
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => resolverConflictos('guardar')}>Guardar así</button>
+        </Modal.Footer>
+      </Modal>
     </form>
   );
 }

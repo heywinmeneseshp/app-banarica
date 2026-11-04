@@ -1,5 +1,34 @@
 import React, { useEffect, useState } from 'react';
 
+// Navegacion con flechas arriba/abajo, Enter para elegir y Escape para cerrar.
+// Se usa asi: const nav = useNavegacionSugerencias(lista, visible, elegir);
+// <input onKeyDown={nav.onKeyDown} /> y en cada <li>: className={nav.claseItem(i)} data-sug-activa={nav.activo === i}
+export function useNavegacionSugerencias(lista, visible, elegir) {
+  const [activo, setActivo] = useState(-1);
+
+  useEffect(() => { setActivo(-1); }, [lista, visible]);
+  useEffect(() => {
+    if (activo < 0) return;
+    document.querySelector('[data-sug-activa="true"]')?.scrollIntoView({ block: 'nearest' });
+  }, [activo]);
+
+  function onKeyDown(e) {
+    if (!visible || !lista.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActivo((a) => (a + 1) % lista.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActivo((a) => (a <= 0 ? lista.length - 1 : a - 1));
+    } else if (e.key === 'Enter' && activo >= 0 && lista[activo]) {
+      e.preventDefault();
+      elegir(lista[activo]);
+    }
+  }
+
+  return { activo, onKeyDown, claseItem: (i) => `list-group-item list-group-item-action py-1 px-2${activo === i ? ' active' : ''}` };
+}
+
 // Lista de sugerencias con posicion fija para que no la recorte el scroll de la tabla.
 export default function SugerenciasDropdown({ anchorRef, show, children }) {
   const [pos, setPos] = useState(null);
