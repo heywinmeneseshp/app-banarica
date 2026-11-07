@@ -2,6 +2,7 @@ import axios from 'axios';
 import endPoints from './index';
 import {
     getToken,
+    getViewAs,
     persistToken,
     setStoredUser,
     setStoredTransporters,
@@ -56,7 +57,9 @@ const fetchAuthenticatedProfile = async (token = getToken()) => {
     persistToken(token);
     setAuthorizationHeader(token);
 
-    const response = await axios.get(endPoints.auth.profile);
+    // En "Ver como" se pide el perfil del usuario observado, no el del administrador.
+    const viewAs = getViewAs();
+    const response = await axios.get(viewAs ? endPoints.auth.profileOf(viewAs.username) : endPoints.auth.profile);
     return response.data;
 };
 

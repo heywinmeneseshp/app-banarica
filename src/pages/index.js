@@ -5,7 +5,7 @@ import Cookie from 'js-cookie';
 import { useAuth } from '@hooks/useAuth';
 import endPoints from '@services/api';
 import { encontrarModulo } from '@services/api/configuracion';
-import { clearSessionStorage } from '@utils/session';
+import { clearSessionStorage, getViewAs } from '@utils/session';
 import Inicio from '@containers/inicio/Inicio';
 
 export default function Home() {
@@ -29,7 +29,9 @@ export default function Home() {
         try {
             Cookie.set('token', token, { expires: 1 / 48 });
             axios.defaults.headers.Authorization = `Bearer ${token}`;
-            const res = await axios.get(endPoints.auth.profile);
+            // En "Ver como" se pide el perfil del usuario observado, no el del administrador.
+            const viewAs = getViewAs();
+            const res = await axios.get(viewAs ? endPoints.auth.profileOf(viewAs.username) : endPoints.auth.profile);
             if (res.data.usuario?.isBlock === true) {
                 window.alert("El usuario esta deshabilitado, por favor comuniquese con el administrador");
                 router.push('/login');
