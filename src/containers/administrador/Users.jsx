@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
-import { FaCheckCircle, FaEdit, FaKey, FaUserSlash } from 'react-icons/fa';
+import { FaCheckCircle, FaEdit, FaEye, FaKey, FaUserSlash } from 'react-icons/fa';
 //Services
 import { actualizarUsuario, regenerarPasswordLote } from '@services/api/usuarios';
 import endPoints from '@services/api';
 import { fetchAuthenticatedProfile } from '@services/api/auth';
+import { startViewAs } from 'utils/session';
 //Components
 import NuevoUsuario from '@components/administrador/NuevoUsuario';
 import Alertas from '@components/shared/Alertas';
@@ -72,6 +73,22 @@ useEffect(() => {
     const handleNuevo = async () => {
         setOpen(true);
         setEditUser(null);
+    };
+
+    // "Ver como": abre la aplicacion con los permisos, almacenes y menu de ese usuario.
+    const handleVerComo = async (usuario) => {
+        try {
+            const { data } = await axios.get(endPoints.auth.profileOf(usuario.username));
+            startViewAs(data);
+            window.location.assign('/');
+        } catch (e) {
+            setAlert({
+                active: true,
+                mensaje: e?.response?.data?.message || 'No se pudo abrir la vista de ese usuario',
+                color: 'danger',
+                autoClose: true,
+            });
+        }
     };
 
     const handleEditar = async (usuario) => {
@@ -218,6 +235,7 @@ useEffect(() => {
                         <th scope="col" className="text-center align-middle">email</th>
                         <th scope="col" className="text-center align-middle"></th>
                         <th scope="col" className="text-center align-middle"></th>
+                        <th scope="col" className="text-center align-middle"></th>
                     </tr>
                 </thead>
                 <tbody className={styles.letter}>
@@ -252,6 +270,20 @@ useEffect(() => {
                                     >
                                         <FaEdit />
                                     </button>
+                                </td>
+                                <td className="text-center align-middle">
+                                    {allowDelete && currentUser?.id_rol === 'Super administrador' && !usuario.isBlock && (
+                                        <button
+                                            onClick={() => handleVerComo(usuario)}
+                                            type="button"
+                                            className="btn p-0 border-0 bg-transparent text-primary d-inline-flex align-items-center justify-content-center"
+                                            title="Ver como este usuario"
+                                            aria-label={`Ver como ${usuario.username}`}
+                                            style={{ fontSize: '1.1rem' }}
+                                        >
+                                            <FaEye />
+                                        </button>
+                                    )}
                                 </td>
                                 <td className="text-center align-middle">
                                     {allowDelete && (

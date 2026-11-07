@@ -14,7 +14,7 @@ import Configuracion from '@containers/administrador/Configuracion';
 
 import { encontrarModulo } from '@services/api/configuracion';
 import { menuCompleto } from 'utils/configMenu';
-import { clearSession, getStoredUser, getStoredWarehouses, getToken } from 'utils/session';
+import { clearSession, getStoredUser, getStoredWarehouses, getToken, getViewAs, stopViewAs } from 'utils/session';
 
 const SUPER_ADMIN_ROLE = "Super administrador";
 const DEFAULT_MENU_KEYS = Object.keys(menuCompleto);
@@ -61,6 +61,14 @@ const Header = () => {
   const [configMenu, setConfigMenu] = useState([]);
   const [configSubMenu, setConfigSubMenu] = useState([]);
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+  const [viewAs, setViewAs] = useState(null);
+
+  useEffect(() => { setViewAs(getViewAs()); }, []);
+
+  const salirDeVerComo = useCallback(() => {
+    stopViewAs();
+    window.location.assign('/Maestros/usuarios');
+  }, []);
 
   // Comunicados recibidos (ademas del correo): el contador se refresca cada
   // minuto y al volver a la pestana.
@@ -221,6 +229,14 @@ const Header = () => {
 
   return (
     <div className="sticky-top shadow-sm" style={{ zIndex: 1050 }}>
+      {viewAs && (
+        <div className="bg-warning text-dark small py-1 px-3 d-flex flex-wrap align-items-center justify-content-center gap-2">
+          <span>
+            Estás viendo la aplicación como <strong>{viewAs.nombre}</strong> ({viewAs.rol}). Solo cambia lo que se muestra: las acciones se siguen haciendo con tu usuario.
+          </span>
+          <Button size="sm" variant="dark" className="py-0" onClick={salirDeVerComo}>Salir de esta vista</Button>
+        </div>
+      )}
       <Navbar bg="dark" variant="dark" expand="lg" className="py-2 w-100">
         <Container fluid="xl" className="px-2 px-sm-3">
           <Navbar.Brand

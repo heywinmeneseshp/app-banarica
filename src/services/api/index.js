@@ -7,6 +7,7 @@ const endPoints = {
     auth: { //Crear
         login: `${API}/api/${VERSION}/auth/login`,
         profile: `${API}/api/${VERSION}/auth/profile`,
+        profileOf: (username) => `${API}/api/${VERSION}/auth/profile/${encodeURIComponent(username)}`,
         recoverPassword:
             process.env.NEXT_PUBLIC_AUTH_RECOVERY_URL || `${API}/api/${VERSION}/auth/recovery`,
         changePassword:

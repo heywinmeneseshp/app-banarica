@@ -5,6 +5,7 @@ const USER_KEY = 'usuario';
 const WAREHOUSES_KEY = 'almacenByUser';
 const TRANSPORTERS_KEY = 'transportadorasByUser';
 const SESSION_NOTICE_KEY = 'sessionNotice';
+const VIEW_AS_KEY = 'viewAs';
 const LAST_ACTIVITY_KEY = 'lastActivityAt';
 const TOKEN_EXPIRATION_DAYS = 1 / 48;
 
@@ -36,6 +37,7 @@ const clearSessionStorage = () => {
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(WAREHOUSES_KEY);
     localStorage.removeItem(TRANSPORTERS_KEY);
+    localStorage.removeItem(VIEW_AS_KEY);
 };
 
 const getSessionNotice = () => (
@@ -136,6 +138,48 @@ const setStoredTransporters = (transporters) => {
     localStorage.setItem(TRANSPORTERS_KEY, JSON.stringify(transporters));
 };
 
+// "Ver como": el super administrador ve la aplicacion con el usuario, los almacenes y las
+// transportadoras de otro usuario (solo la vista; el token sigue siendo el suyo). Se guardan los
+// datos originales para restaurarlos al salir de esta vista.
+const getViewAs = () => (isBrowser ? parseJSON(localStorage.getItem(VIEW_AS_KEY)) : null);
+
+const startViewAs = ({ usuario, almacenes = [], transportadoras = [] }) => {
+    if (!isBrowser) {
+        return;
+    }
+
+    const actual = getViewAs();
+    const original = actual?.original || {
+        usuario: getStoredUser(),
+        almacenes: getStoredWarehouses(),
+        transportadoras: getStoredTransporters(),
+    };
+
+    localStorage.setItem(VIEW_AS_KEY, JSON.stringify({
+        original,
+        username: usuario.username,
+        nombre: [usuario.nombre, usuario.apellido].filter(Boolean).join(' ') || usuario.username,
+        rol: usuario.id_rol,
+    }));
+    setStoredUser(usuario);
+    setStoredWarehouses(sortWarehousesByName(almacenes));
+    setStoredTransporters(sortTransportersByName(transportadoras));
+};
+
+const stopViewAs = () => {
+    if (!isBrowser) {
+        return;
+    }
+
+    const actual = getViewAs();
+    if (actual?.original?.usuario) {
+        setStoredUser(actual.original.usuario);
+        setStoredWarehouses(actual.original.almacenes || []);
+        setStoredTransporters(actual.original.transportadoras || []);
+    }
+    localStorage.removeItem(VIEW_AS_KEY);
+};
+
 const sortWarehousesByName = (warehouses = []) => (
     [...warehouses].sort((a, b) => a.nombre.localeCompare(b.nombre))
 );
@@ -153,6 +197,9 @@ export {
     getLastActivityAt,
     getSessionNotice,
     getStoredUser,
+    getViewAs,
+    startViewAs,
+    stopViewAs,
     getStoredWarehouses,
     getStoredTransporters,
     getToken,
