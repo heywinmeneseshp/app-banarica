@@ -221,6 +221,12 @@ const endPoints = {
     },
     seguridad: {
         listarProductos: `${API}/api/${VERSION}/seguridad/listar-articulos`,
+        cobertura: `${API}/api/${VERSION}/seguridad/cobertura`,
+        coberturaConfig: `${API}/api/${VERSION}/seguridad/cobertura/config`,
+        coberturaProducto: `${API}/api/${VERSION}/seguridad/cobertura/producto`,
+        coberturaPedidos: `${API}/api/${VERSION}/seguridad/cobertura/pedidos`,
+        coberturaPedidosRecibido: `${API}/api/${VERSION}/seguridad/cobertura/pedidos/recibido`,
+        coberturaProveedor: `${API}/api/${VERSION}/seguridad/cobertura/proveedor`,
         listarSeriales: `${API}/api/${VERSION}/seguridad/seriales`,
         listarUsuarios: `${API}/api/${VERSION}/seguridad/usuarios`,
         ActualizarSeriales: `${API}/api/${VERSION}/seguridad/actualizar-seriales`,

@@ -5,6 +5,7 @@ import endPoints from "@services/api";
 
 import ConsultaResumen from "@components/seguridad/ConsultaResumen";
 import ConsultaDetallada from "@components/seguridad/ConsultaDetallada";
+import ConsultaCobertura from "@components/seguridad/ConsultaCobertura";
 
 import { useAuth } from "@hooks/useAuth";
 import excel from "@hooks/useExcel";
@@ -42,6 +43,9 @@ export default function Disponibles() {
     const [configBotons, setConfigBotons] = useState([]);
     const [loadingProductos, setLoadingProductos] = useState(false);
     const [consultaActions, setConsultaActions] = useState(null);
+
+    // Cobertura y reposicion: solo Super administrador o quien tenga el permiso.
+    const puedeCobertura = user?.id_rol === "Super administrador" || configBotons.includes("disponibles_cobertura");
 
     const productosFiltrados = useMemo(() => {
         if (vista === "resumen") {
@@ -300,7 +304,7 @@ export default function Disponibles() {
                     </>
                 )}
 
-                <div className="col-md-3">
+                <div className="col-md-3" hidden={vista === "cobertura"}>
                     <button
                         type="button"
                         onClick={descargarExcel}
@@ -343,6 +347,16 @@ export default function Disponibles() {
                     </button>
                 )}
 
+                {puedeCobertura && (
+                    <button
+                        type="button"
+                        className={`btn btn-sm ${vista === "cobertura" ? "btn-primary" : "btn-outline-primary"}`}
+                        onClick={() => handleTableConsulta("cobertura")}
+                    >
+                        Cobertura y reposición
+                    </button>
+                )}
+
                 {consultaActions && (
                     <>
                         <button
@@ -366,20 +380,24 @@ export default function Disponibles() {
                     </>
                 )}
 
-                <div className="ms-auto d-flex align-items-center gap-2">
-                    <input
-                        type="number"
-                        className="form-control form-control-sm"
-                        style={{ width: 70 }}
-                        value={limit}
-                        min={1}
-                        onChange={onChangeLimit}
-                    />
-                    <span className="text-nowrap">Resultados de {results}</span>
-                </div>
+                {vista !== "cobertura" && (
+                    <div className="ms-auto d-flex align-items-center gap-2">
+                        <input
+                            type="number"
+                            className="form-control form-control-sm"
+                            style={{ width: 70 }}
+                            value={limit}
+                            min={1}
+                            onChange={onChangeLimit}
+                        />
+                        <span className="text-nowrap">Resultados de {results}</span>
+                    </div>
+                )}
             </div>
 
-            {vista === "resumen" ? (
+            {vista === "cobertura" && puedeCobertura ? (
+                <ConsultaCobertura data={data} />
+            ) : vista === "resumen" ? (
                 <ConsultaDetallada
                     limit={limit}
                     pagination={pagination}

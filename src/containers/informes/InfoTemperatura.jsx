@@ -5,6 +5,8 @@ import endPoints from "@services/api";
 import { Form, Row, Col, Button } from "react-bootstrap";
 import Paginacion from "@components/shared/Tablas/Paginacion";
 import CargueMasivo from "@components/seguridad/Listado/CargueMasivo";
+import { leerFilasTemperatura } from "@utils/fechasExcel";
+import { buildTracecodeUrl } from "@utils/tracecode";
 import styles2 from "@components/shared/Formularios/Formularios.module.css";
 import styles from "@styles/Seguridad.module.css";
 import {
@@ -28,37 +30,57 @@ function formatFechaLarga(fecha, hora) {
     return `${dias[d.getDay()]} ${d.getDate()} ${meses[d.getMonth()]} ${d.getFullYear()} · ${d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
 }
 
+/* ─── Temas de la gráfica (oscuro / claro) ─── */
+const TEMAS = {
+    oscuro: {
+        fondo: "#111827", panel: "#1f2937", borde: "#374151", borde2: "#4b5563",
+        texto: "#f9fafb", texto2: "#d1d5db", textoFuerte: "#e5e7eb", muted: "#9ca3af", muted2: "#6b7280",
+        rojo: "#f87171", azul: "#60a5fa", verde: "#34d399",
+        chipBg: "#064e3b", chipTx: "#6ee7b7", okBg: "#065f46", errBg: "#7f1d1d", errTx: "#fca5a5",
+        sombra: "0 4px 16px rgba(0,0,0,0.4)",
+    },
+    // Colores de Bootstrap, como el resto de la app.
+    claro: {
+        fondo: "#f8f9fa", panel: "#ffffff", borde: "#dee2e6", borde2: "#ced4da",
+        texto: "#212529", texto2: "#495057", textoFuerte: "#212529", muted: "#6c757d", muted2: "#adb5bd",
+        rojo: "#dc3545", azul: "#0d6efd", verde: "#198754",
+        chipBg: "#d1e7dd", chipTx: "#0f5132", okBg: "#d1e7dd", errBg: "#f8d7da", errTx: "#842029",
+        sombra: "0 4px 16px rgba(0,0,0,0.12)",
+    },
+};
+const CLAVE_TEMA = "termografoTema";
+
 /* ─── Tooltip Power BI ─── */
-function TempTooltip({ active, payload }) {
+function TempTooltip({ active, payload, t }) {
     if (!active || !payload?.length) return null;
     const d = payload[0].payload;
     return (
         <div style={{
-            background: "#1f2937", border: "1px solid #374151", borderRadius: 6,
-            padding: "10px 14px", boxShadow: "0 4px 16px rgba(0,0,0,0.4)"
+            background: t.panel, border: `1px solid ${t.borde}`, borderRadius: 6,
+            padding: "10px 14px", boxShadow: t.sombra
         }}>
-            <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4 }}>
+            <div style={{ fontSize: 11, color: t.muted, marginBottom: 4 }}>
                 {formatFechaLarga(d.fecha, d.hora)}
             </div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                <span style={{ fontSize: 24, fontWeight: 700, color: "#f87171", lineHeight: 1 }}>
+                <span style={{ fontSize: 24, fontWeight: 700, color: t.rojo, lineHeight: 1 }}>
                     {Number(d.temp).toFixed(1)}
                 </span>
-                <span style={{ fontSize: 14, color: "#f87171" }}>°C</span>
+                <span style={{ fontSize: 14, color: t.rojo }}>°C</span>
             </div>
         </div>
     );
 }
 
 /* ─── Tarjeta KPI estilo Power BI ─── */
-function KpiCard({ label, value, color }) {
+function KpiCard({ label, value, color, t }) {
     return (
         <div style={{
-            flex: 1, minWidth: 120, background: "#1f2937",
+            flex: 1, minWidth: 120, background: t.panel,
             borderRadius: 8, padding: "14px 18px",
             borderLeft: `4px solid ${color}`
         }}>
-            <div style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 6 }}>
+            <div style={{ fontSize: 11, color: t.muted, textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 6 }}>
                 {label}
             </div>
             <div style={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1 }}>
@@ -74,6 +96,22 @@ function GraficaTemperatura({ idSerialArticulo, serial, onClose }) {
     const [contexto, setContexto] = useState(null);
     const [loading, setLoading] = useState(true);
     const [zoomRange, setZoomRange] = useState({ start: 0, end: 0 });
+    const [tema, setTema] = useState("claro");
+    const t = TEMAS[tema];
+
+    // Version clara por defecto (estilo de la app); recuerda la ultima version elegida.
+    useEffect(() => {
+        try {
+            const guardado = window.localStorage.getItem(CLAVE_TEMA);
+            if (guardado === "claro" || guardado === "oscuro") setTema(guardado);
+        } catch { /* sin almacenamiento: se queda en la version clara */ }
+    }, []);
+
+    const alternarTema = () => {
+        const siguiente = tema === "oscuro" ? "claro" : "oscuro";
+        setTema(siguiente);
+        try { window.localStorage.setItem(CLAVE_TEMA, siguiente); } catch { /* ignorar */ }
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -125,31 +163,48 @@ function GraficaTemperatura({ idSerialArticulo, serial, onClose }) {
 
     return (
         <div className="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column"
-            style={{ background: "#111827", zIndex: 1060 }}>
+            style={{ background: t.fondo, zIndex: 1060 }}>
 
             {/* ── Header oscuro ── */}
-            <div style={{ background: "#1f2937", borderBottom: "1px solid #374151", padding: "12px 20px" }}>
+            <div style={{ background: t.panel, borderBottom: `1px solid ${t.borde}`, padding: "12px 20px" }}>
                 <div className="d-flex justify-content-between align-items-start">
                     <div>
-                        <div style={{ color: "#9ca3af", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.8px" }}>
+                        <div style={{ color: t.muted, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.8px" }}>
                             Termógrafo
                         </div>
-                        <div style={{ color: "#f9fafb", fontWeight: 700, fontSize: 18 }}>
+                        <div style={{ color: t.texto, fontWeight: 700, fontSize: 18 }}>
                             Serial: {serial}
-                            <span style={{ color: "#9ca3af", fontWeight: 400, fontSize: 13, marginLeft: 12 }}>
-                                {contexto?.contenedor?.contenedor ? `· Contenedor: ${contexto.contenedor.contenedor}` : ''}
-                            </span>
+                            {contexto?.contenedor?.contenedor && (
+                                <>
+                                    <span style={{ color: t.muted, fontWeight: 400, margin: "0 12px" }}>·</span>
+                                    Contenedor: {contexto.contenedor.contenedor}
+                                </>
+                            )}
+                            {contexto?.contenedor?.contenedor && (
+                                <a
+                                    href={buildTracecodeUrl({ id: contexto.contenedor.id, contenedor: contexto.contenedor.contenedor })}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    title="Abrir el tracecode de este contenedor en una pestaña nueva"
+                                    style={{
+                                        marginLeft: 12, background: t.azul, color: "#ffffff", borderRadius: 6,
+                                        padding: "3px 10px", fontSize: 12, fontWeight: 600, textDecoration: "none"
+                                    }}
+                                >
+                                    Abrir tracecode ↗
+                                </a>
+                            )}
                         </div>
 
                         {/* Info embarque en una línea */}
-                        <div className="d-flex flex-wrap gap-3 mt-1" style={{ fontSize: 12, color: "#d1d5db" }}>
-                            {embarque?.Buque?.buque && <span><span style={{ color: "#6b7280" }}>Buque:</span> {embarque.Buque.buque}</span>}
-                            {embarque?.Naviera?.navieras && <span><span style={{ color: "#6b7280" }}>Naviera:</span> {embarque.Naviera.navieras}</span>}
-                            {embarque?.Destino?.destino && <span><span style={{ color: "#6b7280" }}>Destino:</span> {embarque.Destino.destino}</span>}
-                            {embarque?.booking && <span><span style={{ color: "#6b7280" }}>Booking:</span> {embarque.booking}</span>}
-                            {(embarque?.cliente?.razon_social || embarque?.cliente?.cod) && <span><span style={{ color: "#6b7280" }}>Cliente:</span> {embarque?.cliente?.razon_social || embarque?.cliente?.cod}</span>}
-                            {embarque?.fecha_zarpe && <span><span style={{ color: "#6b7280" }}>Zarpe:</span> {new Date(embarque.fecha_zarpe).toLocaleDateString('es-CO')}</span>}
-                            {embarque?.fecha_arribo && <span><span style={{ color: "#6b7280" }}>Arribo:</span> {new Date(embarque.fecha_arribo).toLocaleDateString('es-CO')}</span>}
+                        <div className="d-flex flex-wrap gap-3 mt-1" style={{ fontSize: 12, color: t.texto2 }}>
+                            {embarque?.Buque?.buque && <span><span style={{ color: t.muted2 }}>Buque:</span> {embarque.Buque.buque}</span>}
+                            {embarque?.Naviera?.navieras && <span><span style={{ color: t.muted2 }}>Naviera:</span> {embarque.Naviera.navieras}</span>}
+                            {embarque?.Destino?.destino && <span><span style={{ color: t.muted2 }}>Destino:</span> {embarque.Destino.destino}</span>}
+                            {embarque?.booking && <span><span style={{ color: t.muted2 }}>Booking:</span> {embarque.booking}</span>}
+                            {(embarque?.cliente?.razon_social || embarque?.cliente?.cod) && <span><span style={{ color: t.muted2 }}>Cliente:</span> {embarque?.cliente?.razon_social || embarque?.cliente?.cod}</span>}
+                            {embarque?.fecha_zarpe && <span><span style={{ color: t.muted2 }}>Zarpe:</span> {new Date(embarque.fecha_zarpe).toLocaleDateString('es-CO')}</span>}
+                            {embarque?.fecha_arribo && <span><span style={{ color: t.muted2 }}>Arribo:</span> {new Date(embarque.fecha_arribo).toLocaleDateString('es-CO')}</span>}
                         </div>
 
                         {/* Productos */}
@@ -157,7 +212,7 @@ function GraficaTemperatura({ idSerialArticulo, serial, onClose }) {
                             <div className="d-flex flex-wrap gap-2 mt-1">
                                 {productoRows.map((p) => (
                                     <span key={p.key} style={{
-                                        background: "#064e3b", color: "#6ee7b7",
+                                        background: t.chipBg, color: t.chipTx,
                                         borderRadius: 4, padding: "2px 8px", fontSize: 11
                                     }}>
                                         {p.producto} · {p.cajas} cajas · {p.lugar}
@@ -168,19 +223,19 @@ function GraficaTemperatura({ idSerialArticulo, serial, onClose }) {
 
                         {/* Inspecciones */}
                         <div className="d-flex flex-wrap gap-2 mt-1 align-items-center">
-                            <span style={{ fontSize: 11, color: "#9ca3af" }}>Insp. antinarcóticos:</span>
+                            <span style={{ fontSize: 11, color: t.muted }}>Insp. antinarcóticos:</span>
                             {tuvoInspeccion ? (
                                 <>
                                     <span style={{
-                                        background: "#065f46", color: "#6ee7b7",
+                                        background: t.okBg, color: t.chipTx,
                                         borderRadius: 4, padding: "2px 8px", fontSize: 11, fontWeight: 600
                                     }}>
                                         ✓ Sí — {inspecciones.length} inspección{inspecciones.length > 1 ? 'es' : ''}
                                     </span>
                                     {inspecciones.map((insp, i) => (
                                         <span key={i} style={{
-                                            background: "#1f2937", border: "1px solid #374151",
-                                            color: "#d1d5db", borderRadius: 4, padding: "2px 8px", fontSize: 11
+                                            background: t.panel, border: `1px solid ${t.borde}`,
+                                            color: t.texto2, borderRadius: 4, padding: "2px 8px", fontSize: 11
                                         }}>
                                             #{i + 1} {new Date(insp.fecha_inspeccion).toLocaleDateString('es-CO')}
                                             {insp.hora_inicio ? ` · ${insp.hora_inicio}${insp.hora_fin ? `–${insp.hora_fin}` : ''}` : ''}
@@ -190,7 +245,7 @@ function GraficaTemperatura({ idSerialArticulo, serial, onClose }) {
                                 </>
                             ) : (
                                 <span style={{
-                                    background: "#7f1d1d", color: "#fca5a5",
+                                    background: t.errBg, color: t.errTx,
                                     borderRadius: 4, padding: "2px 8px", fontSize: 11, fontWeight: 600
                                 }}>
                                     ✗ No registrada
@@ -199,23 +254,34 @@ function GraficaTemperatura({ idSerialArticulo, serial, onClose }) {
                         </div>
                     </div>
 
-                    <button type="button" onClick={onClose} style={{
-                        background: "#374151", border: "none", borderRadius: 6,
-                        color: "#9ca3af", width: 32, height: 32, cursor: "pointer",
+                    <div className="d-flex gap-2 flex-shrink-0">
+                        <button type="button" onClick={alternarTema}
+                            title={tema === "oscuro" ? "Cambiar a versión clara" : "Cambiar a versión oscura"}
+                            aria-label={tema === "oscuro" ? "Cambiar a versión clara" : "Cambiar a versión oscura"}
+                            style={{
+                                background: t.borde, border: "none", borderRadius: 6,
+                                color: t.muted, height: 32, padding: "0 10px", cursor: "pointer", fontSize: 13
+                            }}>
+                            {tema === "oscuro" ? "☀ Claro" : "🌙 Oscuro"}
+                        </button>
+                        <button type="button" onClick={onClose} style={{
+                        background: t.borde, border: "none", borderRadius: 6,
+                        color: t.muted, width: 32, height: 32, cursor: "pointer",
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 16, flexShrink: 0
                     }}>✕</button>
+                    </div>
                 </div>
             </div>
 
             {/* ── Cuerpo ── */}
             <div className="d-flex flex-column flex-grow-1 p-3" style={{ minHeight: 0, gap: 12 }}>
                 {loading ? (
-                    <div className="d-flex align-items-center justify-content-center flex-grow-1" style={{ color: "#9ca3af" }}>
+                    <div className="d-flex align-items-center justify-content-center flex-grow-1" style={{ color: t.muted }}>
                         Cargando lecturas...
                     </div>
                 ) : data.length === 0 ? (
-                    <div className="d-flex align-items-center justify-content-center flex-grow-1" style={{ color: "#6b7280" }}>
+                    <div className="d-flex align-items-center justify-content-center flex-grow-1" style={{ color: t.muted2 }}>
                         Sin datos de temperatura para este serial
                     </div>
                 ) : (
@@ -223,21 +289,21 @@ function GraficaTemperatura({ idSerialArticulo, serial, onClose }) {
                         {/* KPIs */}
                         <div className="d-flex gap-2 flex-wrap">
                             <div style={{
-                                flex: 1, minWidth: 120, background: "#1f2937",
-                                borderRadius: 8, padding: "14px 18px", borderLeft: "4px solid #4b5563"
+                                flex: 1, minWidth: 120, background: t.panel,
+                                borderRadius: 8, padding: "14px 18px", borderLeft: `4px solid ${t.borde2}`
                             }}>
-                                <div style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 6 }}>Lecturas</div>
-                                <div style={{ fontSize: 26, fontWeight: 800, color: "#e5e7eb", lineHeight: 1 }}>{data.length}</div>
+                                <div style={{ fontSize: 11, color: t.muted, textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 6 }}>Lecturas</div>
+                                <div style={{ fontSize: 26, fontWeight: 800, color: t.textoFuerte, lineHeight: 1 }}>{data.length}</div>
                             </div>
-                            <KpiCard label="Promedio" value={avgTemp} color="#60a5fa" />
-                            <KpiCard label="Mínima" value={minTemp} color="#34d399" />
-                            <KpiCard label="Máxima" value={maxTemp} color="#f87171" />
+                            <KpiCard t={t} label="Promedio" value={avgTemp} color={t.azul} />
+                            <KpiCard t={t} label="Mínima" value={minTemp} color={t.verde} />
+                            <KpiCard t={t} label="Máxima" value={maxTemp} color={t.rojo} />
                             {isZoomed && (
                                 <button
                                     onClick={() => setZoomRange({ start: 0, end: data.length - 1 })}
                                     style={{
-                                        background: "#374151", border: "1px solid #4b5563",
-                                        borderRadius: 8, color: "#d1d5db", padding: "0 16px",
+                                        background: t.borde, border: `1px solid ${t.borde2}`,
+                                        borderRadius: 8, color: t.texto2, padding: "0 16px",
                                         cursor: "pointer", fontSize: 12, alignSelf: "stretch"
                                     }}
                                 >
@@ -248,23 +314,23 @@ function GraficaTemperatura({ idSerialArticulo, serial, onClose }) {
 
                         {/* Gráfica */}
                         <div style={{
-                            flex: 1, minHeight: 0, background: "#1f2937",
+                            flex: 1, minHeight: 0, background: t.panel,
                             borderRadius: 8, padding: "16px 12px 8px"
                         }}>
-                            <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, paddingLeft: 8 }}>
+                            <div style={{ fontSize: 12, color: t.muted, marginBottom: 8, paddingLeft: 8 }}>
                                 Temperatura °C — {data.length} lecturas
-                                {avgTemp !== null && <span style={{ marginLeft: 16, color: "#60a5fa" }}>Prom: {avgTemp.toFixed(1)}°C</span>}
+                                {avgTemp !== null && <span style={{ marginLeft: 16, color: t.azul }}>Prom: {avgTemp.toFixed(1)}°C</span>}
                             </div>
                             <div style={{ height: "calc(100% - 28px)" }}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={data} margin={{ top: 8, right: 48, left: 0, bottom: 8 }}>
                                         <defs>
                                             <linearGradient id="tempGrad" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="0%" stopColor="#f87171" stopOpacity={0.35} />
-                                                <stop offset="100%" stopColor="#f87171" stopOpacity={0.02} />
+                                                <stop offset="0%" stopColor={t.rojo} stopOpacity={0.35} />
+                                                <stop offset="100%" stopColor={t.rojo} stopOpacity={0.02} />
                                             </linearGradient>
                                         </defs>
-                                        <CartesianGrid stroke="#374151" strokeDasharray="3 3" vertical={false} />
+                                        <CartesianGrid stroke={t.borde} strokeDasharray="3 3" vertical={false} />
                                         <XAxis
                                             dataKey="idx"
                                             type="number"
@@ -277,47 +343,47 @@ function GraficaTemperatura({ idSerialArticulo, serial, onClose }) {
                                                 const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
                                                 return `${d.getDate()} ${meses[d.getMonth()]}`;
                                             }}
-                                            tick={{ fontSize: 10, fill: "#6b7280" }}
-                                            axisLine={{ stroke: "#374151" }}
+                                            tick={{ fontSize: 10, fill: t.muted2 }}
+                                            axisLine={{ stroke: t.borde }}
                                             tickLine={false}
                                             height={28}
                                             interval="preserveStartEnd"
                                         />
                                         <YAxis
-                                            tick={{ fontSize: 11, fill: "#6b7280" }}
+                                            tick={{ fontSize: 11, fill: t.muted2 }}
                                             domain={["auto", "auto"]}
                                             tickFormatter={(v) => `${v}°`}
                                             width={44}
                                             axisLine={false}
                                             tickLine={false}
                                         />
-                                        <Tooltip content={<TempTooltip />} />
+                                        <Tooltip content={<TempTooltip t={t} />} />
                                         {avgTemp !== null && (
                                             <ReferenceLine
                                                 y={avgTemp}
-                                                stroke="#60a5fa"
+                                                stroke={t.azul}
                                                 strokeDasharray="6 4"
                                                 strokeWidth={1.5}
-                                                label={{ value: `${avgTemp.toFixed(1)}°C`, position: "right", fontSize: 11, fill: "#60a5fa", fontWeight: 600 }}
+                                                label={{ value: `${avgTemp.toFixed(1)}°C`, position: "right", fontSize: 11, fill: t.azul, fontWeight: 600 }}
                                             />
                                         )}
                                         <Area
                                             type="monotone"
                                             dataKey="temp"
-                                            stroke="#f87171"
+                                            stroke={t.rojo}
                                             strokeWidth={2}
                                             fill="url(#tempGrad)"
                                             dot={false}
-                                            activeDot={{ r: 5, fill: "#f87171", stroke: "#111827", strokeWidth: 2 }}
+                                            activeDot={{ r: 5, fill: t.rojo, stroke: t.fondo, strokeWidth: 2 }}
                                             isAnimationActive={false}
                                         />
                                         <Brush
                                             dataKey="idx"
                                             height={28}
-                                            stroke="#374151"
-                                            fill="#111827"
+                                            stroke={t.borde}
+                                            fill={t.fondo}
                                             travellerWidth={8}
-                                            travellerStyle={{ fill: "#f87171", stroke: "none", cursor: "col-resize" }}
+                                            travellerStyle={{ fill: t.rojo, stroke: "none", cursor: "col-resize" }}
                                             onChange={handleBrush}
                                             startIndex={zoomRange.start}
                                             endIndex={zoomRange.end}
@@ -344,6 +410,9 @@ function CargarTemperaturaExcel({ setOpenMasivo, onSuccess }) {
     const [preview, setPreview] = useState([]);
     const [loading, setLoading] = useState(false);
     const [confirmacion, setConfirmacion] = useState(null);
+    const [progreso, setProgreso] = useState(null);
+    const [totalFilas, setTotalFilas] = useState(0);
+    const filasRef = useRef([]);
     const timeoutRef = useRef(null);
 
     const buscarSeriales = useCallback((texto) => {
@@ -370,13 +439,16 @@ function CargarTemperaturaExcel({ setOpenMasivo, onSuccess }) {
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         setArchivo(file);
+        filasRef.current = [];
+        setTotalFilas(0);
         if (!file) { setPreview([]); return; }
         const reader = new FileReader();
         reader.onload = (ev) => {
-            const data = new Uint8Array(ev.target.result);
-            const workbook = XLSX.read(data, { type: "array" });
-            const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            setPreview(XLSX.utils.sheet_to_json(sheet).slice(0, 20));
+            // Acepta fechas como celdas de fecha de Excel o como texto; se leen una sola vez.
+            const filas = leerFilasTemperatura(ev.target.result);
+            filasRef.current = filas;
+            setTotalFilas(filas.length);
+            setPreview(filas.slice(0, 20));
         };
         reader.readAsArrayBuffer(file);
     };
@@ -390,32 +462,71 @@ function CargarTemperaturaExcel({ setOpenMasivo, onSuccess }) {
         XLSX.writeFile(book, `plantilla_temperatura_${modo}.xlsx`);
     };
 
-    const parseAndSend = async (allowOverwrite = false) => {
+    // Envia el archivo por lotes (evita peticiones enormes y tiempos de espera). `modoExistentes`:
+    // null (preguntar si hay seriales con lecturas), "reemplazar" o "agregar" (solo las nuevas).
+    const parseAndSend = async (modoExistentes = null) => {
         if (!archivo) { alert("Selecciona un archivo Excel."); return; }
-        const reader = new FileReader();
-        reader.onload = async (ev) => {
-            const data = new Uint8Array(ev.target.result);
-            const workbook = XLSX.read(data, { type: "array" });
-            const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-            const payload = { rows: json, allowOverwrite };
-            if (modo === "termografo") {
-                if (!serial.trim()) { alert("Debes ingresar un serial."); return; }
-                payload.serial = serial.trim();
-            }
-            setLoading(true);
-            try {
+        const filas = filasRef.current;
+        if (!filas.length) { alert("El archivo no tiene filas para cargar."); return; }
+        if (modo === "termografo" && !serial.trim()) { alert("Debes ingresar un serial."); return; }
+
+        const TAMANO_LOTE = 5000;
+        const lotes = Math.ceil(filas.length / TAMANO_LOTE);
+        const seriales = modo === "termografo"
+            ? [serial.trim()]
+            : [...new Set(filas.map((f) => String(f.serial || f.serial_de_articulo || "").trim()).filter(Boolean))];
+
+        setLoading(true);
+        let insertados = 0;
+        let errores = 0;
+        let repetidos = 0;
+        let sobrescritos = 0;
+        const detalle = [];
+        try {
+            for (let i = 0; i < lotes; i += 1) {
+                setProgreso({ lote: i + 1, lotes, filas: Math.min((i + 1) * TAMANO_LOTE, filas.length), total: filas.length });
+                const payload = {
+                    rows: filas.slice(i * TAMANO_LOTE, (i + 1) * TAMANO_LOTE),
+                    continuacion: i > 0,
+                    ...(modoExistentes ? { modoExistentes } : {}),
+                    ...(i === 0 ? { todosSeriales: seriales } : {}),
+                    ...(modo === "termografo" ? { serial: serial.trim() } : {}),
+                };
+                // eslint-disable-next-line no-await-in-loop
                 const res = await axios.post(endPoints.registroTemperatura.cargarMasivo, payload);
-                if (res.data.requiresConfirmation) { setConfirmacion(res.data); return; }
-                alert(res.data?.message || "Carga exitosa");
-                setOpenMasivo(false);
-                if (typeof onSuccess === "function") onSuccess();
-            } catch (error) {
-                alert("Error: " + (error?.response?.data?.message || error.message));
-            } finally {
-                setLoading(false);
+                if (res.data.requiresConfirmation) {
+                    const conteo = {};
+                    filas.forEach((f) => {
+                        const sr = modo === "termografo" ? serial.trim() : String(f.serial || f.serial_de_articulo || "").trim();
+                        conteo[sr] = (conteo[sr] || 0) + 1;
+                    });
+                    setConfirmacion({
+                        ...res.data,
+                        serialesConDatos: (res.data.serialesConDatos || []).map((x) => ({ ...x, registrosNuevos: conteo[x.serial] ?? x.registrosNuevos })),
+                    });
+                    return;
+                }
+                insertados += res.data.total || 0;
+                errores += res.data.errors || 0;
+                repetidos += res.data.omitidosRepetidos || 0;
+                sobrescritos += res.data.overwritten || 0;
+                if (detalle.length < 15) detalle.push(...(res.data.errorDetails || []).slice(0, 15 - detalle.length).map((d) => `fila ${d.fila + i * TAMANO_LOTE}: ${d.message}${d.valor !== undefined ? ` (${d.valor})` : ""}`));
             }
-        };
-        reader.readAsArrayBuffer(archivo);
+            alert([
+                `Carga completada: ${insertados} lectura(s) guardada(s).`,
+                repetidos ? `${repetidos} repetida(s) omitida(s).` : "",
+                sobrescritos ? `Se reemplazaron las lecturas de ${sobrescritos} serial(es).` : "",
+                errores ? `${errores} fila(s) con error${detalle.length ? ":\n" + detalle.join("\n") : "."}` : "",
+            ].filter(Boolean).join("\n"));
+            setOpenMasivo(false);
+            if (typeof onSuccess === "function") onSuccess();
+        } catch (error) {
+            const mensaje = error?.response?.data?.message || error.message;
+            alert(`Error: ${mensaje}${insertados ? `\n\nAntes del error se guardaron ${insertados} lecturas. Puedes volver a cargar el archivo y elegir "Agregar solo las nuevas" para completar sin duplicar.` : ""}`);
+        } finally {
+            setLoading(false);
+            setProgreso(null);
+        }
     };
 
     return (
@@ -438,11 +549,17 @@ function CargarTemperaturaExcel({ setOpenMasivo, onSuccess }) {
                                         ))}
                                     </ul>
                                 </div>
-                                <div className="d-flex justify-content-between">
+                                {progreso && <div className="small text-muted mb-2">Enviando lote {progreso.lote} de {progreso.lotes}...</div>}
+                                <div className="d-flex flex-wrap justify-content-between gap-2">
                                     <Button variant="secondary" onClick={() => setConfirmacion(null)} disabled={loading}>Cancelar</Button>
-                                    <Button variant="warning" onClick={() => parseAndSend(true)} disabled={loading}>
-                                        {loading ? "Reemplazando..." : "Sí, reemplazar datos"}
-                                    </Button>
+                                    <div className="d-flex gap-2">
+                                        <Button variant="outline-primary" onClick={() => { setConfirmacion(null); parseAndSend("agregar"); }} disabled={loading}>
+                                            Agregar solo las nuevas
+                                        </Button>
+                                        <Button variant="warning" onClick={() => { setConfirmacion(null); parseAndSend("reemplazar"); }} disabled={loading}>
+                                            Reemplazar las lecturas existentes
+                                        </Button>
+                                    </div>
                                 </div>
                             </>
                         ) : (
@@ -496,6 +613,7 @@ function CargarTemperaturaExcel({ setOpenMasivo, onSuccess }) {
                                     <div className="d-flex justify-content-between align-items-center mt-1">
                                         <span className="text-muted small">
                                             {modo === "termografo" ? "Columnas: Date/Time, Temperature" : "Columnas: serial, Date/Time, Temperature"}
+                                            {" · "}Date/Time acepta fecha de Excel o texto{totalFilas ? ` · ${totalFilas.toLocaleString("es-CO")} filas` : ""}
                                         </span>
                                         <button type="button" className="btn btn-link btn-sm p-0" onClick={descargarPlantilla}>Descargar plantilla</button>
                                     </div>
@@ -513,9 +631,20 @@ function CargarTemperaturaExcel({ setOpenMasivo, onSuccess }) {
                                     </div>
                                 )}
 
+                                {progreso && (
+                                    <div className="mb-3">
+                                        <div className="small mb-1">
+                                            Lote {progreso.lote} de {progreso.lotes} · {progreso.filas.toLocaleString("es-CO")} de {progreso.total.toLocaleString("es-CO")} filas
+                                        </div>
+                                        <div className="progress" style={{ height: 8 }}>
+                                            <div className="progress-bar" style={{ width: `${Math.round((progreso.lote / progreso.lotes) * 100)}%` }} />
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="d-flex justify-content-between">
                                     <Button variant="secondary" onClick={() => setOpenMasivo(false)} disabled={loading}>Cancelar</Button>
-                                    <Button variant="primary" onClick={() => parseAndSend(false)} disabled={loading || (modo === "termografo" && !serial.trim()) || !archivo}>
+                                    <Button variant="primary" onClick={() => parseAndSend(null)} disabled={loading || (modo === "termografo" && !serial.trim()) || !archivo}>
                                         {loading ? "Cargando..." : "Cargar"}
                                     </Button>
                                 </div>

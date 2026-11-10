@@ -19,6 +19,7 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
     const [serial, setSerial] = useState(false);
     const [salida_sin_stock, setSalida_sin_stock] = useState(false);
     const [permitir_traslados, setPermitir_traslados] = useState(false);
+    const [pedido_sugerido, setPedido_sugerido] = useState(true);
     const [categorias, setCategorias] = useState([]);
     const [proveedores, setProveedores] = useState([]);
 
@@ -39,6 +40,7 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
                 setPermitir_traslados(producto.permitir_traslados);
                 setSerial(producto.serial);
                 setSalida_sin_stock(producto.salida_sin_stock);
+                setPedido_sugerido(producto.pedido_sugerido !== false);
             } else {
                 setcheckedState(array);
             }
@@ -68,6 +70,7 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
         if (botonName === "permitir_traslado") setPermitir_traslados(!permitir_traslados);
         if (botonName === "salida_sin_stock") setSalida_sin_stock(!salida_sin_stock);
         if (botonName === "serial") setSerial(!serial);
+        if (botonName === "pedido_sugerido") setPedido_sugerido(!pedido_sugerido);
     };
 
 
@@ -84,22 +87,26 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
         const proveedor = proveedores.find(item => item.razon_social === formData.get('proveedor'));
         const data = {
             name: formData.get('name'),
+            nombre_proveedor: (formData.get('nombre_proveedor') || '').trim() || null,
             bulto: formData.get('bulto'),
             cons_categoria: formData.get('categoria'),
             cons_proveedor: proveedor.consecutivo,
             salida_sin_stock: salida_sin_stock,
             serial: serial,
             permitir_traslados: permitir_traslados,
+            pedido_sugerido: pedido_sugerido,
             costo: 0,
             isBlock: false
         };
 
         if (producto === null) {
             try {
-                agregarProducto(data).then((res) => {
-                    almacenes.map((almacen, index) => {
-                        crearStock(almacen.consecutivo, res.consecutivo, !checkedState[index]);
-                    });
+                agregarProducto(data).then(async (res) => {
+                    // En orden y de a uno: decenas de peticiones simultaneas hacen fallar algunas.
+                    for (let index = 0; index < almacenes.length; index += 1) {
+                        // eslint-disable-next-line no-await-in-loop
+                        await crearStock(almacenes[index].consecutivo, res.consecutivo, !checkedState[index]);
+                    }
                 });
                 setAlert({
                     active: true,
@@ -112,10 +119,20 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
                 alert("Se ha presentado un error al crear el producto");
             }
         } else {
-            actualizarProducto(producto.id, data).then(() => {
-                almacenes.map((almacen, index) => {
-                    habilitarProductoEnAlmacen(almacen.consecutivo, producto.consecutivo, !checkedState[index]);
-                });
+            actualizarProducto(producto.id, data).then(async () => {
+                // En orden y de a uno: decenas de peticiones simultaneas hacen fallar algunas.
+                const fallidos = [];
+                for (let index = 0; index < almacenes.length; index += 1) {
+                    try {
+                        // eslint-disable-next-line no-await-in-loop
+                        await habilitarProductoEnAlmacen(almacenes[index].consecutivo, producto.consecutivo, !checkedState[index]);
+                    } catch {
+                        fallidos.push(almacenes[index].nombre || almacenes[index].consecutivo);
+                    }
+                }
+                if (fallidos.length) {
+                    alert(`El producto se actualizó, pero no se pudo habilitar o deshabilitar en: ${fallidos.join(', ')}`);
+                }
             });
             setAlert({
                 active: true,
@@ -170,6 +187,12 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
                                     <label htmlFor="name">Descripción del producto</label>
                                     <div>
                                         <input defaultValue={producto?.name} type="text" className="form-control form-control-sm" name='name' id="name"></input>
+                                    </div>
+                                </div>
+                                <div className={styles.grupo}>
+                                    <label htmlFor="nombre_proveedor">Nombre del proveedor</label>
+                                    <div>
+                                        <input defaultValue={producto?.nombre_proveedor || ''} type="text" className="form-control form-control-sm" name='nombre_proveedor' id="nombre_proveedor" placeholder="Como lo llama el proveedor (sale en el pedido)"></input>
                                     </div>
                                 </div>
                                 <div className={styles.grupo}>
@@ -233,6 +256,13 @@ export default function NuevoProducto({ setAlert, setOpen, producto }) {
                                     <input className="form-check-input" onChange={() => handleChangeBool("permitir_traslado")} type="checkbox" checked={permitir_traslados} value="" name='permitir_traslado' id="permitir_traslado"></input>
                                     <label htmlFor='permitir_traslado' className="form-check-label" >
                                         Permitir traslados
+                                    </label>
+                                </div>
+
+                                <div className="form-check">
+                                    <input className="form-check-input" onChange={() => handleChangeBool("pedido_sugerido")} type="checkbox" checked={pedido_sugerido} value="" name='pedido_sugerido' id="pedido_sugerido"></input>
+                                    <label htmlFor='pedido_sugerido' className="form-check-label" >
+                                        Pedido sugerido
                                     </label>
                                 </div>
                             </div>

@@ -23,6 +23,8 @@ const crearStock = async (cons_almacen, cons_producto, bool) => {
         const response = await axios.post(url, body, config);
         return response.data;
     } catch (e) {
+        // 409 = el stock de ese almacen ya existe: no es un error para quien edita el producto.
+        if (e?.response?.status === 409) return null;
         alert('Se ha presentado un error al crear el stock');
     }
 };
@@ -106,7 +108,13 @@ const habilitarProductoEnAlmacen = async (cons_almacen, cons_producto, bool) => 
     try {
         await axios.patch(endPoints.stock.enable(cons_almacen, cons_producto), { isBlock: bool });
     } catch (e) {
-        crearStock(cons_almacen, cons_producto, bool);
+        // Solo se crea el stock si no existia (el servidor responde 409 "El item no existe").
+        if (e?.response?.status === 409) {
+            await crearStock(cons_almacen, cons_producto, bool);
+            return;
+        }
+        console.error('No se pudo habilitar/deshabilitar el producto en el almacen', cons_almacen, e);
+        throw e;
     }
 };
 

@@ -14,11 +14,26 @@ import { filtrarPedidos } from "@services/api/pedidos";
 import { listarCategorias } from "@services/api/categorias";
 import excel from "@hooks/useExcel";
 import { getAppBaseUrl } from "@utils/appUrl";
+import { encontrarModulo } from "@services/api/configuracion";
+import PedidosProveedorInforme from "@components/informes/PedidosProveedorInforme";
 
 
 export default function InfoPedidos() {
     const formRef = useRef();
-    const { almacenByUser } = useAuth();
+    const { almacenByUser, getUser } = useAuth();
+    const usuario = getUser();
+    const [vista, setVista] = useState("almacen");
+    const [puedeProveedor, setPuedeProveedor] = useState(usuario?.id_rol === "Super administrador");
+
+    // Pedidos a proveedor: solo Super administrador o quien tenga el permiso de cobertura.
+    useEffect(() => {
+        if (usuario?.id_rol === "Super administrador") { setPuedeProveedor(true); return; }
+        if (!usuario?.username) return;
+        encontrarModulo(usuario.username)
+            .then((res) => setPuedeProveedor((JSON.parse(res?.[0]?.detalles || "{}").botones || []).includes("disponibles_cobertura")))
+            .catch(() => setPuedeProveedor(false));
+    }, [usuario?.username, usuario?.id_rol]);
+
     const [pedidos, setPedidos] = useState([1]);
     const [categorias, setCategorias] = useState([]);
     const [pagination, setPagination] = useState(1);
@@ -88,6 +103,19 @@ export default function InfoPedidos() {
             <Container>
                 <h2>Informe de pedidos</h2>
                 <div className="line"></div>
+
+                {puedeProveedor && (
+                    <div className="d-flex gap-2 my-3">
+                        <button type="button" className={`btn btn-sm ${vista === "almacen" ? "btn-primary" : "btn-outline-primary"}`} onClick={() => setVista("almacen")}>
+                            Pedidos de almacén
+                        </button>
+                        <button type="button" className={`btn btn-sm ${vista === "proveedor" ? "btn-primary" : "btn-outline-primary"}`} onClick={() => setVista("proveedor")}>
+                            Pedidos a proveedor
+                        </button>
+                    </div>
+                )}
+
+                {vista === "proveedor" && puedeProveedor ? <PedidosProveedorInforme /> : (<>
                 <form ref={formRef}>
 
                     <div className={styles.contenedor3}>
@@ -232,6 +260,7 @@ export default function InfoPedidos() {
                 <div className={styles.pagination}>
                     <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
                 </div>
+                </>)}
 
             </Container>
         </>

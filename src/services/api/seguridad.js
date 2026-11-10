@@ -99,6 +99,45 @@ const actualizarSerial = async (body) => {
     }
 };
 
+// Cobertura de stock (solo Super administrador o permiso disponibles_cobertura; el servidor responde 403 si no).
+const listarCobertura = async (params = {}) => {
+    const response = await axios.get(endPoints.seguridad.cobertura, { params });
+    return response.data;
+};
+
+const guardarCoberturaConfig = async (config) => {
+    const response = await axios.patch(endPoints.seguridad.coberturaConfig, config);
+    return response.data;
+};
+
+const guardarCoberturaProducto = async (consecutivo, cobertura_porcentaje) => {
+    const response = await axios.patch(endPoints.seguridad.coberturaProducto, { consecutivo, cobertura_porcentaje });
+    return response.data;
+};
+
+// Registra el pedido a proveedor y devuelve su codigo (PP-00001); con `codigo` actualiza ese pedido.
+const guardarPedidoProveedor = async (pedido) => {
+    const response = await axios.post(endPoints.seguridad.coberturaPedidos, pedido);
+    return response.data;
+};
+
+// Observacion predeterminada de los pedidos de un proveedor ('' = usar la general).
+const guardarObservacionProveedor = async (consecutivo, observacion_pedido) => {
+    const response = await axios.patch(endPoints.seguridad.coberturaProveedor, { consecutivo, observacion_pedido });
+    return response.data;
+};
+
+// Informe de pedidos a proveedor y control de recepcion.
+const listarPedidosProveedor = async (params = {}) => {
+    const response = await axios.get(endPoints.seguridad.coberturaPedidos, { params });
+    return response.data;
+};
+
+const marcarPedidoProveedorRecibido = async (codigo, recibido) => {
+    const response = await axios.patch(endPoints.seguridad.coberturaPedidosRecibido, { codigo, recibido });
+    return response.data;
+};
+
 const listarProductosSeguridad = async () => {
     try {
         const response = await axios.get(endPoints.seguridad.listarProductos);
@@ -295,6 +334,13 @@ export {
     deshacerCargaSeriales,
     actualizarSeriales,
     listarProductosSeguridad,
+    listarCobertura,
+    guardarCoberturaConfig,
+    guardarCoberturaProducto,
+    guardarPedidoProveedor,
+    guardarObservacionProveedor,
+    listarPedidosProveedor,
+    marcarPedidoProveedorRecibido,
     exportarArticulosConSerial,
     encontrarUnSerial,
     verificarAndActualizarSeriales,

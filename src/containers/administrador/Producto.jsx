@@ -3,6 +3,8 @@ import axios from 'axios';
 //Services
 import endPoints from '@services/api';
 import { actualizarProducto, listarProductos } from '@services/api/productos';
+import { listarCategorias } from '@services/api/categorias';
+import { listarProveedores } from '@services/api/proveedores';
 //Hooks
 import useAlert from '@hooks/useAlert';
 import excel from '@hooks/useExcel';
@@ -26,7 +28,15 @@ const Producto = () => {
     const [total, setTotal] = useState(0);
     const [changeAll, setChangeAll] = useState(false);
     const [checkbox, setCheckbox] = useState(new Array(10).fill(false));
+    const [nombreCategoria, setNombreCategoria] = useState({});
+    const [nombreProveedor, setNombreProveedor] = useState({});
     const limit = 10;
+
+    // Nombres para mostrar en la tabla en lugar de los codigos.
+    useEffect(() => {
+        listarCategorias().then((cats) => setNombreCategoria(Object.fromEntries((cats || []).map((c) => [c.consecutivo, c.nombre])))).catch(() => {});
+        listarProveedores().then((provs) => setNombreProveedor(Object.fromEntries((provs || []).map((p) => [p.consecutivo, p.razon_social])))).catch(() => {});
+    }, []);
 
 
     useEffect(() => {
@@ -168,10 +178,12 @@ const Producto = () => {
                         </th>
                         <th className="text-custom-small text-center align-middle" style={{ padding: '2px' }}>Cod</th>
                         <th className="text-custom-small text-center align-middle" style={{ padding: '2px' }}>Nombre</th>
+                        <th className="text-custom-small text-center align-middle d-none d-md-table-cell" style={{ padding: '2px' }}>Nombre del proveedor</th>
                         <th className="text-custom-small text-center align-middle d-none d-md-table-cell" style={{ padding: '2px' }}>Categoría</th>
                         <th className="text-custom-small text-center align-middle d-none d-md-table-cell" style={{ padding: '2px' }}>Proveedor</th>
                         <th className="text-custom-small text-center align-middle d-none d-md-table-cell" style={{ padding: '2px' }}>Serial</th>
                         <th className="text-custom-small text-center align-middle d-none d-md-table-cell" style={{ padding: '2px' }}>Salida sin stock</th>
+                        <th className="text-custom-small text-center align-middle d-none d-md-table-cell" style={{ padding: '2px' }}>Pedido sugerido</th>
                         <th className="text-custom-small text-center align-middle" style={{ padding: '2px' }}></th>
                         <th className="text-custom-small text-center align-middle" style={{ padding: '2px' }}></th>
                     </tr>
@@ -191,10 +203,12 @@ const Producto = () => {
                             </td>
                             <td className="text-custom-small text-center align-middle" style={{ padding: '2px' }}>{item.consecutivo}</td>
                             <td className="text-custom-small text-center align-middle" style={{ padding: '2px' }}>{item.name}</td>
-                            <td className="text-custom-small text-center align-middle d-none d-md-table-cell" style={{ padding: '2px' }}>{item.cons_categoria}</td>
-                            <td className="text-custom-small text-center align-middle d-none d-md-table-cell" style={{ padding: '2px' }}>{item.cons_proveedor}</td>
+                            <td className="text-custom-small text-center align-middle d-none d-md-table-cell" style={{ padding: '2px' }}>{item.nombre_proveedor || '—'}</td>
+                            <td className="text-custom-small text-center align-middle d-none d-md-table-cell" style={{ padding: '2px' }}>{nombreCategoria[item.cons_categoria] || item.cons_categoria}</td>
+                            <td className="text-custom-small text-center align-middle d-none d-md-table-cell" style={{ padding: '2px' }}>{nombreProveedor[item.cons_proveedor] || item.cons_proveedor}</td>
                             <td className="text-custom-small text-center align-middle d-none d-md-table-cell" style={{ padding: '2px' }}>{item.serial ? "SI" : "NO"}</td>
                             <td className="text-custom-small text-center align-middle d-none d-md-table-cell" style={{ padding: '2px' }}>{item.salida_sin_stock ? "SI" : "NO"}</td>
+                            <td className="text-custom-small text-center align-middle d-none d-md-table-cell" style={{ padding: '2px' }}>{item.pedido_sugerido === false ? "NO" : "SI"}</td>
                             <td className="text-custom-small text-center align-middle" style={{ padding: '2px', width: '45px' }}>
                                 <button
                                     onClick={() => handleEditar(item)}
