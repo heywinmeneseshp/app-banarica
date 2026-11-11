@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { FaUndoAlt, FaExchangeAlt } from "react-icons/fa";
+import { FaUndoAlt, FaExchangeAlt, FaHistory } from "react-icons/fa";
 
 import styles from "@styles/Seguridad.module.css";
 import Paginacion from "@components/Paginacion";
 import CorregirSerialModal from "@components/seguridad/CorregirSerialModal";
 import TransferirContModal from "@components/seguridad/TransferirContModal";
+import HistorialSerialModal from "@components/seguridad/HistorialSerialModal";
 import { corregirAsignacionSerial, listarSeriales, revertirSerialsMasivo } from "@services/api/seguridad";
 import { useAuth } from "@hooks/useAuth";
 import { buildTracecodeUrl } from "@utils/tracecode";
@@ -28,6 +29,7 @@ export default function ConsultaResumen({
     const [transferItems, setTransferItems] = useState(null);
     const [reverting, setReverting] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
+    const [historialSerial, setHistorialSerial] = useState(null);
 
     const user = getUser();
     const canCorrectSerials =
@@ -90,7 +92,7 @@ export default function ConsultaResumen({
     };
 
     const totalColumnas =
-        (configBotons.includes("disponibles_serial") ? 9 : 8) +
+        (configBotons.includes("disponibles_serial") ? 10 : 9) +
         (canCorrectSerials ? 1 : 0) +
         (canTransferSerials ? 2 : 0);
 
@@ -193,6 +195,7 @@ export default function ConsultaResumen({
                         <th className="text-custom-small text-center">L Pack</th>
                         <th className="text-custom-small text-center">Estado</th>
                         <th className="text-custom-small text-center">Contenedor</th>
+                        <th className="text-custom-small text-center">Hist.</th>
                         {canCorrectSerials && <th className="text-custom-small text-center">Corregir</th>}
                         {canTransferSerials && <th className="text-custom-small text-center">Transferir</th>}
                     </tr>
@@ -249,6 +252,16 @@ export default function ConsultaResumen({
                                     </a>
                                 ) : '-'}
                             </td>
+                            <td className="text-custom-small text-center">
+                                <button
+                                    type="button"
+                                    className="btn btn-link p-0 lh-1 text-secondary"
+                                    onClick={() => setHistorialSerial(item.serial)}
+                                    title={`Ver el historial de sobrescrituras del serial ${item.serial}`}
+                                >
+                                    <FaHistory />
+                                </button>
+                            </td>
                             {canCorrectSerials && (
                                 <td className="text-custom-small text-center">
                                     {item.available === false ? (
@@ -296,6 +309,8 @@ export default function ConsultaResumen({
                     limit={limit}
                 />
             </span>
+
+            <HistorialSerialModal serial={historialSerial} onClose={() => setHistorialSerial(null)} />
 
             <CorregirSerialModal
                 open={Boolean(serialSeleccionado)}

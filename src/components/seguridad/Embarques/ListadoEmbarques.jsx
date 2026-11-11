@@ -43,7 +43,6 @@ const ListadoEmbarques = () => {
   const [clientes, setCliente] = useState([]);
   const [semanas, setSemanas] = useState([]);
   const [cargueMasivo, setCargueMasivo] = useState(false);
-  const [actualizarMasivo, setActualizarMasivo] = useState(false);
 
 
   const handleCellEdit = async (id, field, value) => {
@@ -228,17 +227,10 @@ const ListadoEmbarques = () => {
           </Button>
 
           <Button
-            onClick={() => setActualizarMasivo(true)}
-            className="btn btn-primary btn-sm w-100 mx-1"
-            style={{ padding: '0.1rem 0.5rem !important' }}
-          >
-            {'Actualizar masivo'}
-          </Button>
-    
-          <Button
             onClick={() => setCargueMasivo(true)}
             className="btn btn-primary btn-sm w-100 ms-1"
             style={{ padding: '0.1rem 0.5rem !important' }}
+            title="Actualiza los embarques que ya existen (por BL) y crea los que no existen"
           >
             {'Cargue masivo'}
           </Button>
@@ -415,46 +407,27 @@ const ListadoEmbarques = () => {
 
       {/* Cargue y actualizacion masiva: si el BL existe se actualiza y si no, se crea (pregunta antes). */}
       {cargueMasivo && <CargueMasivo setOpenMasivo={setCargueMasivo}
-        titulo={"Cargue embarques"}
+        titulo={"Embarques"}
         endPointCargueMasivo={endPoints.Embarques.create + "/masivo"}
-        supportPartialResolution
-        onSuccess={listar}
-        encabezados={{
-          id_semana: null,
-          id_cliente: null,
-          booking: null,
-          bl: null,
-          id_naviera: null,
-          id_buque: null,
-          id_destino: null,
-          viaje: null,
-          sae: null,
-          anuncio: null,
-          habilitado: null,
-        }}
-      />}
-
-      {actualizarMasivo && <CargueMasivo setOpenMasivo={setActualizarMasivo}
-        titulo={"Actualizar Embarques"}
-        endPointCargueMasivo={endPoints.Embarques.create + "/actualizar-masivo"}
         supportPartialResolution
         onSuccess={listar}
         encabezados={{
           bl: null,
           semana: null,
-          booking: null,
           id_cliente: null,
+          booking: null,
           id_naviera: null,
           id_buque: null,
           id_destino: null,
           viaje: null,
-          anuncio: null,
           sae: null,
+          anuncio: null,
           fecha_zarpe: null,
           fecha_arribo: null,
           habilitado: null,
         }}
       />}
+
       {open &&
         <NuevoEmbarque
           crear={crearEmbarques}

@@ -46,7 +46,7 @@ const listarUsuariosSeguridad = async (offset, limit, username) => {
     }
 };
 
-const cargarSeriales = async ({ data: dataExcel, remision, pedido, semana, fecha, observaciones, username, cons_movimiento }) => {
+const cargarSeriales = async ({ data: dataExcel, remision, pedido, semana, fecha, observaciones, username, cons_movimiento, sobrescribir }) => {
     const res = dataExcel.find((item) => item.cons_producto == null);
     if (res?.cons_producto === null) {
         return { message: "Existen articulos sin codigo ID.", bool: false };
@@ -62,6 +62,7 @@ const cargarSeriales = async ({ data: dataExcel, remision, pedido, semana, fecha
             observaciones,
             username,
             ...(cons_movimiento && { cons_movimiento }),
+            ...(sobrescribir && { sobrescribir }),
         });
 
         return response.data;
@@ -69,6 +70,18 @@ const cargarSeriales = async ({ data: dataExcel, remision, pedido, semana, fecha
         const message = error?.response?.data?.message || "No fue posible cargar la recepcion.";
         throw new Error(typeof message === "string" ? message : JSON.stringify(message));
     }
+};
+
+// Compara el archivo con los seriales ya guardados (no escribe nada): devuelve los que existen y que cambiaria.
+const verificarSeriales = async (dataExcel) => {
+    const response = await axios.post(endPoints.seguridad.verificarSeriales, { data: dataExcel });
+    return response.data;
+};
+
+// Historial de sobrescrituras de un serial.
+const listarHistorialSerial = async (params) => {
+    const response = await axios.get(endPoints.seguridad.serialHistorial, { params });
+    return response.data;
 };
 
 const deshacerCargaSeriales = async (cons_movimiento) => {
@@ -339,6 +352,8 @@ export {
     guardarCoberturaProducto,
     guardarPedidoProveedor,
     guardarObservacionProveedor,
+    verificarSeriales,
+    listarHistorialSerial,
     listarPedidosProveedor,
     marcarPedidoProveedorRecibido,
     exportarArticulosConSerial,

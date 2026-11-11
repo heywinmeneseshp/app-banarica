@@ -5,7 +5,8 @@ import { FaClipboardList, FaExclamationTriangle, FaFileExcel, FaTable } from "re
 
 import uDate from "@hooks/useDate";
 import { useAuth } from "@hooks/useAuth";
-import { cargarSeriales, deshacerCargaSeriales, listarProductosSeguridad } from "@services/api/seguridad";
+import { cargarSeriales, deshacerCargaSeriales, listarProductosSeguridad, verificarSeriales } from "@services/api/seguridad";
+import SobrescribirSerialesModal from "@components/seguridad/SobrescribirSerialesModal";
 import file from "@hooks/useFile";
 import excel from "@hooks/useExcel";
 import Alertas from "@components/shared/Alertas";
@@ -103,6 +104,18 @@ export default function Recepcion() {
     const [progreso, setProgreso] = useState(null); // { loteActual, totalLotes, filasCargadas, totalFilas }
     const [resumenCarga, setResumenCarga] = useState(null); // { totalSeriales, consMovimiento }
     const previsualizacionRef = useRef(null);
+    const [verificacion, setVerificacion] = useState(null); // seriales del archivo que ya existen
+    const [verificando, setVerificando] = useState(false);
+    const [puedeSobrescribir, setPuedeSobrescribir] = useState(false);
+
+    // Sobrescribir seriales existentes: solo Super administrador o quien tenga el permiso.
+    useEffect(() => {
+        if (user?.id_rol === "Super administrador") { setPuedeSobrescribir(true); return; }
+        if (!user?.username) return;
+        encontrarModulo(user.username)
+            .then((res) => setPuedeSobrescribir((JSON.parse(res?.[0]?.detalles || "{}").botones || []).includes("recepcion_sobrescribir")))
+            .catch(() => setPuedeSobrescribir(false));
+    }, [user?.username, user?.id_rol]);
 
     const [formData, setFormData] = useState({
         almacen: "",
@@ -292,9 +305,48 @@ export default function Recepcion() {
             return;
         }
 
+        // Antes de cargar: si algun serial del archivo ya existe, se avisa cuales se sobrescribirian.
+        setVerificando(true);
+        try {
+            const partes = [];
+            for (const lote of chunkArray(archivoExcel, TAMANO_LOTE)) {
+                // eslint-disable-next-line no-await-in-loop
+                partes.push(await verificarSeriales(lote));
+            }
+            const existentes = partes.flatMap((p) => p.existentes);
+            if (existentes.length > 0) {
+                setVerificacion({
+                    total: archivoExcel.length,
+                    nuevos: archivoExcel.length - existentes.length,
+                    existentes,
+                    conCambios: existentes.filter((e) => !e.sinCambios).length,
+                    usados: existentes.filter((e) => e.usado).length,
+                });
+                return;
+            }
+        } catch (error) {
+            setAlert({
+                active: true,
+                mensaje: error?.response?.data?.message || "No fue posible verificar los seriales del archivo.",
+                color: "danger",
+                autoClose: false
+            });
+            return;
+        } finally {
+            setVerificando(false);
+        }
+
+        await ejecutarCarga(null);
+    };
+
+    // Sube el archivo por lotes. `sobrescribir` ({ motivo, observaciones, stockModo }) solo llega cuando el
+    // usuario confirmo sobrescribir los seriales que ya existian.
+    const ejecutarCarga = async (sobrescribir = null) => {
         const lotes = chunkArray(archivoExcel, TAMANO_LOTE);
         let consMovimiento = null;
         let filasCargadas = 0;
+        let sobrescritos = 0;
+        let nuevosCargados = 0;
 
         setSubiendo(true);
         setAlert({ active: false });
@@ -317,6 +369,7 @@ export default function Recepcion() {
                     observaciones: formData.observaciones.trim(),
                     username: user.username,
                     cons_movimiento: consMovimiento,
+                    ...(sobrescribir && { sobrescribir }),
                 });
 
                 if (!res?.bool) {
@@ -325,6 +378,8 @@ export default function Recepcion() {
 
                 consMovimiento = res.cons_movimiento;
                 filasCargadas += lotes[i].length;
+                sobrescritos += res.sobrescritos || 0;
+                nuevosCargados += res.nuevos ?? lotes[i].length;
             }
 
             setProgreso({ loteActual: lotes.length, totalLotes: lotes.length, filasCargadas, totalFilas: archivoExcel.length });
@@ -332,7 +387,9 @@ export default function Recepcion() {
             setBool(true);
             setAlert({
                 active: true,
-                mensaje: `Se cargaron ${filasCargadas} seriales exitosamente (movimiento ${consMovimiento}).`,
+                mensaje: sobrescritos > 0
+                    ? `Se procesaron ${filasCargadas} seriales (movimiento ${consMovimiento}): ${nuevosCargados} nuevos y ${sobrescritos} sobrescritos. Los valores anteriores quedaron en el historial.`
+                    : `Se cargaron ${filasCargadas} seriales exitosamente (movimiento ${consMovimiento}).`,
                 color: "success",
                 autoClose: false
             });
@@ -528,8 +585,8 @@ export default function Recepcion() {
                         Descargar plantilla
                     </button>
                     {!bool ? (
-                        <button type="submit" className="btn btn-success btn-sm" disabled={subiendo}>
-                            {subiendo ? "Cargando..." : "Cargar datos"}
+                        <button type="submit" className="btn btn-success btn-sm" disabled={subiendo || verificando}>
+                            {subiendo ? "Cargando..." : verificando ? "Verificando seriales..." : "Cargar datos"}
                         </button>
                     ) : (
                         <button type="button" onClick={nuevoMovimiento} className="btn btn-primary btn-sm">
@@ -687,6 +744,18 @@ export default function Recepcion() {
                     </div>
                 </div>
             </div>
+
+            <SobrescribirSerialesModal
+                show={Boolean(verificacion)}
+                verificacion={verificacion}
+                puedeSobrescribir={puedeSobrescribir}
+                cargando={subiendo}
+                onCancelar={() => setVerificacion(null)}
+                onConfirmar={async (datos) => {
+                    setVerificacion(null);
+                    await ejecutarCarga(datos);
+                }}
+            />
         </section>
     );
 }

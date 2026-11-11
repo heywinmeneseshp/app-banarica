@@ -93,6 +93,7 @@ const botones = [
     "disponibles_detallado",
     "disponibles_corregir_serial",
     "disponibles_cobertura",
+    "recepcion_sobrescribir",
     "inspeccionados_corregir_contenedor",
     "inspeccionados_editar_horas",
     "inspeccionados_ver_graficos",
