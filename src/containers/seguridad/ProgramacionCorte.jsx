@@ -703,8 +703,15 @@ const ProgramacionCorte = () => {
   const eliminarFila = async (id) => {
     if (!window.confirm('Desea eliminar esta fila de la programacion?')) return;
     try {
-      await eliminarProgramacionCorte(id);
+      const resultado = await eliminarProgramacionCorte(id);
       await cargarLista();
+      // El borrado tambien se le avisa a Corbana; si falla, la fila igual quedo eliminada en Banarica.
+      const corbana = resultado?.corbana;
+      if (corbana?.ok === false) {
+        window.alert(`La fila se elimino en Banarica, pero no se pudo avisar a Corbana: ${corbana.message}.`);
+      } else if (corbana?.ok === true && corbana.totalFilas === 0) {
+        window.alert(`Era la ultima fila de la semana ${corbana.semana}. Corbana no elimina semanas que quedan vacias: revisa esa semana en Corbana.`);
+      }
     } catch (error) {
       window.alert('No fue posible eliminar la fila.');
     }
