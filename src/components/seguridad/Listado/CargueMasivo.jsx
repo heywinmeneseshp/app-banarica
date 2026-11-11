@@ -22,10 +22,12 @@ const CargueMasivo = ({
     const [loading, setLoading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [pendingResolution, setPendingResolution] = useState(null);
+    const [pendingUpsert, setPendingUpsert] = useState(null);
 
     const handleArchivoChange = (event) => {
         const file = event.target.files[0];
         setArchivo(file);
+        setPendingUpsert(null);
 
         if (file) {
             const reader = new FileReader();
@@ -142,6 +144,14 @@ const CargueMasivo = ({
                 return;
             }
 
+            // Actualizar si existe y crear si no existe: antes de escribir, el servidor devuelve un
+            // resumen y se le pregunta al usuario si continua.
+            if (result?.requiresUpsertConfirmation) {
+                setPendingUpsert(result);
+                return;
+            }
+            setPendingUpsert(null);
+
             if (result?.results?.some((item) => item.error)) {
                 const errores = result.results.filter((item) => item.error);
                 const mensajeErrores = errores.map((err) => {
@@ -249,6 +259,42 @@ const CargueMasivo = ({
                                         </Button>
                                     </div>
                                 </div>
+
+                                {pendingUpsert && (
+                                    <div className="mt-4 border rounded p-3 bg-light">
+                                        <div className="fw-bold text-dark mb-2">Confirma antes de continuar</div>
+                                        <div className="mb-2">
+                                            Se <strong>actualizarán {pendingUpsert.actualizarCount}</strong> registro(s) que ya existen y
+                                            se <strong>crearán {pendingUpsert.crearCount}</strong> nuevo(s).
+                                        </div>
+                                        {pendingUpsert.crearCount > 0 && (
+                                            <div className="small text-muted mb-2">
+                                                A crear: {pendingUpsert.blsCrear.join(", ")}{pendingUpsert.crearCount > pendingUpsert.blsCrear.length ? "…" : ""}
+                                            </div>
+                                        )}
+                                        {pendingUpsert.actualizarCount > 0 && (
+                                            <div className="small text-muted mb-2">
+                                                A actualizar: {pendingUpsert.blsActualizar.join(", ")}{pendingUpsert.actualizarCount > pendingUpsert.blsActualizar.length ? "…" : ""}
+                                            </div>
+                                        )}
+                                        {pendingUpsert.noSePuedenCrear?.length > 0 && (
+                                            <div className="alert alert-warning py-2 small">
+                                                <strong>{pendingUpsert.noSePuedenCrear.length} no se pueden crear y se omitirán:</strong>
+                                                <ul className="mb-0">
+                                                    {pendingUpsert.noSePuedenCrear.slice(0, 10).map((x) => <li key={x.bl}>{x.bl}: {x.reason}</li>)}
+                                                </ul>
+                                            </div>
+                                        )}
+                                        <div className="d-flex flex-column flex-md-row gap-2">
+                                            <Button variant="outline-secondary" onClick={() => setPendingUpsert(null)} disabled={loading}>
+                                                Cancelar
+                                            </Button>
+                                            <Button variant="success" onClick={() => { setPendingUpsert(null); handleCargar(true); }} disabled={loading}>
+                                                Sí, actualizar y crear
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {pendingResolution && (
                                     <div className="mt-4 border rounded p-3 bg-light">

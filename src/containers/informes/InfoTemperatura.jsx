@@ -50,6 +50,12 @@ const TEMAS = {
 };
 const CLAVE_TEMA = "termografoTema";
 
+// 'AAAA-MM-DD...' -> 'D/M/AAAA' sin pasar por zonas horarias (la fecha de llenado es solo un dia).
+function formatFechaLlenado(valor) {
+    const m = String(valor || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? `${Number(m[3])}/${Number(m[2])}/${m[1]}` : '';
+}
+
 /* ─── Tooltip Power BI ─── */
 function TempTooltip({ active, payload, t }) {
     if (!active || !payload?.length) return null;
@@ -155,8 +161,22 @@ function GraficaTemperatura({ idSerialArticulo, serial, onClose }) {
         producto: l.combo?.nombre || '-',
         cajas: l.cajas_unidades ?? '-',
         lugar: l.almacen?.nombre || '-',
-        fecha: l.fecha || '-'
+        fecha: l.fecha || '-',
+        fechaLlenado: formatFechaLlenado(l.fecha)
     }));
+    const fechasLlenado = [...new Set(productoRows.map((p) => p.fechaLlenado).filter(Boolean))];
+    const diaEmbarque = (valor) => formatFechaLlenado(valor) || (valor ? new Date(valor).toLocaleDateString('es-CO') : '');
+    const datosEmbarque = [
+        { label: 'Llenado', valor: fechasLlenado.join(', ') },
+        { label: 'Semana', valor: embarque?.semana?.consecutivo },
+        { label: 'Zarpe', valor: diaEmbarque(embarque?.fecha_zarpe) },
+        { label: 'Arribo', valor: diaEmbarque(embarque?.fecha_arribo) },
+        { label: 'Buque', valor: embarque?.Buque?.buque },
+        { label: 'Naviera', valor: embarque?.Naviera?.navieras },
+        { label: 'Destino', valor: embarque?.Destino?.destino },
+        { label: 'Booking', valor: embarque?.booking },
+        { label: 'Cliente', valor: embarque?.cliente?.razon_social || embarque?.cliente?.cod, span: 2 },
+    ].filter((d) => d.valor);
     const inspecciones = contexto?.contenedor?.inspecciones || [];
     const tuvoInspeccion = inspecciones.length > 0;
     const isZoomed = data.length > 0 && (zoomRange.start > 0 || zoomRange.end < data.length - 1);
@@ -196,61 +216,46 @@ function GraficaTemperatura({ idSerialArticulo, serial, onClose }) {
                             )}
                         </div>
 
-                        {/* Info embarque en una línea */}
-                        <div className="d-flex flex-wrap gap-3 mt-1" style={{ fontSize: 12, color: t.texto2 }}>
-                            {embarque?.Buque?.buque && <span><span style={{ color: t.muted2 }}>Buque:</span> {embarque.Buque.buque}</span>}
-                            {embarque?.Naviera?.navieras && <span><span style={{ color: t.muted2 }}>Naviera:</span> {embarque.Naviera.navieras}</span>}
-                            {embarque?.Destino?.destino && <span><span style={{ color: t.muted2 }}>Destino:</span> {embarque.Destino.destino}</span>}
-                            {embarque?.booking && <span><span style={{ color: t.muted2 }}>Booking:</span> {embarque.booking}</span>}
-                            {(embarque?.cliente?.razon_social || embarque?.cliente?.cod) && <span><span style={{ color: t.muted2 }}>Cliente:</span> {embarque?.cliente?.razon_social || embarque?.cliente?.cod}</span>}
-                            {embarque?.fecha_zarpe && <span><span style={{ color: t.muted2 }}>Zarpe:</span> {new Date(embarque.fecha_zarpe).toLocaleDateString('es-CO')}</span>}
-                            {embarque?.fecha_arribo && <span><span style={{ color: t.muted2 }}>Arribo:</span> {new Date(embarque.fecha_arribo).toLocaleDateString('es-CO')}</span>}
+                        {/* Datos del embarque: etiqueta pequeña arriba, valor abajo */}
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: "10px 24px", marginTop: 12 }}>
+                            {datosEmbarque.map((d) => (
+                                <div key={d.label} style={{ minWidth: 0, gridColumn: `span ${d.span || 1}` }}>
+                                    <div style={{ fontSize: 10, color: t.muted2, textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 1 }}>{d.label}</div>
+                                    <div style={{ fontSize: 13, color: t.texto, fontWeight: 500 }}>{d.valor}</div>
+                                </div>
+                            ))}
                         </div>
 
-                        {/* Productos */}
-                        {productoRows.length > 0 && (
-                            <div className="d-flex flex-wrap gap-2 mt-1">
-                                {productoRows.map((p) => (
-                                    <span key={p.key} style={{
-                                        background: t.chipBg, color: t.chipTx,
-                                        borderRadius: 4, padding: "2px 8px", fontSize: 11
-                                    }}>
-                                        {p.producto} · {p.cajas} cajas · {p.lugar}
+                        {/* Carga e inspeccion */}
+                        <div className="d-flex flex-wrap align-items-center" style={{ gap: "6px 24px", marginTop: 12, paddingTop: 10, borderTop: `1px solid ${t.borde}` }}>
+                            {productoRows.length > 0 && (
+                                <div className="d-flex flex-wrap align-items-center gap-2">
+                                    <span style={{ fontSize: 10, color: t.muted2, textTransform: "uppercase", letterSpacing: "0.6px" }}>Carga</span>
+                                    {productoRows.map((p) => (
+                                        <span key={p.key} style={{
+                                            border: `1px solid ${t.borde}`, color: t.texto2, borderRadius: 4,
+                                            padding: "1px 8px", fontSize: 11
+                                        }}>
+                                            {p.producto} · {p.cajas} cajas · {p.lugar}{fechasLlenado.length > 1 && p.fechaLlenado ? ` · ${p.fechaLlenado}` : ""}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="d-flex flex-wrap align-items-center gap-2">
+                                <span style={{ fontSize: 10, color: t.muted2, textTransform: "uppercase", letterSpacing: "0.6px" }}>Insp. antinarcóticos</span>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: tuvoInspeccion ? t.verde : t.rojo }}>
+                                    <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: tuvoInspeccion ? t.verde : t.rojo, marginRight: 6 }} />
+                                    {tuvoInspeccion ? `Registrada (${inspecciones.length})` : "No registrada"}
+                                </span>
+                                {inspecciones.map((insp, i) => (
+                                    <span key={i} style={{ border: `1px solid ${t.borde}`, color: t.texto2, borderRadius: 4, padding: "1px 8px", fontSize: 11 }}>
+                                        {formatFechaLlenado(insp.fecha_inspeccion) || "-"}
+                                        {insp.hora_inicio ? ` · ${insp.hora_inicio}${insp.hora_fin ? `–${insp.hora_fin}` : ""}` : ""}
+                                        {insp.agente ? ` · ${insp.agente}` : ""}
                                     </span>
                                 ))}
                             </div>
-                        )}
-
-                        {/* Inspecciones */}
-                        <div className="d-flex flex-wrap gap-2 mt-1 align-items-center">
-                            <span style={{ fontSize: 11, color: t.muted }}>Insp. antinarcóticos:</span>
-                            {tuvoInspeccion ? (
-                                <>
-                                    <span style={{
-                                        background: t.okBg, color: t.chipTx,
-                                        borderRadius: 4, padding: "2px 8px", fontSize: 11, fontWeight: 600
-                                    }}>
-                                        ✓ Sí — {inspecciones.length} inspección{inspecciones.length > 1 ? 'es' : ''}
-                                    </span>
-                                    {inspecciones.map((insp, i) => (
-                                        <span key={i} style={{
-                                            background: t.panel, border: `1px solid ${t.borde}`,
-                                            color: t.texto2, borderRadius: 4, padding: "2px 8px", fontSize: 11
-                                        }}>
-                                            #{i + 1} {new Date(insp.fecha_inspeccion).toLocaleDateString('es-CO')}
-                                            {insp.hora_inicio ? ` · ${insp.hora_inicio}${insp.hora_fin ? `–${insp.hora_fin}` : ''}` : ''}
-                                            {insp.agente ? ` · ${insp.agente}` : ''}
-                                        </span>
-                                    ))}
-                                </>
-                            ) : (
-                                <span style={{
-                                    background: t.errBg, color: t.errTx,
-                                    borderRadius: 4, padding: "2px 8px", fontSize: 11, fontWeight: 600
-                                }}>
-                                    ✗ No registrada
-                                </span>
-                            )}
                         </div>
                     </div>
 
@@ -680,15 +685,6 @@ function formatFechaListado(fechaStr) {
     return `${date.getUTCFullYear()}-${month}-${day}`;
 }
 
-function getWeekNumber(fechaStr) {
-    const date = parseDate(fechaStr);
-    if (!date) return '-';
-    const year = date.getUTCFullYear();
-    const startOfYear = Date.UTC(year, 0, 1);
-    const dayOfYear = Math.floor((Date.UTC(year, date.getUTCMonth(), date.getUTCDate()) - startOfYear) / 86400000);
-    return Math.ceil((dayOfYear + 1) / 7);
-}
-
 /* ─── Página principal ─── */
 export default function InfoTemperatura() {
     const [registros, setRegistros] = useState([]);
@@ -731,7 +727,12 @@ export default function InfoTemperatura() {
                     const ctx = await axios.get(endPoints.registroTemperatura.contexto(item.id_serial_articulo));
                     const listados = ctx.data?.contenedor?.Listados || [];
                     const embarque = listados.find((l) => l.Embarque)?.Embarque;
-                    return { ...item, buque: embarque?.Buque?.buque || null, destino: embarque?.Destino?.destino || null };
+                    return {
+                        ...item,
+                        buque: embarque?.Buque?.buque || null,
+                        destino: embarque?.Destino?.destino || null,
+                        semana_consecutivo: embarque?.semana?.consecutivo || null,
+                    };
                 } catch { return item; }
             }));
 
@@ -747,9 +748,9 @@ export default function InfoTemperatura() {
 
     const onDescargarExcel = () => {
         const newData = registros.map((item) => ({
+            Semana: item.semana_consecutivo || "",
             Fecha: formatFechaListado(item.fecha_llenado),
             Contenedor: item.contenedor_nombre || "",
-            Semana: String(getWeekNumber(item.fecha_llenado)),
             Buque: item.buque || "",
             Destino: item.destino || "",
             Serial: item.serial || "",
@@ -793,9 +794,9 @@ export default function InfoTemperatura() {
                 <table className="table table-striped table-bordered table-sm mb-1">
                     <thead>
                         <tr>
+                            <th className="text-custom-small text-center">Semana</th>
                             <th className="text-custom-small text-center">Fecha</th>
                             <th className="text-custom-small text-center">Contenedor</th>
-                            <th className="text-custom-small text-center">Semana</th>
                             <th className="text-custom-small text-center">Buque</th>
                             <th className="text-custom-small text-center">Destino</th>
                             <th className="text-custom-small text-center">Serial</th>
@@ -807,9 +808,9 @@ export default function InfoTemperatura() {
                     <tbody>
                         {registros.map((item, index) => (
                             <tr key={item.id_serial_articulo || index}>
+                                <td className="text-custom-small text-center fw-bold">{item.semana_consecutivo || "-"}</td>
                                 <td className="text-custom-small text-center">{formatFechaListado(item.fecha_llenado)}</td>
                                 <td className="text-custom-small text-center">{item.contenedor_nombre || "-"}</td>
-                                <td className="text-custom-small text-center">{getWeekNumber(item.fecha_llenado || item.fecha)}</td>
                                 <td className="text-custom-small text-center">{item.buque || "-"}</td>
                                 <td className="text-custom-small text-center">{item.destino || "-"}</td>
                                 <td className="text-custom-small text-center">{item.serial || "-"}</td>

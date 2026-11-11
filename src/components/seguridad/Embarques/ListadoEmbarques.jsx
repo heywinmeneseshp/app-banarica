@@ -413,16 +413,23 @@ const ListadoEmbarques = () => {
 </div>
       <Paginacion setPagination={setPagination} pagination={pagination} total={total} limit={limit} />
 
+      {/* Cargue y actualizacion masiva: si el BL existe se actualiza y si no, se crea (pregunta antes). */}
       {cargueMasivo && <CargueMasivo setOpenMasivo={setCargueMasivo}
         titulo={"Cargue embarques"}
         endPointCargueMasivo={endPoints.Embarques.create + "/masivo"}
+        supportPartialResolution
+        onSuccess={listar}
         encabezados={{
           id_semana: null,
-          viaje: null,
+          id_cliente: null,
           booking: null,
           bl: null,
-          anuncio: null,
+          id_naviera: null,
+          id_buque: null,
+          id_destino: null,
+          viaje: null,
           sae: null,
+          anuncio: null,
           habilitado: null,
         }}
       />}
@@ -430,10 +437,16 @@ const ListadoEmbarques = () => {
       {actualizarMasivo && <CargueMasivo setOpenMasivo={setActualizarMasivo}
         titulo={"Actualizar Embarques"}
         endPointCargueMasivo={endPoints.Embarques.create + "/actualizar-masivo"}
+        supportPartialResolution
+        onSuccess={listar}
         encabezados={{
           bl: null,
           semana: null,
           booking: null,
+          id_cliente: null,
+          id_naviera: null,
+          id_buque: null,
+          id_destino: null,
           viaje: null,
           anuncio: null,
           sae: null,
