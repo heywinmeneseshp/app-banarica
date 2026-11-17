@@ -12,7 +12,7 @@ import {
     listarUsuarios,
 } from '@services/api/usuarios';
 import { listarTransportadoras } from '@services/api/transportadoras';
-import { actualizarModulo, encontrarModulo, listarModulos } from '@services/api/configuracion';
+import { actualizarModulo, eliminarPerfilPermisos, encontrarModulo, listarModulos } from '@services/api/configuracion';
 import { botones, menuCompleto, menuPrincipal, pantallasInicio } from 'utils/configMenu';
 
 const PROFILE_PREFIX = 'perfil:';
@@ -63,6 +63,7 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
     const [perfilesDisponibles, setPerfilesDisponibles] = useState([]);
     const [perfilBase, setPerfilBase] = useState('');
     const [nombrePerfil, setNombrePerfil] = useState('');
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [isCopyingAccess, setIsCopyingAccess] = useState(false);
     const [isApplyingProfile, setIsApplyingProfile] = useState(false);
     const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -348,6 +349,96 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
             window.alert("No fue posible aplicar el perfil seleccionado.");
         } finally {
             setIsApplyingProfile(false);
+        }
+    };
+
+    // Permisos y accesos actuales del formulario, listos para guardarlos dentro de un perfil.
+    const armarDetallesPerfil = (nombre) => {
+        const roleValue = formRef.current?.elements?.id_rol?.value || 'Operador';
+        return {
+            nombre_perfil: nombre,
+            rol: roleValue,
+            menu: tagMenu,
+            submenu: tagSubMenu,
+            botones: tagBotones,
+            almacenes: almacenes.filter((_, index) => checkedState[index]).map((item) => item.consecutivo),
+            transportadoras: transportadoras.filter((_, index) => checkedTransportadorasState[index]).map((item) => item.id),
+        };
+    };
+
+    const refrescarPerfiles = async (seleccion = '') => {
+        const perfilesActualizados = await listarModulos(PROFILE_PREFIX);
+        setPerfilesDisponibles(perfilesActualizados || []);
+        setPerfilBase(seleccion);
+    };
+
+    // Editar: reemplaza los permisos del perfil seleccionado por los que hay ahora en el formulario.
+    const handleUpdateProfile = async () => {
+        const perfil = perfilesDisponibles.find((item) => item.modulo === perfilBase);
+        if (!perfil) return;
+        const nombre = buildProfileLabel(perfil);
+        if (!window.confirm(`Se reemplazarán los permisos, almacenes y transportadoras del perfil "${nombre}" por los que tiene ahora este formulario. Los usuarios que ya lo tienen aplicado no cambian. ¿Continuar?`)) return;
+        try {
+            setIsEditingProfile(true);
+            await actualizarModulo({ modulo: perfilBase, detalles: JSON.stringify(armarDetallesPerfil(nombre)) });
+            await refrescarPerfiles(perfilBase);
+            window.alert(`Perfil "${nombre}" actualizado.`);
+        } catch (error) {
+            console.error("Error al actualizar perfil:", error);
+            window.alert("No fue posible actualizar el perfil de permisos.");
+        } finally {
+            setIsEditingProfile(false);
+        }
+    };
+
+    // Editar: cambia el nombre del perfil seleccionado (conserva sus permisos).
+    const handleRenameProfile = async () => {
+        const perfil = perfilesDisponibles.find((item) => item.modulo === perfilBase);
+        if (!perfil) return;
+        const nombreActual = buildProfileLabel(perfil);
+        const nuevoNombre = (window.prompt('Nuevo nombre del perfil:', nombreActual) || '').trim();
+        if (!nuevoNombre || nuevoNombre === nombreActual) return;
+        const slug = slugifyProfileName(nuevoNombre);
+        if (!slug) { window.alert("Debes indicar un nombre valido para el perfil."); return; }
+        const moduloNuevo = `${PROFILE_PREFIX}${slug}`;
+        try {
+            setIsEditingProfile(true);
+            const detalles = { ...parseDetallesModulo([perfil]), nombre_perfil: nuevoNombre };
+            if (moduloNuevo !== perfilBase) {
+                if (perfilesDisponibles.some((item) => item.modulo === moduloNuevo)) {
+                    window.alert("Ya existe un perfil con ese nombre.");
+                    return;
+                }
+                await actualizarModulo({ modulo: moduloNuevo, detalles: JSON.stringify(detalles) });
+                await eliminarPerfilPermisos(perfilBase);
+            } else {
+                await actualizarModulo({ modulo: perfilBase, detalles: JSON.stringify(detalles) });
+            }
+            await refrescarPerfiles(moduloNuevo);
+            window.alert("Perfil renombrado.");
+        } catch (error) {
+            console.error("Error al renombrar perfil:", error);
+            window.alert("No fue posible renombrar el perfil.");
+        } finally {
+            setIsEditingProfile(false);
+        }
+    };
+
+    const handleDeleteProfile = async () => {
+        const perfil = perfilesDisponibles.find((item) => item.modulo === perfilBase);
+        if (!perfil) return;
+        const nombre = buildProfileLabel(perfil);
+        if (!window.confirm(`¿Eliminar el perfil "${nombre}"? Los usuarios que ya lo tienen aplicado conservan sus permisos; solo desaparece el perfil de la lista.`)) return;
+        try {
+            setIsEditingProfile(true);
+            await eliminarPerfilPermisos(perfilBase);
+            await refrescarPerfiles('');
+            window.alert(`Perfil "${nombre}" eliminado.`);
+        } catch (error) {
+            console.error("Error al eliminar perfil:", error);
+            window.alert(error?.response?.data?.message || "No fue posible eliminar el perfil.");
+        } finally {
+            setIsEditingProfile(false);
         }
     };
 
@@ -730,6 +821,20 @@ export default function NuevoUsuario({ setAlert, setOpen, user }) {
                                                         {isApplyingProfile ? 'Aplicando...' : 'Aplicar perfil'}
                                                     </button>
                                                 </div>
+                                                {perfilBase && (
+                                                    <div className="col-12 d-flex flex-wrap gap-2">
+                                                        <button type="button" className="btn btn-outline-warning btn-sm" onClick={handleUpdateProfile} disabled={isEditingProfile}
+                                                            title="Reemplaza los permisos del perfil por los que tiene ahora este formulario">
+                                                            Actualizar perfil con los permisos actuales
+                                                        </button>
+                                                        <button type="button" className="btn btn-outline-secondary btn-sm" onClick={handleRenameProfile} disabled={isEditingProfile}>
+                                                            Renombrar
+                                                        </button>
+                                                        <button type="button" className="btn btn-outline-danger btn-sm" onClick={handleDeleteProfile} disabled={isEditingProfile}>
+                                                            Eliminar perfil
+                                                        </button>
+                                                    </div>
+                                                )}
                                                 <div className="col-12 col-md-8">
                                                     <input
                                                         type="text"

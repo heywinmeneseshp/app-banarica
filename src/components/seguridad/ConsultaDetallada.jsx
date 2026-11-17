@@ -4,8 +4,8 @@ import styles from "@styles/Seguridad.module.css";
 import Paginacion from "@components/Paginacion";
 import { filtrarCategorias } from "@services/api/categorias";
 import { useAuth } from "@hooks/useAuth";
-import { actualizarStockAlmacen, filtradoGeneralStock } from "@services/api/stock";
-import { listarSeriales } from "@services/api/seguridad";
+import { filtradoGeneralStock } from "@services/api/stock";
+import { sincronizarStockDisponible } from "@services/api/seguridad";
 
 export default function ConsultaDetallada({
     data,
@@ -18,6 +18,8 @@ export default function ConsultaDetallada({
     const [tabla, setTabla] = useState([]);
     const [loading, setLoading] = useState(false);
     const [syncing, setSyncing] = useState(false);
+    const [sincronizados, setSincronizados] = useState(null); // cambios hechos por la ultima sincronizacion
+    const [recarga, setRecarga] = useState(0);
     const { almacenByUser } = useAuth();
 
     useEffect(() => {
@@ -67,36 +69,44 @@ export default function ConsultaDetallada({
 
         listar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [almacenByUser, data, limit, pagination, setResults]);
+    }, [almacenByUser, data, limit, pagination, setResults, recarga]);
+
+    // Pone el stock igual a la cantidad de seriales disponibles. Una sola llamada al servidor (antes eran
+    // decenas, una por articulo). Si el stock cambia en filas que no estaban en pantalla (por ejemplo, de 0
+    // a mas de 0), se recarga la lista una vez.
+    // Boton: ajusta TODAS las cantidades de Seguridad (todos los almacenes) a los seriales disponibles.
+    const ajustarTodo = async () => {
+        if (!window.confirm("Se ajustarán las cantidades de stock de todos los artículos con serial de Seguridad (todos los almacenes) a la cantidad de seriales disponibles. ¿Continuar?")) return;
+        setSyncing(true);
+        try {
+            const res = await sincronizarStockDisponible({});
+            setSincronizados(res?.actualizados || 0);
+            window.alert(`Cantidades ajustadas: ${res?.actualizados || 0} de ${res?.revisados || 0} registros.`);
+            setRecarga((n) => n + 1);
+        } catch (error) {
+            window.alert(error?.response?.data?.message || "No fue posible ajustar las cantidades.");
+        } finally {
+            setSyncing(false);
+        }
+    };
 
     const syncStock = async (filas) => {
         setSyncing(true);
         try {
-            await Promise.all(
-                filas.map(async (item) => {
-                    try {
-                        const res = await listarSeriales(1, 10, {
-                            cons_almacen: item.cons_almacen,
-                            cons_producto: item.cons_producto,
-                            available: true,
-                        });
-                        const cantidadReal = res?.total || 0;
-                        if (cantidadReal === item.cantidad) return;
-
-                        actualizarStockAlmacen(item.cons_almacen, item.cons_producto, { cantidad: cantidadReal })
-                            .catch(console.error);
-
-                        setTabla((prev) => {
-                            const next = [...prev];
-                            const idx = next.findIndex(
-                                (r) => r.cons_almacen === item.cons_almacen && r.cons_producto === item.cons_producto
-                            );
-                            if (idx !== -1) next[idx] = { ...next[idx], cantidad: cantidadReal };
-                            return next;
-                        });
-                    } catch { /* silent per-row errors */ }
-                })
-            );
+            const res = await sincronizarStockDisponible({
+                almacenes: [...new Set(filas.map((f) => f.cons_almacen))],
+                productos: [...new Set(filas.map((f) => f.cons_producto))],
+            });
+            setSincronizados(res?.actualizados || 0);
+            if (res?.actualizados > 0) {
+                setTabla((prev) => prev.map((r) => {
+                    const c = res.cambios.find((x) => x.cons_almacen === r.cons_almacen && x.cons_producto === r.cons_producto);
+                    return c ? { ...r, cantidad: c.nuevo } : r;
+                }));
+            }
+        } catch (error) {
+            console.error("No fue posible actualizar el stock con los seriales disponibles:", error);
+            setSincronizados(null);
         } finally {
             setSyncing(false);
         }
@@ -104,6 +114,18 @@ export default function ConsultaDetallada({
 
     return (
         <span className={styles.tabla_text}>
+            <div className="small text-muted mb-1 d-flex align-items-center gap-2">
+                <button type="button" className="btn btn-outline-primary btn-sm" onClick={ajustarTodo} disabled={syncing}>
+                    Ajustar todas las cantidades
+                </button>
+                {syncing
+                    ? "Actualizando el stock con los seriales disponibles..."
+                    : sincronizados === null
+                        ? "El stock se actualiza con la cantidad de seriales disponibles."
+                        : sincronizados > 0
+                            ? `Stock actualizado con los seriales disponibles: ${sincronizados} fila(s) corregida(s).`
+                            : "El stock coincide con los seriales disponibles."}
+            </div>
             <table className="table table-striped table-bordered table-sm mb-1">
                 <thead>
                     <tr>

@@ -28,6 +28,12 @@ const listarModulos = async (prefix = '') => {
     return res.data;
 };
 
+// Elimina un perfil de permisos (modulo "perfil:<nombre>").
+const eliminarPerfilPermisos = async (modulo) => {
+    const res = await axios.delete(`${endPoints.confi.actualizarModulo.replace('/actualizar', '/perfil')}/${encodeURIComponent(modulo)}`, getAuthConfig());
+    return res.data;
+};
+
 const actualizarModulo = async (dataModulo) => {
     const res = await axios.patch(endPoints.confi.actualizarModulo, dataModulo, getAuthConfig());
     return res.data;
@@ -125,6 +131,7 @@ const importarBaseDatos = async (archivo, confirmacion) => {
 
 export {
 encontrarModulo,
+eliminarPerfilPermisos,
 listarModulos,
 actualizarModulo,
 encontrarEmpresa,

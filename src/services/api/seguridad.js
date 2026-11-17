@@ -72,6 +72,12 @@ const cargarSeriales = async ({ data: dataExcel, remision, pedido, semana, fecha
     }
 };
 
+// Actualiza el stock de Seguridad con la cantidad de seriales disponibles. Devuelve los cambios hechos.
+const sincronizarStockDisponible = async (body = {}) => {
+    const response = await axios.post(endPoints.seguridad.sincronizarStock, body);
+    return response.data;
+};
+
 // Compara el archivo con los seriales ya guardados (no escribe nada): devuelve los que existen y que cambiaria.
 const verificarSeriales = async (dataExcel) => {
     const response = await axios.post(endPoints.seguridad.verificarSeriales, { data: dataExcel });
@@ -353,6 +359,7 @@ export {
     guardarPedidoProveedor,
     guardarObservacionProveedor,
     verificarSeriales,
+    sincronizarStockDisponible,
     listarHistorialSerial,
     listarPedidosProveedor,
     marcarPedidoProveedorRecibido,

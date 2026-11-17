@@ -224,6 +224,7 @@ const endPoints = {
         cobertura: `${API}/api/${VERSION}/seguridad/cobertura`,
         coberturaConfig: `${API}/api/${VERSION}/seguridad/cobertura/config`,
         coberturaProducto: `${API}/api/${VERSION}/seguridad/cobertura/producto`,
+        sincronizarStock: `${API}/api/${VERSION}/seguridad/sincronizar-stock`,
         verificarSeriales: `${API}/api/${VERSION}/seguridad/verificar-seriales`,
         serialHistorial: `${API}/api/${VERSION}/seguridad/serial-historial`,
         coberturaPedidos: `${API}/api/${VERSION}/seguridad/cobertura/pedidos`,
