@@ -56,6 +56,18 @@ function formatFechaLlenado(valor) {
     return m ? `${Number(m[3])}/${Number(m[2])}/${m[1]}` : '';
 }
 
+// Días entre dos fechas (solo el día, sin horas ni zona horaria). null si falta alguna.
+function diasEntre(desde, hasta) {
+    const dia = (v) => {
+        const m = String(v || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+        return m ? Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+    };
+    const a = dia(desde);
+    const b = dia(hasta);
+    return a === null || b === null ? null : Math.round((b - a) / 86400000);
+}
+const textoDias = (n) => (n === null ? null : `${n} día${n === 1 ? '' : 's'}`);
+
 /* ─── Tooltip Power BI ─── */
 function TempTooltip({ active, payload, t }) {
     if (!active || !payload?.length) return null;
@@ -166,11 +178,17 @@ function GraficaTemperatura({ idSerialArticulo, serial, onClose }) {
     }));
     const fechasLlenado = [...new Set(productoRows.map((p) => p.fechaLlenado).filter(Boolean))];
     const diaEmbarque = (valor) => formatFechaLlenado(valor) || (valor ? new Date(valor).toLocaleDateString('es-CO') : '');
+    // Tiempos: tránsito = cargue (zarpe) → descargue (arribo); total = llenado (el primero) → descargue.
+    const primerLlenado = productoRows.map((p) => p.fecha).filter((f) => /^\d{4}-\d{2}-\d{2}/.test(String(f))).sort()[0];
+    const diasTransito = diasEntre(embarque?.fecha_zarpe, embarque?.fecha_arribo);
+    const diasLlenadoDescargue = diasEntre(primerLlenado, embarque?.fecha_arribo);
     const datosEmbarque = [
         { label: 'Llenado', valor: fechasLlenado.join(', ') },
         { label: 'Semana', valor: embarque?.semana?.consecutivo },
         { label: 'Zarpe', valor: diaEmbarque(embarque?.fecha_zarpe) },
         { label: 'Arribo', valor: diaEmbarque(embarque?.fecha_arribo) },
+        { label: 'Tránsito (cargue → descargue)', valor: textoDias(diasTransito) },
+        { label: 'Llenado → descargue', valor: textoDias(diasLlenadoDescargue) },
         { label: 'Buque', valor: embarque?.Buque?.buque },
         { label: 'Naviera', valor: embarque?.Naviera?.navieras },
         { label: 'Destino', valor: embarque?.Destino?.destino },
