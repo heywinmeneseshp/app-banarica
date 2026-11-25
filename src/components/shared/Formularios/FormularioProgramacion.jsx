@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button, Form, Modal } from "react-bootstrap";
+import { Button, Form, Modal, OverlayTrigger, Popover } from "react-bootstrap";
+import { FaCheckCircle, FaExclamationTriangle, FaLightbulb, FaMinus, FaRegTrashAlt, FaUndoAlt, FaArrowRight, FaInfoCircle } from "react-icons/fa";
 import styles from "@components/shared/Formularios/Formularios.module.css";
 import { agregarUbicacion, listarUbicaciones } from "@services/api/ubicaciones";
 import { agregarConductor, listarConductores } from "@services/api/conductores";
@@ -18,6 +19,7 @@ import { listarBuques } from "@services/api/buques";
 import { agregartipoMovimientoVehiculo, listartipoMovimientoVehiculos } from "@services/api/tipoMovimientoVehiculos";
 import { encontrarModulo } from "@services/api/configuracion";
 import { agregarProductosViaje } from "@services/api/productos_viaje";
+import { listarProgramacionCorte } from "@services/api/programacionCorte";
 
 const parseVehiculosSinCombustible = (configRows) => {
   try {
@@ -32,10 +34,16 @@ const parseVehiculosSinCombustible = (configRows) => {
   }
 };
 
+// Movimiento a Puerto: no lleva naviera, destino, buque ni Booking.
+const normalizarTexto = (valor) => String(valor || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+const esMovimientoPuerto = (movimiento) => String(movimiento || "").trim().toLowerCase() === "puerto";
 const getEmbarqueClienteId = (item) => String(item?.id_cliente || item?.clientes?.id || item?.cliente?.id || "");
 const getEmbarqueNavieraId = (item) => String(item?.id_naviera || item?.Naviera?.id || item?.naviera?.id || "");
 const getEmbarqueDestinoId = (item) => String(item?.id_destino || item?.Destino?.id || item?.destino?.id || "");
 const getEmbarqueBuqueId = (item) => String(item?.id_buque || item?.Buque?.id || item?.buque?.id || "");
+const getEmbarqueNavieraNombre = (item) => item?.Naviera?.navieras || item?.Naviera?.cod || item?.naviera?.navieras || item?.naviera?.cod || "";
+const getEmbarqueDestinoNombre = (item) => item?.Destino?.destino || item?.Destino?.cod || item?.destino?.destino || item?.destino?.cod || "";
+const getEmbarqueBuqueNombre = (item) => item?.Buque?.buque || item?.Buque?.cod || item?.buque?.buque || item?.buque?.cod || "";
 export default function FormulariosProgramacion({
   setOpen,
   setAlert,
@@ -57,9 +65,9 @@ export default function FormulariosProgramacion({
   const [listaVehiculos, setListaVehiculos] = useState([]);
   const [listaCategoriasVehiculo, setListaCategoriasVehiculo] = useState([]);
   const [listaTransportadoras, setListaTransportadoras] = useState([]);
-  const [listaNavieras, setListaNavieras] = useState([]);
-  const [listaDestinos, setListaDestinos] = useState([]);
-  const [listaBuques, setListaBuques] = useState([]);
+  const [, setListaNavieras] = useState([]);
+  const [, setListaDestinos] = useState([]);
+  const [, setListaBuques] = useState([]);
   const [listaTiposMovimiento, setListaTiposMovimiento] = useState([]);
   const [listaSemanas, setListaSemanas] = useState([]);
   const [listaEmbarques, setListaEmbarques] = useState([]);
@@ -71,18 +79,22 @@ export default function FormulariosProgramacion({
   const [guardando, setGuardando] = useState(false);
   const [semanaInput, setSemanaInput] = useState("");
   const [semanaSeleccionada, setSemanaSeleccionada] = useState("");
-  const [productoSeleccionado, setProductoSeleccionado] = useState("");
-  const [navieraSeleccionada, setNavieraSeleccionada] = useState("");
-  const [destinoSeleccionado, setDestinoSeleccionado] = useState("");
-  const [buqueSeleccionado, setBuqueSeleccionado] = useState("");
-  const [bookingSeleccionado, setBookingSeleccionado] = useState("");
+  const [, setProductoSeleccionado] = useState("");
+  const [, setNavieraSeleccionada] = useState("");
+  const [, setDestinoSeleccionado] = useState("");
+  const [, setBuqueSeleccionado] = useState("");
+  const [, setBookingSeleccionado] = useState("");
   const [fecha, setFecha] = useState("");
   const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState("");
   const [conductorSeleccionado, setConductorSeleccionado] = useState("");
-  const [movimientoSeleccionado, setMovimientoSeleccionado] = useState("");
-  const [contenedor, setContenedor] = useState("");
-  const [usarContenedorDemo, setUsarContenedorDemo] = useState(false);
+  const [, setMovimientoSeleccionado] = useState("");
+  const [, setContenedor] = useState("");
+  const [, setUsarContenedorDemo] = useState(false);
   const [paradas, setParadas] = useState([]);
+  // Producto y cajas de cada linea (tramo) que se genera: { [indiceTramo]: { producto, cajas } }
+  const [lineasDetalle, setLineasDetalle] = useState({});
+  // Programacion de Corte (para avisar si una linea no coincide con lo programado para la finca)
+  const [programacionCorte, setProgramacionCorte] = useState([]);
   const [ubicacionPendiente, setUbicacionPendiente] = useState("");
   const [showPostSavePrompt, setShowPostSavePrompt] = useState(false);
   const [quickCreateState, setQuickCreateState] = useState({
@@ -257,11 +269,6 @@ export default function FormulariosProgramacion({
     [listaCombos]
   );
 
-  const productoActual = useMemo(
-    () => listaCombos.find((item) => String(item?.id || "") === String(productoSeleccionado)),
-    [listaCombos, productoSeleccionado]
-  );
-
   const embarquesSemana = useMemo(() => {
     if (!semanaSeleccionada) {
       return [];
@@ -274,118 +281,6 @@ export default function FormulariosProgramacion({
       || String(item?.semana?.consecutivo || "").trim() === consecutivoSemana
     ));
   }, [listaEmbarques, semanaActual, semanaSeleccionada]);
-
-  const embarquesProductoSemana = useMemo(() => {
-    if (!productoActual?.id_cliente) {
-      return embarquesSemana;
-    }
-
-    return embarquesSemana.filter((item) => (
-      getEmbarqueClienteId(item) === String(productoActual.id_cliente)
-    ));
-  }, [embarquesSemana, productoActual]);
-
-  const navierasDisponibles = useMemo(() => {
-    const map = new Map();
-    embarquesProductoSemana.forEach((item) => {
-      const id = getEmbarqueNavieraId(item);
-      const navieraMaestra = (listaNavieras || []).find(
-        (naviera) => String(naviera?.id || naviera?.consecutivo || "") === id
-      );
-      const nombre =
-        item?.Naviera?.navieras
-        || item?.Naviera?.cod
-        || item?.naviera?.navieras
-        || item?.naviera?.cod
-        || navieraMaestra?.navieras
-        || navieraMaestra?.cod
-        || "";
-
-      if (id && nombre && !map.has(id)) {
-        map.set(id, { id, nombre });
-      }
-    });
-    return Array.from(map.values());
-  }, [embarquesProductoSemana, listaNavieras]);
-
-  const embarquesNaviera = useMemo(() => {
-    if (!navieraSeleccionada) {
-      return [];
-    }
-    return embarquesProductoSemana.filter((item) => getEmbarqueNavieraId(item) === String(navieraSeleccionada));
-  }, [embarquesProductoSemana, navieraSeleccionada]);
-
-  const destinosDisponibles = useMemo(() => {
-    const map = new Map();
-    embarquesNaviera.forEach((item) => {
-      const id = getEmbarqueDestinoId(item);
-      const destinoMaestro = (listaDestinos || []).find(
-        (destino) => String(destino?.id || destino?.consecutivo || "") === id
-      );
-      const nombre =
-        item?.Destino?.destino
-        || item?.Destino?.cod
-        || item?.destino?.destino
-        || item?.destino?.cod
-        || destinoMaestro?.destino
-        || destinoMaestro?.cod
-        || "";
-
-      if (id && nombre && !map.has(id)) {
-        map.set(id, { id, nombre });
-      }
-    });
-    return Array.from(map.values());
-  }, [embarquesNaviera, listaDestinos]);
-
-  const embarquesDestino = useMemo(() => {
-    if (!destinoSeleccionado) {
-      return [];
-    }
-    return embarquesNaviera.filter((item) => getEmbarqueDestinoId(item) === String(destinoSeleccionado));
-  }, [embarquesNaviera, destinoSeleccionado]);
-
-  const buquesDisponibles = useMemo(() => {
-    const map = new Map();
-    embarquesDestino.forEach((item) => {
-      const id = getEmbarqueBuqueId(item);
-      const buqueMaestro = (listaBuques || []).find(
-        (buque) => String(buque?.id || buque?.consecutivo || "") === id
-      );
-      const nombre =
-        item?.Buque?.buque
-        || item?.buque?.buque
-        || buqueMaestro?.buque
-        || "";
-
-      if (id && nombre && !map.has(id)) {
-        map.set(id, { id, nombre });
-      }
-    });
-    return Array.from(map.values());
-  }, [embarquesDestino, listaBuques]);
-
-  const embarquesBuque = useMemo(() => {
-    if (!buqueSeleccionado) {
-      return [];
-    }
-    return embarquesDestino.filter((item) => getEmbarqueBuqueId(item) === String(buqueSeleccionado));
-  }, [embarquesDestino, buqueSeleccionado]);
-
-  const bookingsDisponibles = useMemo(() => (
-    embarquesBuque
-      .filter((item) => item?.booking)
-      .map((item) => ({
-        id: String(item?.id || ""),
-        booking: item.booking,
-        bl: item.bl || "",
-      }))
-  ), [embarquesBuque]);
-
-  const bookingActual = useMemo(
-    () => bookingsDisponibles.find((item) => item.id === bookingSeleccionado),
-    [bookingsDisponibles, bookingSeleccionado]
-  );
 
   const vehiculoActual = useMemo(
     () => listaVehiculos.find((item) => String(item?.id || "") === String(vehiculoSeleccionado)),
@@ -402,12 +297,7 @@ export default function FormulariosProgramacion({
     [conductorSeleccionado, listaConductores]
   );
 
-  const movimientoActual = useMemo(
-    () => listaTiposMovimiento.find((item) => String(item?.movimiento || "") === String(movimientoSeleccionado || "")),
-    [listaTiposMovimiento, movimientoSeleccionado]
-  );
 
-  const requiereContenedor = Boolean(movimientoActual?.requiere_contenedor);
   const vehiculoPuedeOmitirCombustible = vehiculosSinCombustible.includes(String(vehiculoSeleccionado || ""));
 
   useEffect(() => {
@@ -442,6 +332,7 @@ export default function FormulariosProgramacion({
 
   const eliminarParada = (index) => {
     setParadas((prev) => prev.filter((_, itemIndex) => itemIndex !== index));
+    setLineasDetalle({});
   };
 
   const resetDependentSelectors = (level) => {
@@ -483,11 +374,6 @@ export default function FormulariosProgramacion({
     setListaEmbarques([]);
     setEmbarquesError("");
     resetDependentSelectors("semana");
-  };
-
-  const handleProductoChange = (event) => {
-    setProductoSeleccionado(event.target.value);
-    resetDependentSelectors("producto");
   };
 
   const handleQuickCreateUbicacion = () => {
@@ -683,7 +569,7 @@ export default function FormulariosProgramacion({
     }
   };
 
-  const ensureRoute = async (origenId, destinoId) => {
+  const ensureRoute = async (origenId, destinoId, vehiculoId = vehiculoSeleccionado) => {
     try {
       const route = await buscarRutaPost({ ubicacion1: origenId, ubicacion2: destinoId });
       return route?.data?.id;
@@ -693,7 +579,7 @@ export default function FormulariosProgramacion({
 
       if (rutaId) {
         await agregarConsumoRutaVehiculo({
-          vehiculo_id: vehiculoSeleccionado,
+          vehiculo_id: vehiculoId,
           ruta_id: rutaId,
           consumo_por_km: 1,
           activo: true,
@@ -712,6 +598,7 @@ export default function FormulariosProgramacion({
     setContenedor("");
     setUsarContenedorDemo(false);
     setParadas([]);
+    setLineasDetalle({});
     setUbicacionPendiente("");
     conductorTouchedRef.current = false;
   };
@@ -726,13 +613,159 @@ export default function FormulariosProgramacion({
     setOpen(false);
   };
 
+  // Opciones de naviera -> destino -> buque -> booking de una linea (filtradas por el cliente del producto de la linea).
+  const opcionesEmbarqueLinea = (d) => {
+    const producto = listaCombos.find((item) => String(item?.id || "") === String(d.producto || ""));
+    const base = producto?.id_cliente
+      ? embarquesSemana.filter((item) => getEmbarqueClienteId(item) === String(producto.id_cliente))
+      : embarquesSemana;
+    const unicos = (lista, getId, getNombre) => {
+      const map = new Map();
+      lista.forEach((item) => {
+        const id = getId(item);
+        const nombre = getNombre(item);
+        if (id && nombre && !map.has(id)) map.set(id, { id, nombre });
+      });
+      return Array.from(map.values());
+    };
+    const porNaviera = d.naviera ? base.filter((item) => getEmbarqueNavieraId(item) === String(d.naviera)) : [];
+    const porDestino = d.destino ? porNaviera.filter((item) => getEmbarqueDestinoId(item) === String(d.destino)) : [];
+    const porBuque = d.buque ? porDestino.filter((item) => getEmbarqueBuqueId(item) === String(d.buque)) : [];
+    return {
+      navieras: unicos(base, getEmbarqueNavieraId, getEmbarqueNavieraNombre),
+      destinos: unicos(porNaviera, getEmbarqueDestinoId, getEmbarqueDestinoNombre),
+      buques: unicos(porDestino, getEmbarqueBuqueId, getEmbarqueBuqueNombre),
+      bookings: porBuque.filter((item) => item?.booking).map((item) => ({ id: String(item.id), nombre: item.bl || item.booking })),
+    };
+  };
+
+  // Cambiar un nivel limpia los que dependen de el (producto > naviera > destino > buque > booking).
+  const cambiarCascada = (indice, campo, valor) => {
+    const orden = ["producto", "naviera", "destino", "buque", "booking"];
+    const limpiar = orden.slice(orden.indexOf(campo) + 1);
+    setLineasDetalle((prev) => {
+      const actual = { ...(prev[indice] || {}), [campo]: valor };
+      limpiar.forEach((k) => { actual[k] = ""; });
+      return { ...prev, [indice]: actual };
+    });
+  };
+
+  useEffect(() => {
+    let activo = true;
+    listarProgramacionCorte()
+      .then((rows) => { if (activo) setProgramacionCorte(Array.isArray(rows) ? rows : []); })
+      .catch(() => { if (activo) setProgramacionCorte([]); });
+    return () => { activo = false; };
+  }, []);
+
+  // Filas de Programacion de Corte de la semana seleccionada.
+  const programacionSemana = useMemo(() => {
+    if (!semanaSeleccionada) return [];
+    return programacionCorte.filter((row) => String(row?.Embarque?.id_semana || "") === String(semanaSeleccionada));
+  }, [programacionCorte, semanaSeleccionada]);
+
+  // Compara una linea con la Programacion de Corte de su finca y arma el sugerido mientras se llena.
+  // La finca es el origen o el destino del tramo segun el tipo de movimiento ("Finca en"); si aun no hay
+  // movimiento, se busca en las dos puntas del tramo. Devuelve null si no hay nada que comparar.
+  //   ok: true  -> coincide con lo programado
+  //   incompleta -> faltan datos: se muestra el sugerido (no es un error)
+  //   mensajes  -> diferencias encontradas cuando la linea ya esta completa
+  const revisarLineaContraProgramacion = (indice, d) => {
+    if (programacionSemana.length === 0) return null;
+    const paradasValidas = paradas.map((item) => String(item || "").trim()).filter(Boolean);
+    const origen = paradasValidas[indice];
+    const destino = paradasValidas.length === 1 ? paradasValidas[0] : paradasValidas[indice + 1];
+    const tipo = d.movimiento
+      ? listaTiposMovimiento.find((item) => String(item?.movimiento || "") === String(d.movimiento))
+      : null;
+    const fincaEn = String(tipo?.finca_en || "").toLowerCase();
+    let posibles = [origen, destino];
+    if (tipo) posibles = [fincaEn === "origen" ? origen : destino];
+
+    const filasDe = (ubicacion) => programacionSemana.filter((row) => (
+      (row?.almacen?.consecutivo && normalizarTexto(row.almacen.consecutivo) === normalizarTexto(ubicacion.cod))
+      || (row?.almacen?.nombre && normalizarTexto(row.almacen.nombre) === normalizarTexto(ubicacion.ubicacion))
+      || normalizarTexto(row?.finca) === normalizarTexto(ubicacion.ubicacion)
+    ));
+    let ubicacion = null;
+    let filasFinca = [];
+    for (const id of [...new Set(posibles.filter(Boolean))]) {
+      const u = listaUbicaciones.find((item) => String(item?.id || "") === String(id));
+      if (!u) continue;
+      const filas = filasDe(u);
+      if (!ubicacion) ubicacion = u;
+      if (filas.length) { ubicacion = u; filasFinca = filas; break; }
+    }
+    if (!ubicacion) return null;
+    const finca = ubicacion.ubicacion;
+    if (filasFinca.length === 0) {
+      // Sin movimiento todavia no se sabe cual punta es la finca: no se avisa nada.
+      if (!tipo) return null;
+      return { ok: false, incompleta: false, finca, filas: [], mensajes: [`${finca} no tiene Programacion de Corte en esta semana.`] };
+    }
+
+    // Sugeridos: se van acotando con lo que ya se lleno (fecha, producto, booking, cajas, movimiento).
+    let sugeridos = filasFinca;
+    const acotar = (cond) => {
+      const quedan = sugeridos.filter(cond);
+      if (quedan.length) sugeridos = quedan;
+    };
+    if (fecha) acotar((row) => String(row?.fecha || "").slice(0, 10) === fecha);
+    if (d.producto) acotar((row) => String(row?.id_combo || "") === String(d.producto));
+    if (d.booking) acotar((row) => String(row?.id_embarque || "") === String(d.booking));
+    if (d.movimiento) acotar((row) => normalizarTexto(row?.proceso_empaque) === normalizarTexto(d.movimiento));
+    if (d.cajas) acotar((row) => Number(row?.cajas || 0) === Number(d.cajas));
+
+    const puerto = esMovimientoPuerto(d.movimiento);
+    const incompleta = !d.movimiento || !d.producto || !d.cajas || (!puerto && !d.booking);
+    if (incompleta) {
+      return { ok: false, incompleta: true, finca, filas: sugeridos, mensajes: [] };
+    }
+
+    const fila = sugeridos.find((row) => (
+      String(row?.id_combo || "") === String(d.producto)
+      && (puerto || String(row?.id_embarque || "") === String(d.booking))
+    ));
+    const mensajes = [];
+    if (!fila) {
+      mensajes.push(`El producto y el Booking no coinciden con la Programacion de Corte de ${finca}.`);
+    } else {
+      if (Number(fila.cajas || 0) !== Number(d.cajas || 0)) {
+        mensajes.push(`Cajas programadas: ${Number(fila.cajas || 0)} (la linea tiene ${Number(d.cajas || 0)}).`);
+      }
+      if (fila.proceso_empaque && normalizarTexto(fila.proceso_empaque) !== normalizarTexto(d.movimiento)) {
+        mensajes.push(`Proceso programado: ${fila.proceso_empaque} (la linea tiene ${d.movimiento}).`);
+      }
+      if (fecha && String(fila.fecha || "").slice(0, 10) !== fecha) {
+        mensajes.push(`Fecha programada: ${String(fila.fecha || "").slice(0, 10)}.`);
+      }
+    }
+    return { ok: mensajes.length === 0, incompleta: false, finca, filas: sugeridos, mensajes };
+  };
+
+  // Llena la linea con una fila de la Programacion de Corte (producto, cajas, booking y movimiento).
+  const usarFilaProgramacion = (indice, row) => {
+    const emb = embarquesSemana.find((item) => String(item?.id || "") === String(row?.id_embarque || ""));
+    const movimiento = listaTiposMovimiento.find((item) => normalizarTexto(item?.movimiento) === normalizarTexto(row?.proceso_empaque));
+    setLineasDetalle((prev) => {
+      const actual = { ...(prev[indice] || {}) };
+      actual.producto = row?.id_combo ? String(row.id_combo) : actual.producto;
+      actual.cajas = row?.cajas ?? actual.cajas;
+      if (movimiento) actual.movimiento = movimiento.movimiento;
+      if (emb && !esMovimientoPuerto(actual.movimiento)) {
+        actual.naviera = getEmbarqueNavieraId(emb);
+        actual.destino = getEmbarqueDestinoId(emb);
+        actual.buque = getEmbarqueBuqueId(emb);
+        actual.booking = String(emb.id);
+      }
+      return { ...prev, [indice]: actual };
+    });
+  };
+
   const handleSubmit = async () => {
     try {
       if (!semanaSeleccionada) {
         throw new Error("Debes seleccionar una semana valida.");
-      }
-      if (requiereContenedor && (!navieraSeleccionada || !destinoSeleccionado || !buqueSeleccionado || !bookingSeleccionado)) {
-        throw new Error("Debes completar naviera, destino, buque y Booking.");
       }
       if (!fecha) {
         throw new Error("Debes seleccionar la fecha.");
@@ -745,12 +778,6 @@ export default function FormulariosProgramacion({
       }
       if (!conductorActual?.id) {
         throw new Error("El conductor seleccionado no existe.");
-      }
-      if (!movimientoSeleccionado) {
-        throw new Error("Debes seleccionar el tipo de movimiento.");
-      }
-      if (requiereContenedor && !usarContenedorDemo && !String(contenedor || "").trim()) {
-        throw new Error("El movimiento seleccionado requiere contenedor.");
       }
 
       const paradasValidas = paradas
@@ -774,19 +801,74 @@ export default function FormulariosProgramacion({
       setGuardando(true);
 
       const semanaTexto = semanaActual?.consecutivo || semanaInput;
-      const bookingActualBl = bookingActual?.bl || null;
-      const contenedorFinal = requiereContenedor
-        ? (usarContenedorDemo ? 'DEMO0000000' : String(contenedor || "").trim().toUpperCase())
-        : null;
-      const productoPayload = productoActual?.id
-        ? {
-            producto_id: productoActual.id,
-            unidad_de_medida: "",
-            cantidad: 0,
-            activo: true,
-          }
-        : null;
-      const primerClienteProducto = productoActual?.id_cliente || null;
+      // Cada linea lleva su propio producto (por defecto el general) y su cantidad de cajas.
+      const productoPayloadDe = (indiceLinea) => {
+        const detalle = lineasDetalle[indiceLinea] || {};
+        const productoId = detalle.producto || "";
+        if (!productoId) return null;
+        const cajas = Number(detalle.cajas) || 0;
+        return {
+          producto_id: productoId,
+          unidad_de_medida: cajas > 0 ? "Cajas" : "",
+          cantidad: cajas,
+          activo: true,
+        };
+      };
+      // Datos de cada linea: lo que se haya puesto en la linea o, si esta vacio, lo general del formulario.
+      const datosLinea = (indiceLinea) => {
+        const d = lineasDetalle[indiceLinea] || {};
+        const embarqueLinea = d.booking && !esMovimientoPuerto(d.movimiento)
+          ? embarquesSemana.find((item) => String(item?.id || "") === String(d.booking))
+          : null;
+        const productoLinea = listaCombos.find((item) => String(item?.id || "") === String(d.producto || ""));
+        // Vehiculo y conductor son los mismos para todas las lineas del recorrido.
+        const vehiculoLinea = vehiculoSeleccionado;
+        const conductorLinea = conductorActual.id;
+        const movimientoLinea = d.movimiento || "";
+        if (!movimientoLinea) {
+          throw new Error(`Debes seleccionar el movimiento en la linea ${indiceLinea + 1}.`);
+        }
+        const movLinea = listaTiposMovimiento.find((item) => String(item?.movimiento || "") === String(movimientoLinea));
+        const contenedorLinea = String(d.contenedor || "").trim().toUpperCase();
+        const contenedorFinalLinea = movLinea?.requiere_contenedor
+          ? (d.demo ? 'DEMO0000000' : contenedorLinea || null)
+          : null;
+        if (movLinea?.requiere_contenedor && !contenedorFinalLinea) {
+          throw new Error(`La linea ${indiceLinea + 1} tiene un movimiento que requiere contenedor.`);
+        }
+        if (movLinea?.requiere_contenedor && !embarqueLinea && !esMovimientoPuerto(movimientoLinea)) {
+          throw new Error(`En la linea ${indiceLinea + 1} debes completar naviera, destino, buque y Booking.`);
+        }
+        return {
+          movimiento: movimientoLinea,
+          conductor_id: conductorLinea,
+          vehiculo_id: vehiculoLinea,
+          contenedor: contenedorFinalLinea,
+          bl: embarqueLinea ? (embarqueLinea.bl || null) : null,
+          id_pagador_flete: productoLinea?.id_cliente || null,
+        };
+      };
+      // Se valida todo antes de crear la primera linea.
+      const totalLineas = paradasValidas.length === 1 ? 1 : paradasValidas.length - 1;
+      const lineasResueltas = Array.from({ length: totalLineas }, (_, i) => (
+        lineasDetalle[i]?.eliminada ? null : datosLinea(i)
+      ));
+      if (lineasResueltas.every((item) => item === null)) {
+        throw new Error("Eliminaste todas las lineas: no hay nada que programar.");
+      }
+
+      const lineasDistintas = lineasResueltas
+        .map((item, i) => ({ i, rev: item ? revisarLineaContraProgramacion(i, lineasDetalle[i] || {}) : null }))
+        .filter(({ rev }) => rev && !rev.ok && !rev.incompleta);
+      if (lineasDistintas.length > 0 && !window.confirm(
+        `Hay ${lineasDistintas.length} linea(s) distintas a la Programacion de Corte:\n\n`
+        + lineasDistintas.map(({ i, rev }) => `Linea ${i + 1}: ${rev.mensajes.join(" ")}`).join("\n")
+        + "\n\n¿Guardar de todas formas?"
+      )) {
+        setGuardando(false);
+        return;
+      }
+
       const getProgramacionId = (programacion) => (
         programacion?.id
         || programacion?.data?.id
@@ -797,22 +879,18 @@ export default function FormulariosProgramacion({
 
       if (paradasValidas.length === 1) {
         const ubicacionId = paradasValidas[0];
-        const rutaId = await ensureRoute(ubicacionId, ubicacionId);
+        const rutaId = await ensureRoute(ubicacionId, ubicacionId, lineasResueltas[0].vehiculo_id);
         const programacionCreada = await agregarProgramaciones({
           ruta_id: rutaId,
           cobrar: false,
-          id_pagador_flete: primerClienteProducto,
           activo: true,
-          movimiento: movimientoSeleccionado,
-          conductor_id: conductorActual.id,
-          vehiculo_id: vehiculoSeleccionado,
-          contenedor: contenedorFinal,
-          bl: bookingActualBl,
+          ...lineasResueltas[0],
           semana: semanaTexto,
           fecha,
           detalles: "Ubicacion unica",
         });
         const programacionCreadaId = getProgramacionId(programacionCreada);
+        const productoPayload = productoPayloadDe(0);
         if (productoPayload && programacionCreadaId) {
           await agregarProductosViaje({
             ...productoPayload,
@@ -821,25 +899,22 @@ export default function FormulariosProgramacion({
         }
       } else {
         for (let index = 0; index < paradasValidas.length - 1; index += 1) {
+          if (!lineasResueltas[index]) continue; // linea eliminada
           const origenId = paradasValidas[index];
           const destinoId = paradasValidas[index + 1];
-          const rutaId = await ensureRoute(origenId, destinoId);
+          const rutaId = await ensureRoute(origenId, destinoId, lineasResueltas[index].vehiculo_id);
 
           const programacionCreada = await agregarProgramaciones({
             ruta_id: rutaId,
             cobrar: false,
-            id_pagador_flete: primerClienteProducto,
-            activo: true,
-            movimiento: movimientoSeleccionado,
-            conductor_id: conductorActual.id,
-            vehiculo_id: vehiculoSeleccionado,
-            contenedor: contenedorFinal,
-            bl: bookingActualBl,
+              activo: true,
+            ...lineasResueltas[index],
             semana: semanaTexto,
             fecha,
             detalles: `Tramo ${index + 1} de ${paradasValidas.length - 1}`,
           });
           const programacionCreadaId = getProgramacionId(programacionCreada);
+          const productoPayload = productoPayloadDe(index);
           if (productoPayload && programacionCreadaId) {
             await agregarProductosViaje({
               ...productoPayload,
@@ -872,392 +947,515 @@ export default function FormulariosProgramacion({
   return (
     <>
       <div className={styles.fondo}>
-        <div style={{ width: "min(1120px, 96vw)" }} className={styles.floatingform}>
+        <div style={{ width: "max(80vw, 1250px)", minWidth: "80vw", maxWidth: "98vw" }} className={styles.floatingform}>
           <div style={{ minWidth: "100%" }} className="card shadow-sm">
             <span style={{ minWidth: "100%" }} className={styles.ventana}>
-              <div className="card-header text-end">
-                <button type="button" onClick={() => setOpen(false)} className="btn-close" aria-label="Close"></button>
-              </div>
-              <div className="card-body py-3 px-3">
-                <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                  <div>
-                    <h6 className="mb-0">Nuevo movimiento</h6>
-                    <div className="small text-muted">Programa rapido por Booking, recorrido, vehiculo y conductor.</div>
-                  </div>
-                  <div className="d-flex gap-2">
-                    <Button type="button" variant="outline-primary" size="sm" onClick={onOpenMassCreate} disabled={massActionLoading || !onOpenMassCreate}>
-                      Cargue masivo
-                    </Button>
-                    <Button type="button" variant="outline-secondary" size="sm" onClick={onOpenMassUpdate} disabled={massActionLoading || !onOpenMassUpdate}>
-                      Actualizacion masiva
-                    </Button>
-                  </div>
+              {/* Encabezado */}
+              <div className="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2 py-2 px-3">
+                <div>
+                  <h6 className="mb-0 fw-semibold d-flex align-items-center gap-2">
+                    Nuevo movimiento
+                    <OverlayTrigger
+                      trigger="click"
+                      rootClose
+                      placement="bottom-start"
+                      overlay={(
+                        <Popover id="ayuda-nuevo-movimiento" style={{ maxWidth: "34rem" }}>
+                          <Popover.Header as="div" className="fw-semibold small">¿Como funciona?</Popover.Header>
+                          <Popover.Body className="small">
+                            <ol className="ps-3 mb-2">
+                              <li className="mb-1"><b>Datos generales:</b> semana, fecha, vehiculo y conductor. Son los mismos para todas las lineas del recorrido.</li>
+                              <li className="mb-1"><b>Recorrido:</b> agrega las ubicaciones en el orden en que el vehiculo las visita. Cada par de ubicaciones seguidas genera una linea (tramo); con una sola ubicacion se genera una linea.</li>
+                              <li className="mb-1"><b>Detalle de cada linea:</b> producto, cajas, naviera, destino, buque, Booking, movimiento y contenedor. El movimiento es obligatorio; el contenedor solo se pide si el movimiento lo requiere (o marca <i>DEMO</i> si aun esta pendiente). Si el movimiento es <i>Puerto</i>, no se piden naviera, destino, buque ni Booking.</li>
+                            </ol>
+                            <div className="mb-1"><b>Programacion de Corte:</b> si la semana tiene programacion, cada linea se compara con lo programado para su finca (origen o destino segun el campo <i>Finca en</i> del movimiento):</div>
+                            <ul className="ps-3 mb-2 list-unstyled">
+                              <li><FaLightbulb className="text-primary me-1" />Hay un sugerido: las opciones programadas salen primero con ★, y puedes llenar la linea con un clic.</li>
+                              <li><FaCheckCircle className="text-success me-1" />La linea coincide con lo programado.</li>
+                              <li><FaExclamationTriangle className="text-warning me-1" />La linea es distinta a lo programado; al guardar se pide confirmacion.</li>
+                              <li><FaMinus className="text-muted me-1" />No hay programacion para comparar.</li>
+                            </ul>
+                            <div><FaRegTrashAlt className="text-danger me-1" />Elimina una linea para que no se genere; puedes restaurarla con <FaUndoAlt className="mx-1" />.</div>
+                          </Popover.Body>
+                        </Popover>
+                      )}
+                    >
+                      <Button type="button" variant="link" className="p-0 border-0 text-primary lh-1" aria-label="Como funciona" title="Como funciona">
+                        <FaInfoCircle size={15} />
+                      </Button>
+                    </OverlayTrigger>
+                  </h6>
+                  <div className="small text-muted">Datos generales del viaje, recorrido y el detalle de cada linea.</div>
+                                  </div>
+                <div className="d-flex align-items-center gap-2">
+                  <Button type="button" variant="outline-primary" size="sm" onClick={onOpenMassCreate} disabled={massActionLoading || !onOpenMassCreate}>
+                    Cargue masivo
+                  </Button>
+                  <Button type="button" variant="outline-secondary" size="sm" onClick={onOpenMassUpdate} disabled={massActionLoading || !onOpenMassUpdate}>
+                    Actualizacion masiva
+                  </Button>
+                  <button type="button" onClick={() => setOpen(false)} className="btn-close ms-2" aria-label="Close"></button>
                 </div>
+              </div>
 
-                <div className="row g-2">
-                  <div className="col-12 col-md-6 col-lg-2">
-                    <label htmlFor="semana-programador" className="form-label mb-1">Semana</label>
-                    <select
-                      id="semana-programador"
-                      className={`form-select form-select-sm`}
-                      value={semanaSeleccionada}
-                      onChange={handleSemanaChange}
-                    >
-                      <option value="">Seleccione una semana</option>
-                      {listaSemanas.map((item) => (
-                        <option key={item?.id || item?.consecutivo} value={String(item?.id || "")}>
-                          {item?.consecutivo}
-                        </option>
-                      ))}
-                    </select>
-             
-                  </div>
+              <div className="card-body p-3 d-flex flex-column gap-3">
+                {/* 1. Datos generales */}
+                <section className="border rounded p-3">
+                  <div className="small fw-semibold text-uppercase text-muted mb-2">1. Datos generales</div>
+                  <div className="row g-3">
+                    <div className="col-12 col-sm-6 col-lg-3">
+                      <div className="d-flex justify-content-between align-items-end mb-1" style={{ minHeight: "1.9rem" }}>
+                        <label htmlFor="semana-programador" className="form-label mb-0">Semana</label>
+                      </div>
+                      <select
+                        id="semana-programador"
+                        className="form-select form-select-sm"
+                        value={semanaSeleccionada}
+                        onChange={handleSemanaChange}
+                      >
+                        <option value="">Seleccione una semana</option>
+                        {listaSemanas.map((item) => (
+                          <option key={item?.id || item?.consecutivo} value={String(item?.id || "")}>
+                            {item?.consecutivo}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <div className="col-12 col-md-6 col-lg-2">
-                    <label htmlFor="fecha-programador" className="form-label mb-1">Fecha</label>
-                    <input
-                      id="fecha-programador"
-                      type="date"
-                      className="form-control form-control-sm"
-                      value={fecha}
-                      onChange={(event) => setFecha(event.target.value)}
-                    />
-                  </div>
+                    <div className="col-12 col-sm-6 col-lg-3">
+                      <div className="d-flex justify-content-between align-items-end mb-1" style={{ minHeight: "1.9rem" }}>
+                        <label htmlFor="fecha-programador" className="form-label mb-0">Fecha</label>
+                      </div>
+                      <input
+                        id="fecha-programador"
+                        type="date"
+                        className="form-control form-control-sm"
+                        value={fecha}
+                        onChange={(event) => setFecha(event.target.value)}
+                      />
+                    </div>
 
-                  <div className="col-12 col-lg-8">
-                    <label htmlFor="producto-programador" className="form-label mb-1">Producto</label>
-                    <select
-                      id="producto-programador"
-                      className="form-control form-control-sm"
-                      value={productoSeleccionado}
-                      onChange={handleProductoChange}
-                    >
-                      <option value=""></option>
-                      {combosActivos.map((item) => (
-                        <option key={item?.id} value={item?.id}>{item?.nombre}</option>
-                      ))}
-                    </select>
-                  </div>
+                    <div className="col-12 col-sm-6 col-lg-3">
+                      <div className="d-flex justify-content-between align-items-end mb-1" style={{ minHeight: "1.9rem" }}>
+                        <label htmlFor="vehiculo-programador" className="form-label mb-0">Vehiculo</label>
+                        {canQuickCreateProgramador && (
+                          <Button type="button" variant="outline-primary" size="sm" className="py-0" onClick={handleQuickCreateVehiculo} title="Crear vehiculo">
+                            +
+                          </Button>
+                        )}
+                      </div>
+                      <select
+                        id="vehiculo-programador"
+                        className="form-select form-select-sm"
+                        value={vehiculoSeleccionado}
+                        onChange={(event) => {
+                          const nextVehiculoId = event.target.value;
+                          conductorTouchedRef.current = false;
+                          setVehiculoSeleccionado(nextVehiculoId);
+                        }}
+                      >
+                        <option value=""></option>
+                        {listaVehiculos.map((item) => (
+                          <option key={item?.id} value={item?.id}>{item?.placa}</option>
+                        ))}
+                      </select>
+                      {vehiculoPuedeOmitirCombustible && (
+                        <div className="small text-info mt-1">Sin seguimiento de combustible.</div>
+                      )}
+                    </div>
 
-                  <div className="col-12 col-md-6 col-lg-3">
-                    <label htmlFor="naviera-programador" className="form-label mb-1">Naviera</label>
-                    <select
-                      id="naviera-programador"
-                      className="form-control form-control-sm"
-                      value={navieraSeleccionada}
-                      disabled={!semanaSeleccionada || loadingEmbarques}
-                      onChange={(event) => {
-                        setNavieraSeleccionada(event.target.value);
-                        resetDependentSelectors("naviera");
-                      }}
-                    >
-                      <option value="">{loadingEmbarques ? "Cargando embarques..." : ""}</option>
-                      {navierasDisponibles.map((item) => (
-                        <option key={item.id} value={item.id}>{item.nombre}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="col-12 col-md-6 col-lg-3">
-                    <label htmlFor="destino-programador" className="form-label mb-1">Destino</label>
-                    <select
-                      id="destino-programador"
-                      className="form-control form-control-sm"
-                      value={destinoSeleccionado}
-                      disabled={!navieraSeleccionada || loadingEmbarques}
-                      onChange={(event) => {
-                        setDestinoSeleccionado(event.target.value);
-                        resetDependentSelectors("destino");
-                      }}
-                    >
-                      <option value=""></option>
-                      {destinosDisponibles.map((item) => (
-                        <option key={item.id} value={item.id}>{item.nombre}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="col-12 col-md-6 col-lg-3">
-                    <label htmlFor="buque-programador" className="form-label mb-1">Buque</label>
-                    <select
-                      id="buque-programador"
-                      className="form-control form-control-sm"
-                      value={buqueSeleccionado}
-                      disabled={!destinoSeleccionado || loadingEmbarques}
-                      onChange={(event) => {
-                        setBuqueSeleccionado(event.target.value);
-                        resetDependentSelectors("buque");
-                      }}
-                    >
-                      <option value=""></option>
-                      {buquesDisponibles.map((item) => (
-                        <option key={item.id} value={item.id}>{item.nombre}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="col-12 col-md-6 col-lg-3">
-                    <label htmlFor="booking-programador" className="form-label mb-1">Booking</label>
-                    <select
-                      id="booking-programador"
-                      className="form-control form-control-sm"
-                      value={bookingSeleccionado}
-                      disabled={!buqueSeleccionado || loadingEmbarques}
-                      onChange={(event) => setBookingSeleccionado(event.target.value)}
-                    >
-                      <option value=""></option>
-                      {bookingsDisponibles.map((item) => (
-                        <option key={item.id} value={item.id}>{item.bl || item.booking}</option>
-                      ))}
-                    </select>
+                    <div className="col-12 col-sm-6 col-lg-3">
+                      <div className="d-flex justify-content-between align-items-end mb-1" style={{ minHeight: "1.9rem" }}>
+                        <label htmlFor="conductor-programador" className="form-label mb-0">Conductor</label>
+                        {canQuickCreateProgramador && (
+                          <Button type="button" variant="outline-primary" size="sm" className="py-0" onClick={handleQuickCreateConductor} title="Crear conductor">
+                            +
+                          </Button>
+                        )}
+                      </div>
+                      <select
+                        id="conductor-programador"
+                        className="form-select form-select-sm"
+                        value={conductorSeleccionado}
+                        onChange={(event) => {
+                          conductorTouchedRef.current = true;
+                          setConductorSeleccionado(event.target.value);
+                        }}
+                      >
+                        <option value=""></option>
+                        {listaConductores.map((item) => (
+                          <option key={item?.id} value={item?.id}>{item?.conductor}</option>
+                        ))}
+                      </select>
+                      {conductorSugerido?.conductor && (
+                        <div className="small text-muted mt-1">Sugerido por el vehiculo: {conductorSugerido.conductor}</div>
+                      )}
+                    </div>
                   </div>
 
                   {semanaSeleccionada && !loadingEmbarques && !embarquesError && listaEmbarques.length === 0 && (
-                    <div className="col-12">
-                      <div className="alert alert-light border py-2 mb-0 small">
-                        No hay embarques disponibles para la semana seleccionada.
-                      </div>
+                    <div className="alert alert-light border py-2 mt-3 mb-0 small">
+                      No hay embarques disponibles para la semana seleccionada.
                     </div>
                   )}
-
                   {embarquesError && (
-                    <div className="col-12">
-                      <div className="alert alert-warning py-2 mb-0 small">
-                        {embarquesError}
-                      </div>
+                    <div className="alert alert-warning py-2 mt-3 mb-0 small">
+                      {embarquesError}
                     </div>
                   )}
+                </section>
 
-                  <div className="col-12">
-                    <div className="px-0 py-1">
-                      <div className="d-flex justify-content-between align-items-start gap-2 mb-2">
-                        <div>
-                          <h6 className="mb-0">Recorrido</h6>
-                          {vehiculoPuedeOmitirCombustible && (
-                            <p className="text-muted small mb-0">
-                              Puedes programar con una sola ubicacion o agregar mas si el vehiculo hace otras paradas.
-                            </p>
-                          )}
-                        </div>
-                        <span className="small text-muted">{paradas.length} parada(s)</span>
-                      </div>
-
-                      <div className="row g-2 align-items-center">
-                        <div className="col-md-9">
-                          <select
-                            id="ubicacion-pendiente-programador"
-                            className="form-control form-control-sm"
-                            value={ubicacionPendiente}
-                            onChange={(event) => setUbicacionPendiente(event.target.value)}
-                          >
-                            <option value="">Seleccione una ubicacion</option>
-                            {listaUbicaciones.map((item) => (
-                              <option key={item?.id} value={item?.id}>{item?.ubicacion}</option>
-                            ))}
-                          </select>
-                        </div>
-                        {canQuickCreateProgramador && (
-                          <div className="col-md-1">
-                            <Button
-                              type="button"
-                              variant="outline-primary"
-                              size="sm"
-                              className="w-100"
-                              onClick={handleQuickCreateUbicacion}
-                              title="Crear ubicacion"
-                            >
-                              +
-                            </Button>
-                          </div>
-                        )}
-                        <div className="col-md-2">
-                          <Button
-                            type="button"
-                            variant="primary"
-                            size="sm"
-                            className="w-100"
-                            onClick={() => {
-                              try {
-                                agregarParada();
-                              } catch (error) {
-                                setAlert({
-                                  active: true,
-                                  mensaje: error?.message || "No fue posible agregar la ubicacion.",
-                                  color: "danger",
-                                  autoClose: true,
-                                });
-                              }
-                            }}
-                          >
-                            Agregar
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div className="border rounded mt-2 px-2 py-2 d-flex flex-wrap gap-2 align-items-start" style={{ minHeight: "2.75rem" }}>
-                        {paradas.length === 0 && (
-                          <span className="text-muted small">Aun no has agregado ubicaciones.</span>
-                        )}
-
-                        {paradas.map((paradaId, index) => {
-                          const ubicacion = listaUbicaciones.find(
-                            (item) => String(item?.id || "") === String(paradaId)
-                          );
-
-                          return (
-                            <span
-                              key={`parada-${index}-${paradaId}`}
-                              className="d-inline-flex align-items-center gap-2 text-white bg-primary rounded-pill px-2 py-1"
-                              style={{ fontSize: "0.85rem" }}
-                            >
-                              <span
-                                className="d-inline-flex align-items-center justify-content-center rounded-circle bg-white text-primary fw-semibold"
-                                style={{ width: "1.35rem", height: "1.35rem", fontSize: "0.75rem" }}
-                              >
-                                {index + 1}
-                              </span>
-                              <span>{ubicacion?.ubicacion || "Ubicacion sin nombre"}</span>
-                              <button
-                                type="button"
-                                className="btn-close btn-close-white"
-                                aria-label={`Eliminar ubicacion ${index + 1}`}
-                                style={{ fontSize: "0.6rem" }}
-                                onClick={() => eliminarParada(index)}
-                              ></button>
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </div>
+                {/* 2. Recorrido */}
+                <section className="border rounded p-3">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <div className="small fw-semibold text-uppercase text-muted">2. Recorrido</div>
+                    <span className="badge bg-light text-dark border">{paradas.length} parada(s)</span>
                   </div>
-
-              
-
-                  <div className="col-md-3">
-                    <div className="d-flex justify-content-between align-items-center mb-1">
-                      <label htmlFor="vehiculo-programador" className="form-label mb-0">Vehiculo</label>
-                      {canQuickCreateProgramador && (
-                        <Button type="button" variant="outline-primary" size="sm" onClick={handleQuickCreateVehiculo}>
-                          +
-                        </Button>
-                      )}
-                    </div>
+                  {vehiculoPuedeOmitirCombustible && (
+                    <p className="text-muted small mb-2">
+                      Puedes programar con una sola ubicacion o agregar mas si el vehiculo hace otras paradas.
+                    </p>
+                  )}
+                  <div className="input-group input-group-sm">
                     <select
-                      id="vehiculo-programador"
-                      className="form-control form-control-sm"
-                      value={vehiculoSeleccionado}
-                      onChange={(event) => {
-                        const nextVehiculoId = event.target.value;
-                        conductorTouchedRef.current = false;
-                        setVehiculoSeleccionado(nextVehiculoId);
-                      }}
+                      id="ubicacion-pendiente-programador"
+                      className="form-select form-select-sm"
+                      value={ubicacionPendiente}
+                      onChange={(event) => setUbicacionPendiente(event.target.value)}
                     >
-                      <option value=""></option>
-                      {listaVehiculos.map((item) => (
-                        <option key={item?.id} value={item?.id}>{item?.placa}</option>
+                      <option value="">Seleccione una ubicacion</option>
+                      {listaUbicaciones.map((item) => (
+                        <option key={item?.id} value={item?.id}>{item?.ubicacion}</option>
                       ))}
                     </select>
-                  </div>
-
-                  <div className="col-md-3">
-                    <div className="d-flex justify-content-between align-items-center mb-1">
-                      <label htmlFor="conductor-programador" className="form-label mb-0">Conductor</label>
-                      {canQuickCreateProgramador && (
-                        <Button type="button" variant="outline-primary" size="sm" onClick={handleQuickCreateConductor}>
-                          +
-                        </Button>
-                      )}
-                    </div>
-                    <select
-                      id="conductor-programador"
-                      className="form-control form-control-sm"
-                      value={conductorSeleccionado}
-                      onChange={(event) => {
-                        conductorTouchedRef.current = true;
-                        setConductorSeleccionado(event.target.value);
-                      }}
-                    >
-                      <option value=""></option>
-                      {listaConductores.map((item) => (
-                        <option key={item?.id} value={item?.id}>{item?.conductor}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="col-md-3">
-                    <div className="d-flex justify-content-between align-items-center mb-1">
-                      <label htmlFor="movimiento-programador" className="form-label mb-0">Movimiento</label>
-                      {canQuickCreateProgramador && (
-                        <Button type="button" variant="outline-primary" size="sm" onClick={handleQuickCreateTipoMovimiento}>
-                          +
-                        </Button>
-                      )}
-                    </div>
-                    <select
-                      id="movimiento-programador"
-                      className="form-control form-control-sm"
-                      value={movimientoSeleccionado}
-                      onChange={(event) => { setMovimientoSeleccionado(event.target.value); setUsarContenedorDemo(false); setContenedor(""); }}
-                    >
-                      <option value=""></option>
-                      {listaTiposMovimiento.map((item) => (
-                        <option key={item?.id || item?.movimiento} value={item?.movimiento}>{item?.movimiento}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="col-md-3">
-                    <div className="d-flex justify-content-between align-items-center mb-1">
-                      <label htmlFor="contenedor-programador" className="form-label mb-0">Contenedor</label>
-                      {canQuickCreateProgramador && (
-                        <Button type="button" variant="outline-primary" size="sm" style={{ visibility: 'hidden' }} tabIndex={-1} aria-hidden="true">+</Button>
-                      )}
-                    </div>
-                    <input
-                      id="contenedor-programador"
-                      type="text"
-                      maxLength={11}
-                      className="form-control form-control-sm"
-                      value={usarContenedorDemo ? 'DEMO0000000' : contenedor}
-                      disabled={!requiereContenedor || usarContenedorDemo}
-                      onChange={(event) => setContenedor(event.target.value.toUpperCase())}
-                      placeholder={requiereContenedor ? "Ingrese contenedor" : "No requerido"}
-                    />
-                    {requiereContenedor && (
-                      <div className="form-check mt-1">
-                        <input
-                          className="form-check-input"
-                          type="checkbox"
-                          id="contenedor-demo-check"
-                          checked={usarContenedorDemo}
-                          onChange={(e) => { setUsarContenedorDemo(e.target.checked); if (e.target.checked) setContenedor(""); }}
-                        />
-                        <label className="form-check-label small text-muted" htmlFor="contenedor-demo-check">
-                          Pendiente (registra DEMO)
-                        </label>
-                      </div>
+                    {canQuickCreateProgramador && (
+                      <Button type="button" variant="outline-primary" onClick={handleQuickCreateUbicacion} title="Crear ubicacion">
+                        +
+                      </Button>
                     )}
-                  </div>
-
-                  <div className="col-12">
-                    <div className="small text-muted d-flex flex-wrap gap-3">
-                      <span>
-                        {conductorSugerido?.conductor
-                          ? `Sugerido por el vehiculo: ${conductorSugerido.conductor}`
-                          : ""}
-                      </span>
-                      {vehiculoPuedeOmitirCombustible && (
-                        <span className="text-info">Sin seguimiento de combustible.</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="col-12 d-flex justify-content-end pt-1">
-                    <Button type="button" variant="success" size="sm" onClick={handleSubmit} disabled={guardando || massActionLoading}>
-                      {guardando ? "Guardando..." : "Programar"}
+                    <Button
+                      type="button"
+                      variant="primary"
+                      style={{ minWidth: "8rem" }}
+                      onClick={() => {
+                        try {
+                          agregarParada();
+                        } catch (error) {
+                          setAlert({
+                            active: true,
+                            mensaje: error?.message || "No fue posible agregar la ubicacion.",
+                            color: "danger",
+                            autoClose: true,
+                          });
+                        }
+                      }}
+                    >
+                      Agregar
                     </Button>
                   </div>
-                </div>
+
+                  <div className="border rounded mt-2 px-2 py-2 d-flex flex-wrap gap-2 align-items-center bg-light" style={{ minHeight: "2.75rem" }}>
+                    {paradas.length === 0 && (
+                      <span className="text-muted small">Aun no has agregado ubicaciones.</span>
+                    )}
+                    {paradas.map((paradaId, index) => {
+                      const ubicacion = listaUbicaciones.find(
+                        (item) => String(item?.id || "") === String(paradaId)
+                      );
+                      return (
+                        <React.Fragment key={`parada-${index}-${paradaId}`}>
+                          {index > 0 && <span className="text-muted">→</span>}
+                          <span
+                            className="d-inline-flex align-items-center gap-2 text-white bg-primary rounded-pill px-2 py-1"
+                            style={{ fontSize: "0.85rem" }}
+                          >
+                            <span
+                              className="d-inline-flex align-items-center justify-content-center rounded-circle bg-white text-primary fw-semibold"
+                              style={{ width: "1.35rem", height: "1.35rem", fontSize: "0.75rem" }}
+                            >
+                              {index + 1}
+                            </span>
+                            <span>{ubicacion?.ubicacion || "Ubicacion sin nombre"}</span>
+                            <button
+                              type="button"
+                              className="btn-close btn-close-white"
+                              aria-label={`Eliminar ubicacion ${index + 1}`}
+                              style={{ fontSize: "0.6rem" }}
+                              onClick={() => eliminarParada(index)}
+                            ></button>
+                          </span>
+                        </React.Fragment>
+                      );
+                    })}
+                  </div>
+                </section>
+
+                {/* 3. Lineas */}
+                <section className="border rounded px-2 py-2 lineas-compactas">
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <div className="small fw-semibold text-uppercase text-muted">3. Detalle de cada linea</div>
+                    {canQuickCreateProgramador && (
+                      <Button type="button" variant="outline-primary" size="sm" onClick={handleQuickCreateTipoMovimiento}>
+                        + Tipo de movimiento
+                      </Button>
+                    )}
+                  </div>
+                  {paradas.length === 0 ? (
+                    <div className="text-muted small">Agrega ubicaciones al recorrido para ver las lineas que se van a generar.</div>
+                  ) : (() => {
+                    const nombreUbicacion = (id) => listaUbicaciones.find((u) => String(u?.id || "") === String(id))?.ubicacion || "Ubicacion";
+                    const tramos = paradas.length === 1
+                      ? [{ indice: 0, texto: nombreUbicacion(paradas[0]) }]
+                      : paradas.slice(0, -1).map((id, i) => ({ indice: i, texto: `${nombreUbicacion(id)} → ${nombreUbicacion(paradas[i + 1])}` }));
+                    const setDetalle = (indice, campo, valor) => setLineasDetalle((prev) => ({
+                      ...prev,
+                      [indice]: { ...(prev[indice] || {}), [campo]: valor },
+                    }));
+                    return (
+                      <div className="lineas-scroll">
+                        <div className="lineas-grid lineas-cab text-muted">
+                          <div className="text-center">#</div>
+                          <div className="text-center" title="Comparacion con la Programacion de Corte">Prog.</div>
+                          <div>Linea</div>
+                          <div>Producto</div>
+                          <div>Cajas</div>
+                          <div>Naviera</div>
+                          <div>Destino</div>
+                          <div>Buque</div>
+                          <div>Booking</div>
+                          <div>Movimiento</div>
+                          <div>Contenedor</div>
+                          <div></div>
+                        </div>
+                            {tramos.filter(({ indice }) => !lineasDetalle[indice]?.eliminada).map(({ indice, texto }) => {
+                              const d = lineasDetalle[indice] || {};
+                              const op = opcionesEmbarqueLinea(d);
+                              const puerto = esMovimientoPuerto(d.movimiento);
+                              const requiere = Boolean(listaTiposMovimiento.find((item) => String(item?.movimiento || "") === String(d.movimiento || ""))?.requiere_contenedor);
+                              const rev = revisarLineaContraProgramacion(indice, d);
+                              // Sugeridos de la Programacion de Corte, para marcarlos dentro de cada input.
+                              const filasSug = rev && !rev.ok ? rev.filas : [];
+                              const embSug = filasSug
+                                .map((row) => embarquesSemana.find((item) => String(item?.id || "") === String(row?.id_embarque || "")))
+                                .filter(Boolean);
+                              const sug = {
+                                producto: new Set(filasSug.map((row) => String(row?.id_combo || ""))),
+                                naviera: new Set(embSug.map(getEmbarqueNavieraId)),
+                                destino: new Set(embSug.map(getEmbarqueDestinoId)),
+                                buque: new Set(embSug.map(getEmbarqueBuqueId)),
+                                booking: new Set(embSug.map((item) => String(item.id))),
+                                movimiento: new Set(filasSug.map((row) => normalizarTexto(row?.proceso_empaque))),
+                              };
+                              const cajasSug = [...new Set(filasSug.map((row) => Number(row?.cajas || 0)).filter(Boolean))];
+                              // Opciones con los sugeridos primero y marcados con ★
+                              const ordenar = (opciones, esSug) => [...opciones].sort((a, b) => Number(esSug(b)) - Number(esSug(a)));
+                              const claseSug = (vacio, haySug) => `form-select form-select-sm${vacio && haySug ? " border-primary" : ""}`;
+                              const campo = (nombre, opciones, deshabilitado) => (
+                                <div>
+                                  <select
+                                    className={claseSug(!d[nombre], sug[nombre].size > 0)}
+                                    value={d[nombre] ?? ""}
+                                    disabled={deshabilitado}
+                                    onChange={(event) => cambiarCascada(indice, nombre, event.target.value)}
+                                  >
+                                    <option value="">{loadingEmbarques ? "Cargando..." : ""}</option>
+                                    {ordenar(opciones, (o) => sug[nombre].has(String(o.id))).map((o) => (
+                                      <option key={o.id} value={o.id}>{sug[nombre].has(String(o.id)) ? `★ ${o.nombre}` : o.nombre}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              );
+                              return (
+                                <React.Fragment key={`linea-${indice}`}>
+                                <div className={`lineas-grid lineas-fila${rev && !rev.ok && !rev.incompleta ? " lineas-alerta" : ""}`}>
+                                  <div className="text-center fw-semibold">{indice + 1}</div>
+                                  <div className="text-center" title={!rev ? "Sin Programacion de Corte para comparar" : rev.ok ? "Coincide con la Programacion de Corte" : rev.incompleta ? "Hay un sugerido de la Programacion de Corte" : rev.mensajes.join(" ")}>
+                                    {!rev ? <FaMinus className="text-muted" size={10} />
+                                      : rev.ok ? <FaCheckCircle className="text-success" size={14} />
+                                        : rev.incompleta ? <FaLightbulb className="text-primary" size={14} />
+                                          : <FaExclamationTriangle className="text-warning" size={14} />}
+                                  </div>
+                                  <div className="small text-truncate" title={texto}>{texto}</div>
+                                  <div>
+                                    <select
+                                      className={claseSug(!d.producto, sug.producto.size > 0)}
+                                      value={d.producto ?? ""}
+                                      onChange={(event) => cambiarCascada(indice, "producto", event.target.value)}
+                                    >
+                                      <option value=""></option>
+                                      {ordenar(combosActivos, (item) => sug.producto.has(String(item?.id))).map((item) => (
+                                        <option key={item?.id} value={item?.id}>{sug.producto.has(String(item?.id)) ? `★ ${item?.nombre}` : item?.nombre}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="1"
+                                      className={`form-control form-control-sm text-end${!d.cajas && cajasSug.length ? " border-primary" : ""}`}
+                                      placeholder={cajasSug.length ? `★ ${cajasSug.join(" / ")}` : ""}
+                                      title={cajasSug.length ? `Cajas programadas: ${cajasSug.join(" / ")}` : undefined}
+                                      value={d.cajas ?? ""}
+                                      onChange={(event) => setDetalle(indice, "cajas", event.target.value)}
+                                    />
+                                  </div>
+                                  {campo("naviera", op.navieras, puerto || !semanaSeleccionada || loadingEmbarques)}
+                                  {campo("destino", op.destinos, puerto || !d.naviera)}
+                                  {campo("buque", op.buques, puerto || !d.destino)}
+                                  {campo("booking", op.bookings, puerto || !d.buque)}
+                                  <div>
+                                    <select
+                                      className={claseSug(!d.movimiento, sug.movimiento.size > 0)}
+                                      value={d.movimiento ?? ""}
+                                      onChange={(event) => setLineasDetalle((prev) => ({
+                                        ...prev,
+                                        [indice]: {
+                                          ...(prev[indice] || {}),
+                                          movimiento: event.target.value,
+                                          contenedor: "",
+                                          demo: false,
+                                          ...(esMovimientoPuerto(event.target.value) ? { naviera: "", destino: "", buque: "", booking: "" } : {}),
+                                        },
+                                      }))}
+                                    >
+                                      <option value=""></option>
+                                      {ordenar(listaTiposMovimiento, (item) => sug.movimiento.has(normalizarTexto(item?.movimiento))).map((item) => (
+                                        <option key={item?.id || item?.movimiento} value={item?.movimiento}>
+                                          {sug.movimiento.has(normalizarTexto(item?.movimiento)) ? `★ ${item?.movimiento}` : item?.movimiento}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div>
+                                    {/* La casilla DEMO va dentro del mismo grupo para no cambiar la altura de la fila. */}
+                                    <div className="input-group input-group-sm flex-nowrap">
+                                      <input
+                                        type="text"
+                                        maxLength={11}
+                                        className="form-control form-control-sm text-uppercase"
+                                        placeholder={requiere ? "Contenedor" : "No requerido"}
+                                        disabled={!requiere || d.demo}
+                                        value={d.demo ? "DEMO0000000" : (d.contenedor ?? "")}
+                                        onChange={(event) => setDetalle(indice, "contenedor", event.target.value.toUpperCase())}
+                                      />
+                                      {requiere && (
+                                        <label className="input-group-text gap-1 px-1 mb-0" title="Pendiente: registra DEMO0000000" style={{ fontSize: "0.7rem", cursor: "pointer" }}>
+                                          <input
+                                            className="form-check-input mt-0"
+                                            type="checkbox"
+                                            checked={Boolean(d.demo)}
+                                            onChange={(event) => setDetalle(indice, "demo", event.target.checked)}
+                                          />
+                                          DEMO
+                                        </label>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="text-center">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="link"
+                                      className="p-0 border-0 text-danger"
+                                      aria-label="Eliminar linea"
+                                      title="Eliminar esta linea (no se va a generar)"
+                                      onClick={() => {
+                                        if (paradas.length === 1) {
+                                          eliminarParada(0);
+                                          return;
+                                        }
+                                        setDetalle(indice, "eliminada", true);
+                                      }}
+                                    >
+                                      <FaRegTrashAlt size={13} />
+                                    </Button>
+                                  </div>
+                                </div>
+                                {rev && !rev.ok && (rev.mensajes.length > 0 || rev.filas.length > 0) && (
+                                  <div className={`lineas-nota ${rev.incompleta ? "lineas-nota-sug" : "lineas-nota-alerta"}`}>
+                                    <div className="small">
+                                      {rev.mensajes.length > 0 && (
+                                        <div className="fw-semibold text-danger d-flex align-items-center gap-1"><FaExclamationTriangle size={12} /> {rev.mensajes.join(" ")}</div>
+                                      )}
+                                      {rev.filas.length > 0 && (
+                                        <div className="d-flex flex-wrap align-items-center gap-2 mt-1">
+                                          <span className="text-muted">{rev.incompleta ? `Sugerido (${rev.finca}):` : `Programado para ${rev.finca}:`}</span>
+                                          {rev.filas.map((row) => (
+                                            <Button
+                                              key={`prog-${indice}-${row.id}`}
+                                              type="button"
+                                              size="sm"
+                                              variant="link"
+                                              className="py-0 px-1 border-0 text-decoration-none d-inline-flex align-items-center gap-1"
+                                              title="Usar estos datos en la linea"
+                                              onClick={() => usarFilaProgramacion(indice, row)}
+                                            >
+                                              <FaArrowRight size={10} />
+                                              {[String(row.fecha || "").slice(0, 10), row.booking, row.combo?.nombre, `${Number(row.cajas || 0)} cajas`, row.proceso_empaque].filter(Boolean).join(" · ")}
+                                            </Button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                                </React.Fragment>
+                              );
+                            })}
+                        {(() => {
+                          const eliminadas = tramos.filter(({ indice }) => lineasDetalle[indice]?.eliminada);
+                          if (eliminadas.length === 0) return null;
+                          return (
+                            <div className="small text-muted mt-2 d-flex flex-wrap align-items-center gap-2">
+                              <span>Lineas eliminadas (no se van a generar):</span>
+                              {eliminadas.map(({ indice, texto }) => (
+                                <Button
+                                  key={`restaurar-${indice}`}
+                                  type="button"
+                                  size="sm"
+                                  variant="link"
+                                  className="py-0 px-1 border-0 text-decoration-none text-secondary d-inline-flex align-items-center gap-1"
+                                  title="Restaurar la linea"
+                                  onClick={() => setDetalle(indice, "eliminada", false)}
+                                >
+                                  <FaUndoAlt size={10} /> {indice + 1}. {texto}
+                                </Button>
+                              ))}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    );
+                  })()}
+                </section>
+              </div>
+
+              <style>{`
+                .lineas-scroll { overflow-x: auto; }
+                .lineas-grid {
+                  display: grid;
+                  grid-template-columns: 1.6rem 1.8rem minmax(8rem, 1.3fr) minmax(8rem, 1.3fr) 4.5rem repeat(3, minmax(6.5rem, 1fr)) minmax(7rem, 1.1fr) minmax(7rem, 1fr) minmax(7.5rem, 1.1fr) 1.6rem;
+                  gap: 4px;
+                  align-items: center;
+                  min-width: 1050px;
+                }
+                .lineas-cab { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; padding: 0 2px 2px; border-bottom: 1px solid var(--bs-border-color); }
+                .lineas-fila { padding: 3px 2px; border-bottom: 1px solid var(--bs-border-color-translucent); font-size: 0.78rem; }
+                .lineas-fila:hover { background: var(--bs-tertiary-bg); }
+                .lineas-alerta { background: var(--bs-warning-bg-subtle); }
+                .lineas-nota { min-width: 1050px; padding: 2px 6px 4px 3.6rem; border-bottom: 1px solid var(--bs-border-color-translucent); }
+                .lineas-nota-sug { background: var(--bs-info-bg-subtle); }
+                .lineas-nota-alerta { background: var(--bs-warning-bg-subtle); }
+              `}</style>
+              {/* Pie */}
+              <div className="card-footer bg-white d-flex justify-content-end gap-2 py-2 px-3">
+                <Button type="button" variant="outline-secondary" size="sm" onClick={() => setOpen(false)} disabled={guardando}>
+                  Cancelar
+                </Button>
+                <Button type="button" variant="success" size="sm" style={{ minWidth: "8rem" }} onClick={handleSubmit} disabled={guardando || massActionLoading}>
+                  {guardando ? "Guardando..." : "Programar"}
+                </Button>
               </div>
             </span>
           </div>
@@ -1373,7 +1571,7 @@ export default function FormulariosProgramacion({
               </div>
               <div className="col-md-6">
                 <Form.Group>
-                  <div className="d-flex justify-content-between align-items-center mb-1">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
                     <Form.Label className="mb-0">Conductor</Form.Label>
                     <Button
                       type="button"
