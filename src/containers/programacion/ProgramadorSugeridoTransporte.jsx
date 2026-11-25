@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Dropdown, Form, Modal } from 'react-bootstrap';
-import { FaCog, FaCopy, FaFilter, FaMinus, FaPaperPlane, FaPlus, FaTrash } from 'react-icons/fa';
+import { FaCog, FaCopy, FaExclamationTriangle, FaFilter, FaMapMarkerAlt, FaMinus, FaPaperPlane, FaPlus, FaTrash } from 'react-icons/fa';
 import { listarProgramacionCorte } from '@services/api/programacionCorte';
 import { listarSemanas } from '@services/api/semanas';
 import { encontrarModulo, actualizarModulo } from '@services/api/configuracion';
@@ -80,7 +80,11 @@ function ExcelColumnFilter({ valores, activo, onChange }) {
       >
         <FaFilter size={10} />
       </Dropdown.Toggle>
-      <Dropdown.Menu style={{ minWidth: '200px', maxHeight: '280px', overflowY: 'auto', fontSize: '0.8rem' }}>
+      {/* Posicion "fixed": el menu sale por encima de la tabla con scroll (antes quedaba recortado). */}
+      <Dropdown.Menu
+        popperConfig={{ strategy: 'fixed' }}
+        style={{ minWidth: '200px', maxHeight: '280px', overflowY: 'auto', fontSize: '0.8rem', zIndex: 1080 }}
+      >
         <div className="px-2 pb-1">
           <Form.Control
             size="sm"
@@ -183,6 +187,45 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
       return seleccionados.has(String(fila[campo] ?? '').trim());
     }));
   }, [sugeridoBorrador, filtrosBorrador]);
+  // Donde va la finca en una fila: lo define el campo "Finca en" del tipo de movimiento.
+  const ubicacionFinca = (fila) => {
+    const tipo = (tiposMovimiento || []).find((m) => String(m.id) === String(fila.movimientoId || ''));
+    if (!tipo) return { lado: '', motivo: 'Elige el movimiento para saber si la finca va en origen o en destino.' };
+    const lado = tipo.finca_en === 'destino' ? 'destino' : 'origen';
+    return {
+      lado,
+      motivo: `El movimiento "${tipo.movimiento}" tiene "Finca en: ${lado === 'destino' ? 'Destino' : 'Origen'}": `
+        + (lado === 'destino'
+          ? 'el vehiculo LLEGA a la finca (lleva el contenedor/insumos a la finca).'
+          : 'el vehiculo SALE de la finca (recoge la fruta en la finca y la lleva a su destino).'),
+    };
+  };
+  // La finca esta donde debe? (compara por id y, si no hay id, por nombre)
+  const fincaBienUbicada = (fila, lado) => {
+    if (!fila.fincaLabel || !lado) return true;
+    const id = lado === 'destino' ? fila.destinoId : fila.origenId;
+    const nombre = lado === 'destino' ? fila.destino : fila.origen;
+    if (fila.fincaId && id) return String(fila.fincaId) === String(id);
+    return normalizarComparacion(nombre) === normalizarComparacion(fila.fincaLabel);
+  };
+
+  // Lineas agrupadas por finca (orden: finca, fecha, booking).
+  const gruposPorFinca = useMemo(() => {
+    const mapa = new Map();
+    sugeridoBorradorFiltrado.forEach((fila) => {
+      const finca = String(fila.fincaLabel || '').trim() || 'Sin finca';
+      if (!mapa.has(finca)) mapa.set(finca, []);
+      mapa.get(finca).push(fila);
+    });
+    return Array.from(mapa.entries())
+      .sort(([a], [b]) => (a === 'Sin finca') - (b === 'Sin finca') || a.localeCompare(b))
+      .map(([finca, filas]) => ({
+        finca,
+        filas: [...filas].sort((x, y) => String(x.fecha || '').localeCompare(String(y.fecha || ''))
+          || String(x.booking || '').localeCompare(String(y.booking || ''))),
+      }));
+  }, [sugeridoBorradorFiltrado]);
+
   const [enviandoFilaId, setEnviandoFilaId] = useState(null);
 
   // Respaldo local del borrador: si se va la luz o se cierra el navegador, lo
@@ -451,7 +494,13 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
       const grupos = new Map();
       filasSemana.forEach((fila) => {
         const procesoKey = normalizarComparacion(fila.proceso_empaque);
-        const finca = procesoAAlmacen.get(procesoKey) || String(fila.finca || '').trim();
+        // La finca es la de la Programacion de Corte. El almacen configurado para el proceso de empaque
+        // (ej. Puerto -> PUERTO) es el OTRO extremo del viaje: va en el lado contrario a la finca.
+        // Si la fila no trae finca, se usa el almacen del proceso como antes.
+        const fincaProgramada = String(fila.almacen?.nombre || fila.finca || '').trim();
+        const lugarProceso = procesoAAlmacen.get(procesoKey) || '';
+        const finca = fincaProgramada || lugarProceso;
+        const contraparte = lugarProceso && normalizarComparacion(lugarProceso) !== normalizarComparacion(finca) ? lugarProceso : '';
         const movimientoId = procesoAMovimientoId.get(procesoKey) || '';
         const tipoMovimiento = movimientoPorId.get(String(movimientoId));
         const movimiento = tipoMovimiento?.movimiento || '';
@@ -462,6 +511,7 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
         // manualmente), se asume 'origen' por compatibilidad.
         const fincaEnDestino = tipoMovimiento?.finca_en === 'destino';
         const fincaUbicacion = ubicacionPorNombre.get(normalizarComparacion(finca));
+        const contraparteUbicacion = contraparte ? ubicacionPorNombre.get(normalizarComparacion(contraparte)) : null;
         // La finca va en la clave: varias fincas distintas pueden compartir el
         // mismo proceso de empaque (ej. "Finca"), y cada una debe quedar en su
         // propia linea del borrador — agrupar solo por proceso mezclaba las
@@ -489,10 +539,12 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
           // el movimiento a mano — ver cambiarMovimientoFila.
           fincaLabel: finca,
           fincaId: fincaUbicacion?.id || '',
-          origen: fincaEnDestino ? '' : finca,
-          origenId: fincaEnDestino ? '' : (fincaUbicacion?.id || ''),
-          destino: fincaEnDestino ? finca : '',
-          destinoId: fincaEnDestino ? (fincaUbicacion?.id || '') : '',
+          contraparteLabel: contraparte,
+          contraparteId: contraparteUbicacion?.id || '',
+          origen: fincaEnDestino ? contraparte : finca,
+          origenId: fincaEnDestino ? (contraparteUbicacion?.id || '') : (fincaUbicacion?.id || ''),
+          destino: fincaEnDestino ? finca : contraparte,
+          destinoId: fincaEnDestino ? (fincaUbicacion?.id || '') : (contraparteUbicacion?.id || ''),
           vehiculo: '',
           vehiculoId: '',
           conductor: '',
@@ -561,12 +613,20 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
             cambios.origen = '';
             cambios.origenId = '';
           }
+          if (fila.contraparteLabel && (!cambios.origen || fila.destino === fila.contraparteLabel)) {
+            cambios.origen = fila.contraparteLabel;
+            cambios.origenId = fila.contraparteId;
+          }
         } else {
           cambios.origen = fila.fincaLabel;
           cambios.origenId = fila.fincaId;
           if (fila.destino === fila.fincaLabel) {
             cambios.destino = '';
             cambios.destinoId = '';
+          }
+          if (fila.contraparteLabel && (!cambios.destino || fila.origen === fila.contraparteLabel)) {
+            cambios.destino = fila.contraparteLabel;
+            cambios.destinoId = fila.contraparteId;
           }
         }
       }
@@ -963,7 +1023,42 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
                       </td>
                     </tr>
                   )}
-                  {sugeridoBorradorFiltrado.map((fila) => (
+                  {gruposPorFinca.map(({ finca, filas }) => (
+                    <React.Fragment key={`finca-${finca}`}>
+                      <tr>
+                        <td colSpan={11} className="text-start fw-semibold py-1" style={{ background: 'var(--bs-secondary-bg)', fontSize: '0.8rem' }}>
+                          <FaMapMarkerAlt className="text-primary me-1" />
+                          {finca}
+                          <span className="text-muted fw-normal ms-2">{filas.length} linea(s)</span>
+                          {(() => {
+                            const lados = [...new Set(filas.map((f) => ubicacionFinca(f).lado).filter(Boolean))];
+                            const malUbicadas = filas.filter((f) => !fincaBienUbicada(f, ubicacionFinca(f).lado)).length;
+                            return (
+                              <>
+                                {lados.length > 0 && (
+                                  <span className="text-muted fw-normal ms-2">
+                                    · la finca va en {lados.map((l) => (l === 'destino' ? 'Destino' : 'Origen')).join(' / ')}
+                                  </span>
+                                )}
+                                {malUbicadas > 0 && (
+                                  <span className="text-danger fw-normal ms-2">
+                                    <FaExclamationTriangle className="me-1" size={11} />
+                                    {malUbicadas} linea(s) con la finca en el lugar equivocado
+                                  </span>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </td>
+                      </tr>
+                  {filas.map((fila) => {
+                    const { lado, motivo } = ubicacionFinca(fila);
+                    const bien = fincaBienUbicada(fila, lado);
+                    const resaltar = (campo) => {
+                      if (lado !== campo || !fila.fincaLabel) return undefined;
+                      return { boxShadow: `inset 0 0 0 2px var(--bs-${bien ? 'success' : 'danger'})`, borderRadius: 4 };
+                    };
+                    return (
                     <tr key={fila.id}>
                       <td style={{ ...CELL_STYLE, minWidth: '110px' }}>
                         <Form.Control
@@ -999,6 +1094,8 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
                         <Form.Select
                           size="sm"
                           className={COMPACT_INPUT_CLASS}
+                          style={resaltar('origen')}
+                          title={lado === 'origen' ? `Aqui va la finca ${fila.fincaLabel}. ${motivo}` : undefined}
                           value={fila.origenId || ''}
                           onChange={(e) => {
                             const ubicacion = (ubicaciones || []).find((u) => String(u.id) === e.target.value);
@@ -1016,6 +1113,8 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
                         <Form.Select
                           size="sm"
                           className={COMPACT_INPUT_CLASS}
+                          style={resaltar('destino')}
+                          title={lado === 'destino' ? `Aqui va la finca ${fila.fincaLabel}. ${motivo}` : undefined}
                           value={fila.destinoId || ''}
                           onChange={(e) => {
                             const ubicacion = (ubicaciones || []).find((u) => String(u.id) === e.target.value);
@@ -1252,6 +1351,9 @@ export default function ProgramadorSugeridoTransporte({ ubicaciones, vehiculos, 
                         </button>
                       </td>
                     </tr>
+                    );
+                  })}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
